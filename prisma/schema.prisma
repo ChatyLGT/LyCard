@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// One row per LyCard. Multi-tenant roster: an admin (master password)
+// creates/edits every card; each card is publicly viewable at /c/[slug].
+model Card {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Identity (STR/state.p in the LyCard.dc.html prototype)
+  name    String
+  title   String
+  quote   String
+  siglas  String @default("O.D.")
+  tooltip String @default("Order of Distinction")
+
+  // Badges & Honors
+  medal String @default("oro")
+  rank  String @default("aprendiz")
+
+  // Contact channels (the 4 exposed by the Editor screen)
+  wa String @default("")
+  ig String @default("")
+  li String @default("")
+  x  String @default("")
+
+  // Media
+  portraitUrl       String?
+  videoThumbnailUrl String?
+
+  // Display defaults for first paint (viewer can still toggle)
+  defaultTheme String @default("dark")
+  defaultLang  String @default("es")
+}
