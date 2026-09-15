@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useTransition, type CSSProperties, type ReactElement } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { Card } from "@/generated/prisma/client";
 import { t, type Lang } from "@/lib/i18n";
 import { rankById } from "@/lib/data";
@@ -294,17 +295,16 @@ function socialHref(channel: string, value: string) {
 
 export default function LyCardView({
   card,
-  cardUrl,
   qrSvg,
   isAdmin,
   isHost,
 }: {
   card: Card;
-  cardUrl: string;
   qrSvg: string;
   isAdmin: boolean;
   isHost: boolean;
 }) {
+  const router = useRouter();
   const [theme, setTheme] = useState<"dark" | "light">(
     (card.defaultTheme as "dark" | "light") || "dark"
   );
@@ -335,15 +335,6 @@ export default function LyCardView({
       setPortal(false);
       flash(t(lang, "tOffice"));
     }, 1400);
-  }
-
-  async function shareCard() {
-    try {
-      await navigator.clipboard.writeText(cardUrl);
-    } catch {
-      // clipboard unavailable — still show confirmation copy below
-    }
-    flash(t(lang, "tShare"));
   }
 
   const [scheduleOpen, setScheduleOpen] = useState(false);
@@ -739,8 +730,8 @@ export default function LyCardView({
             {isHost ? (
               <button
                 type="button"
-                onClick={shareCard}
-                aria-label={t(lang, "shareBtn")}
+                onClick={() => router.push(`/m/onboarding?ref=${card.slug}`)}
+                aria-label="Simular escaneo del QR"
                 style={{
                   position: "relative",
                   flex: "none",

@@ -34,5 +34,5 @@ export default async function CardPage({
   // owner (PLAN.md Fase 2) — null for every card until Fase 4 links them.
   const isHost = isAdmin || (memberId !== null && memberId === card.memberId);
 
-  return <LyCardView card={card} cardUrl={cardUrl} qrSvg={qrSvg} isAdmin={isAdmin} isHost={isHost} />;
+  return <LyCardView card={card} qrSvg={qrSvg} isAdmin={isAdmin} isHost={isHost} />;
 }

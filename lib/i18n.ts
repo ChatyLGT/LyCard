@@ -4,7 +4,6 @@ export const STR: Record<Lang, Record<string, string>> = {
   es: {
     storyBtn: "Mi camino con Legacy",
     infoBtn: "Info Legacy",
-    shareBtn: "Compartir mi LyCard",
     customize: "Personalizar mi LyCard",
     scheduleBtn: "Agendar tu Entrevista",
     scheduleBtnHost: "Agendar una Entrevista",
@@ -61,7 +60,6 @@ export const STR: Record<Lang, Record<string, string>> = {
     portalTitle: "Módulo Próximamente",
     portalSub: "La Oficina Virtual de {name} está en construcción.",
     tOffice: "Módulo disponible en la sesión privada",
-    tShare: "Enlace fiduciario copiado",
     tSaved: "Cambios sincronizados en el fiduciario",
     tSoon: "Módulo disponible en la sesión privada",
     tPhoto: "Arrastra tu retrato al marco circular",
@@ -98,7 +96,6 @@ export const STR: Record<Lang, Record<string, string>> = {
   en: {
     storyBtn: "My path with Legacy",
     infoBtn: "Legacy Info",
-    shareBtn: "Share my LyCard",
     customize: "Customize my LyCard",
     scheduleBtn: "Book your Interview",
     scheduleBtnHost: "Book an Interview",
@@ -155,7 +152,6 @@ export const STR: Record<Lang, Record<string, string>> = {
     portalTitle: "Coming Soon",
     portalSub: "{name}'s Virtual Office is under construction.",
     tOffice: "Module available in the private session",
-    tShare: "Fiduciary link copied",
     tSaved: "Changes synced with the trustee",
     tSoon: "Module available in the private session",
     tPhoto: "Drop your portrait into the circular frame",

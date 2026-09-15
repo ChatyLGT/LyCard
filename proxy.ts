@@ -2,7 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { ADMIN_COOKIE_NAME, isRequestAuthed } from "@/lib/auth";
 import { MEMBER_COOKIE_NAME, isMemberRequestAuthed } from "@/lib/memberAuth";
 
-const MEMBER_PUBLIC_PATHS = ["/m/login", "/m/auth/google/start", "/m/auth/google/callback"];
+const MEMBER_PUBLIC_PATHS = [
+  "/m/login",
+  "/m/auth/google/start",
+  "/m/auth/google/callback",
+  // The onboarding chat has to be reachable by someone with no session yet —
+  // that's the whole point, it's how a stranger becomes a Member mid-flow.
+  "/m/onboarding",
+];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

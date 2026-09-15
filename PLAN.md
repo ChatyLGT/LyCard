@@ -323,7 +323,42 @@ Resend.
   y confirmé en producción con `/c/mastern0` que sigue funcionando
   perfecto después del deploy.
 
-**Qué sigue:** Fase 3 — el chat simulado tipo WhatsApp para crear la
-LyCard (lo que hoy es solo un link a `/m/login` se vuelve la experiencia
-completa: audio, transcripción simulada, conversación guiada). Doy la
-señal antes de arrancar, como con todo lo anterior.
+---
+
+## Fase 3 — hecha, probada localmente, en producción
+
+- `/m/onboarding?ref=<slug>` — chat simulado con la estética real de
+  WhatsApp (paleta oscura de WhatsApp, no la dorada de LyCard, a propósito
+  — pediste que se sintiera lo más parecido posible al real).
+- Flujo: nombre (por audio real del micrófono — grabación de verdad con
+  `MediaRecorder` — o texto) → "transcribiendo..." simulado y honesto
+  (aclara que todavía no hay transcripción real, pide confirmar por
+  texto) → WhatsApp → código simulado mostrado en el chat → email →
+  confirmación. Reusa las acciones de la Fase 1 (`requestOtpAction`,
+  `verifyOtpAction`, `updateMemberEmailAction`) sin duplicar nada.
+- Al completar: crea (o reutiliza) el `Member`, y ahora sí crea la
+  `ProgramMembership` en el Programa Legacy — con
+  `referredByMembershipId` resuelto automáticamente si el `ref` en la URL
+  apunta a una tarjeta con dueño conocido (probé con `ref=gunnar`: quedó
+  bien enlazado a tu membership). Si el Programa "legacy" todavía no
+  existe en la base (nunca corriste el SQL pendiente de la Fase 0), esta
+  acción lo crea sola — ya no depende de ese paso manual.
+- **Tocar el QR en modo host ahora abre la simulación directo**
+  (`/m/onboarding?ref=<tu-slug>`) en vez de copiar el link — pediste
+  poder probarlo sin necesitar escanear con otro teléfono. Como
+  consecuencia saqué el botón viejo de "copiar link" (`shareCard`),
+  quedó sin uso — si en algún momento lo querés de vuelta, es rápido de
+  reagregar.
+- Encontré y arreglé un bug real en el camino: los mensajes del bot
+  salían duplicados en desarrollo por el doble-render de Strict Mode de
+  React — no pasaba en producción, pero lo blindé igual con un `ref`
+  guard para que sea robusto sin depender de esa diferencia.
+- Probado de punta a punta con Playwright: la conversación completa
+  (nombre → WhatsApp → OTP → email → confirmación), y confirmé los datos
+  en base (Member, Program, Membership con el referredBy bien resuelto).
+  También probé el tap del QR en modo host, confirmé que navega
+  correctamente. Build completo sin errores.
+
+**Qué sigue:** Fase 4 — el gate de entrevista que activa la membership
+(`invited` → `active`) y dispara la creación de las tarjetas de Empresa y
+Personal. Doy la señal antes de arrancar, como con todo lo anterior.
