@@ -115,7 +115,7 @@ export default function EditorForm({ card, saved }: { card: Card; saved: boolean
           </p>
           {saved && (
             <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>
-              ✓ Cambios sincronizados con el fiduciario.
+              ✓ Tarjeta guardada.
             </p>
           )}
         </div>
@@ -328,7 +328,7 @@ export default function EditorForm({ card, saved }: { card: Card; saved: boolean
               cursor: "pointer",
             }}
           >
-            Sincronizar con el Fiduciario
+            Guardar Tarjeta
           </button>
         </div>
       </form>
