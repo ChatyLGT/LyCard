@@ -306,7 +306,11 @@ export default function EditorForm({ card, saved }: { card: Card; saved: boolean
                 <span className="material-symbols-outlined" style={{ fontSize: 17, color: "#C8A15A" }}>
                   {c.icon}
                 </span>
-                <input name={c.id} defaultValue={card[c.id as "wa" | "ig" | "li" | "x"]} style={FIELD_INPUT} />
+                <input
+                  name={c.id}
+                  defaultValue={card[c.id as "wa" | "ig" | "li" | "x" | "fb" | "tiktok" | "yt" | "web"]}
+                  style={FIELD_INPUT}
+                />
               </div>
             </label>
           ))}

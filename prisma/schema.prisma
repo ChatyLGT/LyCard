@@ -36,11 +36,15 @@ model Card {
   medal String @default("oro")
   rank  String @default("aprendiz")
 
-  // Contact channels (the 4 exposed by the Editor screen)
-  wa String @default("")
-  ig String @default("")
-  li String @default("")
-  x  String @default("")
+  // Contact channels (the ones exposed by the Editor screen)
+  wa     String @default("")
+  ig     String @default("")
+  li     String @default("")
+  x      String @default("")
+  fb     String @default("")
+  tiktok String @default("")
+  yt     String @default("")
+  web    String @default("")
 
   // Media
   portraitUrl       String?

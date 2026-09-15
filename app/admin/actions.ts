@@ -99,7 +99,23 @@ export async function createCardAction(formData: FormData) {
 
 export async function updateCardAction(slug: string, formData: FormData) {
   const data: Record<string, string> = {};
-  for (const key of ["name", "title", "quote", "siglas", "tooltip", "medal", "rank", "wa", "ig", "li", "x"]) {
+  for (const key of [
+    "name",
+    "title",
+    "quote",
+    "siglas",
+    "tooltip",
+    "medal",
+    "rank",
+    "wa",
+    "ig",
+    "li",
+    "x",
+    "fb",
+    "tiktok",
+    "yt",
+    "web",
+  ]) {
     const v = formData.get(key);
     if (typeof v === "string") data[key] = v;
   }

@@ -51,9 +51,13 @@ export const RANKS = [
 ] as const;
 
 export const CHANNELS = [
-  { id: "wa", label: "WhatsApp", icon: "chat" },
   { id: "ig", label: "Instagram", icon: "photo_camera" },
+  { id: "fb", label: "Facebook", icon: "thumb_up" },
+  { id: "tiktok", label: "TikTok", icon: "music_note" },
   { id: "li", label: "LinkedIn", icon: "work" },
+  { id: "yt", label: "YouTube", icon: "smart_display" },
+  { id: "web", label: "Sitio Web", icon: "language" },
+  { id: "wa", label: "WhatsApp", icon: "chat" },
   { id: "x", label: "X / Twitter", icon: "alternate_email" },
 ] as const;
 

@@ -73,15 +73,17 @@ const BADGE_BTN: CSSProperties = {
 };
 
 const SOCIAL_ICON: CSSProperties = {
-  flex: "1 1 0",
-  minWidth: 0,
-  maxWidth: 34,
-  aspectRatio: "1",
+  flex: "none",
+  width: "clamp(19px,5.2dvh,22px)",
+  height: "clamp(19px,5.2dvh,22px)",
+  borderRadius: 999,
   color: "var(--goldtxt,#E5C378)",
+  background: "var(--pill,rgba(20,20,20,.6))",
+  border: "1px solid var(--line2,rgba(200,161,90,.45))",
+  backdropFilter: "blur(6px)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  opacity: 0.9,
 };
 
 function Sweep() {
@@ -107,20 +109,79 @@ function Icon({ name, size = 19, style }: { name: string; size?: number; style?:
   );
 }
 
+// Slim outline glyphs (stroke-based) sized for the small circular badges
+// that flank the Virtual Office button — a lighter, more "jewelry" feel
+// than flat brand-color logos.
 const SOCIAL_SVG: Record<string, ReactElement> = {
-  wa: (
-    <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2m.01 1.67c2.2 0 4.26.86 5.82 2.42a8.225 8.225 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.196 8.196 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24m4.52 11.64c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.03-1.25-.75-.67-1.26-1.5-1.41-1.75-.15-.25-.02-.39.11-.51.11-.11.25-.29.37-.44.13-.14.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.35-.77-1.85-.2-.49-.41-.42-.56-.43l-.48-.01c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.77 2.71 4.3 3.79.6.26 1.07.41 1.44.53.61.19 1.16.17 1.6.1.49-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.07-.1-.23-.17-.48-.29z" />
+  fb: (
+    <>
+      <rect x="3.2" y="3.2" width="17.6" height="17.6" rx="5.2" />
+      <path d="M14.3 20.4v-6.5h2.15l.32-2.5h-2.47V9.7c0-.72.2-1.21 1.23-1.21h1.31V6.28c-.23-.03-1-.1-1.9-.1-1.88 0-3.16 1.15-3.16 3.25v1.85H9.6v2.5h2.18v6.5" />
+    </>
   ),
   ig: (
-    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+    <>
+      <rect x="3.2" y="3.2" width="17.6" height="17.6" rx="5.2" />
+      <circle cx="12" cy="12" r="3.9" />
+      <circle cx="17.05" cy="6.95" r="0.9" fill="currentColor" stroke="none" />
+    </>
+  ),
+  tiktok: (
+    <path
+      d="M13.6 3v10.9a3.05 3.05 0 1 1-2.2-2.93v-2.1a5.15 5.15 0 1 0 4.2 5.06v-5.2a6.1 6.1 0 0 0 3.6 1.17V7.3a3.85 3.85 0 0 1-3.6-2.98V3z"
+      fill="currentColor"
+      stroke="none"
+    />
   ),
   li: (
-    <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 8.76a1.69 1.69 0 0 0 1.69-1.69 1.69 1.69 0 0 0-1.69-1.69 1.69 1.69 0 0 0-1.69 1.69 1.69 1.69 0 0 0 1.69 1.69m1.4 9.74v-8.37H5.06v8.37h2.8z" />
+    <>
+      <rect x="3.2" y="3.2" width="17.6" height="17.6" rx="4.4" />
+      <circle cx="7.85" cy="8.05" r="1.05" fill="currentColor" stroke="none" />
+      <path d="M7.85 11v6.3M12.15 11v6.3M12.15 13.9c0-1.9 1.05-2.75 2.35-2.75 1.55 0 2.15.98 2.15 2.85v4.3" />
+    </>
   ),
-  x: (
-    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  yt: (
+    <>
+      <rect x="2.6" y="6" width="18.8" height="12" rx="4" />
+      <path d="M10.3 9.5 15.4 12l-5.1 2.5z" fill="currentColor" stroke="none" />
+    </>
+  ),
+  web: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3c2.55 2.5 3.9 5.75 3.9 9s-1.35 6.5-3.9 9c-2.55-2.5-3.9-5.75-3.9-9s1.35-6.5 3.9-9z" />
+    </>
   ),
 };
+
+const SOCIAL_LABEL: Record<string, string> = {
+  fb: "Facebook",
+  ig: "Instagram",
+  tiktok: "TikTok",
+  li: "LinkedIn",
+  yt: "YouTube",
+  web: "Sitio Web",
+};
+
+function SocialLink({ channel, card }: { channel: keyof typeof SOCIAL_LABEL; card: Card }) {
+  const href = socialHref(channel, card[channel as "fb" | "ig" | "tiktok" | "li" | "yt" | "web"]);
+  if (!href) return null;
+  return (
+    <a key={channel} aria-label={SOCIAL_LABEL[channel]} href={href} target="_blank" rel="noopener" style={SOCIAL_ICON}>
+      <svg
+        viewBox="0 0 24 24"
+        style={{ width: "52%", height: "52%" }}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {SOCIAL_SVG[channel]}
+      </svg>
+    </a>
+  );
+}
 
 function socialHref(channel: string, value: string) {
   const v = value.trim();
@@ -130,6 +191,12 @@ function socialHref(channel: string, value: string) {
   if (channel === "li")
     return v.startsWith("http") ? v : `https://linkedin.com/${v.replace(/^\//, "")}`;
   if (channel === "x") return `https://x.com/${v.replace(/^@/, "")}`;
+  if (channel === "fb")
+    return v.startsWith("http") ? v : `https://facebook.com/${v.replace(/^\//, "")}`;
+  if (channel === "tiktok") return `https://tiktok.com/@${v.replace(/^@/, "")}`;
+  if (channel === "yt")
+    return v.startsWith("http") ? v : `https://youtube.com/${v.replace(/^@/, "")}`;
+  if (channel === "web") return v.startsWith("http") ? v : `https://${v}`;
   return null;
 }
 
@@ -382,13 +449,31 @@ export default function LyCardView({
               </div>
             </div>
 
-            <div style={{ position: "relative", marginTop: -28, zIndex: 20 }}>
+            <div
+              style={{
+                position: "relative",
+                marginTop: -28,
+                zIndex: 20,
+                width: "100%",
+                maxWidth: 358,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "0 6px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "clamp(7px,2.2dvh,14px)" }}>
+                <SocialLink channel="fb" card={card} />
+                <SocialLink channel="ig" card={card} />
+                <SocialLink channel="tiktok" card={card} />
+              </div>
               <button
                 type="button"
                 onClick={enterOffice}
                 aria-label="Virtual Office"
                 style={{
                   position: "relative",
+                  flex: "none",
                   width: 80,
                   height: 80,
                   borderRadius: 999,
@@ -441,6 +526,11 @@ export default function LyCardView({
                   </svg>
                 </span>
               </button>
+              <div style={{ display: "flex", alignItems: "center", gap: "clamp(7px,2.2dvh,14px)" }}>
+                <SocialLink channel="li" card={card} />
+                <SocialLink channel="yt" card={card} />
+                <SocialLink channel="web" card={card} />
+              </div>
             </div>
           </div>
 
@@ -484,34 +574,6 @@ export default function LyCardView({
               <span>{t(lang, "storyBtn")}</span>
               <Icon name="north_east" size={15} style={{ opacity: 0.8 }} />
             </button>
-
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexWrap: "nowrap",
-                gap: "clamp(8px,3%,16px)",
-                width: "100%",
-                maxWidth: 358,
-                margin: "2px auto 0",
-                padding: "8px 0 0",
-                borderTop: "1px solid var(--line,rgba(200,161,90,.22))",
-              }}
-            >
-              {(["wa", "ig", "li", "x"] as const).map((ch) => {
-                const href = socialHref(ch, card[ch]);
-                const label = { wa: "WhatsApp", ig: "Instagram", li: "LinkedIn", x: "X" }[ch];
-                if (!href) return null;
-                return (
-                  <a key={ch} aria-label={label} href={href} target="_blank" rel="noopener" style={SOCIAL_ICON}>
-                    <svg viewBox="0 0 24 24" style={{ width: "100%", height: "100%", fill: "currentColor" }}>
-                      {SOCIAL_SVG[ch]}
-                    </svg>
-                  </a>
-                );
-              })}
-            </div>
           </div>
 
           {/* QR */}
