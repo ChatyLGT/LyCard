@@ -402,6 +402,54 @@ nada se rompió (build, rutas existentes, sin errores de runtime) — la
 prueba de escritura completa quedó en local, donde la corrí con datos
 descartables.
 
-**Qué sigue:** Fase 5 — los editores y vistas públicas de las tarjetas de
-Empresa y Personal (hoy se crean en blanco, sin editor propio todavía).
-Doy la señal antes de arrancar, como con todo lo anterior.
+---
+
+## Fase 5 — hecha, probada localmente, en producción
+
+- **Editores propios** en `/m/dashboard/company` y `/m/dashboard/personal`
+  (`components/MemberCardEditor.tsx`, patrón calcado de `EditorForm.tsx`
+  del Admin pero con auth de Miembro y verificación de dueño — solo podés
+  editar una tarjeta si `card.memberId` es el tuyo). Si tu membership
+  todavía no está activa (Fase 4 no corrió), muestra un aviso prolijo en
+  vez de romperse (`components/CardNotUnlocked.tsx`).
+- `/m/dashboard` ahora lista tus 3 tarjetas (Proyecto/Empresa/Personal) con
+  botones Ver/Editar, en vez del texto placeholder de antes.
+- **Vista pública bifurcada por `card.kind`** en `LyCardView.tsx` — mismo
+  componente, mismo "chasis" (foto, nombre, badges, cita, dock de redes),
+  pero la fila de cubos y el botón inferior cambian según el tipo:
+  - **Empresa**: cubos "Sobre mi Empresa" (modal genérico con tu
+    título/cita, sin la masterclass de Legacy) / QR (ahora copia el link,
+    no dispara el onboarding — las tarjetas de empresa no reclutan al
+    Programa) / "Enviar Invitación" (mismo mecanismo, pero el email ya no
+    dice "Programa Legacy" sino que invita a conocer el negocio). Botón
+    inferior: "Agendar una Reunión" (reusa `registerInterviewAction` tal
+    cual, solo cambia el copy).
+  - **Personal**: cubos "Guardar Contacto" (descarga un `.vcf` real desde
+    `/c/[slug]/vcard`, nueva Route Handler) / QR (copia el link) / "Enviar
+    Mensaje" (nueva `sendContactMessageAction` — le llega por correo al
+    dueño de la tarjeta, con `replyTo` al remitente; si el dueño todavía
+    no cargó su email o no hay `RESEND_API_KEY`, falla prolijo). Sin botón
+    inferior — quedó "opcional" del plan original, lo dejé afuera por
+    ahora.
+  - **Proyecto**: sin cambios — exactamente el comportamiento de las
+    Fases 2/3.
+  - "Mi camino con Legacy" (el botón de historia) solo se muestra en
+    tarjetas de Proyecto — no aplica a Empresa/Personal.
+- Probado de punta a punta con Playwright contra Postgres local:
+  - Vistas públicas de Empresa y Personal (cubos correctos, botón inferior
+    correcto/ausente, modal "Sobre mi Empresa" con el copy genérico).
+  - Envío de "Enviar Mensaje" en una tarjeta Personal sin email cargado →
+    falló prolijo con el mensaje "todavía no está activado", como se
+    espera.
+  - Login de Miembro → `/m/dashboard` lista las 3 tarjetas → edité la
+    tarjeta de Empresa (nombre + rol) → guardó → confirmé en Postgres y en
+    la vista pública (`/c/fase4-testigo-empresa`) que el cambio se reflejó.
+  - Descarga de `.vcf` responde `200` con `Content-Type: text/vcard`.
+  - `tsc`/`eslint` limpios, `next build` completo sin errores, las 15
+    rutas compilan (incluida la nueva `/c/[slug]/vcard`).
+- Verificado en prod solo lo no-destructivo (build, rutas existentes, sin
+  errores nuevos de runtime) — igual que en la Fase 4, no generé datos de
+  prueba en tu base real.
+
+**Qué sigue:** Fase 6 — dashboards de administración de dos niveles
+(MasterN0 global vs. N0 por Programa). Doy la señal antes de arrancar.

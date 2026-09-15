@@ -7,9 +7,9 @@ import type { Card } from "@/generated/prisma/client";
 import { t, type Lang } from "@/lib/i18n";
 import { rankById } from "@/lib/data";
 import { INTERVIEW_SLOTS } from "@/lib/interviewSlots";
-import { registerInterviewAction, sendInvitationAction } from "@/app/c/actions";
+import { registerInterviewAction, sendInvitationAction, sendContactMessageAction } from "@/app/c/actions";
 
-type ModalKey = "od" | "ancient" | "story" | "info" | "invite" | null;
+type ModalKey = "od" | "ancient" | "story" | "info" | "invite" | "contactMessage" | null;
 
 const THEME_VARS: Record<"dark" | "light", CSSProperties> = {
   dark: {
@@ -305,6 +305,9 @@ export default function LyCardView({
   isHost: boolean;
 }) {
   const router = useRouter();
+  const isProject = card.kind === "project";
+  const isCompany = card.kind === "company";
+  const isPersonal = card.kind === "personal";
   const [theme, setTheme] = useState<"dark" | "light">(
     (card.defaultTheme as "dark" | "light") || "dark"
   );
@@ -396,6 +399,41 @@ export default function LyCardView({
     });
   }
 
+  const [senderName, setSenderName] = useState("");
+  const [senderEmail, setSenderEmail] = useState("");
+  const [messageText, setMessageText] = useState("");
+  const [contactError, setContactError] = useState<string | null>(null);
+  const [contactSent, setContactSent] = useState(false);
+  const [contacting, startContacting] = useTransition();
+
+  function submitContact() {
+    setContactError(null);
+    if (!senderName.trim()) return setContactError(t(lang, "contactErrName"));
+    if (!messageText.trim()) return setContactError(t(lang, "contactErrMessage"));
+    startContacting(async () => {
+      const res = await sendContactMessageAction({
+        cardSlug: card.slug,
+        senderName,
+        senderEmail,
+        message: messageText,
+      });
+      if (res.ok) {
+        setContactSent(true);
+      } else if (res.error === "not_configured") {
+        setContactError(t(lang, "contactErrNotConfigured"));
+      } else if (res.error === "email") {
+        setContactError(t(lang, "contactErrEmail"));
+      } else {
+        setContactError(t(lang, "contactErrMessage"));
+      }
+    });
+  }
+
+  function shareLink() {
+    const url = `${window.location.origin}/c/${card.slug}`;
+    navigator.clipboard.writeText(url).then(() => flash(t(lang, "linkCopied")));
+  }
+
   const light = theme === "light";
   const rank = rankById(card.rank);
   const rankName = lang === "en" ? rank.en : rank.es;
@@ -426,8 +464,11 @@ export default function LyCardView({
       body: t(lang, "storyBody"),
       meta: t(lang, "storyMeta"),
     },
-    info: { icon: "diamond", kicker: t(lang, "infoKicker") },
+    info: isCompany
+      ? { icon: "storefront", kicker: t(lang, "companyInfoKicker"), head: card.title || card.name, body: card.quote, meta: t(lang, "companyInfoMeta") }
+      : { icon: "diamond", kicker: t(lang, "infoKicker") },
     invite: { icon: "mail", kicker: t(lang, "inviteKicker") },
+    contactMessage: { icon: "chat", kicker: t(lang, "contactKicker") },
   };
   const activeModal = modal ? modalMap[modal] : null;
 
@@ -436,6 +477,11 @@ export default function LyCardView({
     setInviteEmail("");
     setInviteError(null);
     setInviteSent(false);
+    setSenderName("");
+    setSenderEmail("");
+    setMessageText("");
+    setContactError(null);
+    setContactSent(false);
   }
 
   return (
@@ -695,39 +741,53 @@ export default function LyCardView({
             >
               {card.quote}
             </p>
-            <button
-              type="button"
-              onClick={() => setModal("story")}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "clamp(6px,1dvh,9px) 16px",
-                borderRadius: 999,
-                background: "var(--surf,#141414)",
-                border: "1px solid var(--line2,rgba(200,161,90,.4))",
-                color: "var(--goldtxt,#E5C378)",
-                font: "600 11px 'Plus Jakarta Sans',sans-serif",
-                letterSpacing: ".14em",
-                textTransform: "uppercase",
-                cursor: "pointer",
-                boxShadow: "0 2px 10px rgba(0,0,0,.25)",
-              }}
-            >
-              <span style={{ color: "#C8A15A" }}>✦</span>
-              <span>{t(lang, "storyBtn")}</span>
-              <Icon name="north_east" size={15} style={{ opacity: 0.8 }} />
-            </button>
+            {isProject && (
+              <button
+                type="button"
+                onClick={() => setModal("story")}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "clamp(6px,1dvh,9px) 16px",
+                  borderRadius: 999,
+                  background: "var(--surf,#141414)",
+                  border: "1px solid var(--line2,rgba(200,161,90,.4))",
+                  color: "var(--goldtxt,#E5C378)",
+                  font: "600 11px 'Plus Jakarta Sans',sans-serif",
+                  letterSpacing: ".14em",
+                  textTransform: "uppercase",
+                  cursor: "pointer",
+                  boxShadow: "0 2px 10px rgba(0,0,0,.25)",
+                }}
+              >
+                <span style={{ color: "#C8A15A" }}>✦</span>
+                <span>{t(lang, "storyBtn")}</span>
+                <Icon name="north_east" size={15} style={{ opacity: 0.8 }} />
+              </button>
+            )}
           </div>
 
-          {/* Cubes: Info Legacy (medium) / QR, tap to share (large) / Enviar Invitación (medium) */}
+          {/* Cubes: left (info/save-contact) / QR (large) / right (invite/message) */}
           <div style={{ flex: "0 0 auto", display: "flex", alignItems: "flex-end", justifyContent: "center", gap: "clamp(10px,3dvw,18px)" }}>
-            <button type="button" onClick={() => setModal("info")} style={CUBE_MEDIUM} aria-label={t(lang, "infoBtn")}>
-              <Icon name="diamond" size={22} />
-              <span style={CUBE_LABEL}>{t(lang, "infoBtn")}</span>
-            </button>
+            {isPersonal ? (
+              <a href={`/c/${card.slug}/vcard`} download style={CUBE_MEDIUM} aria-label={t(lang, "vcardBtn")}>
+                <Icon name="contact_page" size={22} />
+                <span style={CUBE_LABEL}>{t(lang, "vcardBtn")}</span>
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setModal("info")}
+                style={CUBE_MEDIUM}
+                aria-label={t(lang, isCompany ? "companyInfoBtn" : "infoBtn")}
+              >
+                <Icon name={isCompany ? "storefront" : "diamond"} size={22} />
+                <span style={CUBE_LABEL}>{t(lang, isCompany ? "companyInfoBtn" : "infoBtn")}</span>
+              </button>
+            )}
 
-            {isHost ? (
+            {isProject && isHost ? (
               <button
                 type="button"
                 onClick={() => router.push(`/m/onboarding?ref=${card.slug}`)}
@@ -755,7 +815,7 @@ export default function LyCardView({
                   dangerouslySetInnerHTML={{ __html: qrSvg }}
                 />
               </button>
-            ) : (
+            ) : isProject ? (
               <Link
                 href="/m/login"
                 aria-label={t(lang, "createCardBtn")}
@@ -791,41 +851,74 @@ export default function LyCardView({
                   {t(lang, "createCardBtn")}
                 </span>
               </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={shareLink}
+                aria-label="Compartir link"
+                style={{
+                  position: "relative",
+                  flex: "none",
+                  padding: 10,
+                  borderRadius: 20,
+                  background: "var(--qrbg,rgba(20,20,20,.95))",
+                  border: "1px solid var(--line2,rgba(212,175,55,.55))",
+                  boxShadow: "0 12px 36px rgba(0,0,0,.85)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                }}
+              >
+                <div
+                  style={{ width: "clamp(84px,15dvh,140px)", height: "clamp(84px,15dvh,140px)", background: "#fff", borderRadius: 8, padding: 6 }}
+                  dangerouslySetInnerHTML={{ __html: qrSvg }}
+                />
+              </button>
             )}
 
-            <button type="button" onClick={() => setModal("invite")} style={CUBE_MEDIUM_ALT} aria-label={t(lang, "inviteBtn")}>
-              <Icon name="mail" size={22} />
-              <span style={CUBE_LABEL}>{t(lang, "inviteBtn")}</span>
-            </button>
+            {isPersonal ? (
+              <button type="button" onClick={() => setModal("contactMessage")} style={CUBE_MEDIUM_ALT} aria-label={t(lang, "sendMessageBtn")}>
+                <Icon name="chat" size={22} />
+                <span style={CUBE_LABEL}>{t(lang, "sendMessageBtn")}</span>
+              </button>
+            ) : (
+              <button type="button" onClick={() => setModal("invite")} style={CUBE_MEDIUM_ALT} aria-label={t(lang, "inviteBtn")}>
+                <Icon name="mail" size={22} />
+                <span style={CUBE_LABEL}>{t(lang, "inviteBtn")}</span>
+              </button>
+            )}
           </div>
 
-          {/* Schedule CTA */}
-          <div style={{ flex: "0 0 auto", width: "100%" }}>
-            <button
-              type="button"
-              onClick={() => setScheduleOpen(true)}
-              style={{
-                width: "100%",
-                padding: "clamp(9px,1.6dvh,15px) 20px",
-                border: "1px solid rgba(255,230,163,.45)",
-                borderRadius: 16,
-                background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)",
-                color: "#141414",
-                font: "800 13px 'Plus Jakarta Sans',sans-serif",
-                letterSpacing: ".16em",
-                textTransform: "uppercase",
-                boxShadow: "0 6px 22px rgba(200,161,90,.42)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 10,
-                cursor: "pointer",
-              }}
-            >
-              <Icon name="event" />
-              <span>{t(lang, isHost ? "scheduleBtnHost" : "scheduleBtn")}</span>
-            </button>
-          </div>
+          {/* Schedule / meeting CTA — project cards book an interview, company cards book a meeting; personal cards skip this row entirely */}
+          {!isPersonal && (
+            <div style={{ flex: "0 0 auto", width: "100%" }}>
+              <button
+                type="button"
+                onClick={() => setScheduleOpen(true)}
+                style={{
+                  width: "100%",
+                  padding: "clamp(9px,1.6dvh,15px) 20px",
+                  border: "1px solid rgba(255,230,163,.45)",
+                  borderRadius: 16,
+                  background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)",
+                  color: "#141414",
+                  font: "800 13px 'Plus Jakarta Sans',sans-serif",
+                  letterSpacing: ".16em",
+                  textTransform: "uppercase",
+                  boxShadow: "0 6px 22px rgba(200,161,90,.42)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 10,
+                  cursor: "pointer",
+                }}
+              >
+                <Icon name="event" />
+                <span>{t(lang, isCompany ? (isHost ? "meetingBtnHost" : "meetingBtn") : isHost ? "scheduleBtnHost" : "scheduleBtn")}</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Modal */}
@@ -881,7 +974,7 @@ export default function LyCardView({
                 </button>
               </div>
 
-              {modal === "info" ? (
+              {modal === "info" && isProject ? (
                 <>
                   <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", borderRadius: 16, overflow: "hidden", border: "1px solid rgba(200,161,90,.4)", background: "#000" }}>
                     {card.videoThumbnailUrl ? (
@@ -949,7 +1042,7 @@ export default function LyCardView({
               ) : modal === "invite" ? (
                 <>
                   <p style={{ margin: 0, font: "400 12.5px/1.75 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
-                    {t(lang, "inviteSub")}
+                    {t(lang, isCompany ? "inviteSubCompany" : "inviteSub")}
                   </p>
                   {inviteSent ? (
                     <div style={{ padding: 18, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(200,161,90,.3)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
@@ -997,6 +1090,82 @@ export default function LyCardView({
                       >
                         <Icon name="send" size={18} />
                         <span>{inviting ? "..." : t(lang, "inviteSend")}</span>
+                      </button>
+                    </>
+                  )}
+                </>
+              ) : modal === "contactMessage" ? (
+                <>
+                  <p style={{ margin: 0, font: "400 12.5px/1.75 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
+                    {t(lang, "contactSub", { name: card.name })}
+                  </p>
+                  {contactSent ? (
+                    <div style={{ padding: 18, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(200,161,90,.3)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
+                      <Icon name="mark_email_read" size={28} style={{ color: "#C8A15A" }} />
+                      <span style={{ font: "700 13px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>{t(lang, "contactSuccess")}</span>
+                    </div>
+                  ) : (
+                    <>
+                      <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                        <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#C2BEB5" }}>
+                          {t(lang, "fSenderName")}
+                        </span>
+                        <input
+                          value={senderName}
+                          onChange={(e) => setSenderName(e.target.value)}
+                          style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "11px 14px", color: "#F5F2EB", font: "400 14px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
+                        />
+                      </label>
+                      <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                        <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#C2BEB5" }}>
+                          {t(lang, "fSenderEmail")}
+                        </span>
+                        <input
+                          type="email"
+                          value={senderEmail}
+                          onChange={(e) => setSenderEmail(e.target.value)}
+                          placeholder="nombre@correo.com"
+                          style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "11px 14px", color: "#F5F2EB", font: "400 14px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
+                        />
+                      </label>
+                      <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                        <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#C2BEB5" }}>
+                          {t(lang, "fMessage")}
+                        </span>
+                        <textarea
+                          value={messageText}
+                          onChange={(e) => setMessageText(e.target.value)}
+                          rows={4}
+                          style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "11px 14px", color: "#F5F2EB", font: "400 14px 'Plus Jakarta Sans',sans-serif", outline: "none", resize: "vertical" }}
+                        />
+                      </label>
+                      {contactError && (
+                        <span style={{ font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>{contactError}</span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={submitContact}
+                        disabled={contacting}
+                        style={{
+                          width: "100%",
+                          padding: 14,
+                          border: "none",
+                          borderRadius: 12,
+                          background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)",
+                          color: "#0D0D0D",
+                          font: "700 12.5px 'Plus Jakarta Sans',sans-serif",
+                          letterSpacing: ".12em",
+                          textTransform: "uppercase",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 8,
+                          cursor: contacting ? "default" : "pointer",
+                          opacity: contacting ? 0.7 : 1,
+                        }}
+                      >
+                        <Icon name="send" size={18} />
+                        <span>{contacting ? "..." : t(lang, "contactSend")}</span>
                       </button>
                     </>
                   )}
@@ -1069,7 +1238,7 @@ export default function LyCardView({
                 </button>
               </div>
 
-              <h3 style={{ margin: 0, font: "600 17px 'Playfair Display',serif", color: "#E5C378" }}>{t(lang, "scheduleTitle")}</h3>
+              <h3 style={{ margin: 0, font: "600 17px 'Playfair Display',serif", color: "#E5C378" }}>{t(lang, isCompany ? "meetingTitle" : "scheduleTitle")}</h3>
 
               {scheduleResult ? (
                 <div style={{ padding: 18, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(200,161,90,.3)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
@@ -1080,7 +1249,9 @@ export default function LyCardView({
                 </div>
               ) : (
                 <>
-                  <p style={{ margin: 0, font: "400 12.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{t(lang, "scheduleSub")}</p>
+                  <p style={{ margin: 0, font: "400 12.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
+                    {t(lang, isCompany ? "meetingSub" : "scheduleSub", { name: card.name })}
+                  </p>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     {INTERVIEW_SLOTS.map((slot) => {
