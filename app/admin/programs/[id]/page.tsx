@@ -19,10 +19,15 @@ export default async function AdminProgramDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ saved?: string; adminCreated?: string; activated?: string }>;
+  searchParams: Promise<{ saved?: string; adminCreated?: string; activated?: string; adminError?: string }>;
 }) {
   const { id } = await params;
-  const { saved, adminCreated, activated } = await searchParams;
+  const { saved, adminCreated, activated, adminError } = await searchParams;
+  const ADMIN_ERROR_COPY: Record<string, string> = {
+    email: "Ingresá un email válido.",
+    password: "La contraseña debe tener al menos 8 caracteres.",
+    exists: "Ya existe un admin con ese email.",
+  };
 
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
@@ -127,6 +132,11 @@ export default async function AdminProgramDetailPage({
               N0 de este Programa
             </h2>
             {adminCreated && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ N0 creado.</p>}
+            {adminError && (
+              <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>
+                {ADMIN_ERROR_COPY[adminError] || "No se pudo crear el N0."}
+              </p>
+            )}
             {program.admins.length === 0 && (
               <p style={{ margin: 0, font: "400 12px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>Todavía no tiene N0 asignado — sos vos (MasterN0) quien lo administra.</p>
             )}

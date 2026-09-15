@@ -10,10 +10,16 @@ export const dynamic = "force-dynamic";
 // dashboard, its N0 admins) is the one thing PLAN.md Fase 6 reserves
 // exclusively for MasterN0 — a scoped admin gets bounced to their own
 // Program's dashboard instead of seeing this at all.
-export default async function AdminProgramsPage() {
+export default async function AdminProgramsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
   if (scope.programId) redirect(`/admin/programs/${scope.programId}`);
+
+  const { error } = await searchParams;
 
   const programs = await prisma.program.findMany({
     orderBy: { createdAt: "asc" },
@@ -50,6 +56,9 @@ export default async function AdminProgramsPage() {
           <h2 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#F5F2EB" }}>
             Nuevo Programa
           </h2>
+          {error === "name" && (
+            <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>El nombre del Programa es obligatorio.</p>
+          )}
           <form action={createProgramAction} style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <input
               name="name"

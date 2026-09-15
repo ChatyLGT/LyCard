@@ -21,7 +21,7 @@ export async function createProgramAction(formData: FormData) {
   await requireMasterN0();
 
   const name = String(formData.get("name") || "").trim();
-  if (!name) throw new Error("El nombre del Programa es obligatorio.");
+  if (!name) redirect("/admin/programs?error=name");
 
   const slug = await uniqueSlug(slugify(String(formData.get("slug") || "") || name), (slug) =>
     prisma.program.findUnique({ where: { slug }, select: { id: true } }).then(Boolean)
@@ -39,16 +39,17 @@ export async function createProgramAdminAction(formData: FormData) {
   const programId = String(formData.get("programId") || "");
   const email = String(formData.get("email") || "").trim().toLowerCase();
   const password = String(formData.get("password") || "");
+  const errBase = `/admin/programs/${programId}`;
 
-  if (!programId) throw new Error("Falta el Programa.");
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Email inválido.");
-  if (password.length < 8) throw new Error("La contraseña debe tener al menos 8 caracteres.");
+  if (!programId) redirect("/admin/programs");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) redirect(`${errBase}?adminError=email`);
+  if (password.length < 8) redirect(`${errBase}?adminError=password`);
 
   const program = await prisma.program.findUnique({ where: { id: programId } });
-  if (!program) throw new Error("Programa no encontrado.");
+  if (!program) redirect("/admin/programs");
 
   const existing = await prisma.admin.findUnique({ where: { email } });
-  if (existing) throw new Error("Ya existe un admin con ese email.");
+  if (existing) redirect(`${errBase}?adminError=exists`);
 
   const passwordHash = await bcrypt.hash(password, 10);
   await prisma.admin.create({ data: { email, passwordHash, programId } });
