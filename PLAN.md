@@ -296,6 +296,34 @@ quieras que el botón funcione de verdad (mientras tanto queda inerte,
 sin romper nada). Pasos en `.env.example`, mismo patrón que hicimos con
 Resend.
 
-**Qué sigue:** Fase 2 — el switch host/invitado en `/c/[slug]` (acá sí
-toco la página pública que ya está circulando). Doy la señal antes de
-tocarla, como con todo lo anterior.
+---
+
+## Fase 2 — hecha, probada localmente, en producción
+
+- `/c/[slug]` ahora resuelve `isHost` en el servidor: MasterN0 siempre ve
+  modo host (mismo criterio que ya tenía para el ícono de editar — el
+  admin ya puede tocar cualquier tarjeta, tiene sentido que también la
+  vea en modo dueño), o si la sesión de Miembro coincide con
+  `card.memberId` (todavía `null` en todas las tarjetas hasta que la
+  Fase 4 las vincule — por ahora esto último no dispara para nadie más
+  que vos).
+- **Modo host** (sin cambios): fila de 3 cubos con el QR en el medio.
+- **Modo invitado**: el cubo del QR se reemplaza por un cubo dorado
+  **"Creá tu LyCard"** que lleva a `/m/login` — el paso que ya existe
+  hoy (Fase 1) para empezar a entrar al sistema. Cuando construya la
+  Fase 3 (el chat simulado), este mismo botón va a llevar directo ahí
+  en vez de al login genérico.
+- El botón inferior cambia de copy según quién mira: **"Agendá tu
+  Entrevista"** (invitado, como ya estaba) vs **"Agendá una
+  Entrevista"** (host — tiene más sentido cuando sos vos mirando tu
+  propia tarjeta, invitando a alguien más a agendar).
+- Probado en los dos modos con Playwright + captura visual: anónimo
+  (invitado) y logueado como MasterN0 (host) — confirmé que cada uno
+  muestra lo que corresponde, sin overflow en ningún tamaño de pantalla,
+  y confirmé en producción con `/c/mastern0` que sigue funcionando
+  perfecto después del deploy.
+
+**Qué sigue:** Fase 3 — el chat simulado tipo WhatsApp para crear la
+LyCard (lo que hoy es solo un link a `/m/login` se vuelve la experiencia
+completa: audio, transcripción simulada, conversación guiada). Doy la
+señal antes de arrancar, como con todo lo anterior.

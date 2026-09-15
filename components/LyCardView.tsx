@@ -297,11 +297,13 @@ export default function LyCardView({
   cardUrl,
   qrSvg,
   isAdmin,
+  isHost,
 }: {
   card: Card;
   cardUrl: string;
   qrSvg: string;
   isAdmin: boolean;
+  isHost: boolean;
 }) {
   const [theme, setTheme] = useState<"dark" | "light">(
     (card.defaultTheme as "dark" | "light") || "dark"
@@ -734,33 +736,71 @@ export default function LyCardView({
               <span style={CUBE_LABEL}>{t(lang, "infoBtn")}</span>
             </button>
 
-            <button
-              type="button"
-              onClick={shareCard}
-              aria-label={t(lang, "shareBtn")}
-              style={{
-                position: "relative",
-                flex: "none",
-                padding: 10,
-                borderRadius: 20,
-                background: "var(--qrbg,rgba(20,20,20,.95))",
-                border: "1px solid var(--line2,rgba(212,175,55,.55))",
-                boxShadow: "0 12px 36px rgba(0,0,0,.85)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-              }}
-            >
-              <span style={{ position: "absolute", top: 7, left: 7, width: 16, height: 16, borderTop: "2px solid #D4AF37", borderLeft: "2px solid #D4AF37", borderRadius: "6px 0 0 0" }} />
-              <span style={{ position: "absolute", top: 7, right: 7, width: 16, height: 16, borderTop: "2px solid #D4AF37", borderRight: "2px solid #D4AF37", borderRadius: "0 6px 0 0" }} />
-              <span style={{ position: "absolute", bottom: 7, left: 7, width: 16, height: 16, borderBottom: "2px solid #D4AF37", borderLeft: "2px solid #D4AF37", borderRadius: "0 0 0 6px" }} />
-              <span style={{ position: "absolute", bottom: 7, right: 7, width: 16, height: 16, borderBottom: "2px solid #D4AF37", borderRight: "2px solid #D4AF37", borderRadius: "0 0 6px 0" }} />
-              <div
-                style={{ width: "clamp(84px,15dvh,140px)", height: "clamp(84px,15dvh,140px)", background: "#fff", borderRadius: 8, padding: 6 }}
-                dangerouslySetInnerHTML={{ __html: qrSvg }}
-              />
-            </button>
+            {isHost ? (
+              <button
+                type="button"
+                onClick={shareCard}
+                aria-label={t(lang, "shareBtn")}
+                style={{
+                  position: "relative",
+                  flex: "none",
+                  padding: 10,
+                  borderRadius: 20,
+                  background: "var(--qrbg,rgba(20,20,20,.95))",
+                  border: "1px solid var(--line2,rgba(212,175,55,.55))",
+                  boxShadow: "0 12px 36px rgba(0,0,0,.85)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                }}
+              >
+                <span style={{ position: "absolute", top: 7, left: 7, width: 16, height: 16, borderTop: "2px solid #D4AF37", borderLeft: "2px solid #D4AF37", borderRadius: "6px 0 0 0" }} />
+                <span style={{ position: "absolute", top: 7, right: 7, width: 16, height: 16, borderTop: "2px solid #D4AF37", borderRight: "2px solid #D4AF37", borderRadius: "0 6px 0 0" }} />
+                <span style={{ position: "absolute", bottom: 7, left: 7, width: 16, height: 16, borderBottom: "2px solid #D4AF37", borderLeft: "2px solid #D4AF37", borderRadius: "0 0 0 6px" }} />
+                <span style={{ position: "absolute", bottom: 7, right: 7, width: 16, height: 16, borderBottom: "2px solid #D4AF37", borderRight: "2px solid #D4AF37", borderRadius: "0 0 6px 0" }} />
+                <div
+                  style={{ width: "clamp(84px,15dvh,140px)", height: "clamp(84px,15dvh,140px)", background: "#fff", borderRadius: 8, padding: 6 }}
+                  dangerouslySetInnerHTML={{ __html: qrSvg }}
+                />
+              </button>
+            ) : (
+              <Link
+                href="/m/login"
+                aria-label={t(lang, "createCardBtn")}
+                style={{
+                  position: "relative",
+                  flex: "none",
+                  width: "clamp(84px,15dvh,140px)",
+                  height: "clamp(84px,15dvh,140px)",
+                  borderRadius: 20,
+                  background: "linear-gradient(160deg,#E5C378,#C8A15A 55%,#99732B)",
+                  border: "1px solid rgba(255,230,163,.5)",
+                  boxShadow: "0 12px 36px rgba(200,161,90,.45)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  padding: 10,
+                  color: "#141414",
+                  textDecoration: "none",
+                }}
+              >
+                <Icon name="add_card" size={32} />
+                <span
+                  style={{
+                    font: "800 10.5px 'Plus Jakarta Sans',sans-serif",
+                    letterSpacing: ".07em",
+                    textTransform: "uppercase",
+                    textAlign: "center",
+                    lineHeight: 1.25,
+                  }}
+                >
+                  {t(lang, "createCardBtn")}
+                </span>
+              </Link>
+            )}
 
             <button type="button" onClick={() => setModal("invite")} style={CUBE_MEDIUM_ALT} aria-label={t(lang, "inviteBtn")}>
               <Icon name="mail" size={22} />
@@ -792,7 +832,7 @@ export default function LyCardView({
               }}
             >
               <Icon name="event" />
-              <span>{t(lang, "scheduleBtn")}</span>
+              <span>{t(lang, isHost ? "scheduleBtnHost" : "scheduleBtn")}</span>
             </button>
           </div>
         </div>
