@@ -13,7 +13,7 @@ export default async function CardPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const card = await prisma.card.findUnique({ where: { slug }, include: { program: true } });
+  const card = await prisma.card.findUnique({ where: { slug }, include: { program: true, puesto: true } });
   if (!card) notFound();
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
@@ -47,6 +47,7 @@ export default async function CardPage({
       isHost={isHost}
       originMemento={originMemento}
       program={card.program}
+      puesto={card.puesto}
     />
   );
 }

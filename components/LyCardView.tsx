@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useTransition, type CSSProperties, type ReactElement } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { Card, OriginMemento, Program } from "@/generated/prisma/client";
+import type { Card, OriginMemento, Program, Puesto } from "@/generated/prisma/client";
 import { t, type Lang } from "@/lib/i18n";
 import { rankById } from "@/lib/data";
 import { INTERVIEW_SLOTS } from "@/lib/interviewSlots";
@@ -339,6 +339,7 @@ export default function LyCardView({
   isHost,
   originMemento,
   program,
+  puesto,
 }: {
   card: Card;
   qrSvg: string;
@@ -346,6 +347,7 @@ export default function LyCardView({
   isHost: boolean;
   originMemento: OriginMemento | null;
   program: Program | null;
+  puesto: Puesto | null;
 }) {
   const router = useRouter();
   const isProject = card.kind === "project";
@@ -358,6 +360,12 @@ export default function LyCardView({
     isProject && program
       ? { ...card, ig: program.ig, li: program.li, x: program.x, fb: program.fb, tiktok: program.tiktok, yt: program.yt, web: program.web }
       : card;
+  // Sigla/denominación/descripción del Puesto asignado (la escalera que
+  // arma el N0, PLAN.md Fase 9.2) — cae al texto propio de la Card si no
+  // hay Puesto elegido, para no romper tarjetas ya cargadas.
+  const displaySiglas = puesto?.siglas || card.siglas;
+  const displayDenominacion = puesto?.denominacion || card.tooltip;
+  const displayDescripcion = puesto?.descripcion || undefined;
   const [theme, setTheme] = useState<"dark" | "light">(
     (card.defaultTheme as "dark" | "light") || "dark"
   );
@@ -503,9 +511,9 @@ export default function LyCardView({
       // va chica, arriba. Denominación (ej. "Original Dreamer") es el
       // nombre completo de esa posición — va como título grande, debajo.
       // Antes estaba al revés (PLAN.md Fase 9.1).
-      kicker: card.siglas,
-      head: card.tooltip,
-      body: t(lang, "odBody"),
+      kicker: displaySiglas,
+      head: displayDenominacion,
+      body: displayDescripcion || t(lang, "odBody"),
       meta: t(lang, "odMeta"),
     },
     ancient: {
@@ -691,7 +699,7 @@ export default function LyCardView({
                     <Sweep />
                     <Icon name="diamond" size={12} style={{ color: "var(--goldtxt,#E5C378)" }} />
                     <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--goldtxt,#E5C378)" }}>
-                      {card.siglas}
+                      {displaySiglas}
                     </span>
                   </button>
                   <button type="button" onClick={() => setModal("ancient")} style={BADGE_BTN}>

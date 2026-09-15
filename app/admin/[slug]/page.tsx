@@ -13,8 +13,11 @@ export default async function AdminCardEditorPage({
 }) {
   const { slug } = await params;
   const { saved } = await searchParams;
-  const card = await prisma.card.findUnique({ where: { slug } });
+  const card = await prisma.card.findUnique({
+    where: { slug },
+    include: { program: { include: { puestos: { orderBy: { order: "asc" } } } } },
+  });
   if (!card) notFound();
 
-  return <EditorForm card={card} saved={saved === "1"} />;
+  return <EditorForm card={card} puestos={card.program?.puestos ?? []} saved={saved === "1"} />;
 }

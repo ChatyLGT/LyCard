@@ -2,7 +2,7 @@
 
 import { useState, type CSSProperties } from "react";
 import Link from "next/link";
-import type { Card } from "@/generated/prisma/client";
+import type { Card, Puesto } from "@/generated/prisma/client";
 import { updateCardAction, deleteCardAction } from "@/app/admin/actions";
 import { MEDALS, RANKS, CHANNELS } from "@/lib/data";
 
@@ -41,7 +41,7 @@ const SECTION: CSSProperties = {
   gap: 14,
 };
 
-export default function EditorForm({ card, saved }: { card: Card; saved: boolean }) {
+export default function EditorForm({ card, puestos, saved }: { card: Card; puestos: Puesto[]; saved: boolean }) {
   const [medal, setMedal] = useState(card.medal);
   const [rank, setRank] = useState(card.rank);
   const [portraitPreview, setPortraitPreview] = useState<string | null>(card.portraitUrl);
@@ -235,24 +235,47 @@ export default function EditorForm({ card, saved }: { card: Card; saved: boolean
               })}
             </div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10 }}>
+          {isProject && puestos.length > 0 ? (
             <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-              <span style={LABEL}>Siglas</span>
+              <span style={LABEL}>Puesto</span>
               <div style={{ background: "#0D0D0D", borderRadius: 10, padding: 9 }}>
-                <input
-                  name="siglas"
-                  defaultValue={card.siglas}
-                  style={{ width: "100%", background: "none", border: "none", outline: "none", textAlign: "center", color: "#E5C378", font: "600 12px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".18em", textTransform: "uppercase" }}
-                />
+                <select
+                  name="puestoId"
+                  defaultValue={card.puestoId || ""}
+                  style={{ width: "100%", background: "none", border: "none", outline: "none", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif" }}
+                >
+                  <option value="">— Mantener texto actual ({card.siglas} — {card.tooltip}) —</option>
+                  {puestos.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.siglas} — {p.denominacion}
+                    </option>
+                  ))}
+                </select>
               </div>
+              <p style={{ margin: 0, font: "400 11px/1.5 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
+                La escalera de puestos la arma el N0 de tu Programa.
+              </p>
             </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-              <span style={LABEL}>Denominación / Tooltip</span>
-              <div style={{ background: "#0D0D0D", borderRadius: 10, padding: "9px 12px" }}>
-                <input name="tooltip" defaultValue={card.tooltip} style={{ width: "100%", background: "none", border: "none", outline: "none", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif" }} />
-              </div>
-            </label>
-          </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10 }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                <span style={LABEL}>Siglas</span>
+                <div style={{ background: "#0D0D0D", borderRadius: 10, padding: 9 }}>
+                  <input
+                    name="siglas"
+                    defaultValue={card.siglas}
+                    style={{ width: "100%", background: "none", border: "none", outline: "none", textAlign: "center", color: "#E5C378", font: "600 12px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".18em", textTransform: "uppercase" }}
+                  />
+                </div>
+              </label>
+              <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                <span style={LABEL}>Denominación / Tooltip</span>
+                <div style={{ background: "#0D0D0D", borderRadius: 10, padding: "9px 12px" }}>
+                  <input name="tooltip" defaultValue={card.tooltip} style={{ width: "100%", background: "none", border: "none", outline: "none", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif" }} />
+                </div>
+              </label>
+            </div>
+          )}
         </section>
 
         <section style={SECTION}>

@@ -123,6 +123,21 @@ export async function updateCardAction(slug: string, formData: FormData) {
     videoThumbnailUrl = await saveUpload(thumbnail, `${slug}-thumb`);
   }
 
+  // Picking a Puesto from the Program's ladder (PLAN.md Fase 9.2) snapshots
+  // its siglas/denominación into the Card too — so if the Puesto later
+  // gets deleted, the card keeps showing its last-known values instead of
+  // going blank. Leaving the select on "mantener texto actual" (empty
+  // value) skips this entirely, same as a Card with no Program.
+  const puestoIdRaw = formData.get("puestoId");
+  if (typeof puestoIdRaw === "string" && puestoIdRaw) {
+    const puesto = await prisma.puesto.findUnique({ where: { id: puestoIdRaw } });
+    if (puesto) {
+      data.puestoId = puesto.id;
+      data.siglas = puesto.siglas;
+      data.tooltip = puesto.denominacion;
+    }
+  }
+
   await prisma.card.update({
     where: { slug },
     data: {

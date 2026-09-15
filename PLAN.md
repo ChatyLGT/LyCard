@@ -779,13 +779,33 @@ siguiente (misma disciplina que Fases 0-7):
   `tsc`/`eslint`/`next build` limpios. La Escalera de Puestos vive en
   el panel pero **todavía no está conectada a las tarjetas** — eso es
   la Fase 9.2.
-- **Fase 9.2 — Escalera de Puestos (aplicación).** El editor de
-  MasterN0 (`EditorForm.tsx`) elige un Puesto de la lista del Programa
-  en vez de escribir siglas/denominación a mano; `LyCardView.tsx` lee
-  siglas/denominación/descripción del Puesto elegido, con fallback a
-  los campos actuales de `Card` si no hay Puesto asignado o la tarjeta
-  no tiene Programa (mismo patrón de fallback que redes sociales/
-  labels — no rompe tarjetas existentes).
+- **Fase 9.2 — Escalera de Puestos (aplicación) — hecha, probada
+  localmente, en producción.**
+  `EditorForm.tsx`: si la Card es de Proyecto y el Programa ya tiene
+  puestos cargados, los inputs libres de Siglas/Denominación se
+  reemplazan por un `<select name="puestoId">` con las opciones del
+  Programa + "— Mantener texto actual —" (no toca nada si se deja así).
+  Sin Programa o sin puestos todavía, sigue exactamente como antes —
+  cero cambio de comportamiento para Empresa/Personal o para cualquier
+  Card sin Programa asociado.
+  `updateCardAction`: al elegir un Puesto, además de guardar
+  `Card.puestoId` también **snapshotea** `siglas`/`tooltip` con los
+  valores del Puesto — así si el N0 borra ese Puesto más adelante, la
+  tarjeta no queda en blanco, cae a su última foto conocida.
+  `LyCardView.tsx`: badge superior y modal O.D. (kicker/head/body) leen
+  primero del Puesto asignado (`card.puesto`, pasado desde
+  `app/c/[slug]/page.tsx` con `include: { puesto: true }`), con fallback
+  a `card.siglas`/`card.tooltip`/`odBody` si no hay Puesto.
+  Probado en local con Playwright, punta a punta: creé el Puesto O.D./
+  Original Dreamer con una descripción distintiva, lo asigné a
+  `gunnar` desde `/admin/gunnar` (confirmé que el editor mostró el
+  `<select>`, no los inputs libres), y confirmé en `/c/gunnar` que el
+  badge y el modal ya muestran "O.D." arriba / "Original Dreamer" como
+  título / la descripción del Puesto (no la fija de `odBody`) —
+  regresión: el editor de una tarjeta de Empresa sin Programa siguió
+  mostrando los inputs libres de siempre, sin `<select>`. `tsc`/
+  `eslint`/`next build` limpios. Datos de prueba revertidos en local al
+  terminar.
 - **Fase 9.3 — Historia personal por tarjeta.** Nuevos campos en
   `Card` para la cita y el cuerpo del modal "Mi camino con...",
   editables por cada usuario en su propia "Personalizar LyCard" —
