@@ -880,6 +880,35 @@ siguiente (misma disciplina que Fases 0-7):
 
 ---
 
+**Fix crítico — una Card nunca tenía forma de asignarse a un Programa**
+(hecho, probado localmente, en producción). Gunnar reportó que editar
+títulos, descripción de puestos y escalas en el panel del Programa "no
+cambiaba nada" en las tarjetas reales. Diagnóstico en producción (lectura
+del payload de `/c/gunnarpareja` y `/c/juancho` vía Vercel MCP,
+read-only): ambas Cards tenían `programId: null` y `puestoId: null` — no
+es texto hardcodeado, todo el código de Fase 9 (`cardLabel()`, Puesto,
+`medalScale`/`rankScale`) ya caía correctamente al Programa cuando
+existía uno enlazado, pero **no existía ningún control en el editor de
+Card (`/admin/[slug]`) para elegir un Programa**: `createCardAction` y
+`updateCardAction` nunca tocaban `programId`, y el select de Puesto
+(`puestos={card.program?.puestos ?? []}`) dependía de que `card.program`
+ya existiera — un candado sin llave. Fix: nuevo select "Programa" en
+`EditorForm.tsx` (sólo project cards, sólo visible para MasterN0 —
+`currentAdminScope().programId === null` — un N0 acotado ya llega con
+sus Cards enlazadas vía el flujo de entrevista/membership de Fase 4, así
+que no necesita tocar esto), cableado en `updateCardAction`; cambiar de
+Programa limpia el `puestoId` (pertenecía a la escalera del Programa
+anterior). Probado end-to-end con Playwright: Card de proyecto sin
+Programa → confirmé que el botón "Mi camino con Legacy" mostraba el
+label default → login MasterN0 → asigné Programa Legacy → guardé →
+recién ahí apareció el select de Puesto → elegí uno con descripción
+custom → guardé → la tarjeta pública mostró el label de Programa
+sobreescrito y la descripción del Puesto en el modal O.D. `tsc` limpio.
+Datos de prueba (Card, Puesto, override) revertidos en local al
+terminar.
+
+---
+
 **Qué sigue — Fase 8**: WhatsApp Business API real. Esta fase no depende
 de mí escribiendo código — depende de que consigan cuenta de WhatsApp
 Business verificada por Meta, un proveedor (Twilio/360dialog/Meta Cloud

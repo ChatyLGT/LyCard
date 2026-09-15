@@ -2,7 +2,7 @@
 
 import { useState, type CSSProperties } from "react";
 import Link from "next/link";
-import type { Card, Puesto } from "@/generated/prisma/client";
+import type { Card, Program, Puesto } from "@/generated/prisma/client";
 import { updateCardAction, deleteCardAction } from "@/app/admin/actions";
 import { MEDALS, RANKS, CHANNELS } from "@/lib/data";
 import type { EscalaItem } from "@/lib/escalas";
@@ -44,12 +44,14 @@ const SECTION: CSSProperties = {
 
 export default function EditorForm({
   card,
+  programs,
   puestos,
   medalScale,
   rankScale,
   saved,
 }: {
   card: Card;
+  programs: Program[];
   puestos: Puesto[];
   medalScale: EscalaItem[];
   rankScale: EscalaItem[];
@@ -217,6 +219,33 @@ export default function EditorForm({
             </div>
           </label>
         </section>
+
+        {isProject && programs.length > 0 && (
+          <section style={SECTION}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              <h3 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#F5F2EB" }}>
+                Programa
+              </h3>
+              <p style={{ margin: 0, font: "400 12px/1.6 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
+                De qué Programa depende esta tarjeta: sus puestos, escalas y textos personalizados.
+              </p>
+            </div>
+            <div style={{ background: "#0D0D0D", borderRadius: 10, padding: 9 }}>
+              <select
+                name="programId"
+                defaultValue={card.programId || ""}
+                style={{ width: "100%", background: "none", border: "none", outline: "none", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif" }}
+              >
+                <option value="">— Sin Programa —</option>
+                {programs.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </section>
+        )}
 
         <section style={SECTION}>
           <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>

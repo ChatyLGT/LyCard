@@ -128,14 +128,29 @@ export async function updateCardAction(slug: string, formData: FormData) {
   // gets deleted, the card keeps showing its last-known values instead of
   // going blank. Leaving the select on "mantener texto actual" (empty
   // value) skips this entirely, same as a Card with no Program.
+  let puestoId: string | null | undefined;
   const puestoIdRaw = formData.get("puestoId");
   if (typeof puestoIdRaw === "string" && puestoIdRaw) {
     const puesto = await prisma.puesto.findUnique({ where: { id: puestoIdRaw } });
     if (puesto) {
-      data.puestoId = puesto.id;
+      puestoId = puesto.id;
       data.siglas = puesto.siglas;
       data.tooltip = puesto.denominacion;
     }
+  }
+
+  // Program assignment (MasterN0-only field — EditorForm hides it for
+  // scoped N0s). Without this, a Card never picks up its Program's card
+  // labels/puestos/escalas no matter what the N0 configures, since every
+  // lookup in LyCardView falls back to the fixed defaults when card.program
+  // is null. Switching Program invalidates any Puesto picked above, since
+  // it belonged to the previous Program's ladder.
+  let programId: string | null | undefined;
+  const programIdRaw = formData.get("programId");
+  if (typeof programIdRaw === "string") {
+    const current = await prisma.card.findUnique({ where: { slug }, select: { programId: true } });
+    programId = programIdRaw || null;
+    if (current && current.programId !== programId) puestoId = null;
   }
 
   await prisma.card.update({
@@ -144,6 +159,8 @@ export async function updateCardAction(slug: string, formData: FormData) {
       ...data,
       ...(portraitUrl ? { portraitUrl } : {}),
       ...(videoThumbnailUrl ? { videoThumbnailUrl } : {}),
+      ...(puestoId !== undefined ? { puestoId } : {}),
+      ...(programId !== undefined ? { programId } : {}),
     },
   });
 
