@@ -38,6 +38,13 @@ model Card {
   siglas  String @default("O.D.")
   tooltip String @default("Order of Distinction")
 
+  // "Mi camino con..." modal on project cards (PLAN.md Fase 9.3) — each
+  // host writes their own, editable from /m/dashboard/project. Empty
+  // means "not written yet" and falls back to the fixed i18n copy
+  // (storyHead/storyBody) so every existing project card keeps working.
+  storyQuote String @default("")
+  storyBody  String @default("")
+
   // Badges & Honors
   medal String @default("oro")
   rank  String @default("aprendiz")

@@ -93,22 +93,20 @@ export default async function MemberDashboardPage() {
                   </span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "none" }}>
-                  {kind !== "project" && (
-                    <Link
-                      href={`/m/dashboard/${kind}`}
-                      style={{
-                        padding: "7px 13px",
-                        borderRadius: 999,
-                        background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)",
-                        color: "#0D0D0D",
-                        font: "700 10px 'Plus Jakarta Sans',sans-serif",
-                        letterSpacing: ".1em",
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      Editar
-                    </Link>
-                  )}
+                  <Link
+                    href={`/m/dashboard/${kind}`}
+                    style={{
+                      padding: "7px 13px",
+                      borderRadius: 999,
+                      background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)",
+                      color: "#0D0D0D",
+                      font: "700 10px 'Plus Jakarta Sans',sans-serif",
+                      letterSpacing: ".1em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Editar
+                  </Link>
                   <Link
                     href={`/c/${card.slug}`}
                     target="_blank"

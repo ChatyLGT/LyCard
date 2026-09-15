@@ -806,10 +806,34 @@ siguiente (misma disciplina que Fases 0-7):
   mostrando los inputs libres de siempre, sin `<select>`. `tsc`/
   `eslint`/`next build` limpios. Datos de prueba revertidos en local al
   terminar.
-- **Fase 9.3 — Historia personal por tarjeta.** Nuevos campos en
-  `Card` para la cita y el cuerpo del modal "Mi camino con...",
-  editables por cada usuario en su propia "Personalizar LyCard" —
-  reemplaza `storyHead`/`storyBody` fijos.
+- **Fase 9.3 — Historia personal por tarjeta — hecha, probada
+  localmente, en producción.**
+  Nuevos campos `Card.storyQuote`/`Card.storyBody` (default `""`) —
+  vacío cae al copy fijo de Legacy de siempre (`storyHead`/`storyBody`
+  en `lib/i18n.ts`), sin romper ninguna tarjeta existente.
+  Descubrimiento al construir esto: las tarjetas de Proyecto **no
+  tenían ningún editor propio del host** — `/m/dashboard` excluía a
+  propósito el botón "Editar" para `kind === "project"`, y el único
+  camino de edición era `/admin/[slug]` (MasterN0-only, gateado por la
+  cookie de Admin, inalcanzable para un Member). Por eso se creó
+  `components/MemberStoryEditor.tsx` + `/m/dashboard/project` —
+  deliberadamente angosto: **solo** cita y cuerpo de "Mi camino con
+  Legacy", no nombre/foto/siglas/canales (esos siguen siendo del N0 o
+  del Programa, ver Fase 9.1/9.2 y Fase 7.1 — no se le devolvió al host
+  edición de nada que ya centralizamos). Nueva `updateMemberStoryAction`
+  en `app/m/dashboard/actions.ts`, con el mismo chequeo de propiedad
+  (`card.memberId === memberId`) que el resto de esta sección, más
+  `card.kind !== "project"` como guarda extra. `app/m/dashboard/page.tsx`
+  ya muestra "Editar" para las 3 kinds de tarjeta, no solo 2.
+  `LyCardView.tsx`: el modal de historia usa `card.storyQuote ||
+  t(lang,"storyHead")` y `card.storyBody || t(lang,"storyBody")`.
+  Probado en local con Playwright, punta a punta con el flujo real de
+  login (WhatsApp OTP simulado, no until un atajo): logueado como el
+  Member dueño de `gunnar`, entré a `/m/dashboard/project`, guardé una
+  cita y una historia distintivas, y confirmé en `/c/gunnar` que el
+  modal "Mi camino con Legacy" ya las muestra en vez del texto fijo de
+  Legacy. `tsc`/`eslint`/`next build` limpios. Datos de prueba
+  revertidos en local al terminar.
 - **Fase 9.4 — Medallón configurable por N0** (escala bronce→diamante
   hoy fija en `lib/data.ts` → cantidad/nombres que define el N0).
 - **Fase 9.5 — Sabiduría/jerarquía configurable por N0** (niveles

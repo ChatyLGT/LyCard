@@ -526,8 +526,11 @@ export default function LyCardView({
     story: {
       icon: "auto_stories",
       kicker: L("storyKicker"),
-      head: t(lang, "storyHead"),
-      body: t(lang, "storyBody"),
+      // Each host's own words (PLAN.md Fase 9.3, editable at
+      // /m/dashboard/project) — falls back to the fixed Legacy copy until
+      // they write their own.
+      head: card.storyQuote || t(lang, "storyHead"),
+      body: card.storyBody || t(lang, "storyBody"),
       meta: t(lang, "storyMeta"),
     },
     info: isCompany

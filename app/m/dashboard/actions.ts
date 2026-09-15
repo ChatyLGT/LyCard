@@ -83,3 +83,25 @@ export async function updateMemberCardAction(slug: string, formData: FormData) {
   revalidatePath(`/c/${slug}`);
   redirect(`/m/dashboard/${card.kind}?saved=1`);
 }
+
+// Only the "Mi camino con..." modal content on a project card — deliberately
+// narrower than updateMemberCardAction above. A project card's identity
+// (siglas/denominación, badges, social channels) is Program-owned (PLAN.md
+// Fase 9.1/9.2, Fase 7.1); this is the one piece of it that's the host's
+// own voice, per Gunnar's request (2026-09-15).
+export async function updateMemberStoryAction(slug: string, formData: FormData) {
+  const memberId = await currentMemberId();
+  if (!memberId) redirect("/m/login");
+
+  const card = await prisma.card.findUnique({ where: { slug } });
+  if (!card || card.memberId !== memberId || card.kind !== "project") redirect("/m/dashboard");
+
+  const storyQuote = String(formData.get("storyQuote") || "").trim();
+  const storyBody = String(formData.get("storyBody") || "").trim();
+
+  await prisma.card.update({ where: { slug }, data: { storyQuote, storyBody } });
+
+  revalidatePath("/m/dashboard/project");
+  revalidatePath(`/c/${slug}`);
+  redirect("/m/dashboard/project?saved=1");
+}
