@@ -319,6 +319,19 @@ function socialHref(channel: string, value: string) {
   return null;
 }
 
+// Title-only override for the fixed set of button/modal labels a Program's
+// N0 can customize (lib/cardLabels.ts) — atajo version of PLAN.md Fase 9.
+// Only ever non-null for project cards (see app/c/[slug]/page.tsx), so
+// company/personal cards fall through to the i18n default unchanged.
+function cardLabel(program: Program | null, lang: Lang, key: string): string {
+  const overrides = program?.cardLabels;
+  if (overrides && typeof overrides === "object" && !Array.isArray(overrides)) {
+    const v = (overrides as Record<string, unknown>)[key];
+    if (typeof v === "string" && v.trim()) return v;
+  }
+  return t(lang, key);
+}
+
 export default function LyCardView({
   card,
   qrSvg,
@@ -349,6 +362,7 @@ export default function LyCardView({
     (card.defaultTheme as "dark" | "light") || "dark"
   );
   const [lang, setLang] = useState<Lang>((card.defaultLang as Lang) || "es");
+  const L = (key: string) => cardLabel(program, lang, key);
   const [modal, setModal] = useState<ModalKey>(null);
   const [portal, setPortal] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -492,26 +506,26 @@ export default function LyCardView({
     },
     ancient: {
       icon: "auto_awesome",
-      kicker: t(lang, "ancKicker"),
+      kicker: L("ancKicker"),
       head: t(lang, "ancHead"),
       body: t(lang, "ancBody"),
       meta: t(lang, "ancMeta"),
     },
     story: {
       icon: "auto_stories",
-      kicker: t(lang, "storyKicker"),
+      kicker: L("storyKicker"),
       head: t(lang, "storyHead"),
       body: t(lang, "storyBody"),
       meta: t(lang, "storyMeta"),
     },
     info: isCompany
       ? { icon: "storefront", kicker: t(lang, "companyInfoKicker"), head: card.title || card.name, body: card.quote, meta: t(lang, "companyInfoMeta") }
-      : { icon: "diamond", kicker: t(lang, "infoKicker") },
-    invite: { icon: "mail", kicker: t(lang, "inviteKicker") },
+      : { icon: "diamond", kicker: L("infoKicker") },
+    invite: { icon: "mail", kicker: L("inviteKicker") },
     contactMessage: { icon: "chat", kicker: t(lang, "contactKicker") },
     office: {
       icon: isProject ? "auto_awesome" : isCompany ? "storefront" : "badge",
-      kicker: t(lang, isProject ? "officeKickerProject" : isCompany ? "officeKickerCompany" : "officeKickerPersonal"),
+      kicker: L(isProject ? "officeKickerProject" : isCompany ? "officeKickerCompany" : "officeKickerPersonal"),
     },
   };
   const activeModal = modal ? modalMap[modal] : null;
@@ -598,7 +612,7 @@ export default function LyCardView({
               )}
 
               <div style={{ position: "absolute", top: 14, left: 14, zIndex: 30, display: "flex", alignItems: "center", gap: 8 }}>
-                <Link href={`/admin/${card.slug}`} aria-label={t(lang, "customize")} style={ICON_BTN}>
+                <Link href={`/admin/${card.slug}`} aria-label={L("customize")} style={ICON_BTN}>
                   <Icon name="tune" size={17} />
                 </Link>
                 {isAdmin && (
@@ -806,7 +820,7 @@ export default function LyCardView({
                 }}
               >
                 <span style={{ color: "#C8A15A" }}>✦</span>
-                <span>{t(lang, "storyBtn")}</span>
+                <span>{L("storyBtn")}</span>
                 <Icon name="north_east" size={15} style={{ opacity: 0.8 }} />
               </button>
             )}
@@ -824,10 +838,10 @@ export default function LyCardView({
                 type="button"
                 onClick={() => setModal("info")}
                 style={CUBE_MEDIUM}
-                aria-label={t(lang, isCompany ? "companyInfoBtn" : "infoBtn")}
+                aria-label={L(isCompany ? "companyInfoBtn" : "infoBtn")}
               >
                 <Icon name={isCompany ? "storefront" : "diamond"} size={22} />
-                <span style={CUBE_LABEL}>{t(lang, isCompany ? "companyInfoBtn" : "infoBtn")}</span>
+                <span style={CUBE_LABEL}>{L(isCompany ? "companyInfoBtn" : "infoBtn")}</span>
               </button>
             )}
 
@@ -862,7 +876,7 @@ export default function LyCardView({
             ) : isProject ? (
               <Link
                 href="/m/login"
-                aria-label={t(lang, "createCardBtn")}
+                aria-label={L("createCardBtn")}
                 style={{
                   position: "relative",
                   flex: "none",
@@ -892,7 +906,7 @@ export default function LyCardView({
                     lineHeight: 1.25,
                   }}
                 >
-                  {t(lang, "createCardBtn")}
+                  {L("createCardBtn")}
                 </span>
               </Link>
             ) : (
@@ -927,9 +941,9 @@ export default function LyCardView({
                 <span style={CUBE_LABEL}>{t(lang, "sendMessageBtn")}</span>
               </button>
             ) : (
-              <button type="button" onClick={() => setModal("invite")} style={CUBE_MEDIUM_ALT} aria-label={t(lang, "inviteBtn")}>
+              <button type="button" onClick={() => setModal("invite")} style={CUBE_MEDIUM_ALT} aria-label={L("inviteBtn")}>
                 <Icon name="mail" size={22} />
-                <span style={CUBE_LABEL}>{t(lang, "inviteBtn")}</span>
+                <span style={CUBE_LABEL}>{L("inviteBtn")}</span>
               </button>
             )}
           </div>
@@ -959,7 +973,7 @@ export default function LyCardView({
                 }}
               >
                 <Icon name="event" />
-                <span>{t(lang, isCompany ? (isHost ? "meetingBtnHost" : "meetingBtn") : isHost ? "scheduleBtnHost" : "scheduleBtn")}</span>
+                <span>{L(isCompany ? (isHost ? "meetingBtnHost" : "meetingBtn") : isHost ? "scheduleBtnHost" : "scheduleBtn")}</span>
               </button>
             </div>
           )}
@@ -1039,7 +1053,7 @@ export default function LyCardView({
                       <span style={{ font: "600 10px 'Plus Jakarta Sans',sans-serif", color: "#E5C378" }}>4K ULTRA HD</span>
                     </div>
                   </div>
-                  <h3 style={{ margin: 0, font: "600 17px 'Playfair Display',serif", color: "#E5C378" }}>{t(lang, "infoTitle")}</h3>
+                  <h3 style={{ margin: 0, font: "600 17px 'Playfair Display',serif", color: "#E5C378" }}>{L("infoTitle")}</h3>
                   <p style={{ margin: 0, font: "400 12.5px/1.75 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{t(lang, "infoP1")}</p>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 8 }}>
                     {[
@@ -1336,7 +1350,7 @@ export default function LyCardView({
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <Icon name="event" style={{ color: "#C8A15A" }} />
                   <span style={{ font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".2em", textTransform: "uppercase", color: "#E5C378" }}>
-                    {t(lang, "scheduleKicker")}
+                    {L("scheduleKicker")}
                   </span>
                 </div>
                 <button
@@ -1349,7 +1363,7 @@ export default function LyCardView({
                 </button>
               </div>
 
-              <h3 style={{ margin: 0, font: "600 17px 'Playfair Display',serif", color: "#E5C378" }}>{t(lang, isCompany ? "meetingTitle" : "scheduleTitle")}</h3>
+              <h3 style={{ margin: 0, font: "600 17px 'Playfair Display',serif", color: "#E5C378" }}>{L(isCompany ? "meetingTitle" : "scheduleTitle")}</h3>
 
               {scheduleResult ? (
                 <div style={{ padding: 18, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(200,161,90,.3)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>

@@ -104,6 +104,12 @@ model Program {
   // Off hides it from new joins/recruiting without touching existing cards
   // or members — a soft pause, not a delete (Gunnar's QA pass, Fase 7.1).
   active            Boolean  @default(true)
+  // Overrides for button/modal title text on project cards under this
+  // Program — Map<labelKey,string>, see lib/cardLabels.ts for the fixed
+  // list of overridable keys. Missing/empty key falls back to the i18n
+  // default (lib/i18n.ts). Shortcut version of the full per-Program
+  // identity system in PLAN.md Fase 9 — titles only, not full content.
+  cardLabels        Json     @default("{}")
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

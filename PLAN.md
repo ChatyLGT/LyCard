@@ -667,6 +667,42 @@ Dato suelto que quedó resuelto en la misma conversación: el WhatsApp
 otp→email, sin bypass). Solo es opcional si la persona entra por
 `/m/login` y usa "Continuar con Google" en vez del flujo de WhatsApp.
 
+### Atajo shippeado: títulos de botones y modales editables por N0
+
+Punto 5 y 6 de la lista de arriba (modales, acciones/botones), en su
+versión mínima — **solo el título/label**, no el contenido completo ni
+la acción en sí. Gunnar pidió explícitamente este recorte ("tomá un
+atajo") en vez de esperar a la Fase 9 completa.
+
+- Nuevo campo `Program.cardLabels` (Json, default `{}`) — mapa plano
+  `clave → texto`. Las claves son exactamente las mismas que ya usaba
+  `lib/i18n.ts` (`storyBtn`, `infoBtn`, `scheduleBtn`,
+  `scheduleBtnHost`, `createCardBtn`, `inviteBtn`, `customize`,
+  `ancKicker`, `storyKicker`, `infoKicker`, `infoTitle`,
+  `inviteKicker`, `scheduleKicker`, `scheduleTitle`,
+  `officeKickerProject` — lista fija en `lib/cardLabels.ts`).
+- Nueva sección "Textos de Botones y Modales" en
+  `/admin/programs/[id]`, agrupada en Botones/Modales — un input de
+  texto por clave, con el texto original como placeholder. Campo
+  vacío = usa el default (no se persiste esa clave).
+- `LyCardView.tsx`: nuevo helper `cardLabel(program, lang, key)` —
+  devuelve el override si existe y no está vacío, si no cae al
+  `t(lang, key)` de siempre. Se usa en los 15 puntos exactos donde
+  antes había `t(lang, "...")` para estas claves — nada más se tocó.
+- **Limitación honesta, igual que las redes sociales en la Fase 7.1**:
+  solo aplica a tarjetas de Proyecto, porque son las únicas que hoy
+  traen `card.programId` poblado (las de Empresa/Personal se crean sin
+  Program asociado — dato confirmado en el código, no supuesto). El
+  override tampoco distingue idioma (ES/EN): el texto que pone el N0
+  se muestra igual en ambos, no hay traducción — si mañana hace falta,
+  se resuelve con dos inputs por clave en vez de uno.
+- Probado en local con Playwright: guardé 3 overrides desde el panel
+  del N0 (botón "Mi camino con...", botón Info, encabezado del modal
+  Ancient) y confirmé con captura que la tarjeta pública real
+  (`/c/gunnar`, Programa Legacy) los muestra tal cual — y que una
+  tarjeta de Empresa sin Program siguió mostrando el texto original sin
+  cambios (regresión). `tsc`/`eslint`/`next build` limpios.
+
 ---
 
 **Qué sigue — Fase 8**: WhatsApp Business API real. Esta fase no depende

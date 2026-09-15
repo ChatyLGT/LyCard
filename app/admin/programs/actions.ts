@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { currentAdminScope } from "@/lib/auth";
 import { slugify, uniqueSlug } from "@/lib/slug";
+import { CARD_LABEL_FIELDS } from "@/lib/cardLabels";
 
 // Only MasterN0 (programId === null) can create Programs or their scoped N0
 // admins — PLAN.md Fase 6 is explicit that this is the one thing a Program
@@ -104,4 +105,25 @@ export async function updateProgramAction(programId: string, formData: FormData)
 
   revalidatePath(`/admin/programs/${programId}`);
   redirect(`/admin/programs/${programId}?saved=1`);
+}
+
+// Title-only override of the fixed set of button/modal labels a project
+// card renders (lib/cardLabels.ts) — atajo version of the full per-Program
+// identity system in PLAN.md Fase 9. Blank field = revert to the i18n
+// default, so we only persist keys the N0 actually typed something into.
+export async function updateCardLabelsAction(programId: string, formData: FormData) {
+  const scope = await currentAdminScope();
+  if (!scope) redirect("/admin/login");
+  if (scope.programId && scope.programId !== programId) redirect("/admin");
+
+  const labels: Record<string, string> = {};
+  for (const { key } of CARD_LABEL_FIELDS) {
+    const v = String(formData.get(key) || "").trim();
+    if (v) labels[key] = v;
+  }
+
+  await prisma.program.update({ where: { id: programId }, data: { cardLabels: labels } });
+
+  revalidatePath(`/admin/programs/${programId}`);
+  redirect(`/admin/programs/${programId}?labelsSaved=1`);
 }

@@ -4,8 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { currentAdminScope } from "@/lib/auth";
 import { logoutAction } from "@/app/admin/actions";
 import { completeInterviewAction } from "@/app/admin/interviews/actions";
-import { updateProgramAction, createProgramAdminAction } from "../actions";
+import { updateProgramAction, createProgramAdminAction, updateCardLabelsAction } from "../actions";
 import { updateMemberAction, deleteMemberAction, messageMemberAction } from "../members-actions";
+import { CARD_LABEL_FIELDS, defaultCardLabel } from "@/lib/cardLabels";
 
 export const dynamic = "force-dynamic";
 
@@ -29,10 +30,11 @@ export default async function AdminProgramDetailPage({
     memberDeleted?: string;
     memberMessaged?: string;
     memberError?: string;
+    labelsSaved?: string;
   }>;
 }) {
   const { id } = await params;
-  const { saved, adminCreated, activated, adminError, memberSaved, memberDeleted, memberMessaged, memberError } =
+  const { saved, adminCreated, activated, adminError, memberSaved, memberDeleted, memberMessaged, memberError, labelsSaved } =
     await searchParams;
   const ADMIN_ERROR_COPY: Record<string, string> = {
     email: "Ingresá un email válido.",
@@ -62,6 +64,11 @@ export default async function AdminProgramDetailPage({
     },
   });
   if (!program) notFound();
+
+  const cardLabels: Record<string, string> =
+    program.cardLabels && typeof program.cardLabels === "object" && !Array.isArray(program.cardLabels)
+      ? (program.cardLabels as Record<string, string>)
+      : {};
 
   const registrations = await prisma.registration.findMany({
     where: { card: { programId: id } },
@@ -138,6 +145,45 @@ export default async function AdminProgramDetailPage({
               style={{ marginTop: 4, padding: 13, border: "none", borderRadius: 10, background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)", color: "#0D0D0D", font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", cursor: "pointer" }}
             >
               Guardar
+            </button>
+          </form>
+        </section>
+
+        {/* Card labels — title-only override for buttons/modals on project
+            cards under this Program (PLAN.md Fase 9, atajo). Blank = default. */}
+        <section style={{ background: "#201f1f", borderRadius: 14, padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
+          <h2 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#F5F2EB" }}>
+            Textos de Botones y Modales
+          </h2>
+          <p style={{ margin: 0, font: "400 11.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
+            Aplica a las tarjetas de Proyecto de este Programa. Dejá un campo
+            vacío para usar el texto original.
+          </p>
+          {labelsSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Textos guardados.</p>}
+          <form action={updateCardLabelsAction.bind(null, program.id)} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {(["Botones", "Modales"] as const).map((group) => (
+              <div key={group} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <span style={{ font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".14em", textTransform: "uppercase", color: "#C8A15A" }}>
+                  {group}
+                </span>
+                {CARD_LABEL_FIELDS.filter((f) => f.group === group).map((f) => (
+                  <label key={f.key} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{f.label}</span>
+                    <input
+                      name={f.key}
+                      defaultValue={cardLabels[f.key] || ""}
+                      placeholder={defaultCardLabel(f.key)}
+                      style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
+                    />
+                  </label>
+                ))}
+              </div>
+            ))}
+            <button
+              type="submit"
+              style={{ marginTop: 4, padding: 13, border: "none", borderRadius: 10, background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)", color: "#0D0D0D", font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", cursor: "pointer" }}
+            >
+              Guardar Textos
             </button>
           </form>
         </section>
