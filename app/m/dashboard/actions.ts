@@ -45,11 +45,37 @@ export async function updateMemberCardAction(slug: string, formData: FormData) {
     portraitUrl = await saveUpload(portrait, `${slug}-portrait`);
   }
 
+  // Virtual Office content (PLAN.md Fase 7) — a portfolio (company) or
+  // résumé/gallery (personal), sent as a JSON string. Sanitized here rather
+  // than trusted as-is, same as every other field in this action.
+  const officeItemsRaw = formData.get("officeItems");
+  let officeItems: object[] | undefined;
+  if (typeof officeItemsRaw === "string") {
+    try {
+      const parsed = JSON.parse(officeItemsRaw);
+      if (Array.isArray(parsed)) {
+        officeItems = parsed
+          .filter((v): v is Record<string, unknown> => typeof v === "object" && v !== null)
+          .map((v) => ({
+            id: typeof v.id === "string" ? v.id : Math.random().toString(36).slice(2),
+            title: typeof v.title === "string" ? v.title.trim() : "",
+            subtitle: typeof v.subtitle === "string" ? v.subtitle.trim() : "",
+            description: typeof v.description === "string" ? v.description.trim() : "",
+            imageUrl: typeof v.imageUrl === "string" ? v.imageUrl.trim() : "",
+          }))
+          .filter((item) => item.title.length > 0);
+      }
+    } catch {
+      // malformed JSON from the client — ignore rather than fail the whole save
+    }
+  }
+
   await prisma.card.update({
     where: { slug },
     data: {
       ...data,
       ...(portraitUrl ? { portraitUrl } : {}),
+      ...(officeItems ? { officeItems } : {}),
     },
   });
 

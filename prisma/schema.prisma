@@ -72,6 +72,13 @@ model Card {
   member    Member?  @relation(fields: [memberId], references: [id])
   programId String?
   program   Program? @relation(fields: [programId], references: [id])
+
+  // Virtual Office content (PLAN.md Fase 7) — company reads this as a
+  // portfolio/catalog, personal as a résumé/gallery; each entry is
+  // {id,title,subtitle?,description?,imageUrl?}. Project cards ignore this
+  // and show their OriginMemento instead (their own recruitment story, not
+  // editable content), so this stays empty for them.
+  officeItems Json @default("[]")
 }
 
 // A brand/project running on the platform (Legacy today; Mlqr, Digital

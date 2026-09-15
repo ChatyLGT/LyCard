@@ -498,5 +498,62 @@ descartables.
   errores nuevos de runtime) — misma disciplina que las Fases 4 y 5, no
   generé Programas ni admins de prueba en tu base real.
 
-**Qué sigue:** Fase 7 — Oficina Virtual real por tipo de tarjeta (hoy es
-"Próximamente" para las tres). Doy la señal antes de arrancar.
+---
+
+## Fase 7 — hecha, probada localmente, en producción
+
+- El botón "Virtual Office" (el emblema dorado central) ya no es un
+  "Próximamente" falso — abre contenido real, distinto por tipo de
+  tarjeta. La animación de "llave girando" se mantiene (más corta, 900ms)
+  pero ahora desemboca en un modal real, no en un toast vacío.
+- **Proyecto**: muestra tu `OriginMemento` — la foto/nombre/título de
+  quien te reclutó, el Programa y la fecha en que entraste. Si la tarjeta
+  no tiene referente (sos la raíz del árbol, como tu propia `mastern0`
+  hoy en producción — no tiene `memberId` vinculado todavía), muestra un
+  mensaje de "Fundador de la Red" en vez de romper o mostrar algo vacío.
+- **Empresa**: portfolio/catálogo — lista de trabajos (título, subtítulo,
+  descripción, imagen opcional por URL), editable desde
+  `/m/dashboard/company`. Sin ítems cargados, muestra un estado vacío
+  prolijo en vez de una lista en blanco.
+- **Personal**: mismo mecanismo, enmarcado como currículum/galería
+  (experiencia/logro en vez de trabajo/servicio) — mismo campo de datos
+  (`Card.officeItems`, un solo modelo para ambos, evita duplicar
+  infraestructura), editable desde `/m/dashboard/personal`.
+- Nuevo campo `Card.officeItems` (Json, default `[]`) — aditivo, cada
+  ítem es `{id,title,subtitle?,description?,imageUrl?}`. El editor
+  (`MemberCardEditor.tsx`) permite agregar/editar/quitar ítems con estado
+  de React, serializados a un campo oculto al guardar; el server action
+  sanea el JSON recibido (nunca confía en lo que llega del cliente tal
+  cual, igual que el resto de esta acción).
+- Aproveché para eliminar `tSaved`/`tSoon` (i18n keys huérfanas desde
+  hace varias fases, confirmé cero referencias antes de borrarlas) y
+  `tOffice` (quedó huérfana con este cambio).
+- Probado de punta a punta con Playwright contra Postgres local:
+  - Tu tarjeta raíz (`gunnar`, sin referente) muestra el fallback de
+    Fundador — confirmado con captura.
+  - Una tarjeta de proyecto CON `OriginMemento` real (`fase4-testigo`,
+    reclutada por `gunnar` en pruebas de la Fase 4) muestra la foto,
+    nombre y título del referente, el Programa y la fecha — confirmado
+    con captura.
+  - Una tarjeta de Empresa sin ítems muestra el estado vacío; logueado
+    como su dueño, agregué un ítem de portfolio desde el editor, guardé,
+    y confirmé que aparece en la vista pública con título/subtítulo/
+    descripción — confirmado con captura.
+  - `tsc`/`eslint` limpios, `next build` completo sin errores, las 17
+    rutas compilan.
+- Verificado en prod solo lo no-destructivo (build, `/c/mastern0` sigue
+  rindiendo igual, sin errores nuevos de runtime) — no edité tu tarjeta
+  real para probar el flujo de escritura, esa prueba completa quedó en
+  local con datos descartables, misma disciplina que las fases previas.
+
+**Qué sigue — Fase 8**: WhatsApp Business API real. Esta fase no depende
+de mí escribiendo código — depende de que consigan cuenta de WhatsApp
+Business verificada por Meta, un proveedor (Twilio/360dialog/Meta Cloud
+API) y aprobación de templates de mensaje (Meta tarda días en aprobar,
+no es instantáneo). Cuando Sergio y el equipo tengan esas credenciales,
+el único punto de integración real es `requestOtpAction` en
+`app/m/actions.ts` — hoy genera el código y lo muestra en pantalla en vez
+de mandarlo por WhatsApp real; ese es el único lugar que hay que tocar
+para reemplazar el envío simulado por el real, sin tocar el resto del
+flujo de login. El resto de la plataforma (Fases 0-7) ya está completo y
+en producción.

@@ -3,13 +3,39 @@
 import { useState, useRef, useEffect, useTransition, type CSSProperties, type ReactElement } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { Card } from "@/generated/prisma/client";
+import type { Card, OriginMemento } from "@/generated/prisma/client";
 import { t, type Lang } from "@/lib/i18n";
 import { rankById } from "@/lib/data";
 import { INTERVIEW_SLOTS } from "@/lib/interviewSlots";
 import { registerInterviewAction, sendInvitationAction, sendContactMessageAction } from "@/app/c/actions";
 
-type ModalKey = "od" | "ancient" | "story" | "info" | "invite" | "contactMessage" | null;
+type ModalKey = "od" | "ancient" | "story" | "info" | "invite" | "contactMessage" | "office" | null;
+
+type OfficeItem = { id: string; title: string; subtitle?: string; description?: string; imageUrl?: string };
+
+function parseOfficeItems(value: unknown): OfficeItem[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((v): v is Record<string, unknown> => typeof v === "object" && v !== null)
+    .map((v) => ({
+      id: typeof v.id === "string" ? v.id : "",
+      title: typeof v.title === "string" ? v.title : "",
+      subtitle: typeof v.subtitle === "string" ? v.subtitle : undefined,
+      description: typeof v.description === "string" ? v.description : undefined,
+      imageUrl: typeof v.imageUrl === "string" ? v.imageUrl : undefined,
+    }))
+    .filter((item) => item.title.trim().length > 0);
+}
+
+type OriginSnapshot = {
+  recruitedAt?: string;
+  programName?: string;
+  referrerName?: string;
+  referrerCardSlug?: string | null;
+  referrerCardName?: string | null;
+  referrerCardTitle?: string | null;
+  referrerPortraitUrl?: string | null;
+};
 
 const THEME_VARS: Record<"dark" | "light", CSSProperties> = {
   dark: {
@@ -298,11 +324,13 @@ export default function LyCardView({
   qrSvg,
   isAdmin,
   isHost,
+  originMemento,
 }: {
   card: Card;
   qrSvg: string;
   isAdmin: boolean;
   isHost: boolean;
+  originMemento: OriginMemento | null;
 }) {
   const router = useRouter();
   const isProject = card.kind === "project";
@@ -336,9 +364,12 @@ export default function LyCardView({
     if (portalTimer.current) clearTimeout(portalTimer.current);
     portalTimer.current = setTimeout(() => {
       setPortal(false);
-      flash(t(lang, "tOffice"));
-    }, 1400);
+      setModal("office");
+    }, 900);
   }
+
+  const officeItems = parseOfficeItems(card.officeItems);
+  const origin = originMemento?.snapshot as OriginSnapshot | undefined;
 
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
@@ -469,6 +500,10 @@ export default function LyCardView({
       : { icon: "diamond", kicker: t(lang, "infoKicker") },
     invite: { icon: "mail", kicker: t(lang, "inviteKicker") },
     contactMessage: { icon: "chat", kicker: t(lang, "contactKicker") },
+    office: {
+      icon: isProject ? "auto_awesome" : isCompany ? "storefront" : "badge",
+      kicker: t(lang, isProject ? "officeKickerProject" : isCompany ? "officeKickerCompany" : "officeKickerPersonal"),
+    },
   };
   const activeModal = modal ? modalMap[modal] : null;
 
@@ -1168,6 +1203,73 @@ export default function LyCardView({
                         <span>{contacting ? "..." : t(lang, "contactSend")}</span>
                       </button>
                     </>
+                  )}
+                </>
+              ) : modal === "office" ? (
+                <>
+                  {isProject ? (
+                    origin ? (
+                      <>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 14, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(200,161,90,.3)" }}>
+                          <div style={{ width: 52, height: 52, flex: "none", borderRadius: 999, overflow: "hidden", background: "#0D0D0D" }}>
+                            {origin.referrerPortraitUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={origin.referrerPortraitUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            ) : null}
+                          </div>
+                          <div style={{ minWidth: 0 }}>
+                            <span style={{ display: "block", font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".14em", textTransform: "uppercase", color: "#C8A15A" }}>
+                              {t(lang, "officeReferredBy")}
+                            </span>
+                            <span style={{ display: "block", font: "700 15px 'Playfair Display',serif", color: "#F5F2EB" }}>{origin.referrerName}</span>
+                            {origin.referrerCardTitle && (
+                              <span style={{ display: "block", font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{origin.referrerCardTitle}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,.1)" }}>
+                          <span style={{ font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#C8A15A" }}>
+                            {t(lang, "officeProgramLabel")}: {origin.programName}
+                          </span>
+                          {origin.recruitedAt && (
+                            <span style={{ font: "italic 400 12.5px 'Playfair Display',serif", color: "#F5F2EB" }}>
+                              {t(lang, "officeJoinedOn", { date: new Date(origin.recruitedAt).toLocaleDateString(lang === "en" ? "en-US" : "es-MX") })}
+                            </span>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ padding: 14, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(200,161,90,.3)", textAlign: "center", display: "flex", flexDirection: "column", gap: 8 }}>
+                        <span style={{ font: "700 17px 'Playfair Display',serif", color: "#E5C378" }}>{t(lang, "officeFounderHead")}</span>
+                        <p style={{ margin: 0, font: "400 13px/1.6 'Plus Jakarta Sans',sans-serif", color: "rgba(245,242,235,.92)" }}>
+                          {t(lang, "officeFounderBody", { name: card.name })}
+                        </p>
+                      </div>
+                    )
+                  ) : officeItems.length === 0 ? (
+                    <p style={{ margin: 0, font: "400 13px/1.7 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5", textAlign: "center", padding: "18px 4px" }}>
+                      {t(lang, isCompany ? "officeEmptyCompany" : "officeEmptyPersonal", { name: card.name })}
+                    </p>
+                  ) : (
+                    officeItems.map((item) => (
+                      <div key={item.id || item.title} style={{ display: "flex", gap: 12, padding: 14, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(200,161,90,.3)" }}>
+                        {item.imageUrl && (
+                          <div style={{ width: 56, height: 56, flex: "none", borderRadius: 10, overflow: "hidden", background: "#0D0D0D" }}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={item.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          </div>
+                        )}
+                        <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+                          <span style={{ font: "700 13.5px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>{item.title}</span>
+                          {item.subtitle && (
+                            <span style={{ font: "600 10.5px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#C8A15A" }}>{item.subtitle}</span>
+                          )}
+                          {item.description && (
+                            <span style={{ font: "400 12px/1.5 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{item.description}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))
                   )}
                 </>
               ) : (

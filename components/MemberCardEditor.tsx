@@ -43,7 +43,17 @@ const SECTION: CSSProperties = {
 
 const COPY: Record<
   "company" | "personal",
-  { kicker: string; title: string; sub: string; nameLabel: string; titleLabel: string; quoteLabel: string }
+  {
+    kicker: string;
+    title: string;
+    sub: string;
+    nameLabel: string;
+    titleLabel: string;
+    quoteLabel: string;
+    officeTitle: string;
+    officeSub: string;
+    officeAdd: string;
+  }
 > = {
   company: {
     kicker: "Mi tarjeta de Empresa",
@@ -52,6 +62,9 @@ const COPY: Record<
     nameLabel: "Nombre del Negocio",
     titleLabel: "Tu Rol / Cargo",
     quoteLabel: "Tagline",
+    officeTitle: "Oficina Virtual — Portfolio",
+    officeSub: "Lo que ve un visitante al entrar a tu Oficina Virtual. Un ítem por trabajo o servicio.",
+    officeAdd: "Agregar trabajo",
   },
   personal: {
     kicker: "Mi tarjeta Personal",
@@ -60,8 +73,26 @@ const COPY: Record<
     nameLabel: "Nombre",
     titleLabel: "Descripción breve",
     quoteLabel: "Cita personal",
+    officeTitle: "Oficina Virtual — Currículum",
+    officeSub: "Lo que ve un visitante al entrar a tu Oficina Virtual. Un ítem por experiencia o logro.",
+    officeAdd: "Agregar experiencia",
   },
 };
+
+type OfficeItem = { id: string; title: string; subtitle: string; description: string; imageUrl: string };
+
+function parseOfficeItems(value: unknown): OfficeItem[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((v): v is Record<string, unknown> => typeof v === "object" && v !== null)
+    .map((v) => ({
+      id: typeof v.id === "string" && v.id ? v.id : Math.random().toString(36).slice(2),
+      title: typeof v.title === "string" ? v.title : "",
+      subtitle: typeof v.subtitle === "string" ? v.subtitle : "",
+      description: typeof v.description === "string" ? v.description : "",
+      imageUrl: typeof v.imageUrl === "string" ? v.imageUrl : "",
+    }));
+}
 
 export default function MemberCardEditor({
   card,
@@ -75,9 +106,20 @@ export default function MemberCardEditor({
   const [medal, setMedal] = useState(card.medal);
   const [rank, setRank] = useState(card.rank);
   const [portraitPreview, setPortraitPreview] = useState<string | null>(card.portraitUrl);
+  const [officeItems, setOfficeItems] = useState<OfficeItem[]>(() => parseOfficeItems(card.officeItems));
   const copy = COPY[kind];
 
   const boundAction = updateMemberCardAction.bind(null, card.slug);
+
+  function addOfficeItem() {
+    setOfficeItems((items) => [...items, { id: Math.random().toString(36).slice(2), title: "", subtitle: "", description: "", imageUrl: "" }]);
+  }
+  function updateOfficeItem(id: string, patch: Partial<OfficeItem>) {
+    setOfficeItems((items) => items.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+  }
+  function removeOfficeItem(id: string) {
+    setOfficeItems((items) => items.filter((it) => it.id !== id));
+  }
 
   return (
     <div style={{ minHeight: "100vh", background: "#131313", color: "#e5e2e1", fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
@@ -132,6 +174,7 @@ export default function MemberCardEditor({
       <form action={boundAction} style={{ padding: "18px 16px 40px", display: "flex", flexDirection: "column", gap: 20, maxWidth: 520, margin: "0 auto" }}>
         <input type="hidden" name="medal" value={medal} />
         <input type="hidden" name="rank" value={rank} />
+        <input type="hidden" name="officeItems" value={JSON.stringify(officeItems.filter((it) => it.title.trim()))} />
 
         <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
           <h2 style={{ margin: 0, font: "500 22px 'Playfair Display',serif", color: "#F5F2EB" }}>{copy.title}</h2>
@@ -311,6 +354,65 @@ export default function MemberCardEditor({
               );
             })}
           </div>
+        </section>
+
+        <section style={SECTION}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            <h3 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#F5F2EB" }}>
+              {copy.officeTitle}
+            </h3>
+            <p style={{ margin: 0, font: "400 12px/1.6 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{copy.officeSub}</p>
+          </div>
+
+          {officeItems.map((item) => (
+            <div key={item.id} style={{ background: "#1c1b1b", borderRadius: 12, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  placeholder="Título"
+                  value={item.title}
+                  onChange={(e) => updateOfficeItem(item.id, { title: e.target.value })}
+                  style={{ flex: 1, minWidth: 0, background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "9px 11px", color: "#F5F2EB", font: "600 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeOfficeItem(item.id)}
+                  aria-label="Quitar"
+                  style={{ flex: "none", width: 34, height: 34, border: "none", borderRadius: 8, background: "rgba(229,146,138,.15)", color: "#e5928a", cursor: "pointer" }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 17, display: "block" }}>
+                    close
+                  </span>
+                </button>
+              </div>
+              <input
+                placeholder="Subtítulo (opcional)"
+                value={item.subtitle}
+                onChange={(e) => updateOfficeItem(item.id, { subtitle: e.target.value })}
+                style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "9px 11px", color: "#C2BEB5", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
+              />
+              <textarea
+                placeholder="Descripción (opcional)"
+                value={item.description}
+                onChange={(e) => updateOfficeItem(item.id, { description: e.target.value })}
+                rows={2}
+                style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "9px 11px", color: "#C2BEB5", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none", resize: "vertical" }}
+              />
+              <input
+                placeholder="Imagen — URL (opcional)"
+                value={item.imageUrl}
+                onChange={(e) => updateOfficeItem(item.id, { imageUrl: e.target.value })}
+                style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "9px 11px", color: "#C2BEB5", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
+              />
+            </div>
+          ))}
+
+          <button
+            type="button"
+            onClick={addOfficeItem}
+            style={{ padding: 11, border: "1px dashed rgba(200,161,90,.4)", borderRadius: 10, background: "none", color: "#C8A15A", font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", cursor: "pointer" }}
+          >
+            + {copy.officeAdd}
+          </button>
         </section>
 
         <section style={SECTION}>
