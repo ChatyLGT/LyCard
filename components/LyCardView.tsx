@@ -74,8 +74,8 @@ const BADGE_BTN: CSSProperties = {
 
 const SOCIAL_ICON: CSSProperties = {
   flex: "none",
-  width: "clamp(19px,5.2dvh,22px)",
-  height: "clamp(19px,5.2dvh,22px)",
+  width: "clamp(21px,5.8dvh,23px)",
+  height: "clamp(21px,5.8dvh,23px)",
   borderRadius: 999,
   color: "var(--goldtxt,#E5C378)",
   background: "var(--pill,rgba(20,20,20,.6))",
@@ -458,11 +458,11 @@ export default function LyCardView({
                 maxWidth: 358,
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "space-between",
-                padding: "0 6px",
+                justifyContent: "center",
+                gap: "clamp(14px,4.5dvh,26px)",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "clamp(7px,2.2dvh,14px)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "clamp(8px,2.4dvh,14px)" }}>
                 <SocialLink channel="fb" card={card} />
                 <SocialLink channel="ig" card={card} />
                 <SocialLink channel="tiktok" card={card} />
@@ -526,7 +526,7 @@ export default function LyCardView({
                   </svg>
                 </span>
               </button>
-              <div style={{ display: "flex", alignItems: "center", gap: "clamp(7px,2.2dvh,14px)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "clamp(8px,2.4dvh,14px)" }}>
                 <SocialLink channel="li" card={card} />
                 <SocialLink channel="yt" card={card} />
                 <SocialLink channel="web" card={card} />
