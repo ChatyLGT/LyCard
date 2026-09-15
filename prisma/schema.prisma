@@ -7,7 +7,17 @@ datasource db {
   provider = "postgresql"
 }
 
-// One row per LyCard. Multi-tenant roster: an admin (master password)
+// Single Master Admin account for now (Phase 1). Sees and edits the
+// whole Card roster. Per-owner roles are a later phase, not this one.
+model Admin {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// One row per LyCard. Multi-tenant roster: the Admin
 // creates/edits every card; each card is publicly viewable at /c/[slug].
 model Card {
   id        String   @id @default(cuid())

@@ -44,7 +44,7 @@ export default async function LoginPage({
               color: "#C8A15A",
             }}
           >
-            Acceso Fiduciario
+            Acceso Admin
           </span>
           <h1 style={{ margin: 0, font: "500 22px 'Playfair Display',serif", color: "#F5F2EB" }}>
             Panel de administración
@@ -53,7 +53,7 @@ export default async function LoginPage({
 
         {error && (
           <p style={{ margin: 0, color: "#e5928a", font: "500 12px 'Plus Jakarta Sans',sans-serif" }}>
-            Password incorrecta.
+            Email o password incorrectos.
           </p>
         )}
 
@@ -66,13 +66,42 @@ export default async function LoginPage({
               color: "#C2BEB5",
             }}
           >
-            Master Password
+            Email
+          </span>
+          <input
+            type="email"
+            name="email"
+            required
+            autoFocus
+            autoComplete="username"
+            style={{
+              background: "#0D0D0D",
+              border: "1px solid rgba(200,161,90,.3)",
+              borderRadius: 10,
+              padding: "11px 14px",
+              color: "#F5F2EB",
+              font: "400 14px 'Plus Jakarta Sans',sans-serif",
+              outline: "none",
+            }}
+          />
+        </label>
+
+        <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+          <span
+            style={{
+              font: "500 10px 'Plus Jakarta Sans',sans-serif",
+              letterSpacing: ".16em",
+              textTransform: "uppercase",
+              color: "#C2BEB5",
+            }}
+          >
+            Password
           </span>
           <input
             type="password"
             name="password"
             required
-            autoFocus
+            autoComplete="current-password"
             style={{
               background: "#0D0D0D",
               border: "1px solid rgba(200,161,90,.3)",

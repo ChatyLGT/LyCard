@@ -46,9 +46,9 @@ export default async function AdminRosterPage() {
             LyCards
           </h1>
         </div>
-        <form action={logoutAction}>
-          <button
-            type="submit"
+        <div style={{ display: "flex", gap: 8 }}>
+          <Link
+            href="/admin/account"
             style={{
               background: "none",
               border: "1px solid rgba(200,161,90,.3)",
@@ -58,12 +58,31 @@ export default async function AdminRosterPage() {
               font: "600 10px 'Plus Jakarta Sans',sans-serif",
               letterSpacing: ".1em",
               textTransform: "uppercase",
-              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
             }}
           >
-            Cerrar sesión
-          </button>
-        </form>
+            Mi cuenta
+          </Link>
+          <form action={logoutAction}>
+            <button
+              type="submit"
+              style={{
+                background: "none",
+                border: "1px solid rgba(200,161,90,.3)",
+                borderRadius: 999,
+                padding: "8px 14px",
+                color: "#C2BEB5",
+                font: "600 10px 'Plus Jakarta Sans',sans-serif",
+                letterSpacing: ".1em",
+                textTransform: "uppercase",
+                cursor: "pointer",
+              }}
+            >
+              Cerrar sesión
+            </button>
+          </form>
+        </div>
       </div>
 
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px", display: "flex", flexDirection: "column", gap: 24 }}>

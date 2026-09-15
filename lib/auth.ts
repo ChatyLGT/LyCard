@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
+import { prisma } from "@/lib/prisma";
 
 const COOKIE_NAME = "lycard_admin";
 const SESSION_TTL = "12h";
@@ -11,14 +12,15 @@ function secretKey() {
   return new TextEncoder().encode(secret);
 }
 
-export async function verifyMasterPassword(password: string) {
-  const hash = process.env.MASTER_PASSWORD_HASH;
-  if (!hash) throw new Error("MASTER_PASSWORD_HASH is not set");
-  return bcrypt.compare(password, hash);
+export async function verifyAdminCredentials(email: string, password: string) {
+  const admin = await prisma.admin.findUnique({ where: { email: email.trim().toLowerCase() } });
+  if (!admin) return null;
+  const ok = await bcrypt.compare(password, admin.passwordHash);
+  return ok ? admin : null;
 }
 
-export async function createAdminSession() {
-  const token = await new SignJWT({ role: "admin" })
+export async function createAdminSession(adminId: string) {
+  const token = await new SignJWT({ sub: adminId })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(SESSION_TTL)
@@ -39,16 +41,20 @@ export async function destroyAdminSession() {
   jar.delete(COOKIE_NAME);
 }
 
-export async function isAdminAuthed() {
+export async function currentAdminId(): Promise<string | null> {
   const jar = await cookies();
   const token = jar.get(COOKIE_NAME)?.value;
-  if (!token) return false;
+  if (!token) return null;
   try {
-    await jwtVerify(token, secretKey());
-    return true;
+    const { payload } = await jwtVerify(token, secretKey());
+    return typeof payload.sub === "string" ? payload.sub : null;
   } catch {
-    return false;
+    return null;
   }
+}
+
+export async function isAdminAuthed() {
+  return (await currentAdminId()) !== null;
 }
 
 export const ADMIN_COOKIE_NAME = COOKIE_NAME;

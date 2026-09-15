@@ -2,31 +2,62 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import {
-  verifyMasterPassword,
+  verifyAdminCredentials,
   createAdminSession,
   destroyAdminSession,
+  currentAdminId,
 } from "@/lib/auth";
 import { saveUpload } from "@/lib/storage";
 import { MEDALS, RANKS } from "@/lib/data";
 
 export async function loginAction(formData: FormData) {
+  const email = String(formData.get("email") || "");
   const password = String(formData.get("password") || "");
   const next = String(formData.get("next") || "/admin");
 
-  const ok = await verifyMasterPassword(password);
-  if (!ok) {
+  const admin = await verifyAdminCredentials(email, password);
+  if (!admin) {
     redirect(`/admin/login?error=1&next=${encodeURIComponent(next)}`);
   }
 
-  await createAdminSession();
+  await createAdminSession(admin.id);
   redirect(next);
 }
 
 export async function logoutAction() {
   await destroyAdminSession();
   redirect("/admin/login");
+}
+
+export async function changePasswordAction(formData: FormData) {
+  const adminId = await currentAdminId();
+  if (!adminId) redirect("/admin/login");
+
+  const currentPassword = String(formData.get("currentPassword") || "");
+  const newPassword = String(formData.get("newPassword") || "");
+  const confirmPassword = String(formData.get("confirmPassword") || "");
+
+  const admin = await prisma.admin.findUnique({ where: { id: adminId } });
+  if (!admin) redirect("/admin/login");
+
+  const currentOk = await bcrypt.compare(currentPassword, admin.passwordHash);
+  if (!currentOk) {
+    redirect("/admin/account?error=current");
+  }
+  if (newPassword.length < 8) {
+    redirect("/admin/account?error=short");
+  }
+  if (newPassword !== confirmPassword) {
+    redirect("/admin/account?error=mismatch");
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  await prisma.admin.update({ where: { id: adminId }, data: { passwordHash } });
+
+  redirect("/admin/account?saved=1");
 }
 
 function slugify(input: string) {
