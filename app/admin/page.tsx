@@ -48,6 +48,23 @@ export default async function AdminRosterPage() {
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <Link
+            href="/admin/interviews"
+            style={{
+              background: "none",
+              border: "1px solid rgba(200,161,90,.3)",
+              borderRadius: 999,
+              padding: "8px 14px",
+              color: "#C2BEB5",
+              font: "600 10px 'Plus Jakarta Sans',sans-serif",
+              letterSpacing: ".1em",
+              textTransform: "uppercase",
+              display: "inline-flex",
+              alignItems: "center",
+            }}
+          >
+            Entrevistas
+          </Link>
+          <Link
             href="/admin/account"
             style={{
               background: "none",

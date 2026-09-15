@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useRef, useEffect, type CSSProperties, type ReactElement } from "react";
+import { useState, useRef, useEffect, useTransition, type CSSProperties, type ReactElement } from "react";
 import Link from "next/link";
 import type { Card } from "@/generated/prisma/client";
 import { t, type Lang } from "@/lib/i18n";
 import { rankById } from "@/lib/data";
+import { INTERVIEW_SLOTS } from "@/lib/interviewSlots";
+import { registerInterviewAction, sendInvitationAction } from "@/app/c/actions";
 
-type ModalKey = "od" | "ancient" | "story" | "info" | null;
+type ModalKey = "od" | "ancient" | "story" | "info" | "invite" | null;
 
 const THEME_VARS: Record<"dark" | "light", CSSProperties> = {
   dark: {
@@ -70,6 +72,41 @@ const BADGE_BTN: CSSProperties = {
   boxShadow: "0 0 14px rgba(200,161,90,.3)",
   backdropFilter: "blur(8px)",
   cursor: "pointer",
+};
+
+// The bottom "podium" row: a medium cube either side of the large QR cube.
+const CUBE_MEDIUM: CSSProperties = {
+  flex: "none",
+  width: "clamp(62px,15dvh,82px)",
+  height: "clamp(62px,15dvh,82px)",
+  borderRadius: 18,
+  border: "1px solid rgba(255,230,163,.45)",
+  background: "linear-gradient(160deg,#E5C378,#C8A15A 55%,#99732B)",
+  boxShadow: "0 6px 18px rgba(200,161,90,.38)",
+  color: "#141414",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 4,
+  padding: "0 4px",
+  cursor: "pointer",
+};
+
+const CUBE_MEDIUM_ALT: CSSProperties = {
+  ...CUBE_MEDIUM,
+  background: "var(--surf,#141414)",
+  border: "1px solid var(--line2,rgba(200,161,90,.5))",
+  boxShadow: "0 4px 14px rgba(0,0,0,.35)",
+  color: "var(--goldtxt,#E5C378)",
+};
+
+const CUBE_LABEL: CSSProperties = {
+  font: "700 8.5px 'Plus Jakarta Sans',sans-serif",
+  letterSpacing: ".06em",
+  textTransform: "uppercase",
+  textAlign: "center",
+  lineHeight: 1.15,
 };
 
 // Glassy "mirror" badge — bright inner highlight top, dark falloff bottom,
@@ -307,6 +344,65 @@ export default function LyCardView({
     flash(t(lang, "tShare"));
   }
 
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [scheduleName, setScheduleName] = useState("");
+  const [scheduleWa, setScheduleWa] = useState("");
+  const [scheduleEmail, setScheduleEmail] = useState("");
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [scheduleResult, setScheduleResult] = useState<{ slotLabel: string } | null>(null);
+  const [scheduling, startScheduling] = useTransition();
+
+  function closeSchedule() {
+    setScheduleOpen(false);
+    setSelectedSlot(null);
+    setScheduleName("");
+    setScheduleWa("");
+    setScheduleEmail("");
+    setScheduleError(null);
+    setScheduleResult(null);
+  }
+
+  function submitSchedule() {
+    setScheduleError(null);
+    if (!selectedSlot) return setScheduleError(t(lang, "scheduleErrSlot"));
+    if (!scheduleName.trim()) return setScheduleError(t(lang, "scheduleErrName"));
+    if (!scheduleWa.trim()) return setScheduleError(t(lang, "scheduleErrWa"));
+    startScheduling(async () => {
+      const res = await registerInterviewAction({
+        cardSlug: card.slug,
+        slotId: selectedSlot,
+        name: scheduleName,
+        whatsapp: scheduleWa,
+        email: scheduleEmail,
+      });
+      if (res.ok) {
+        setScheduleResult({ slotLabel: res.slotLabel });
+      } else {
+        setScheduleError(t(lang, "scheduleErrSlot"));
+      }
+    });
+  }
+
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [inviteSent, setInviteSent] = useState(false);
+  const [inviting, startInviting] = useTransition();
+
+  function submitInvite() {
+    setInviteError(null);
+    startInviting(async () => {
+      const res = await sendInvitationAction({ cardSlug: card.slug, inviteeEmail: inviteEmail });
+      if (res.ok) {
+        setInviteSent(true);
+      } else if (res.error === "not_configured") {
+        setInviteError(t(lang, "inviteErrNotConfigured"));
+      } else {
+        setInviteError(t(lang, "inviteErrEmail"));
+      }
+    });
+  }
+
   const light = theme === "light";
   const rank = rankById(card.rank);
   const rankName = lang === "en" ? rank.en : rank.es;
@@ -338,8 +434,16 @@ export default function LyCardView({
       meta: t(lang, "storyMeta"),
     },
     info: { icon: "diamond", kicker: t(lang, "infoKicker") },
+    invite: { icon: "mail", kicker: t(lang, "inviteKicker") },
   };
   const activeModal = modal ? modalMap[modal] : null;
+
+  function closeModal() {
+    setModal(null);
+    setInviteEmail("");
+    setInviteError(null);
+    setInviteSent(false);
+  }
 
   return (
     <div
@@ -623,11 +727,20 @@ export default function LyCardView({
             </button>
           </div>
 
-          {/* QR */}
-          <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <div
+          {/* Cubes: Info Legacy (medium) / QR, tap to share (large) / Enviar Invitación (medium) */}
+          <div style={{ flex: "0 0 auto", display: "flex", alignItems: "flex-end", justifyContent: "center", gap: "clamp(10px,3dvw,18px)" }}>
+            <button type="button" onClick={() => setModal("info")} style={CUBE_MEDIUM} aria-label={t(lang, "infoBtn")}>
+              <Icon name="diamond" size={22} />
+              <span style={CUBE_LABEL}>{t(lang, "infoBtn")}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={shareCard}
+              aria-label={t(lang, "shareBtn")}
               style={{
                 position: "relative",
+                flex: "none",
                 padding: 10,
                 borderRadius: 20,
                 background: "var(--qrbg,rgba(20,20,20,.95))",
@@ -636,6 +749,7 @@ export default function LyCardView({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                cursor: "pointer",
               }}
             >
               <span style={{ position: "absolute", top: 7, left: 7, width: 16, height: 16, borderTop: "2px solid #D4AF37", borderLeft: "2px solid #D4AF37", borderRadius: "6px 0 0 0" }} />
@@ -646,14 +760,19 @@ export default function LyCardView({
                 style={{ width: "clamp(84px,15dvh,140px)", height: "clamp(84px,15dvh,140px)", background: "#fff", borderRadius: 8, padding: 6 }}
                 dangerouslySetInnerHTML={{ __html: qrSvg }}
               />
-            </div>
+            </button>
+
+            <button type="button" onClick={() => setModal("invite")} style={CUBE_MEDIUM_ALT} aria-label={t(lang, "inviteBtn")}>
+              <Icon name="mail" size={22} />
+              <span style={CUBE_LABEL}>{t(lang, "inviteBtn")}</span>
+            </button>
           </div>
 
-          {/* CTAs */}
-          <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", gap: "clamp(6px,1dvh,12px)", width: "100%" }}>
+          {/* Schedule CTA */}
+          <div style={{ flex: "0 0 auto", width: "100%" }}>
             <button
               type="button"
-              onClick={() => setModal("info")}
+              onClick={() => setScheduleOpen(true)}
               style={{
                 width: "100%",
                 padding: "clamp(9px,1.6dvh,15px) 20px",
@@ -672,31 +791,8 @@ export default function LyCardView({
                 cursor: "pointer",
               }}
             >
-              <Icon name="diamond" />
-              <span>{t(lang, "infoBtn")}</span>
-            </button>
-            <button
-              type="button"
-              onClick={shareCard}
-              style={{
-                width: "100%",
-                padding: "clamp(8px,1.4dvh,13px) 20px",
-                borderRadius: 16,
-                background: "var(--surf,#141414)",
-                border: "1px solid var(--line2,rgba(200,161,90,.5))",
-                color: "var(--ink,#F5F2EB)",
-                font: "700 13px 'Plus Jakarta Sans',sans-serif",
-                letterSpacing: ".16em",
-                textTransform: "uppercase",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 10,
-                cursor: "pointer",
-              }}
-            >
-              <Icon name="ios_share" style={{ color: "#C8A15A" }} />
-              <span>{t(lang, "shareBtn")}</span>
+              <Icon name="event" />
+              <span>{t(lang, "scheduleBtn")}</span>
             </button>
           </div>
         </div>
@@ -716,7 +812,7 @@ export default function LyCardView({
               backdropFilter: "blur(2px)",
             }}
           >
-            <div onClick={() => setModal(null)} style={{ position: "absolute", inset: 0 }} />
+            <div onClick={closeModal} style={{ position: "absolute", inset: 0 }} />
             <div
               style={{
                 position: "relative",
@@ -746,7 +842,7 @@ export default function LyCardView({
                 </div>
                 <button
                   type="button"
-                  onClick={() => setModal(null)}
+                  onClick={closeModal}
                   aria-label="Close"
                   style={{ width: 32, height: 32, borderRadius: 999, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "#C2BEB5", cursor: "pointer", flex: "none" }}
                 >
@@ -819,6 +915,61 @@ export default function LyCardView({
                     <span>{t(lang, "infoCta", { name: card.name })}</span>
                   </a>
                 </>
+              ) : modal === "invite" ? (
+                <>
+                  <p style={{ margin: 0, font: "400 12.5px/1.75 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
+                    {t(lang, "inviteSub")}
+                  </p>
+                  {inviteSent ? (
+                    <div style={{ padding: 18, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(200,161,90,.3)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
+                      <Icon name="mark_email_read" size={28} style={{ color: "#C8A15A" }} />
+                      <span style={{ font: "700 13px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>{t(lang, "inviteSuccess")}</span>
+                    </div>
+                  ) : (
+                    <>
+                      <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                        <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#C2BEB5" }}>
+                          {t(lang, "fInviteeEmail")}
+                        </span>
+                        <input
+                          type="email"
+                          value={inviteEmail}
+                          onChange={(e) => setInviteEmail(e.target.value)}
+                          placeholder="nombre@correo.com"
+                          style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "11px 14px", color: "#F5F2EB", font: "400 14px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
+                        />
+                      </label>
+                      {inviteError && (
+                        <span style={{ font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>{inviteError}</span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={submitInvite}
+                        disabled={inviting}
+                        style={{
+                          width: "100%",
+                          padding: 14,
+                          border: "none",
+                          borderRadius: 12,
+                          background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)",
+                          color: "#0D0D0D",
+                          font: "700 12.5px 'Plus Jakarta Sans',sans-serif",
+                          letterSpacing: ".12em",
+                          textTransform: "uppercase",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 8,
+                          cursor: inviting ? "default" : "pointer",
+                          opacity: inviting ? 0.7 : 1,
+                        }}
+                      >
+                        <Icon name="send" size={18} />
+                        <span>{inviting ? "..." : t(lang, "inviteSend")}</span>
+                      </button>
+                    </>
+                  )}
+                </>
               ) : (
                 <>
                   <div style={{ padding: 14, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(200,161,90,.3)", textAlign: "center" }}>
@@ -829,6 +980,173 @@ export default function LyCardView({
                     <span style={{ font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#C8A15A" }}>{activeModal.meta}</span>
                     <span style={{ font: "italic 400 14px 'Playfair Display',serif", color: "#F5F2EB" }}>{card.name}</span>
                   </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Schedule modal — slides down from the top, unlike the bottom sheets above */}
+        {scheduleOpen && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 65,
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "center",
+              padding: "0 12px",
+              background: "rgba(0,0,0,.8)",
+              backdropFilter: "blur(2px)",
+            }}
+          >
+            <div onClick={closeSchedule} style={{ position: "absolute", inset: 0 }} />
+            <div
+              style={{
+                position: "relative",
+                width: "100%",
+                maxWidth: 406,
+                maxHeight: "88vh",
+                overflowY: "auto",
+                background: "linear-gradient(180deg,#1C1C1C,#0D0D0D)",
+                border: "1px solid rgba(200,161,90,.4)",
+                borderTop: "none",
+                borderRadius: "0 0 24px 24px",
+                padding: "22px 22px 28px",
+                boxShadow: "0 10px 45px rgba(0,0,0,.95)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 14,
+                animation: "modalInTop .25s ease-out",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Icon name="event" style={{ color: "#C8A15A" }} />
+                  <span style={{ font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".2em", textTransform: "uppercase", color: "#E5C378" }}>
+                    {t(lang, "scheduleKicker")}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeSchedule}
+                  aria-label="Close"
+                  style={{ width: 32, height: 32, borderRadius: 999, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "#C2BEB5", cursor: "pointer", flex: "none" }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <h3 style={{ margin: 0, font: "600 17px 'Playfair Display',serif", color: "#E5C378" }}>{t(lang, "scheduleTitle")}</h3>
+
+              {scheduleResult ? (
+                <div style={{ padding: 18, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(200,161,90,.3)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
+                  <Icon name="event_available" size={28} style={{ color: "#C8A15A" }} />
+                  <span style={{ font: "700 13px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>
+                    {t(lang, "scheduleSuccess", { slot: scheduleResult.slotLabel })}
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <p style={{ margin: 0, font: "400 12.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{t(lang, "scheduleSub")}</p>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {INTERVIEW_SLOTS.map((slot) => {
+                      const on = slot.id === selectedSlot;
+                      return (
+                        <button
+                          key={slot.id}
+                          type="button"
+                          onClick={() => setSelectedSlot(slot.id)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            padding: 12,
+                            borderRadius: 12,
+                            border: `1px solid ${on ? "rgba(200,161,90,.6)" : "rgba(255,255,255,.1)"}`,
+                            background: on ? "rgba(200,161,90,.14)" : "#141414",
+                            cursor: "pointer",
+                            textAlign: "left",
+                          }}
+                        >
+                          <span style={{ width: 18, height: 18, borderRadius: 999, border: `2px solid ${on ? "#E5C378" : "#5A5A5A"}`, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+                            {on && <span style={{ width: 9, height: 9, borderRadius: 999, background: "#E5C378" }} />}
+                          </span>
+                          <span style={{ display: "flex", flexDirection: "column" }}>
+                            <span style={{ font: "600 12.5px 'Plus Jakarta Sans',sans-serif", color: on ? "#E5C378" : "#F5F2EB" }}>
+                              {lang === "en" ? slot.labelEn : slot.label}
+                            </span>
+                            <span style={{ font: "400 10.5px 'Plus Jakarta Sans',sans-serif", color: "#9a8f80" }}>{slot.time}</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                    <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#C2BEB5" }}>
+                      {t(lang, "fFullName")}
+                    </span>
+                    <input
+                      value={scheduleName}
+                      onChange={(e) => setScheduleName(e.target.value)}
+                      style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "11px 14px", color: "#F5F2EB", font: "400 14px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
+                    />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                    <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#C2BEB5" }}>
+                      {t(lang, "fWhatsapp")}
+                    </span>
+                    <input
+                      value={scheduleWa}
+                      onChange={(e) => setScheduleWa(e.target.value)}
+                      placeholder="+52 998 000 0000"
+                      style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "11px 14px", color: "#F5F2EB", font: "400 14px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
+                    />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                    <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#C2BEB5" }}>
+                      {t(lang, "fEmailOptional")}
+                    </span>
+                    <input
+                      type="email"
+                      value={scheduleEmail}
+                      onChange={(e) => setScheduleEmail(e.target.value)}
+                      style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "11px 14px", color: "#F5F2EB", font: "400 14px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
+                    />
+                  </label>
+
+                  {scheduleError && (
+                    <span style={{ font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>{scheduleError}</span>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={submitSchedule}
+                    disabled={scheduling}
+                    style={{
+                      width: "100%",
+                      padding: 14,
+                      border: "none",
+                      borderRadius: 12,
+                      background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)",
+                      color: "#0D0D0D",
+                      font: "700 12.5px 'Plus Jakarta Sans',sans-serif",
+                      letterSpacing: ".12em",
+                      textTransform: "uppercase",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      cursor: scheduling ? "default" : "pointer",
+                      opacity: scheduling ? 0.7 : 1,
+                    }}
+                  >
+                    <Icon name="check_circle" size={18} />
+                    <span>{scheduling ? "..." : t(lang, "scheduleConfirm")}</span>
+                  </button>
                 </>
               )}
             </div>

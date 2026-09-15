@@ -112,3 +112,14 @@ button {
     opacity: 1;
   }
 }
+
+@keyframes modalInTop {
+  from {
+    transform: translateY(-24px);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

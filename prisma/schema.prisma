@@ -53,4 +53,24 @@ model Card {
   // Display defaults for first paint (viewer can still toggle)
   defaultTheme String @default("dark")
   defaultLang  String @default("es")
+
+  registrations Registration[]
+}
+
+// A visitor signing up for one of a card's (currently hardcoded, see
+// lib/interviewSlots.ts) interview slots via the "Agendar tu Entrevista"
+// modal. slotId/slotLabel are a snapshot of the slot they picked — slots
+// aren't DB rows yet, so nothing to foreign-key against.
+model Registration {
+  id        String   @id @default(cuid())
+  cardId    String
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  slotId    String
+  slotLabel String
+  name      String
+  whatsapp  String
+  email     String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([cardId])
 }
