@@ -55,6 +55,91 @@ model Card {
   defaultLang  String @default("es")
 
   registrations Registration[]
+
+  // --- Multi-program platform (PLAN.md Phase 0) ---
+  // Purely additive: nothing reads these yet, existing cards default to
+  // kind="project" with no member/program attached (still resolved by
+  // slug the way every card is today). Wiring this into the public
+  // rendering / ownership logic is a later, reviewed step — see PLAN.md.
+  kind      String   @default("project") // project | company | personal
+  memberId  String?
+  member    Member?  @relation(fields: [memberId], references: [id])
+  programId String?
+  program   Program? @relation(fields: [programId], references: [id])
+}
+
+// A brand/project running on the platform (Legacy today; Mlqr, Digital
+// Kingdom, etc. later). Only the platform's single Admin (MasterN0) can
+// create one — see PLAN.md Fase 6. Holds the official branding + social
+// channels that every "project"-kind Card under it inherits, instead of
+// each host editing their own.
+model Program {
+  id                String   @id @default(cuid())
+  slug              String   @unique
+  name              String
+  logoUrl           String?
+  primaryColor      String   @default("#C8A15A")
+  videoThumbnailUrl String?
+  wa                String   @default("")
+  ig                String   @default("")
+  li                String   @default("")
+  x                 String   @default("")
+  fb                String   @default("")
+  tiktok            String   @default("")
+  yt                String   @default("")
+  web               String   @default("")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  memberships ProgramMembership[]
+  cards       Card[]
+}
+
+// A real person, distinct from Admin (the platform superuser). Owns up to
+// three Cards (project/company/personal — see PLAN.md Fase 0/5) once
+// their membership is active. Auth is Fase 1, not wired up yet.
+model Member {
+  id        String   @id @default(cuid())
+  whatsapp  String   @unique
+  email     String   @default("")
+  googleId  String?  @unique
+  name      String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships ProgramMembership[]
+  cards       Card[]
+  origin      OriginMemento?
+}
+
+// A Member's standing within one Program — tracks the referral tree
+// (referredBy) and onboarding progress. "active" is what unlocks the
+// member's own project/company/personal cards (PLAN.md Fase 4).
+model ProgramMembership {
+  id                     String   @id @default(cuid())
+  memberId               String
+  member                 Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  programId              String
+  program                Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  referredByMembershipId String?
+  referredBy             ProgramMembership?  @relation("Referrals", fields: [referredByMembershipId], references: [id])
+  referred               ProgramMembership[] @relation("Referrals")
+  status                 String   @default("invited") // invited | interviewed | active
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@unique([memberId, programId])
+}
+
+// Snapshot of "the card that recruited me" archived into a Member's own
+// Virtual Office once they graduate from guest to host (PLAN.md Fase 4) —
+// the live guest-mode view disappears, this is what's left of it.
+model OriginMemento {
+  id        String   @id @default(cuid())
+  memberId  String   @unique
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  snapshot  Json
+  createdAt DateTime @default(now())
 }
 
 // A visitor signing up for one of a card's (currently hardcoded, see

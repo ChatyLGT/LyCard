@@ -210,4 +210,54 @@ despierto y puedas decir "sí, dale" a cada paso.
 
 ## Estado — qué se hizo esta madrugada
 
-Ver sección al final de este documento, se va actualizando en vivo.
+**Hecho y en producción (o listo para deployar):**
+
+- `Program`, `Member`, `ProgramMembership`, `OriginMemento` agregados al
+  schema (Fase 0), migración generada y probada — **100% aditivo**, no hay
+  ningún código que lea estos modelos todavía, así que no hay forma de que
+  esto haya roto algo que ya andaba. Confirmé con `next build` completo +
+  levanté `/c/gunnar`, `/admin`, `/admin/interviews` después de la
+  migración: todo responde igual que antes.
+- `Card` ganó `kind` (default `"project"`), `memberId`, `programId` —
+  nullable/con default, mismo motivo: no rompe nada existente.
+- Script `prisma/seed-legacy-program.ts` — idempotente, corrido y probado
+  dos veces en local. Crea el `Program` "legacy", te crea a vos como
+  `Member` raíz, la `ProgramMembership` en estado `active` sin host (sos
+  la raíz del árbol), y enlaza tu `Card` (`gunnar`) como `kind: project`
+  a ambos. Los datos de redes del Program se copiaron de tu Card actual
+  como placeholder — reemplazalos por los canales oficiales reales de
+  Legacy cuando los tengas.
+
+**Pendiente de vos (nada urgente, no bloquea nada):**
+
+Correr esto una vez en el SQL Editor de Neon (Vercel → proyecto lycard →
+Storage → tu base → Query/SQL Editor) para que la base de **producción**
+tenga los mismos datos que ya validé en local. Es aditivo e idempotente
+(`ON CONFLICT DO NOTHING`), no toca nada existente:
+
+```sql
+INSERT INTO "Program" (id, slug, name, "primaryColor", wa, ig, li, x, fb, tiktok, yt, web, "videoThumbnailUrl", "createdAt", "updatedAt")
+SELECT 'legacy-program', 'legacy', 'Legacy', '#C8A15A', wa, ig, li, x, fb, tiktok, yt, web, "videoThumbnailUrl", now(), now()
+FROM "Card" WHERE slug = 'gunnar'
+ON CONFLICT (slug) DO NOTHING;
+
+INSERT INTO "Member" (id, whatsapp, name, email, "createdAt", "updatedAt")
+SELECT 'gunnar-member', COALESCE(NULLIF(wa,''), 'gunnar-bootstrap'), name, '', now(), now()
+FROM "Card" WHERE slug = 'gunnar'
+ON CONFLICT (whatsapp) DO NOTHING;
+
+INSERT INTO "ProgramMembership" (id, "memberId", "programId", "referredByMembershipId", status, "createdAt", "updatedAt")
+VALUES ('gunnar-membership', 'gunnar-member', 'legacy-program', NULL, 'active', now(), now())
+ON CONFLICT ("memberId", "programId") DO NOTHING;
+
+UPDATE "Card" SET kind = 'project', "memberId" = 'gunnar-member', "programId" = 'legacy-program' WHERE slug = 'gunnar';
+```
+
+**Por qué paré acá y no seguí con Fase 1/2/3:** lo que sigue (auth de
+Miembro, el switch host/invitado en la tarjeta pública, el chat de
+onboarding) ya implica tocar código que SÍ está en el camino de lo que
+hoy funciona en producción — la página pública `/c/[slug]` y su lógica de
+render. Prefiero que lo veas vos primero, en vivo, paso a paso, en vez de
+que te despiertes con cambios grandes en la tarjeta que ya está circulando
+sin que los hayas podido frenar a tiempo si algo no te cierra. Cuando te
+despiertes y me digas "dale, seguí con la Fase 1", arranco.
