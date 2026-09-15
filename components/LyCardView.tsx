@@ -521,9 +521,6 @@ export default function LyCardView({
                 dangerouslySetInnerHTML={{ __html: qrSvg }}
               />
             </div>
-            <span style={{ marginTop: 12, font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".22em", textTransform: "uppercase", color: "var(--ink2,#C2BEB5)" }}>
-              {card.tooltip}
-            </span>
           </div>
 
           {/* CTAs */}
