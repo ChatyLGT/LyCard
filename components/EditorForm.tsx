@@ -45,6 +45,10 @@ export default function EditorForm({ card, saved }: { card: Card; saved: boolean
   const [medal, setMedal] = useState(card.medal);
   const [rank, setRank] = useState(card.rank);
   const [portraitPreview, setPortraitPreview] = useState<string | null>(card.portraitUrl);
+  // Project cards inherit their official social channels from the Program
+  // (see LyCardView) — only their own personal WhatsApp stays editable
+  // here. Company/Personal cards keep editing all 8 as before.
+  const isProject = card.kind === "project";
 
   const boundAction = updateCardAction.bind(null, card.slug);
 
@@ -299,21 +303,38 @@ export default function EditorForm({ card, saved }: { card: Card; saved: boolean
           <h3 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#F5F2EB" }}>
             Canales de Contacto
           </h3>
-          {CHANNELS.map((c) => (
-            <label key={c.id} style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 4 }}>
-              <span style={LABEL}>{c.label}</span>
-              <div style={FIELD_WRAP}>
-                <span className="material-symbols-outlined" style={{ fontSize: 17, color: "#C8A15A" }}>
-                  {c.icon}
-                </span>
-                <input
-                  name={c.id}
-                  defaultValue={card[c.id as "wa" | "ig" | "li" | "x" | "fb" | "tiktok" | "yt" | "web"]}
-                  style={FIELD_INPUT}
-                />
-              </div>
-            </label>
-          ))}
+          {isProject ? (
+            <>
+              <label style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 4 }}>
+                <span style={LABEL}>WhatsApp (contacto directo)</span>
+                <div style={FIELD_WRAP}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 17, color: "#C8A15A" }}>
+                    chat
+                  </span>
+                  <input name="wa" defaultValue={card.wa} style={FIELD_INPUT} />
+                </div>
+              </label>
+              <p style={{ margin: 0, font: "400 11.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
+                El resto de las redes (Instagram, LinkedIn, X, Facebook, TikTok, YouTube, Web) se administran desde el Programa.
+              </p>
+            </>
+          ) : (
+            CHANNELS.map((c) => (
+              <label key={c.id} style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 4 }}>
+                <span style={LABEL}>{c.label}</span>
+                <div style={FIELD_WRAP}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 17, color: "#C8A15A" }}>
+                    {c.icon}
+                  </span>
+                  <input
+                    name={c.id}
+                    defaultValue={card[c.id as "wa" | "ig" | "li" | "x" | "fb" | "tiktok" | "yt" | "web"]}
+                    style={FIELD_INPUT}
+                  />
+                </div>
+              </label>
+            ))
+          )}
         </section>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

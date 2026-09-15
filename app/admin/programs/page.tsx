@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { currentAdminScope } from "@/lib/auth";
-import { createProgramAction } from "./actions";
+import { createProgramAction, toggleProgramActiveAction, deleteProgramAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -13,13 +13,13 @@ export const dynamic = "force-dynamic";
 export default async function AdminProgramsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; deleted?: string; deleteError?: string }>;
 }) {
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
   if (scope.programId) redirect(`/admin/programs/${scope.programId}`);
 
-  const { error } = await searchParams;
+  const { error, deleted, deleteError } = await searchParams;
 
   const programs = await prisma.program.findMany({
     orderBy: { createdAt: "asc" },
@@ -84,32 +84,61 @@ export default async function AdminProgramsPage({
           {programs.length === 0 && (
             <p style={{ color: "#C2BEB5", font: "400 13px 'Plus Jakarta Sans',sans-serif" }}>Todavía no hay Programas.</p>
           )}
+          {deleted && (
+            <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Programa eliminado.</p>
+          )}
           {programs.map((p) => (
-            <Link
+            <div
               key={p.id}
-              href={`/admin/programs/${p.id}`}
               style={{
                 background: "#201f1f",
                 borderRadius: 12,
                 padding: 14,
                 display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 12,
-                textDecoration: "none",
-                color: "inherit",
+                flexDirection: "column",
+                gap: 8,
+                opacity: p.active ? 1 : 0.6,
               }}
             >
-              <div style={{ minWidth: 0 }}>
-                <p style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>{p.name}</p>
-                <p style={{ margin: 0, font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#C8A15A" }}>
-                  {p.slug} · {p._count.memberships} miembros · {p._count.admins} N0
-                </p>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                <Link href={`/admin/programs/${p.id}`} style={{ minWidth: 0, textDecoration: "none", color: "inherit" }}>
+                  <p style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>
+                    {p.name} {!p.active && <span style={{ font: "700 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#9a8f80" }}>· Inactivo</span>}
+                  </p>
+                  <p style={{ margin: 0, font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#C8A15A" }}>
+                    {p.slug} · {p._count.memberships} miembros · {p._count.admins} N0
+                  </p>
+                </Link>
+                <Link href={`/admin/programs/${p.id}`} aria-label="Ver Programa" style={{ flex: "none" }}>
+                  <span className="material-symbols-outlined" style={{ color: "#C8A15A" }}>
+                    chevron_right
+                  </span>
+                </Link>
               </div>
-              <span className="material-symbols-outlined" style={{ color: "#C8A15A" }}>
-                chevron_right
-              </span>
-            </Link>
+              {deleteError === p.id && (
+                <p style={{ margin: 0, font: "600 10.5px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>
+                  No se puede eliminar — todavía tiene miembros, tarjetas o N0 asignados.
+                </p>
+              )}
+              <div style={{ display: "flex", gap: 8 }}>
+                <form action={toggleProgramActiveAction.bind(null, p.id)}>
+                  <button
+                    type="submit"
+                    style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(200,161,90,.3)", background: "none", color: "#C2BEB5", font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", cursor: "pointer" }}
+                  >
+                    {p.active ? "Desactivar" : "Activar"}
+                  </button>
+                </form>
+                <form action={deleteProgramAction.bind(null, p.id)}>
+                  <button
+                    type="submit"
+                    style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(229,146,138,.3)", background: "none", color: "#e5928a", font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", cursor: "pointer" }}
+                  >
+                    Eliminar
+                  </button>
+                </form>
+              </div>
+            </div>
           ))}
         </section>
       </div>

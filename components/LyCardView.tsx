@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useTransition, type CSSProperties, type ReactElement } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { Card, OriginMemento } from "@/generated/prisma/client";
+import type { Card, OriginMemento, Program } from "@/generated/prisma/client";
 import { t, type Lang } from "@/lib/i18n";
 import { rankById } from "@/lib/data";
 import { INTERVIEW_SLOTS } from "@/lib/interviewSlots";
@@ -325,17 +325,26 @@ export default function LyCardView({
   isAdmin,
   isHost,
   originMemento,
+  program,
 }: {
   card: Card;
   qrSvg: string;
   isAdmin: boolean;
   isHost: boolean;
   originMemento: OriginMemento | null;
+  program: Program | null;
 }) {
   const router = useRouter();
   const isProject = card.kind === "project";
   const isCompany = card.kind === "company";
   const isPersonal = card.kind === "personal";
+  // Project cards' official social channels live on the Program, not the
+  // Card (each N0 defines their project's branding once, at Program level —
+  // see PLAN.md Fase 7.1). card.wa stays personal/per-host regardless of kind.
+  const socialCard: Card =
+    isProject && program
+      ? { ...card, ig: program.ig, li: program.li, x: program.x, fb: program.fb, tiktok: program.tiktok, yt: program.yt, web: program.web }
+      : card;
   const [theme, setTheme] = useState<"dark" | "light">(
     (card.defaultTheme as "dark" | "light") || "dark"
   );
@@ -695,7 +704,7 @@ export default function LyCardView({
                 gap: "clamp(8px,2.4dvh,16px)",
               }}
             >
-              <SocialDock channels={["fb", "ig", "tiktok"]} card={card} tone="jade" />
+              <SocialDock channels={["fb", "ig", "tiktok"]} card={socialCard} tone="jade" />
               <button
                 type="button"
                 onClick={enterOffice}
@@ -755,7 +764,7 @@ export default function LyCardView({
                   </svg>
                 </span>
               </button>
-              <SocialDock channels={["li", "yt", "web"]} card={card} tone="ruby" />
+              <SocialDock channels={["li", "yt", "web"]} card={socialCard} tone="ruby" />
             </div>
           </div>
 

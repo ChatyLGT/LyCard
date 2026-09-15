@@ -546,6 +546,83 @@ descartables.
   real para probar el flujo de escritura, esa prueba completa quedó en
   local con datos descartables, misma disciplina que las fases previas.
 
+---
+
+## Fase 7.1 — QA de Gunnar: ganchos rápidos, hecha, probada localmente, en producción
+
+Tras un QA visual completo de las 3 pantallas de admin, se priorizaron los
+3 hallazgos de menor esfuerzo/mayor valor (el resto — dropdowns de
+Cita/Siglas/Denominación gestionados por N0, descripción de Programa
+generada por IA desde archivo, paleta de colores extraída por IA desde
+imagen, efecto de confeti + bloqueo de campos al guardar, ampliar "Mi
+cuenta" con foto/bio/cambio de contraseña — queda pendiente para una
+siguiente ronda, fuera de esta tanda).
+
+- **Programa: activo/inactivo + eliminar.** Nuevo campo
+  `Program.active` (Boolean, default `true`) — un apagador suave, sin
+  ningún efecto de runtime todavía (no bloquea nuevas altas ni nada más),
+  solo visible/togglable desde `/admin/programs`. `deleteProgramAction`
+  es un borrado guardado: se niega (con mensaje inline, no error crudo)
+  si el Programa tiene tarjetas, N0 o miembros — pensado para limpiar
+  Programas vacíos/de prueba, no para borrar uno con actividad real.
+- **Miembros: listado real + editar/borrar/mensaje** desde
+  `/admin/programs/[id]`. Resuelve el "Miembros: 1" que no cuadraba — en
+  producción ese número siempre fue real, simplemente no había forma de
+  ver *quién* era. Cada miembro ahora muestra nombre/WhatsApp/email/
+  estado/referente, con:
+  - **Editar** (expandible, sin JS extra — `<details>` nativo): nombre,
+    WhatsApp, email.
+  - **Mensaje**: envía un email vía Resend (mismo patrón que el resto de
+    la plataforma — si no hay `RESEND_API_KEY` configurada o el miembro
+    no tiene email, avisa en vez de fallar en silencio).
+  - **Borrar**: guardado igual que Programa — se niega si el miembro ya
+    tiene tarjetas activas (un onboarding ya circulando con URL pública),
+    solo borra a quien sigue en estado "invitado".
+- **Redes sociales de tarjetas de proyecto → nivel Programa.** Como
+  señalaste: "cada N0 es quien define el proyecto — es el único que
+  puede... ponerle valores a redes sociales". Antes cada tarjeta de tipo
+  `project` tenía sus propios campos ig/li/x/fb/tiktok/yt/web editables
+  en "Personalizar LyCard", duplicando lo que ya existía a nivel
+  `Program` desde la Fase 0. Ahora:
+  - El editor de MasterN0 (`/admin/[slug]`) solo muestra esos 6 campos
+    para tarjetas de Empresa/Personal (sin cambios ahí); para Proyecto
+    muestra únicamente WhatsApp (contacto directo del host) con una nota
+    explicando que el resto se administra desde el Programa.
+  - La vista pública (`/c/[slug]`) ahora lee esos 6 canales desde
+    `card.program` en vez de `card` cuando `kind === "project"` —
+    `Card.wa` se mantiene como excepción (es el contacto personal del
+    host, no branding del proyecto, ya diferenciado desde antes).
+  - Los campos `ig/li/x/fb/tiktok/yt/web` siguen existiendo en `Card`
+    (no se tocó el schema) — simplemente dejaron de leerse/editarse para
+    tarjetas de proyecto; sí se siguen usando tal cual para Empresa y
+    Personal.
+- **Bug aparte, ya arreglado y en producción** (commit `7a9465e`, previo
+  a esta tanda): crear el N0 de un Programa tiraba a la página de error
+  genérica de Next en vez de mostrar el mensaje — eran los únicos dos
+  server actions de la plataforma que usaban `throw new Error(...)` en
+  vez del patrón establecido de `redirect(...?error=...)`.
+- Probado de punta a punta con Playwright contra Postgres local:
+  - Programa de prueba creado, N0 asignado sin error (regresión del fix
+    de arriba confirmada dos veces), canales de Programa guardados.
+  - Toggle activo/inactivo confirmado, con el estado "· Inactivo"
+    visible en el listado.
+  - Editor de tu tarjeta `gunnar` (proyecto): confirmado que ig/li/x/fb/
+    tiktok/yt/web ya NO aparecen, solo WhatsApp + nota — con captura.
+  - Editor de una tarjeta de Empresa (`fase4-testigo-empresa`): confirmado
+    que los 8 campos siguen intactos — regresión, con captura.
+  - Vista pública `/c/gunnar`: puse valores "basura" directo en la DB en
+    los campos sociales de la Card y confirmé que los links renderizados
+    siguen siendo los del Programa (Legacy), no los de la Card — prueba
+    de que la lectura ya es 100% desde `Program`.
+  - Sección de Miembros del Programa Legacy: 4 miembros reales listados
+    (vos, Ana Testigo x2, Fase4 Testigo) con Editar/Mensaje/Borrar
+    funcionando — con captura.
+  - `tsc`/`eslint` limpios, `next build` completo sin errores.
+  - Datos de prueba (Programas "QA..." y sus N0) borrados de la DB local
+    al terminar — no se tocó producción en ningún paso destructivo.
+
+---
+
 **Qué sigue — Fase 8**: WhatsApp Business API real. Esta fase no depende
 de mí escribiendo código — depende de que consigan cuenta de WhatsApp
 Business verificada por Meta, un proveedor (Twilio/360dialog/Meta Cloud

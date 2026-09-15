@@ -13,7 +13,7 @@ export default async function CardPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const card = await prisma.card.findUnique({ where: { slug } });
+  const card = await prisma.card.findUnique({ where: { slug }, include: { program: true } });
   if (!card) notFound();
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
@@ -39,5 +39,14 @@ export default async function CardPage({
   // owner (PLAN.md Fase 2).
   const isHost = isAdmin || (memberId !== null && memberId === card.memberId);
 
-  return <LyCardView card={card} qrSvg={qrSvg} isAdmin={isAdmin} isHost={isHost} originMemento={originMemento} />;
+  return (
+    <LyCardView
+      card={card}
+      qrSvg={qrSvg}
+      isAdmin={isAdmin}
+      isHost={isHost}
+      originMemento={originMemento}
+      program={card.program}
+    />
+  );
 }

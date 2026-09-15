@@ -5,6 +5,7 @@ import { currentAdminScope } from "@/lib/auth";
 import { logoutAction } from "@/app/admin/actions";
 import { completeInterviewAction } from "@/app/admin/interviews/actions";
 import { updateProgramAction, createProgramAdminAction } from "../actions";
+import { updateMemberAction, deleteMemberAction, messageMemberAction } from "../members-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -19,14 +20,30 @@ export default async function AdminProgramDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ saved?: string; adminCreated?: string; activated?: string; adminError?: string }>;
+  searchParams: Promise<{
+    saved?: string;
+    adminCreated?: string;
+    activated?: string;
+    adminError?: string;
+    memberSaved?: string;
+    memberDeleted?: string;
+    memberMessaged?: string;
+    memberError?: string;
+  }>;
 }) {
   const { id } = await params;
-  const { saved, adminCreated, activated, adminError } = await searchParams;
+  const { saved, adminCreated, activated, adminError, memberSaved, memberDeleted, memberMessaged, memberError } =
+    await searchParams;
   const ADMIN_ERROR_COPY: Record<string, string> = {
     email: "Ingresá un email válido.",
     password: "La contraseña debe tener al menos 8 caracteres.",
     exists: "Ya existe un admin con ese email.",
+  };
+  const MEMBER_ERROR_COPY: Record<string, string> = {
+    hasCards: "No se puede borrar — ya tiene tarjetas activas con links circulando.",
+    messageEmpty: "Completá asunto y mensaje.",
+    messageNotConfigured: "Este miembro no tiene email cargado, o el envío de correos no está activado.",
+    messageFailed: "No se pudo enviar el mensaje, probá de nuevo.",
   };
 
   const scope = await currentAdminScope();
@@ -161,6 +178,14 @@ export default async function AdminProgramDetailPage({
           <h2 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#F5F2EB" }}>
             Miembros ({program.memberships.length})
           </h2>
+          {memberSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Miembro actualizado.</p>}
+          {memberDeleted && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Miembro eliminado.</p>}
+          {memberMessaged && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Mensaje enviado.</p>}
+          {memberError && (
+            <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>
+              {MEMBER_ERROR_COPY[memberError] || "Algo falló."}
+            </p>
+          )}
           {program.memberships.length === 0 && <p style={{ color: "#5A5A5A", font: "400 12.5px 'Plus Jakarta Sans',sans-serif" }}>Todavía no hay miembros.</p>}
           {program.memberships.map((m) => {
             const projectCard = m.member.cards.find((c) => c.kind === "project");
@@ -181,6 +206,47 @@ export default async function AdminProgramDetailPage({
                       /c/{projectCard.slug}
                     </Link>
                   )}
+                </div>
+
+                <div style={{ display: "flex", gap: 14, marginTop: 6, flexWrap: "wrap" }}>
+                  <details>
+                    <summary style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#C8A15A", cursor: "pointer" }}>
+                      Editar
+                    </summary>
+                    <form
+                      action={updateMemberAction.bind(null, m.member.id, program.id)}
+                      style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,.06)" }}
+                    >
+                      <input name="name" defaultValue={m.member.name} placeholder="Nombre" style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
+                      <input name="whatsapp" defaultValue={m.member.whatsapp || ""} placeholder="WhatsApp" style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
+                      <input name="email" type="email" defaultValue={m.member.email} placeholder="Email" style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
+                      <button type="submit" style={{ padding: 9, border: "none", borderRadius: 8, background: "#353534", color: "#F5F2EB", font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", cursor: "pointer" }}>
+                        Guardar
+                      </button>
+                    </form>
+                  </details>
+
+                  <details>
+                    <summary style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#C8A15A", cursor: "pointer" }}>
+                      Mensaje
+                    </summary>
+                    <form
+                      action={messageMemberAction.bind(null, m.member.id, program.id)}
+                      style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,.06)" }}
+                    >
+                      <input name="subject" placeholder="Asunto" style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
+                      <textarea name="message" placeholder="Mensaje" rows={3} style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none", resize: "vertical" }} />
+                      <button type="submit" style={{ padding: 9, border: "none", borderRadius: 8, background: "#353534", color: "#F5F2EB", font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", cursor: "pointer" }}>
+                        Enviar
+                      </button>
+                    </form>
+                  </details>
+
+                  <form action={deleteMemberAction.bind(null, m.member.id, program.id)}>
+                    <button type="submit" style={{ background: "none", border: "none", padding: 0, color: "#e5928a", font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", cursor: "pointer" }}>
+                      Borrar
+                    </button>
+                  </form>
                 </div>
               </div>
             );

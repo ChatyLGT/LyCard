@@ -101,6 +101,9 @@ model Program {
   tiktok            String   @default("")
   yt                String   @default("")
   web               String   @default("")
+  // Off hides it from new joins/recruiting without touching existing cards
+  // or members — a soft pause, not a delete (Gunnar's QA pass, Fase 7.1).
+  active            Boolean  @default(true)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

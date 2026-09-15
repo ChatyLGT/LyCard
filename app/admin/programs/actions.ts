@@ -58,6 +58,36 @@ export async function createProgramAdminAction(formData: FormData) {
   redirect(`/admin/programs/${programId}?adminCreated=1`);
 }
 
+export async function toggleProgramActiveAction(programId: string) {
+  await requireMasterN0();
+  const program = await prisma.program.findUnique({ where: { id: programId }, select: { active: true } });
+  if (!program) redirect("/admin/programs");
+  await prisma.program.update({ where: { id: programId }, data: { active: !program.active } });
+  revalidatePath("/admin/programs");
+  redirect("/admin/programs");
+}
+
+export async function deleteProgramAction(programId: string) {
+  await requireMasterN0();
+
+  const program = await prisma.program.findUnique({
+    where: { id: programId },
+    include: { _count: { select: { cards: true, admins: true, memberships: true } } },
+  });
+  if (!program) redirect("/admin/programs");
+
+  // Refuse rather than cascade-orphan real cards/admins/members — this is
+  // meant for cleaning up empty/test Programs, not a way to nuke a live one.
+  const { cards, admins, memberships } = program._count;
+  if (cards > 0 || admins > 0 || memberships > 0) {
+    redirect(`/admin/programs?deleteError=${programId}`);
+  }
+
+  await prisma.program.delete({ where: { id: programId } });
+  revalidatePath("/admin/programs");
+  redirect("/admin/programs?deleted=1");
+}
+
 export async function updateProgramAction(programId: string, formData: FormData) {
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
