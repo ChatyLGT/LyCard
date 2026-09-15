@@ -208,6 +208,31 @@ puede romper nada de lo que ya funciona) y dejo todo lo que implica tocar
 autenticación pública o el modelo de `Card` existente para cuando estés
 despierto y puedas decir "sí, dale" a cada paso.
 
+## ⚠️ INCIDENTE — leer esto primero, antes que el resto del plan
+
+`/c/gunnar` está devolviendo 404 en producción ahora mismo (probado
+09:45 GMT). Confirmé que **no lo causó nada de lo que hice esta noche**:
+repetí la misma prueba contra el deployment anterior a mi push de la
+Fase 0 y también da 404 — así que es anterior a mis cambios, no una
+regresión mía.
+
+La causa más probable: la tarjeta con slug `gunnar` ya no existe en la
+base de producción (se borró, o le cambiaron el slug). No tengo forma de
+confirmarlo ni arreglarlo desde acá — no tengo acceso directo a la base
+de Neon en este sandbox.
+
+**Cuando te levantes, antes que nada:**
+1. Entrá a `/admin` y fijate si tu tarjeta sigue en la lista.
+2. Si no está: **antes de recrearla a mano**, fijate si tu plan de Neon
+   tiene point-in-time restore / branching (Vercel → proyecto lycard →
+   Storage → tu base → buscá "Restore" o "Branch from point in time").
+   Eso te puede traer de vuelta la fila exacta con todo lo que habías
+   cargado (foto, badges, redes, todo) en vez de perderlo y tener que
+   completarlo de nuevo.
+3. Avisame qué encontrás y seguimos desde ahí.
+
+---
+
 ## Estado — qué se hizo esta madrugada
 
 **Hecho y en producción (o listo para deployar):**
