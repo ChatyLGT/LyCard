@@ -13,13 +13,13 @@ export const dynamic = "force-dynamic";
 export default async function AdminProgramsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; deleted?: string; deleteError?: string }>;
+  searchParams: Promise<{ error?: string; deleted?: string; deleteError?: string; reset?: string }>;
 }) {
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
   if (scope.programId) redirect(`/admin/programs/${scope.programId}`);
 
-  const { error, deleted, deleteError } = await searchParams;
+  const { error, deleted, deleteError, reset } = await searchParams;
 
   const programs = await prisma.program.findMany({
     orderBy: { createdAt: "asc" },
@@ -52,6 +52,11 @@ export default async function AdminProgramsPage({
       </div>
 
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px", display: "flex", flexDirection: "column", gap: 24 }}>
+        {reset === "1" && (
+          <p style={{ margin: 0, font: "600 12px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>
+            ✓ Plataforma reiniciada. La Card "MasterN0" está lista en /admin — creá tu primer Programa acá abajo.
+          </p>
+        )}
         <section style={{ background: "#201f1f", borderRadius: 14, padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
           <h2 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#F5F2EB" }}>
             Nuevo Programa
@@ -141,6 +146,13 @@ export default async function AdminProgramsPage({
             </div>
           ))}
         </section>
+
+        <Link
+          href="/admin/reset"
+          style={{ alignSelf: "flex-start", color: "#8a6b68", font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase" }}
+        >
+          Zona de Riesgo →
+        </Link>
       </div>
     </div>
   );

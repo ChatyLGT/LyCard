@@ -909,6 +909,32 @@ terminar.
 
 ---
 
+**"Zona de Riesgo" — reinicio completo de la plataforma** (hecho, probado
+localmente; **la ejecución en producción queda en manos de Gunnar**, ver
+abajo). Pedido explícito: borrar todas las Cards actuales y arrancar de
+cero con una Card "MasterN0" como identidad raíz — la única que existe
+antes de que se cree ningún Programa. No tengo (ni pedí) acceso directo
+a la base de producción, así que esto se armó como una acción
+MasterN0-only dentro del panel (`/admin/reset`, link "Zona de Riesgo" al
+pie de `/admin/programs`), no como un script que yo corro. Borra, en una
+sola transacción y en orden de dependencias: Registration, OriginMemento,
+ProgramMembership, Card, OtpCode, todo Admin salvo el que ejecuta el
+reset (así no te desloguea a vos mismo), Puesto, Member, Program — y
+crea la Card `mastern0` al final. Exige escribir literalmente "BORRAR
+TODO" en un input antes de ejecutar (chequeado en el server, no solo en
+el cliente). Probado local con Playwright: frase incorrecta rebota con
+error sin tocar nada; frase correcta ejecuta, confirmé con `psql` que
+las 8 tablas relevantes quedan en 0 salvo 1 Card (`mastern0`) y el mismo
+Admin que lo ejecutó; la sesión de ese Admin sigue viva después (no lo
+desloguea); `/c/mastern0` renderiza. `tsc` limpio.
+
+**Deploy**: el código de `/admin/reset` ya está en producción. La
+ejecución del borrado en sí — apretar el botón — es un paso que le
+corresponde a Gunnar, no a mí: es irreversible y afecta datos reales
+(las Cards de `gunnarpareja` y `juancho`, entre otras).
+
+---
+
 **Qué sigue — Fase 8**: WhatsApp Business API real. Esta fase no depende
 de mí escribiendo código — depende de que consigan cuenta de WhatsApp
 Business verificada por Meta, un proveedor (Twilio/360dialog/Meta Cloud
