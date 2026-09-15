@@ -485,7 +485,7 @@ export default function LyCardView({
                 width: "100%",
                 maxWidth: 358,
                 display: "flex",
-                alignItems: "center",
+                alignItems: "flex-end",
                 justifyContent: "center",
                 gap: "clamp(8px,2.4dvh,16px)",
               }}
