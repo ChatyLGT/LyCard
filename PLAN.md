@@ -245,26 +245,57 @@ tenga los mismos datos que ya validé en local. Es aditivo e idempotente
 ```sql
 INSERT INTO "Program" (id, slug, name, "primaryColor", wa, ig, li, x, fb, tiktok, yt, web, "videoThumbnailUrl", "createdAt", "updatedAt")
 SELECT 'legacy-program', 'legacy', 'Legacy', '#C8A15A', wa, ig, li, x, fb, tiktok, yt, web, "videoThumbnailUrl", now(), now()
-FROM "Card" WHERE slug = 'gunnar'
+FROM "Card" WHERE slug = 'mastern0'
 ON CONFLICT (slug) DO NOTHING;
 
 INSERT INTO "Member" (id, whatsapp, name, email, "createdAt", "updatedAt")
 SELECT 'gunnar-member', COALESCE(NULLIF(wa,''), 'gunnar-bootstrap'), name, '', now(), now()
-FROM "Card" WHERE slug = 'gunnar'
+FROM "Card" WHERE slug = 'mastern0'
 ON CONFLICT (whatsapp) DO NOTHING;
 
 INSERT INTO "ProgramMembership" (id, "memberId", "programId", "referredByMembershipId", status, "createdAt", "updatedAt")
 VALUES ('gunnar-membership', 'gunnar-member', 'legacy-program', NULL, 'active', now(), now())
 ON CONFLICT ("memberId", "programId") DO NOTHING;
 
-UPDATE "Card" SET kind = 'project', "memberId" = 'gunnar-member', "programId" = 'legacy-program' WHERE slug = 'gunnar';
+UPDATE "Card" SET kind = 'project', "memberId" = 'gunnar-member', "programId" = 'legacy-program' WHERE slug = 'mastern0';
 ```
+(Corregido: el slug real es `mastern0`, no `gunnar` — ver el incidente
+resuelto más abajo.)
 
-**Por qué paré acá y no seguí con Fase 1/2/3:** lo que sigue (auth de
-Miembro, el switch host/invitado en la tarjeta pública, el chat de
-onboarding) ya implica tocar código que SÍ está en el camino de lo que
-hoy funciona en producción — la página pública `/c/[slug]` y su lógica de
-render. Prefiero que lo veas vos primero, en vivo, paso a paso, en vez de
-que te despiertes con cambios grandes en la tarjeta que ya está circulando
-sin que los hayas podido frenar a tiempo si algo no te cierra. Cuando te
-despiertes y me digas "dale, seguí con la Fase 1", arranco.
+---
+
+## Fase 1 — hecha, probada localmente, en producción
+
+- Sesión de Miembro real (`lib/memberAuth.ts`), cookie separada de la de
+  Admin (`lycard_member` vs `lycard_admin`), nunca se pisan.
+- **WhatsApp OTP simulado**: `/m/login` pide el número, genera un código
+  de 6 dígitos (`OtpCode`, 10 min de vigencia, un solo uso), lo muestra en
+  pantalla como estaría en el WhatsApp real. Al confirmar, crea el
+  `Member` si es la primera vez.
+- **Google Sign-In real**: `/m/auth/google/start` → consentimiento de
+  Google → `/m/auth/google/callback` intercambia el código y crea/vincula
+  el `Member` por `googleId` (o por email si ya existía por WhatsApp).
+  **Necesita `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`** — sin eso, el
+  botón redirige con un error prolijo en vez de romperse. Instrucciones
+  de cómo generarlas están en `.env.example`.
+- Si al Miembro le falta el email (típico en el camino de WhatsApp),
+  `/m/dashboard` se lo pide antes de mostrar el resto — no es su
+  credencial, es dato de campaña, como pediste.
+- `/m/*` protegido por `proxy.ts` salvo `/m/login` y las rutas de Google
+  OAuth (tienen que ser públicas por definición).
+- Probado end-to-end con Playwright: pedir código → verificar → dashboard
+  → guardar email → cerrar sesión → confirmar que `/m/dashboard` vuelve a
+  pedir login. Encontré y arreglé un hydration mismatch real en el camino
+  (leía `window.location` directo en el render — lo cambié a
+  `useSearchParams` con su `Suspense`, que es la forma correcta en
+  Next.js). Build completo sin errores, cero impacto en `/c/[slug]`,
+  `/admin` y el resto de lo que ya andaba — confirmado de nuevo.
+
+**Pendiente de vos:** crear las credenciales de Google OAuth cuando
+quieras que el botón funcione de verdad (mientras tanto queda inerte,
+sin romper nada). Pasos en `.env.example`, mismo patrón que hicimos con
+Resend.
+
+**Qué sigue:** Fase 2 — el switch host/invitado en `/c/[slug]` (acá sí
+toco la página pública que ya está circulando). Doy la señal antes de
+tocarla, como con todo lo anterior.

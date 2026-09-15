@@ -97,10 +97,12 @@ model Program {
 
 // A real person, distinct from Admin (the platform superuser). Owns up to
 // three Cards (project/company/personal — see PLAN.md Fase 0/5) once
-// their membership is active. Auth is Fase 1, not wired up yet.
+// their membership is active. whatsapp is meant to be the primary
+// credential (PLAN.md Fase 1) but is nullable because a Google-first
+// signup won't have it yet — added later from their own dashboard.
 model Member {
   id        String   @id @default(cuid())
-  whatsapp  String   @unique
+  whatsapp  String?  @unique
   email     String   @default("")
   googleId  String?  @unique
   name      String   @default("")
@@ -110,6 +112,21 @@ model Member {
   memberships ProgramMembership[]
   cards       Card[]
   origin      OriginMemento?
+}
+
+// A simulated WhatsApp OTP (PLAN.md Fase 1 — real sending is Fase 8).
+// Short-lived, one-time use, scoped to a phone number rather than an
+// existing Member since the first login for a new person IS how their
+// Member row gets created.
+model OtpCode {
+  id        String    @id @default(cuid())
+  whatsapp  String
+  code      String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([whatsapp])
 }
 
 // A Member's standing within one Program — tracks the referral tree
