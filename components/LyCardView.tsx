@@ -74,16 +74,30 @@ const BADGE_BTN: CSSProperties = {
 
 const SOCIAL_ICON: CSSProperties = {
   flex: "none",
-  width: "clamp(21px,5.8dvh,23px)",
-  height: "clamp(21px,5.8dvh,23px)",
+  width: "clamp(24px,6.6dvh,27px)",
+  height: "clamp(24px,6.6dvh,27px)",
   borderRadius: 999,
   color: "var(--goldtxt,#E5C378)",
-  background: "var(--pill,rgba(20,20,20,.6))",
-  border: "1px solid var(--line2,rgba(200,161,90,.45))",
-  backdropFilter: "blur(6px)",
+  background: "rgba(20,20,20,.85)",
+  border: "1px solid rgba(200,161,90,.55)",
+  boxShadow: "0 0 10px rgba(200,161,90,.25)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
+};
+
+// The plate each side's icon cluster sits on — gives 1-3 icons a defined,
+// "mounted" shape instead of floating loose dots when a card only has a
+// couple of channels filled in.
+const SOCIAL_DOCK: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: "clamp(6px,1.8dvh,10px)",
+  padding: "clamp(5px,1.4dvh,7px)",
+  borderRadius: 999,
+  background: "rgba(13,13,13,.55)",
+  border: "1px solid rgba(200,161,90,.28)",
+  backdropFilter: "blur(6px)",
 };
 
 function Sweep() {
@@ -170,7 +184,7 @@ function SocialLink({ channel, card }: { channel: keyof typeof SOCIAL_LABEL; car
     <a key={channel} aria-label={SOCIAL_LABEL[channel]} href={href} target="_blank" rel="noopener" style={SOCIAL_ICON}>
       <svg
         viewBox="0 0 24 24"
-        style={{ width: "52%", height: "52%" }}
+        style={{ width: "60%", height: "60%" }}
         fill="none"
         stroke="currentColor"
         strokeWidth="1.7"
@@ -180,6 +194,20 @@ function SocialLink({ channel, card }: { channel: keyof typeof SOCIAL_LABEL; car
         {SOCIAL_SVG[channel]}
       </svg>
     </a>
+  );
+}
+
+type SocialChannel = keyof typeof SOCIAL_LABEL;
+
+function SocialDock({ channels, card }: { channels: SocialChannel[]; card: Card }) {
+  const filled = channels.filter((ch) => socialHref(ch, card[ch as "fb" | "ig" | "tiktok" | "li" | "yt" | "web"]));
+  if (filled.length === 0) return null;
+  return (
+    <div style={SOCIAL_DOCK}>
+      {filled.map((ch) => (
+        <SocialLink key={ch} channel={ch} card={card} />
+      ))}
+    </div>
   );
 }
 
@@ -459,14 +487,10 @@ export default function LyCardView({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "clamp(14px,4.5dvh,26px)",
+                gap: "clamp(8px,2.4dvh,16px)",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "clamp(8px,2.4dvh,14px)" }}>
-                <SocialLink channel="fb" card={card} />
-                <SocialLink channel="ig" card={card} />
-                <SocialLink channel="tiktok" card={card} />
-              </div>
+              <SocialDock channels={["fb", "ig", "tiktok"]} card={card} />
               <button
                 type="button"
                 onClick={enterOffice}
@@ -526,11 +550,7 @@ export default function LyCardView({
                   </svg>
                 </span>
               </button>
-              <div style={{ display: "flex", alignItems: "center", gap: "clamp(8px,2.4dvh,14px)" }}>
-                <SocialLink channel="li" card={card} />
-                <SocialLink channel="yt" card={card} />
-                <SocialLink channel="web" card={card} />
-              </div>
+              <SocialDock channels={["li", "yt", "web"]} card={card} />
             </div>
           </div>
 
