@@ -72,15 +72,21 @@ const BADGE_BTN: CSSProperties = {
   cursor: "pointer",
 };
 
+// Glassy "mirror" badge — bright inner highlight top, dark falloff bottom,
+// like a polished lens sitting on the gem plate behind it. The Sweep gleam
+// (rendered inside) adds the moving reflection.
 const SOCIAL_ICON: CSSProperties = {
+  position: "relative",
+  overflow: "hidden",
   flex: "none",
   width: "clamp(24px,6.6dvh,27px)",
   height: "clamp(24px,6.6dvh,27px)",
   borderRadius: 999,
-  color: "var(--goldtxt,#E5C378)",
-  background: "rgba(20,20,20,.85)",
-  border: "1px solid rgba(200,161,90,.55)",
-  boxShadow: "0 0 10px rgba(200,161,90,.25)",
+  color: "#FBF8F1",
+  background: "linear-gradient(160deg,rgba(255,255,255,.32) 0%,rgba(255,255,255,.06) 45%,rgba(255,255,255,.14) 100%)",
+  border: "1px solid rgba(255,255,255,.4)",
+  boxShadow:
+    "inset 0 1px 1px rgba(255,255,255,.55), inset 0 -3px 5px rgba(0,0,0,.3), 0 2px 6px rgba(0,0,0,.35)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -88,16 +94,28 @@ const SOCIAL_ICON: CSSProperties = {
 
 // The plate each side's icon cluster sits on — gives 1-3 icons a defined,
 // "mounted" shape instead of floating loose dots when a card only has a
-// couple of channels filled in.
+// couple of channels filled in. Tinted like a cut gemstone: jade on the
+// left, ruby on the right.
 const SOCIAL_DOCK: CSSProperties = {
   display: "flex",
   alignItems: "center",
   gap: "clamp(6px,1.8dvh,10px)",
   padding: "clamp(5px,1.4dvh,7px)",
   borderRadius: 999,
-  background: "rgba(13,13,13,.55)",
-  border: "1px solid rgba(200,161,90,.28)",
   backdropFilter: "blur(6px)",
+};
+
+const GEM_TONE: Record<"jade" | "ruby", CSSProperties> = {
+  jade: {
+    background: "linear-gradient(165deg,rgba(84,214,158,.42) 0%,rgba(10,64,46,.7) 100%)",
+    border: "1px solid rgba(120,232,178,.55)",
+    boxShadow: "0 0 16px rgba(72,206,148,.35), inset 0 1px 1px rgba(255,255,255,.15)",
+  },
+  ruby: {
+    background: "linear-gradient(165deg,rgba(236,96,116,.42) 0%,rgba(94,14,30,.7) 100%)",
+    border: "1px solid rgba(244,130,146,.55)",
+    boxShadow: "0 0 16px rgba(224,80,100,.35), inset 0 1px 1px rgba(255,255,255,.15)",
+  },
 };
 
 function Sweep() {
@@ -182,9 +200,10 @@ function SocialLink({ channel, card }: { channel: keyof typeof SOCIAL_LABEL; car
   if (!href) return null;
   return (
     <a key={channel} aria-label={SOCIAL_LABEL[channel]} href={href} target="_blank" rel="noopener" style={SOCIAL_ICON}>
+      <Sweep />
       <svg
         viewBox="0 0 24 24"
-        style={{ width: "60%", height: "60%" }}
+        style={{ width: "60%", height: "60%", position: "relative" }}
         fill="none"
         stroke="currentColor"
         strokeWidth="1.7"
@@ -199,11 +218,19 @@ function SocialLink({ channel, card }: { channel: keyof typeof SOCIAL_LABEL; car
 
 type SocialChannel = keyof typeof SOCIAL_LABEL;
 
-function SocialDock({ channels, card }: { channels: SocialChannel[]; card: Card }) {
+function SocialDock({
+  channels,
+  card,
+  tone,
+}: {
+  channels: SocialChannel[];
+  card: Card;
+  tone: "jade" | "ruby";
+}) {
   const filled = channels.filter((ch) => socialHref(ch, card[ch as "fb" | "ig" | "tiktok" | "li" | "yt" | "web"]));
   if (filled.length === 0) return null;
   return (
-    <div style={SOCIAL_DOCK}>
+    <div style={{ ...SOCIAL_DOCK, ...GEM_TONE[tone] }}>
       {filled.map((ch) => (
         <SocialLink key={ch} channel={ch} card={card} />
       ))}
@@ -421,10 +448,10 @@ export default function LyCardView({
                 style={{
                   position: "absolute",
                   inset: "auto 0 0 0",
-                  height: 176,
+                  height: 120,
                   background:
                     "linear-gradient(to top,var(--photofade,#0D0D0D) 0%,var(--photofade2,rgba(13,13,13,.52)) 45%,var(--photofade3,rgba(13,13,13,.25)) 72%,transparent 100%)",
-                  opacity: 0.92,
+                  opacity: 0.78,
                   pointerEvents: "none",
                   transition: "background .3s ease",
                 }}
@@ -490,7 +517,7 @@ export default function LyCardView({
                 gap: "clamp(8px,2.4dvh,16px)",
               }}
             >
-              <SocialDock channels={["fb", "ig", "tiktok"]} card={card} />
+              <SocialDock channels={["fb", "ig", "tiktok"]} card={card} tone="jade" />
               <button
                 type="button"
                 onClick={enterOffice}
@@ -550,7 +577,7 @@ export default function LyCardView({
                   </svg>
                 </span>
               </button>
-              <SocialDock channels={["li", "yt", "web"]} card={card} />
+              <SocialDock channels={["li", "yt", "web"]} card={card} tone="ruby" />
             </div>
           </div>
 
