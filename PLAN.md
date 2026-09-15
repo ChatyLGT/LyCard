@@ -623,6 +623,52 @@ siguiente ronda, fuera de esta tanda).
 
 ---
 
+## Fase 9 (en cola) — Identidad de tarjeta 100% definida por el N0
+
+Ampliación de lo que en la Fase 7.1 quedó anotado como diferido
+(dropdowns de Cita/Siglas/Denominación, distintivos). Gunnar aclaró el
+alcance completo el 2026-09-15: no es solo mover 3 campos a Programa —
+es que **todo lo que hoy vive hardcodeado en el código** (escalas fijas,
+copy de modales, labels de botones) pasa a ser configuración por
+Programa que arma su N0. La tarjeta pública deja de tener contenido
+fijo — todo lo lee de la config del Programa. Alcance confirmado:
+
+1. **Medallón principal** (hoy `MEDALS` en `lib/data.ts`, escala fija
+   bronce→diamante). El N0 define cuántos niveles tiene su Programa,
+   nombre y (probablemente) ícono/color de cada uno.
+2. **Siglas** — dejan de ser texto libre por tarjeta. Son los *puestos*
+   que existen dentro del Programa (ej. O.D., C.M.O.) — lista que arma
+   el N0, no cada host.
+3. **Denominación** — la descripción de cada sigla/puesto (hoy el campo
+   `tooltip`, libre) — va pegada 1 a 1 con cada sigla de la lista del N0.
+   Un usuario puede proponer la suya, pero requiere aprobación del N0
+   antes de quedar disponible (pendiente de diseñar ese flujo de
+   aprobación).
+4. **Sabiduría / jerarquía** — hoy 6 niveles fijos (`RANKS` en
+   `lib/data.ts`, curioso→ancient). El N0 elige cuántos niveles tiene su
+   Programa, nombre y descripción de cada uno.
+5. **Modales** — el contenido de los popups (O.D., Ancient, Story, Info,
+   kicker de Virtual Office, etc.) hoy es copy fijo en `LyCardView.tsx`
+   — pasa a ser editable por Programa.
+6. **Acciones/botones** — "Info Legacy" y "Agendar Entrevista" no son
+   necesariamente esos textos ni esas acciones; el N0 puede renombrarlos
+   y potencialmente cambiar qué hacen.
+
+Implica: nuevo modelo o campos Json en `Program` para esta config,
+rehacer el editor de Programa (`/admin/programs/[id]`) para armarla, y
+que `EditorForm.tsx` + `LyCardView.tsx` lean de ahí en vez de tener
+nada fijo. Es la Fase que le da sentido real a "multi-programa" (cada N0
+diseña su propio juego de reglas) — grande, no es un gancho rápido.
+**Gunnar decidió dejarla en cola por ahora**, no arrancar todavía.
+
+Dato suelto que quedó resuelto en la misma conversación: el WhatsApp
+**es obligatorio hoy** para crear tarjeta vía el chat de onboarding
+(`components/OnboardingChat.tsx` — paso hardcodeado nombre→whatsapp→
+otp→email, sin bypass). Solo es opcional si la persona entra por
+`/m/login` y usa "Continuar con Google" en vez del flujo de WhatsApp.
+
+---
+
 **Qué sigue — Fase 8**: WhatsApp Business API real. Esta fase no depende
 de mí escribiendo código — depende de que consigan cuenta de WhatsApp
 Business verificada por Meta, un proveedor (Twilio/360dialog/Meta Cloud
