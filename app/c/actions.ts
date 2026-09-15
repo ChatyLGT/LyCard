@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { slotById } from "@/lib/interviewSlots";
+import { currentMemberId } from "@/lib/memberAuth";
 
 export async function registerInterviewAction(input: {
   cardSlug: string;
@@ -22,6 +23,25 @@ export async function registerInterviewAction(input: {
   const card = await prisma.card.findUnique({ where: { slug: input.cardSlug } });
   if (!card) return { ok: false as const, error: "card" };
 
+  // Link this registration to the visitor's own membership when they're
+  // logged in as a Member (PLAN.md Fase 4) — this is what lets the admin
+  // panel activate their membership from the registration. Anonymous
+  // registrations (or ones with no matching membership yet) keep working,
+  // just unlinked, exactly as before.
+  const memberId = await currentMemberId();
+  let membershipId: string | null = null;
+  if (memberId) {
+    const membership = card.programId
+      ? await prisma.programMembership.findUnique({
+          where: { memberId_programId: { memberId, programId: card.programId } },
+        })
+      : await prisma.programMembership.findFirst({
+          where: { memberId },
+          orderBy: { createdAt: "desc" },
+        });
+    membershipId = membership?.id ?? null;
+  }
+
   await prisma.registration.create({
     data: {
       cardId: card.id,
@@ -30,6 +50,7 @@ export async function registerInterviewAction(input: {
       name,
       whatsapp,
       email,
+      membershipId,
     },
   });
 

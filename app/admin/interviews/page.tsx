@@ -1,12 +1,16 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { completeInterviewAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminInterviewsPage() {
   const registrations = await prisma.registration.findMany({
     orderBy: { createdAt: "desc" },
-    include: { card: { select: { name: true, slug: true } } },
+    include: {
+      card: { select: { name: true, slug: true } },
+      membership: { include: { member: true } },
+    },
   });
 
   return (
@@ -53,29 +57,78 @@ export default async function AdminInterviewsPage() {
             Todavía no hay inscripciones.
           </p>
         )}
-        {registrations.map((r) => (
-          <div key={r.id} style={{ background: "#201f1f", borderRadius: 12, padding: 14, display: "flex", flexDirection: "column", gap: 4 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-              <span style={{ font: "700 13px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>{r.name}</span>
-              <span style={{ font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#C8A15A" }}>
-                {r.slotLabel}
+        {registrations.map((r) => {
+          const membership = r.membership;
+          const isActive = membership?.status === "active";
+          return (
+            <div key={r.id} style={{ background: "#201f1f", borderRadius: 12, padding: 14, display: "flex", flexDirection: "column", gap: 4 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                <span style={{ font: "700 13px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>{r.name}</span>
+                <span style={{ font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#C8A15A" }}>
+                  {r.slotLabel}
+                </span>
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 12, font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
+                <span>WhatsApp: {r.whatsapp}</span>
+                {r.email && <span>Email: {r.email}</span>}
+                <span>
+                  Vía:{" "}
+                  <Link href={`/c/${r.card.slug}`} style={{ color: "#C8A15A" }}>
+                    {r.card.name || r.card.slug}
+                  </Link>
+                </span>
+              </div>
+              <span style={{ font: "400 10px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
+                {r.createdAt.toLocaleString("es-MX")}
               </span>
+
+              {membership && (
+                <div
+                  style={{
+                    marginTop: 8,
+                    paddingTop: 10,
+                    borderTop: "1px solid rgba(255,255,255,.06)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 10,
+                  }}
+                >
+                  <span
+                    style={{
+                      font: "700 10px 'Plus Jakarta Sans',sans-serif",
+                      letterSpacing: ".08em",
+                      textTransform: "uppercase",
+                      color: isActive ? "#7BC98E" : "#C8A15A",
+                    }}
+                  >
+                    {isActive ? "✓ Membership activa" : "Membership: invitado"}
+                  </span>
+                  {!isActive && (
+                    <form action={completeInterviewAction.bind(null, r.id)}>
+                      <button
+                        type="submit"
+                        style={{
+                          background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)",
+                          border: "none",
+                          borderRadius: 999,
+                          padding: "7px 14px",
+                          color: "#0D0D0D",
+                          font: "700 10px 'Plus Jakarta Sans',sans-serif",
+                          letterSpacing: ".06em",
+                          textTransform: "uppercase",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Marcar entrevista hecha
+                      </button>
+                    </form>
+                  )}
+                </div>
+              )}
             </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
-              <span>WhatsApp: {r.whatsapp}</span>
-              {r.email && <span>Email: {r.email}</span>}
-              <span>
-                Vía:{" "}
-                <Link href={`/c/${r.card.slug}`} style={{ color: "#C8A15A" }}>
-                  {r.card.name || r.card.slug}
-                </Link>
-              </span>
-            </div>
-            <span style={{ font: "400 10px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
-              {r.createdAt.toLocaleString("es-MX")}
-            </span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

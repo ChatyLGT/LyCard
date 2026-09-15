@@ -141,9 +141,12 @@ model ProgramMembership {
   referredByMembershipId String?
   referredBy             ProgramMembership?  @relation("Referrals", fields: [referredByMembershipId], references: [id])
   referred               ProgramMembership[] @relation("Referrals")
-  status                 String   @default("invited") // invited | interviewed | active
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  status                 String    @default("invited") // invited | interviewed | active
+  interviewedAt          DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  registrations Registration[]
 
   @@unique([memberId, programId])
 }
@@ -174,5 +177,12 @@ model Registration {
   email     String   @default("")
   createdAt DateTime @default(now())
 
+  // Linked when the visitor registering is a logged-in Member with a
+  // membership in the Program behind the card (PLAN.md Fase 4) — nullable so
+  // anonymous registrations (or ones predating this) keep working untouched.
+  membershipId String?
+  membership   ProgramMembership? @relation(fields: [membershipId], references: [id], onDelete: SetNull)
+
   @@index([cardId])
+  @@index([membershipId])
 }

@@ -359,6 +359,49 @@ Resend.
   También probé el tap del QR en modo host, confirmé que navega
   correctamente. Build completo sin errores.
 
-**Qué sigue:** Fase 4 — el gate de entrevista que activa la membership
-(`invited` → `active`) y dispara la creación de las tarjetas de Empresa y
-Personal. Doy la señal antes de arrancar, como con todo lo anterior.
+---
+
+## Fase 4 — hecha, probada localmente, en producción
+
+- `Registration` ahora se vincula a la `ProgramMembership` del visitante
+  cuando quien agenda está logueado como Miembro (`registerInterviewAction`
+  resuelve su membership en el Programa de la tarjeta que está viendo). Las
+  registraciones anónimas o sin membership siguen funcionando igual que
+  antes, solo que sin ese vínculo — nada se rompe para lo que ya existía.
+- `/admin/interviews` ahora muestra el estado de la membership de cada
+  inscripto y, si todavía es `invited`, un botón **"Marcar entrevista
+  hecha"** — como asumí en el plan original (vos o el N0 del Programa la
+  marcan a mano después de la charla real, no hay forma automática de
+  saberlo).
+- Al marcarla (`completeInterviewAction`, solo Admin): la membership pasa a
+  `active` con `interviewedAt` registrado, y en la misma transacción se
+  crean sus tres tarjetas — `project` (su propia tarjeta de reclutamiento,
+  slug nuevo derivado de su nombre), `company` y `personal` (en blanco,
+  listas para que las edite) — salteando cualquier tipo que ya tuviera (así
+  que apretar el botón dos veces no duplica nada, es idempotente). También
+  archiva el `OriginMemento`: una foto de la tarjeta que lo reclutó
+  (nombre, título, slug, retrato del referente) para su futura Oficina
+  Virtual.
+- Probado de punta a punta con Playwright contra Postgres local: onboarding
+  completo → agendar entrevista real desde `/c/gunnar` → login de Admin →
+  activar desde `/admin/interviews` → confirmé en base que la membership
+  quedó `active`, las 3 tarjetas se crearon con los slugs correctos, el
+  `OriginMemento` quedó con el snapshot del referente (vos, `gunnar`), y la
+  nueva tarjeta de proyecto ya responde 200 en `/c/fase4-testigo`. Build
+  completo sin errores, `tsc`/`eslint` limpios.
+- Extraje `slugify` (antes duplicado en `app/admin/actions.ts`) a
+  `lib/slug.ts`, junto con un `uniqueSlug()` compartido para evitar
+  colisiones al derivar slugs de un nombre — lo usa tanto la creación
+  manual de tarjetas del Admin como el auto-spawn de esta fase.
+
+**Nota de diseño:** no toqué producción con datos de prueba — a diferencia
+de las fases anteriores (que solo necesitaban un `GET` para verificar), esta
+fase escribe (activar una membership, crear tarjetas) y no quise ensuciar tu
+base real con un "Fase4 Testigo" de mentira. Verifiqué en prod solo que
+nada se rompió (build, rutas existentes, sin errores de runtime) — la
+prueba de escritura completa quedó en local, donde la corrí con datos
+descartables.
+
+**Qué sigue:** Fase 5 — los editores y vistas públicas de las tarjetas de
+Empresa y Personal (hoy se crean en blanco, sin editor propio todavía).
+Doy la señal antes de arrancar, como con todo lo anterior.

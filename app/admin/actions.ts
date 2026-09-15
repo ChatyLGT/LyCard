@@ -12,6 +12,7 @@ import {
 } from "@/lib/auth";
 import { saveUpload } from "@/lib/storage";
 import { MEDALS, RANKS } from "@/lib/data";
+import { slugify } from "@/lib/slug";
 
 export async function loginAction(formData: FormData) {
   const email = String(formData.get("email") || "");
@@ -58,16 +59,6 @@ export async function changePasswordAction(formData: FormData) {
   await prisma.admin.update({ where: { id: adminId }, data: { passwordHash } });
 
   redirect("/admin/account?saved=1");
-}
-
-function slugify(input: string) {
-  return input
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "")
-    .slice(0, 60);
 }
 
 export async function createCardAction(formData: FormData) {
