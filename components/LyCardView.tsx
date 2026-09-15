@@ -222,35 +222,40 @@ export default function LyCardView({
   return (
     <div
       style={{
-        minHeight: "100vh",
+        height: "100dvh",
         width: "100%",
         display: "flex",
         justifyContent: "center",
+        overflow: "hidden",
         background: "#09090b",
         fontFamily: "'Plus Jakarta Sans',sans-serif",
         WebkitFontSmoothing: "antialiased",
         ...THEME_VARS[theme],
       }}
     >
-      <div style={{ position: "relative", width: "100%", maxWidth: 430, minHeight: "100vh", overflow: "hidden" }}>
+      <div style={{ position: "relative", width: "100%", maxWidth: 430, height: "100%", overflow: "hidden" }}>
         <div
           style={{
             display: "flex",
             flexDirection: "column",
-            padding: "16px 16px 28px",
-            gap: 24,
+            height: "100%",
+            padding:
+              "calc(env(safe-area-inset-top,0px) + 10px) 14px calc(env(safe-area-inset-bottom,0px) + 10px)",
+            gap: "clamp(6px,1.4dvh,14px)",
             background: "var(--card,transparent)",
-            minHeight: "100vh",
+            overflow: "hidden",
             transition: "background-color .3s ease",
           }}
         >
           {/* Portrait */}
-          <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <div style={{ position: "relative", flex: "1 1 auto", minHeight: 0, display: "flex", flexDirection: "column", alignItems: "center" }}>
             <div
               style={{
                 position: "relative",
                 width: "100%",
-                height: 340,
+                flex: "1 1 auto",
+                minHeight: 130,
+                maxHeight: 420,
                 borderRadius: 24,
                 overflow: "hidden",
                 border: "1px solid var(--line,rgba(200,161,90,.22))",
@@ -440,8 +445,20 @@ export default function LyCardView({
           </div>
 
           {/* Quote + story + socials */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 14 }}>
-            <p style={{ margin: 0, padding: "0 16px", font: "italic 400 15px/1.7 'Playfair Display',serif", letterSpacing: ".01em", color: "var(--ink2,#C2BEB5)" }}>
+          <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: "clamp(6px,1dvh,12px)" }}>
+            <p
+              style={{
+                margin: 0,
+                padding: "0 16px",
+                font: "italic 400 clamp(12px,2.6dvh,15px)/1.4 'Playfair Display',serif",
+                letterSpacing: ".01em",
+                color: "var(--ink2,#C2BEB5)",
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+              }}
+            >
               {card.quote}
             </p>
             <button
@@ -451,7 +468,7 @@ export default function LyCardView({
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 8,
-                padding: "9px 16px",
+                padding: "clamp(6px,1dvh,9px) 16px",
                 borderRadius: 999,
                 background: "var(--surf,#141414)",
                 border: "1px solid var(--line2,rgba(200,161,90,.4))",
@@ -474,11 +491,11 @@ export default function LyCardView({
                 alignItems: "center",
                 justifyContent: "center",
                 flexWrap: "nowrap",
-                gap: "clamp(10px,4%,20px)",
+                gap: "clamp(8px,3%,16px)",
                 width: "100%",
                 maxWidth: 358,
-                margin: "4px auto 0",
-                padding: "12px 0 0",
+                margin: "2px auto 0",
+                padding: "8px 0 0",
                 borderTop: "1px solid var(--line,rgba(200,161,90,.22))",
               }}
             >
@@ -498,12 +515,12 @@ export default function LyCardView({
           </div>
 
           {/* QR */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center" }}>
             <div
               style={{
                 position: "relative",
-                padding: 16,
-                borderRadius: 24,
+                padding: 10,
+                borderRadius: 20,
                 background: "var(--qrbg,rgba(20,20,20,.95))",
                 border: "1px solid var(--line2,rgba(212,175,55,.55))",
                 boxShadow: "0 12px 36px rgba(0,0,0,.85)",
@@ -512,25 +529,25 @@ export default function LyCardView({
                 justifyContent: "center",
               }}
             >
-              <span style={{ position: "absolute", top: 10, left: 10, width: 20, height: 20, borderTop: "2px solid #D4AF37", borderLeft: "2px solid #D4AF37", borderRadius: "6px 0 0 0" }} />
-              <span style={{ position: "absolute", top: 10, right: 10, width: 20, height: 20, borderTop: "2px solid #D4AF37", borderRight: "2px solid #D4AF37", borderRadius: "0 6px 0 0" }} />
-              <span style={{ position: "absolute", bottom: 10, left: 10, width: 20, height: 20, borderBottom: "2px solid #D4AF37", borderLeft: "2px solid #D4AF37", borderRadius: "0 0 0 6px" }} />
-              <span style={{ position: "absolute", bottom: 10, right: 10, width: 20, height: 20, borderBottom: "2px solid #D4AF37", borderRight: "2px solid #D4AF37", borderRadius: "0 0 6px 0" }} />
+              <span style={{ position: "absolute", top: 7, left: 7, width: 16, height: 16, borderTop: "2px solid #D4AF37", borderLeft: "2px solid #D4AF37", borderRadius: "6px 0 0 0" }} />
+              <span style={{ position: "absolute", top: 7, right: 7, width: 16, height: 16, borderTop: "2px solid #D4AF37", borderRight: "2px solid #D4AF37", borderRadius: "0 6px 0 0" }} />
+              <span style={{ position: "absolute", bottom: 7, left: 7, width: 16, height: 16, borderBottom: "2px solid #D4AF37", borderLeft: "2px solid #D4AF37", borderRadius: "0 0 0 6px" }} />
+              <span style={{ position: "absolute", bottom: 7, right: 7, width: 16, height: 16, borderBottom: "2px solid #D4AF37", borderRight: "2px solid #D4AF37", borderRadius: "0 0 6px 0" }} />
               <div
-                style={{ width: 176, height: 176, background: "#fff", borderRadius: 8, padding: 8 }}
+                style={{ width: "clamp(84px,15dvh,140px)", height: "clamp(84px,15dvh,140px)", background: "#fff", borderRadius: 8, padding: 6 }}
                 dangerouslySetInnerHTML={{ __html: qrSvg }}
               />
             </div>
           </div>
 
           {/* CTAs */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 4, width: "100%" }}>
+          <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", gap: "clamp(6px,1dvh,12px)", width: "100%" }}>
             <button
               type="button"
               onClick={() => setModal("info")}
               style={{
                 width: "100%",
-                padding: "16px 20px",
+                padding: "clamp(9px,1.6dvh,15px) 20px",
                 border: "1px solid rgba(255,230,163,.45)",
                 borderRadius: 16,
                 background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)",
@@ -554,7 +571,7 @@ export default function LyCardView({
               onClick={shareCard}
               style={{
                 width: "100%",
-                padding: "14px 20px",
+                padding: "clamp(8px,1.4dvh,13px) 20px",
                 borderRadius: 16,
                 background: "var(--surf,#141414)",
                 border: "1px solid var(--line2,rgba(200,161,90,.5))",
