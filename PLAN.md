@@ -451,5 +451,52 @@ descartables.
   errores nuevos de runtime) — igual que en la Fase 4, no generé datos de
   prueba en tu base real.
 
-**Qué sigue:** Fase 6 — dashboards de administración de dos niveles
-(MasterN0 global vs. N0 por Programa). Doy la señal antes de arrancar.
+---
+
+## Fase 6 — hecha, probada localmente, en producción
+
+- **Capa de permisos por Programa**, montada sobre el mismo login/sesión
+  de Admin que ya existía (no un sistema nuevo): `Admin` gana un
+  `programId` opcional. `programId = null` → **MasterN0**, acceso global,
+  exactamente como hoy. `programId` seteado → **N0 de Programa**, acceso
+  acotado a ese Programa únicamente. Solo vos (MasterN0) podés crear
+  Programas y sus N0 — confirmado por diseño, tal como pediste.
+- `/admin/programs` (MasterN0-only): crear Programas nuevos, ver la lista
+  con miembros/N0 de cada uno.
+- `/admin/programs/[id]` — el panel propio de cada Programa:
+  - Editor de marca (nombre, color primario, redes oficiales) vía
+    `updateProgramAction` — accesible a MasterN0 (cualquier Programa) o al
+    N0 asignado (solo el suyo).
+  - Lista de Miembros de ESE Programa (con quién los refirió y link a su
+    tarjeta de proyecto si ya la tiene).
+  - Entrevistas/registraciones acotadas a ese Programa, con el mismo botón
+    "Marcar entrevista hecha" de la Fase 4 — `completeInterviewAction`
+    ahora valida que un N0 acotado no pueda activar membresías fuera de su
+    propio Programa.
+  - Sección "Agregar N0" (crear el admin acotado de ese Programa) — solo
+    visible para MasterN0, un N0 de Programa no la ve.
+- `/admin` (roster completo) y `/admin/interviews` (vista global) ahora
+  redirigen a un N0 acotado hacia su propio `/admin/programs/[id]` en vez
+  de mostrarle datos de otros Programas — ahí es donde vive el "no puede
+  tocar nada fuera del suyo" que pediste.
+- Probado de punta a punta con Playwright contra Postgres local: logueado
+  como vos (MasterN0), creé un Programa nuevo ("Mlqr") y un N0 acotado
+  para él → cerré esa sesión, logueado como ese N0 nuevo → confirmé que
+  cae directo en su propio panel, que pedir `/admin` o `/admin/programs`
+  lo rebota de vuelta al suyo, que **no ve** la sección "Agregar N0", y
+  que pedir DIRECTAMENTE por URL el panel de Legacy (otro Programa) lo
+  rebota también — no llega a ver ni una fila de datos ajenos. Confirmé
+  en Postgres que el Programa y el N0 quedaron bien creados y vinculados.
+  Build completo sin errores, `tsc`/`eslint` limpios, las 17 rutas
+  compilan (incluidas `/admin/programs` y `/admin/programs/[id]`).
+- **Nota de diseño:** el editor de marca usa campos de texto simples para
+  color/redes — no repetí el flujo de subida de imagen para el logo del
+  Programa todavía (`logoUrl`/`videoThumbnailUrl` quedan editables por SQL
+  o quedan para un ajuste rápido si los querés desde la UI). Lo que
+  importa de esta fase es la capa de permisos, no la subida de archivos.
+- Verificado en prod solo lo no-destructivo (build, rutas existentes, sin
+  errores nuevos de runtime) — misma disciplina que las Fases 4 y 5, no
+  generé Programas ni admins de prueba en tu base real.
+
+**Qué sigue:** Fase 7 — Oficina Virtual real por tipo de tarjeta (hoy es
+"Próximamente" para las tres). Doy la señal antes de arrancar.

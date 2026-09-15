@@ -7,14 +7,20 @@ datasource db {
   provider = "postgresql"
 }
 
-// Single Master Admin account for now (Phase 1). Sees and edits the
-// whole Card roster. Per-owner roles are a later phase, not this one.
+// MasterN0 when programId is null (global access — the original Phase 1
+// single-Admin account). A scoped Program N0 when programId is set: same
+// login/session system, but every admin page/action must check this and
+// restrict reach to that one Program (PLAN.md Fase 6) — only MasterN0
+// creates these scoped accounts.
 model Admin {
   id           String   @id @default(cuid())
   email        String   @unique
   passwordHash String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  programId String?
+  program   Program? @relation(fields: [programId], references: [id])
 }
 
 // One row per LyCard. Multi-tenant roster: the Admin
@@ -93,6 +99,7 @@ model Program {
 
   memberships ProgramMembership[]
   cards       Card[]
+  admins      Admin[]
 }
 
 // A real person, distinct from Admin (the platform superuser). Owns up to

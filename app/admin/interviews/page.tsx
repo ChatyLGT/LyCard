@@ -1,10 +1,20 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { currentAdminScope } from "@/lib/auth";
 import { completeInterviewAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
+// MasterN0 sees every registration across every Program here. A scoped
+// Program N0 manages interviews from their own /admin/programs/[id]
+// instead (PLAN.md Fase 6) — this global view would otherwise leak other
+// Programs' data to them.
 export default async function AdminInterviewsPage() {
+  const scope = await currentAdminScope();
+  if (!scope) redirect("/admin/login");
+  if (scope.programId) redirect(`/admin/programs/${scope.programId}`);
+
   const registrations = await prisma.registration.findMany({
     orderBy: { createdAt: "desc" },
     include: {
@@ -105,7 +115,7 @@ export default async function AdminInterviewsPage() {
                     {isActive ? "✓ Membership activa" : "Membership: invitado"}
                   </span>
                   {!isActive && (
-                    <form action={completeInterviewAction.bind(null, r.id)}>
+                    <form action={completeInterviewAction.bind(null, r.id, "/admin/interviews")}>
                       <button
                         type="submit"
                         style={{

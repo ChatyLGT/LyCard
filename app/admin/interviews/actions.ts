@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { currentAdminId } from "@/lib/auth";
+import { currentAdminScope } from "@/lib/auth";
 import { MEDALS, RANKS } from "@/lib/data";
 import { slugify, uniqueSlug } from "@/lib/slug";
 
@@ -28,9 +28,9 @@ const slugTaken = (slug: string) =>
 // membership to active and, in the same pass, spawns the member's own
 // project/company/personal cards (skipping any kind they already have, so
 // this is safe to click more than once) and archives where they came from.
-export async function completeInterviewAction(registrationId: string) {
-  const adminId = await currentAdminId();
-  if (!adminId) redirect("/admin/login");
+export async function completeInterviewAction(registrationId: string, returnTo: string = "/admin/interviews") {
+  const scope = await currentAdminScope();
+  if (!scope) redirect("/admin/login");
 
   const registration = await prisma.registration.findUnique({
     where: { id: registrationId },
@@ -45,9 +45,12 @@ export async function completeInterviewAction(registrationId: string) {
     },
   });
 
-  if (!registration?.membership) redirect("/admin/interviews");
+  if (!registration?.membership) redirect(returnTo);
   const membership = registration.membership;
-  if (membership.status === "active") redirect("/admin/interviews"); // already activated — idempotent no-op
+  // A scoped Program N0 can only activate memberships inside their own
+  // Program — MasterN0 (scope.programId === null) can activate any of them.
+  if (scope.programId && scope.programId !== membership.programId) redirect(returnTo);
+  if (membership.status === "active") redirect(returnTo); // already activated — idempotent no-op
 
   const member = membership.member;
   const haveKinds = new Set(member.cards.map((c) => c.kind));
@@ -128,5 +131,6 @@ export async function completeInterviewAction(registrationId: string) {
   ]);
 
   revalidatePath("/admin/interviews");
-  redirect("/admin/interviews?activated=1");
+  revalidatePath(returnTo);
+  redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}activated=1`);
 }

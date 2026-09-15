@@ -57,6 +57,17 @@ export async function isAdminAuthed() {
   return (await currentAdminId()) !== null;
 }
 
+// Resolves the current admin's Program scope (PLAN.md Fase 6): null means
+// MasterN0 (global access), a Program id means a scoped Program N0. Looked
+// up fresh from the DB each call — cheap, and means an account's scope can
+// change without needing to re-issue its session token.
+export async function currentAdminScope(): Promise<{ id: string; programId: string | null } | null> {
+  const id = await currentAdminId();
+  if (!id) return null;
+  const admin = await prisma.admin.findUnique({ where: { id }, select: { id: true, programId: true } });
+  return admin;
+}
+
 export const ADMIN_COOKIE_NAME = COOKIE_NAME;
 
 export async function isRequestAuthed(token: string | undefined) {

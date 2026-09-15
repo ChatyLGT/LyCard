@@ -1,10 +1,19 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { currentAdminScope } from "@/lib/auth";
 import { createCardAction, logoutAction } from "@/app/admin/actions";
 
 export const dynamic = "force-dynamic";
 
+// The full cross-program Card roster is MasterN0-only (PLAN.md Fase 6) — a
+// scoped Program N0 has no reason to see cards outside their own Program,
+// so they land on their own scoped dashboard instead.
 export default async function AdminRosterPage() {
+  const scope = await currentAdminScope();
+  if (!scope) redirect("/admin/login");
+  if (scope.programId) redirect(`/admin/programs/${scope.programId}`);
+
   const cards = await prisma.card.findMany({ orderBy: { createdAt: "desc" } });
 
   return (
@@ -47,6 +56,23 @@ export default async function AdminRosterPage() {
           </h1>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
+          <Link
+            href="/admin/programs"
+            style={{
+              background: "none",
+              border: "1px solid rgba(200,161,90,.3)",
+              borderRadius: 999,
+              padding: "8px 14px",
+              color: "#C2BEB5",
+              font: "600 10px 'Plus Jakarta Sans',sans-serif",
+              letterSpacing: ".1em",
+              textTransform: "uppercase",
+              display: "inline-flex",
+              alignItems: "center",
+            }}
+          >
+            Programas
+          </Link>
           <Link
             href="/admin/interviews"
             style={{
