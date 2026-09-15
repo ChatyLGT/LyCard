@@ -4,10 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { currentAdminScope } from "@/lib/auth";
 import { logoutAction } from "@/app/admin/actions";
 import { completeInterviewAction } from "@/app/admin/interviews/actions";
-import { updateProgramAction, createProgramAdminAction, updateCardLabelsAction } from "../actions";
+import { updateProgramAction, createProgramAdminAction, updateCardLabelsAction, updateEscalaAction } from "../actions";
 import { updateMemberAction, deleteMemberAction, messageMemberAction } from "../members-actions";
 import { createPuestoAction, updatePuestoAction, deletePuestoAction } from "../puestos-actions";
 import { CARD_LABEL_FIELDS, defaultCardLabel } from "@/lib/cardLabels";
+import { parseEscala } from "@/lib/escalas";
+import EscalaEditor from "@/components/EscalaEditor";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +38,7 @@ export default async function AdminProgramDetailPage({
     puestoSaved?: string;
     puestoDeleted?: string;
     puestoError?: string;
+    escalaSaved?: string;
   }>;
 }) {
   const { id } = await params;
@@ -53,6 +56,7 @@ export default async function AdminProgramDetailPage({
     puestoSaved,
     puestoDeleted,
     puestoError,
+    escalaSaved,
   } = await searchParams;
   const ADMIN_ERROR_COPY: Record<string, string> = {
     email: "Ingresá un email válido.",
@@ -88,6 +92,9 @@ export default async function AdminProgramDetailPage({
     program.cardLabels && typeof program.cardLabels === "object" && !Array.isArray(program.cardLabels)
       ? (program.cardLabels as Record<string, string>)
       : {};
+
+  const medalScale = parseEscala(program.medalScale);
+  const rankScale = parseEscala(program.rankScale);
 
   const registrations = await prisma.registration.findMany({
     where: { card: { programId: id } },
@@ -280,6 +287,34 @@ export default async function AdminProgramDetailPage({
               Agregar Puesto
             </button>
           </form>
+        </section>
+
+        {/* Medallón + Sabiduría scales — PLAN.md Fase 9.4/9.5. Empty = keep
+            the fixed scale in lib/data.ts, same fallback as every other
+            piece of Fase 9. */}
+        <section style={{ background: "#201f1f", borderRadius: 14, padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
+          <h2 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#F5F2EB" }}>
+            Escala de Medallón
+          </h2>
+          <p style={{ margin: 0, font: "400 11.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
+            Sin niveles acá, las tarjetas de Proyecto siguen usando la escala
+            fija (Bronce → Diamante). La clave de cada nivel es lo que se
+            guarda en la tarjeta — cambiarla después de asignada la rompe.
+          </p>
+          {escalaSaved === "medal" && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Escala guardada.</p>}
+          <EscalaEditor type="medal" initialItems={medalScale} action={updateEscalaAction.bind(null, program.id, "medal")} />
+        </section>
+
+        <section style={{ background: "#201f1f", borderRadius: 14, padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
+          <h2 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#F5F2EB" }}>
+            Escala de Sabiduría
+          </h2>
+          <p style={{ margin: 0, font: "400 11.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
+            Sin niveles acá, las tarjetas de Proyecto siguen usando la escala
+            fija (Curioso → Ancient).
+          </p>
+          {escalaSaved === "rank" && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Escala guardada.</p>}
+          <EscalaEditor type="rank" initialItems={rankScale} action={updateEscalaAction.bind(null, program.id, "rank")} />
         </section>
 
         {/* N0 admins — MasterN0 only, per PLAN.md Fase 6 */}

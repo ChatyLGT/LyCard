@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Card, Puesto } from "@/generated/prisma/client";
 import { updateCardAction, deleteCardAction } from "@/app/admin/actions";
 import { MEDALS, RANKS, CHANNELS } from "@/lib/data";
+import type { EscalaItem } from "@/lib/escalas";
 
 const FIELD_WRAP: CSSProperties = {
   display: "flex",
@@ -41,7 +42,19 @@ const SECTION: CSSProperties = {
   gap: 14,
 };
 
-export default function EditorForm({ card, puestos, saved }: { card: Card; puestos: Puesto[]; saved: boolean }) {
+export default function EditorForm({
+  card,
+  puestos,
+  medalScale,
+  rankScale,
+  saved,
+}: {
+  card: Card;
+  puestos: Puesto[];
+  medalScale: EscalaItem[];
+  rankScale: EscalaItem[];
+  saved: boolean;
+}) {
   const [medal, setMedal] = useState(card.medal);
   const [rank, setRank] = useState(card.rank);
   const [portraitPreview, setPortraitPreview] = useState<string | null>(card.portraitUrl);
@@ -49,6 +62,17 @@ export default function EditorForm({ card, puestos, saved }: { card: Card; puest
   // (see LyCardView) — only their own personal WhatsApp stays editable
   // here. Company/Personal cards keep editing all 8 as before.
   const isProject = card.kind === "project";
+  // Project cards under a Program with a custom Escala (Fase 9.4/9.5) pick
+  // from it instead of the fixed lib/data.ts lists — same "empty = keep the
+  // default" fallback as the Puesto select right below this.
+  const medalOptions =
+    isProject && medalScale.length > 0
+      ? medalScale.map((m) => ({ id: m.key, label: m.nombre, sub: m.subtitulo, swatch: m.color || "#8C5A2B" }))
+      : MEDALS.map((m) => ({ id: m.id, label: m.es, sub: m.esSub, swatch: m.gem }));
+  const rankOptions =
+    isProject && rankScale.length > 0
+      ? rankScale.map((r) => ({ id: r.key, label: r.nombre, sub: r.subtitulo, icon: r.icono || "auto_awesome" }))
+      : RANKS.map((r) => ({ id: r.id, label: r.es, sub: r.esSub, icon: r.icon }));
 
   const boundAction = updateCardAction.bind(null, card.slug);
 
@@ -206,7 +230,7 @@ export default function EditorForm({ card, puestos, saved }: { card: Card; puest
           <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
             <span style={LABEL}>Nivel de Medallón Principal</span>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(5,minmax(0,1fr))", gap: 7 }}>
-              {MEDALS.map((m) => {
+              {medalOptions.map((m) => {
                 const on = m.id === medal;
                 return (
                   <button
@@ -225,10 +249,10 @@ export default function EditorForm({ card, puestos, saved }: { card: Card; puest
                       background: on ? "#353534" : "#1c1b1b",
                     }}
                   >
-                    <span style={{ width: 22, height: 22, borderRadius: 999, background: m.gem, boxShadow: "inset 0 -2px 4px rgba(0,0,0,.35)" }} />
-                    <span style={{ font: `${on ? 700 : 500} 10px 'Plus Jakarta Sans',sans-serif`, color: on ? "#E5C378" : "#C2BEB5" }}>{m.es}</span>
+                    <span style={{ width: 22, height: 22, borderRadius: 999, background: m.swatch, boxShadow: "inset 0 -2px 4px rgba(0,0,0,.35)" }} />
+                    <span style={{ font: `${on ? 700 : 500} 10px 'Plus Jakarta Sans',sans-serif`, color: on ? "#E5C378" : "#C2BEB5" }}>{m.label}</span>
                     <span style={{ font: "500 8px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".04em", textTransform: "uppercase", color: on ? "#C8A15A" : "#5A5A5A" }}>
-                      {m.esSub}
+                      {m.sub}
                     </span>
                   </button>
                 );
@@ -288,7 +312,7 @@ export default function EditorForm({ card, puestos, saved }: { card: Card; puest
             </p>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 7 }}>
-            {RANKS.map((r) => {
+            {rankOptions.map((r) => {
               const on = r.id === rank;
               return (
                 <button
@@ -311,9 +335,9 @@ export default function EditorForm({ card, puestos, saved }: { card: Card; puest
                     {r.icon}
                   </span>
                   <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-                    <span style={{ font: "600 12px 'Plus Jakarta Sans',sans-serif", color: on ? "#E5C378" : "#F5F2EB" }}>{r.es}</span>
+                    <span style={{ font: "600 12px 'Plus Jakarta Sans',sans-serif", color: on ? "#E5C378" : "#F5F2EB" }}>{r.label}</span>
                     <span style={{ font: "400 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: on ? "#C8A15A" : "#5A5A5A" }}>
-                      {r.esSub}
+                      {r.sub}
                     </span>
                   </span>
                 </button>

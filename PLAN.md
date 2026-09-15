@@ -834,11 +834,49 @@ siguiente (misma disciplina que Fases 0-7):
   modal "Mi camino con Legacy" ya las muestra en vez del texto fijo de
   Legacy. `tsc`/`eslint`/`next build` limpios. Datos de prueba
   revertidos en local al terminar.
-- **Fase 9.4 — Medallón configurable por N0** (escala bronce→diamante
-  hoy fija en `lib/data.ts` → cantidad/nombres que define el N0).
-- **Fase 9.5 — Sabiduría/jerarquía configurable por N0** (niveles
-  curioso→ancient hoy fijos → cantidad/nombres/descripciones que
-  define el N0).
+- **Fase 9.4/9.5 — Medallón y Sabiduría configurables por N0 — hecha,
+  probada localmente, en producción.**
+  Hallazgo antes de arrancar, confirmado con Gunnar: **el medallón no
+  se mostraba en ningún lado de la tarjeta pública** — se elegía en el
+  editor, se guardaba, pero no tenía salida visual (a diferencia de
+  Sabiduría, que sí aparece como segundo badge). Se decidió hacerlo
+  visible primero y configurable después, mismo alcance que Sabiduría
+  — por eso van juntas.
+  - `Program.medalScale`/`Program.rankScale` (Json, default `"[]"`) —
+    lista ordenada de `{key,nombre,subtitulo,icono,color,descripcion}`
+    por Programa. Lista vacía = sigue la escala fija de `lib/data.ts`,
+    mismo fallback no-destructivo del resto de la Fase 9. Un solo
+    modelo de datos (`lib/escalas.ts`) para las dos escalas — es la
+    misma forma de problema, no hacía falta duplicar código.
+  - `components/EscalaEditor.tsx` (nuevo, cliente): editor de lista
+    reutilizado para ambas escalas — mismo patrón de `officeItems` en
+    `MemberCardEditor.tsx` (estado local + un input JSON oculto + una
+    action de guardado). Dos secciones nuevas en
+    `/admin/programs/[id]`: "Escala de Medallón" y "Escala de
+    Sabiduría".
+  - `EditorForm.tsx`: si el Programa tiene una escala custom, el
+    selector de Medallón/Sabiduría se arma con esos niveles en vez de
+    los fijos — vacío, sigue exactamente como antes (Empresa/Personal
+    nunca ven esto, no tienen Programa).
+  - `LyCardView.tsx`: nuevo tercer badge (Medallón) junto a Sigla y
+    Sabiduría, con su propio modal. El badge de Sabiduría dejó de
+    mostrar siempre "✦ Ancient Pioneer ✦" fijo sin importar el rango
+    real de la tarjeta — ahora es dinámico (`✦ {nombre del rango real} ✦`).
+    Fila de badges pasa a `flexWrap` para no desbordar con 3 elementos.
+  - Aproveché para eliminar `ancHead` (i18n key que quedó huérfana al
+    hacer el head dinámico — confirmé cero referencias antes de
+    borrarla, mismo criterio que en la Fase 7).
+  - Probado en local con Playwright, 19 aserciones en dos rondas: el
+    medallón por defecto (Platino) ya aparece visible con su modal; el
+    modal de Sabiduría ya muestra el rango real en vez del texto fijo
+    de Ancient; armé una escala custom de cada tipo desde el panel del
+    N0, la asigné a `gunnar` desde su editor, y confirmé en `/c/gunnar`
+    que el badge y el modal reflejan el nivel custom (nombre, color,
+    ícono, descripción) — con captura. Regresión: el editor de una
+    tarjeta de Empresa (sin Programa) sigue ofreciendo únicamente la
+    escala fija, sin el medallón custom del Programa. `tsc`/`eslint`/
+    `next build` limpios. Datos de prueba revertidos en local al
+    terminar.
 
 ---
 

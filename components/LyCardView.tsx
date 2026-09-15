@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Card, OriginMemento, Program, Puesto } from "@/generated/prisma/client";
 import { t, type Lang } from "@/lib/i18n";
-import { rankById } from "@/lib/data";
+import { rankById, medalById } from "@/lib/data";
+import { parseEscala } from "@/lib/escalas";
 import { INTERVIEW_SLOTS } from "@/lib/interviewSlots";
 import { registerInterviewAction, sendInvitationAction, sendContactMessageAction } from "@/app/c/actions";
 
-type ModalKey = "od" | "ancient" | "story" | "info" | "invite" | "contactMessage" | "office" | null;
+type ModalKey = "od" | "ancient" | "medal" | "story" | "info" | "invite" | "contactMessage" | "office" | null;
 
 type OfficeItem = { id: string; title: string; subtitle?: string; description?: string; imageUrl?: string };
 
@@ -497,9 +498,30 @@ export default function LyCardView({
   }
 
   const light = theme === "light";
-  const rank = rankById(card.rank);
-  const rankName = lang === "en" ? rank.en : rank.es;
-  const rankLabel = rankName.toUpperCase();
+  // Program-defined Medallón/Sabiduría scales (PLAN.md Fase 9.4/9.5) — empty
+  // (no Program, or Program hasn't set one) falls back to the fixed scale
+  // in lib/data.ts, same as everywhere else in Fase 9.
+  const medalScale = parseEscala(program?.medalScale);
+  const rankScale = parseEscala(program?.rankScale);
+  const medalFallback = medalById(card.medal);
+  const rankFallback = rankById(card.rank);
+  const medalTier = medalScale.find((m) => m.key === card.medal) ?? {
+    key: medalFallback.id,
+    nombre: lang === "en" ? medalFallback.en : medalFallback.es,
+    subtitulo: lang === "en" ? medalFallback.enSub : medalFallback.esSub,
+    icono: "",
+    color: medalFallback.gem,
+    descripcion: "",
+  };
+  const rankTier = rankScale.find((r) => r.key === card.rank) ?? {
+    key: rankFallback.id,
+    nombre: lang === "en" ? rankFallback.en : rankFallback.es,
+    subtitulo: lang === "en" ? rankFallback.enSub : rankFallback.esSub,
+    icono: rankFallback.icon,
+    color: "",
+    descripcion: "",
+  };
+  const rankLabel = rankTier.nombre.toUpperCase();
 
   const modalMap: Record<
     Exclude<ModalKey, null>,
@@ -517,11 +539,20 @@ export default function LyCardView({
       meta: t(lang, "odMeta"),
     },
     ancient: {
-      icon: "auto_awesome",
+      icon: rankTier.icono || "auto_awesome",
       kicker: L("ancKicker"),
-      head: t(lang, "ancHead"),
-      body: t(lang, "ancBody"),
+      // Dynamic per the card's actual rank tier (PLAN.md Fase 9.5) — used
+      // to always say "Ancient Pioneer" regardless of the real rank.
+      head: `✦ ${rankTier.nombre} ✦`,
+      body: rankTier.descripcion || t(lang, "ancBody"),
       meta: t(lang, "ancMeta"),
+    },
+    medal: {
+      icon: "workspace_premium",
+      kicker: medalTier.subtitulo || t(lang, "medalKicker"),
+      head: medalTier.nombre,
+      body: medalTier.descripcion || t(lang, "medalBody"),
+      meta: t(lang, "medalMeta"),
     },
     story: {
       icon: "auto_stories",
@@ -697,7 +728,7 @@ export default function LyCardView({
                 >
                   {card.name}
                 </h1>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, pointerEvents: "auto" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 8, pointerEvents: "auto" }}>
                   <button type="button" onClick={() => setModal("od")} style={BADGE_BTN}>
                     <Sweep />
                     <Icon name="diamond" size={12} style={{ color: "var(--goldtxt,#E5C378)" }} />
@@ -714,6 +745,13 @@ export default function LyCardView({
                     </svg>
                     <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--goldtxt,#E5C378)" }}>
                       {rankLabel}
+                    </span>
+                  </button>
+                  <button type="button" onClick={() => setModal("medal")} style={BADGE_BTN}>
+                    <Sweep />
+                    <span style={{ width: 12, height: 12, borderRadius: 999, flex: "none", background: medalTier.color || "#C8A15A", boxShadow: "inset 0 -1px 2px rgba(0,0,0,.4)" }} />
+                    <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--goldtxt,#E5C378)" }}>
+                      {medalTier.nombre.toUpperCase()}
                     </span>
                   </button>
                 </div>

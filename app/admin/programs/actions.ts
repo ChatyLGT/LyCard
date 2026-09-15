@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { currentAdminScope } from "@/lib/auth";
 import { slugify, uniqueSlug } from "@/lib/slug";
 import { CARD_LABEL_FIELDS } from "@/lib/cardLabels";
+import { parseEscala } from "@/lib/escalas";
 
 // Only MasterN0 (programId === null) can create Programs or their scoped N0
 // admins — PLAN.md Fase 6 is explicit that this is the one thing a Program
@@ -126,4 +127,32 @@ export async function updateCardLabelsAction(programId: string, formData: FormDa
 
   revalidatePath(`/admin/programs/${programId}`);
   redirect(`/admin/programs/${programId}?labelsSaved=1`);
+}
+
+// Saves the whole ordered list of tiers for one scale (medal or rank) in one
+// shot — the client-side EscalaEditor sends it as a single JSON blob, same
+// pattern as officeItems in MemberCardEditor. Empty list = fall back to the
+// fixed scale in lib/data.ts (PLAN.md Fase 9.4/9.5).
+export async function updateEscalaAction(programId: string, type: "medal" | "rank", formData: FormData) {
+  const scope = await currentAdminScope();
+  if (!scope) redirect("/admin/login");
+  if (scope.programId && scope.programId !== programId) redirect("/admin");
+
+  const raw = formData.get("items");
+  let items: ReturnType<typeof parseEscala> = [];
+  if (typeof raw === "string") {
+    try {
+      items = parseEscala(JSON.parse(raw));
+    } catch {
+      // malformed JSON from the client — ignore rather than fail the save
+    }
+  }
+
+  await prisma.program.update({
+    where: { id: programId },
+    data: type === "medal" ? { medalScale: items } : { rankScale: items },
+  });
+
+  revalidatePath(`/admin/programs/${programId}`);
+  redirect(`/admin/programs/${programId}?escalaSaved=${type}`);
 }

@@ -125,6 +125,13 @@ model Program {
   // default (lib/i18n.ts). Shortcut version of the full per-Program
   // identity system in PLAN.md Fase 9 — titles only, not full content.
   cardLabels        Json     @default("{}")
+  // Program-defined tier scales (PLAN.md Fase 9.4/9.5) — each is an
+  // ordered array of {key,nombre,subtitulo,icono,color,descripcion}.
+  // Empty array (the default) means "use the fixed scale in lib/data.ts",
+  // same non-breaking fallback pattern as everything else in Fase 9 —
+  // existing Cards' medal/rank values keep resolving exactly as before.
+  medalScale        Json     @default("[]")
+  rankScale         Json     @default("[]")
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

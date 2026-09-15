@@ -55,10 +55,13 @@ export const STR: Record<Lang, Record<string, string>> = {
       "Diseñador, visionario y creador original del ecosistema Legacy, EinarOS y de la arquitectura íntegra del programa. Reconocimiento que certifica la autoría primordial y la dirección conceptual del proyecto.",
     odMeta: "Estatus: Activo y Certificado",
     ancKicker: "Rango de Sabiduría",
-    ancHead: "✦ Ancient Pioneer ✦",
     ancBody:
       "ANCIENT: rango de sabiduría y mentoría avanzada en Legacy. Distingue a los miembros pioneros cuya experiencia guía a nuevas generaciones hacia la soberanía y el crecimiento sostenido.",
     ancMeta: "Mentoría & Consejo",
+    medalKicker: "Nivel de Medallón",
+    medalBody:
+      "Distintivo que certifica el nivel de compromiso patrimonial y trayectoria dentro del ecosistema Legacy.",
+    medalMeta: "Distintivo Legacy",
     storyKicker: "Mi Camino con Legacy",
     storyHead: "«Descubrí en Legacy una forma de trascender.»",
     storyBody:
@@ -176,10 +179,13 @@ export const STR: Record<Lang, Record<string, string>> = {
       "Designer, visionary and original creator of the Legacy ecosystem, EinarOS and the program architecture. A distinction certifying primordial authorship and conceptual direction of the project.",
     odMeta: "Status: Active and Certified",
     ancKicker: "Rank of Wisdom",
-    ancHead: "✦ Ancient Pioneer ✦",
     ancBody:
       "ANCIENT: the rank of wisdom and advanced mentorship within Legacy. It distinguishes pioneering members whose experience guides new generations toward sovereignty and sustained growth.",
     ancMeta: "Mentorship & Council",
+    medalKicker: "Medallion Level",
+    medalBody:
+      "A distinction certifying the level of patrimonial commitment and track record within the Legacy ecosystem.",
+    medalMeta: "Legacy Distinction",
     storyKicker: "My Path with Legacy",
     storyHead: "“In Legacy I found a way to transcend.”",
     storyBody:
