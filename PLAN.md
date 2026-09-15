@@ -659,7 +659,8 @@ rehacer el editor de Programa (`/admin/programs/[id]`) para armarla, y
 que `EditorForm.tsx` + `LyCardView.tsx` lean de ahí en vez de tener
 nada fijo. Es la Fase que le da sentido real a "multi-programa" (cada N0
 diseña su propio juego de reglas) — grande, no es un gancho rápido.
-**Gunnar decidió dejarla en cola por ahora**, no arrancar todavía.
+**Arrancada el 2026-09-15, noche — ejecución fase por fase, ver desglose
+más abajo.**
 
 Dato suelto que quedó resuelto en la misma conversación: el WhatsApp
 **es obligatorio hoy** para crear tarjeta vía el chat de onboarding
@@ -702,6 +703,83 @@ atajo") en vez de esperar a la Fase 9 completa.
   (`/c/gunnar`, Programa Legacy) los muestra tal cual — y que una
   tarjeta de Empresa sin Program siguió mostrando el texto original sin
   cambios (regresión). `tsc`/`eslint`/`next build` limpios.
+
+### Corrección importante: el atajo fue solo el título, falta el contenido
+
+Gunnar volvió con dos ejemplos concretos que muestran que "títulos de
+botones y modales" no alcanza — hay contenido dentro de los modales que
+también necesita ser dinámico, y no todo con el mismo dueño (N0 vs. cada
+host). Dos casos distintos:
+
+**Caso 1 — Modal "Mi camino con Legacy" (Story): el dueño es CADA
+HOST, no el N0.** Hoy el título del botón ya es editable (el atajo), pero
+adentro del modal la cita («Descubrí en Legacy una forma de
+trascender.») y el cuerpo (el párrafo largo) son copy fijo de
+`lib/i18n.ts` (`storyHead`/`storyBody`) — el mismo texto para cualquier
+host del Programa. Gunnar quiere que **cada usuario escriba el suyo**
+(ej. "Porque creo en el Movimiento Laborista — 'Cumple luego promete ha
+sido el lema de mi vida'... toda mi vida he sido un hombre de palabra..."),
+pedido como campo más en "Personalizar LyCard" — mismo lugar donde hoy
+edita nombre/cargo/cita de marca. Esto es Card-level, no Program-level.
+
+**Caso 2 — Modal O.D.: el dueño es el N0, y el orden está invertido.**
+Hoy se ve:
+```
+ORIGINAL DREAMER      ← kicker (chico, arriba) = card.tooltip (denominación)
+O.D.                  ← head (grande, título)  = card.siglas (sigla)
+Diseñador, visionario...
+```
+Gunnar: **debería ser al revés** — la sigla (O.D.) es la posición
+asignada dentro del Programa y va arriba, chica; la denominación
+(Original Dreamer) es el nombre completo de esa posición y va como
+título grande, debajo. Fix concreto: `kicker: card.siglas, head:
+card.tooltip` en el `modalMap` de `LyCardView.tsx` (hoy está al revés).
+
+Y más de fondo: la sigla, la denominación y la descripción de cada
+puesto (hoy `card.siglas`/`card.tooltip`/`odBody`, texto libre por
+tarjeta) en realidad **son una escalera de puestos que diseña el N0 al
+armar su Programa** — no algo que cada host inventa. Ejemplo real que
+dio Gunnar para Legacy:
+
+| Sigla | Denominación | Quiénes |
+|---|---|---|
+| O.D. | Original Dreamer | El/los creadores — hoy Gunnar |
+| — | Founders | Juancho, Rene, Sergio, etc. |
+| — | Experts | Primera línea de N3s |
+| — | Specialists | Primera línea de N4s |
+| — | Partners | Otros |
+
+Cada fila lleva su propia descripción (el párrafo que hoy es
+`odBody`, fijo). El N0 arma esta lista una vez por Programa; cada host
+elige a cuál pertenece (o se le asigna) en vez de escribir su propia
+sigla/denominación a mano.
+
+### Desglose ordenado de lo que falta de Fase 9 — ejecución en curso
+
+Se rompe en fases chicas, cada una probada/deployada antes de pasar a la
+siguiente (misma disciplina que Fases 0-7):
+
+- **Fase 9.1 — Escalera de Puestos (dato) + fix del orden O.D.**
+  Nuevo modelo `Puesto` (`programId`, `siglas`, `denominacion`,
+  `descripcion`, `order`) — el N0 arma su lista desde
+  `/admin/programs/[id]` (crear/editar/borrar). Junto con esto, el fix
+  chico y ya identificado: invertir kicker/head del modal O.D.
+- **Fase 9.2 — Escalera de Puestos (aplicación).** El editor de
+  MasterN0 (`EditorForm.tsx`) elige un Puesto de la lista del Programa
+  en vez de escribir siglas/denominación a mano; `LyCardView.tsx` lee
+  siglas/denominación/descripción del Puesto elegido, con fallback a
+  los campos actuales de `Card` si no hay Puesto asignado o la tarjeta
+  no tiene Programa (mismo patrón de fallback que redes sociales/
+  labels — no rompe tarjetas existentes).
+- **Fase 9.3 — Historia personal por tarjeta.** Nuevos campos en
+  `Card` para la cita y el cuerpo del modal "Mi camino con...",
+  editables por cada usuario en su propia "Personalizar LyCard" —
+  reemplaza `storyHead`/`storyBody` fijos.
+- **Fase 9.4 — Medallón configurable por N0** (escala bronce→diamante
+  hoy fija en `lib/data.ts` → cantidad/nombres que define el N0).
+- **Fase 9.5 — Sabiduría/jerarquía configurable por N0** (niveles
+  curioso→ancient hoy fijos → cantidad/nombres/descripciones que
+  define el N0).
 
 ---
 
