@@ -6,10 +6,8 @@ export const STR: Record<Lang, Record<string, string>> = {
     infoBtn: "Info Legacy",
     shareBtn: "Compartir mi LyCard",
     customize: "Personalizar mi LyCard",
-    odKicker: "Original Dreamer",
-    odHead: "O.D. • Original Dreamer",
     odBody:
-      "O.D. (Original Dreamer): diseñador, visionario y creador original del ecosistema Legacy, EinarOS y de la arquitectura íntegra del programa. Reconocimiento que certifica la autoría primordial y la dirección conceptual del proyecto.",
+      "Diseñador, visionario y creador original del ecosistema Legacy, EinarOS y de la arquitectura íntegra del programa. Reconocimiento que certifica la autoría primordial y la dirección conceptual del proyecto.",
     odMeta: "Estatus: Activo y Certificado",
     ancKicker: "Rango de Sabiduría",
     ancHead: "✦ Ancient Pioneer ✦",
@@ -78,10 +76,8 @@ export const STR: Record<Lang, Record<string, string>> = {
     infoBtn: "Legacy Info",
     shareBtn: "Share my LyCard",
     customize: "Customize my LyCard",
-    odKicker: "Original Dreamer",
-    odHead: "O.D. • Original Dreamer",
     odBody:
-      "O.D. (Original Dreamer): designer, visionary and original creator of the Legacy ecosystem, EinarOS and the program architecture. A distinction certifying primordial authorship and conceptual direction of the project.",
+      "Designer, visionary and original creator of the Legacy ecosystem, EinarOS and the program architecture. A distinction certifying primordial authorship and conceptual direction of the project.",
     odMeta: "Status: Active and Certified",
     ancKicker: "Rank of Wisdom",
     ancHead: "✦ Ancient Pioneer ✦",

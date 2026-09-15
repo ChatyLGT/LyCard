@@ -137,10 +137,12 @@ export default function LyCardView({
   card,
   cardUrl,
   qrSvg,
+  isAdmin,
 }: {
   card: Card;
   cardUrl: string;
   qrSvg: string;
+  isAdmin: boolean;
 }) {
   const [theme, setTheme] = useState<"dark" | "light">(
     (card.defaultTheme as "dark" | "light") || "dark"
@@ -194,8 +196,8 @@ export default function LyCardView({
   > = {
     od: {
       icon: "military_tech",
-      kicker: t(lang, "odKicker"),
-      head: t(lang, "odHead"),
+      kicker: card.tooltip,
+      head: card.siglas,
       body: t(lang, "odBody"),
       meta: t(lang, "odMeta"),
     },
@@ -280,6 +282,21 @@ export default function LyCardView({
                   Retrato oficial
                 </div>
               )}
+
+              <div style={{ position: "absolute", top: 14, left: 14, zIndex: 30, display: "flex", alignItems: "center", gap: 8 }}>
+                <Link href={`/admin/${card.slug}`} aria-label={t(lang, "customize")} style={ICON_BTN}>
+                  <Icon name="tune" size={17} />
+                </Link>
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    aria-label="MasterN0"
+                    style={{ ...ICON_BTN, font: "800 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".02em" }}
+                  >
+                    N0
+                  </Link>
+                )}
+              </div>
 
               <div style={{ position: "absolute", top: 14, right: 14, zIndex: 30, display: "flex", alignItems: "center", gap: 8 }}>
                 <button
@@ -558,23 +575,6 @@ export default function LyCardView({
               <Icon name="ios_share" style={{ color: "#C8A15A" }} />
               <span>{t(lang, "shareBtn")}</span>
             </button>
-            <Link
-              href={`/admin/${card.slug}`}
-              style={{
-                alignSelf: "center",
-                color: "var(--ink2,#C2BEB5)",
-                font: "600 10px 'Plus Jakarta Sans',sans-serif",
-                letterSpacing: ".2em",
-                textTransform: "uppercase",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                padding: 6,
-              }}
-            >
-              <Icon name="tune" size={15} style={{ color: "#C8A15A" }} />
-              <span>{t(lang, "customize")}</span>
-            </Link>
           </div>
         </div>
 
