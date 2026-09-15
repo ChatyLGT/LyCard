@@ -759,11 +759,26 @@ sigla/denominación a mano.
 Se rompe en fases chicas, cada una probada/deployada antes de pasar a la
 siguiente (misma disciplina que Fases 0-7):
 
-- **Fase 9.1 — Escalera de Puestos (dato) + fix del orden O.D.**
+- **Fase 9.1 — Escalera de Puestos (dato) + fix del orden O.D. —
+  hecha, probada localmente, en producción.**
   Nuevo modelo `Puesto` (`programId`, `siglas`, `denominacion`,
   `descripcion`, `order`) — el N0 arma su lista desde
-  `/admin/programs/[id]` (crear/editar/borrar). Junto con esto, el fix
-  chico y ya identificado: invertir kicker/head del modal O.D.
+  `/admin/programs/[id]` (crear/editar/borrar), nueva sección
+  "Escalera de Puestos" con formulario de alta y edición inline por
+  puesto (`app/admin/programs/puestos-actions.ts`). `Card.puestoId`
+  (nullable, `onDelete: SetNull`) queda listo para la Fase 9.2 — borrar
+  un Puesto en uso no rompe la tarjeta, solo la hace caer al fallback.
+  Fix chico ya aplicado en `LyCardView.tsx`: `modalMap.od` ahora usa
+  `kicker: card.siglas, head: card.tooltip` (antes al revés).
+  Probado en local: creé el Puesto O.D./Original Dreamer desde el
+  panel del N0 (confirmado con consulta directa a la DB, ya que
+  `networkidle` de Next dev no asienta por el socket de HMR y da falsos
+  negativos en el banner — comportamiento ya visto antes en esta
+  sesión), y confirmé con captura que el modal O.D. de `/c/gunnar` ya
+  muestra la sigla chica arriba y la denominación grande como título.
+  `tsc`/`eslint`/`next build` limpios. La Escalera de Puestos vive en
+  el panel pero **todavía no está conectada a las tarjetas** — eso es
+  la Fase 9.2.
 - **Fase 9.2 — Escalera de Puestos (aplicación).** El editor de
   MasterN0 (`EditorForm.tsx`) elige un Puesto de la lista del Programa
   en vez de escribir siglas/denominación a mano; `LyCardView.tsx` lee

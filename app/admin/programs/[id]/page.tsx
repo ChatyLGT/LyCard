@@ -6,6 +6,7 @@ import { logoutAction } from "@/app/admin/actions";
 import { completeInterviewAction } from "@/app/admin/interviews/actions";
 import { updateProgramAction, createProgramAdminAction, updateCardLabelsAction } from "../actions";
 import { updateMemberAction, deleteMemberAction, messageMemberAction } from "../members-actions";
+import { createPuestoAction, updatePuestoAction, deletePuestoAction } from "../puestos-actions";
 import { CARD_LABEL_FIELDS, defaultCardLabel } from "@/lib/cardLabels";
 
 export const dynamic = "force-dynamic";
@@ -31,11 +32,28 @@ export default async function AdminProgramDetailPage({
     memberMessaged?: string;
     memberError?: string;
     labelsSaved?: string;
+    puestoCreated?: string;
+    puestoSaved?: string;
+    puestoDeleted?: string;
+    puestoError?: string;
   }>;
 }) {
   const { id } = await params;
-  const { saved, adminCreated, activated, adminError, memberSaved, memberDeleted, memberMessaged, memberError, labelsSaved } =
-    await searchParams;
+  const {
+    saved,
+    adminCreated,
+    activated,
+    adminError,
+    memberSaved,
+    memberDeleted,
+    memberMessaged,
+    memberError,
+    labelsSaved,
+    puestoCreated,
+    puestoSaved,
+    puestoDeleted,
+    puestoError,
+  } = await searchParams;
   const ADMIN_ERROR_COPY: Record<string, string> = {
     email: "Ingresá un email válido.",
     password: "La contraseña debe tener al menos 8 caracteres.",
@@ -57,6 +75,7 @@ export default async function AdminProgramDetailPage({
     where: { id },
     include: {
       admins: { orderBy: { createdAt: "asc" } },
+      puestos: { orderBy: { order: "asc" } },
       memberships: {
         orderBy: { createdAt: "desc" },
         include: { member: { include: { cards: true } }, referredBy: { include: { member: true } } },
@@ -184,6 +203,81 @@ export default async function AdminProgramDetailPage({
               style={{ marginTop: 4, padding: 13, border: "none", borderRadius: 10, background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)", color: "#0D0D0D", font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", cursor: "pointer" }}
             >
               Guardar Textos
+            </button>
+          </form>
+        </section>
+
+        {/* Puestos — the N0-designed ladder of positions (PLAN.md Fase 9.1)
+            that project Cards will pick from instead of writing their own
+            siglas/denominación/descripción by hand (wiring is Fase 9.2). */}
+        <section style={{ background: "#201f1f", borderRadius: 14, padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
+          <h2 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#F5F2EB" }}>
+            Escalera de Puestos ({program.puestos.length})
+          </h2>
+          <p style={{ margin: 0, font: "400 11.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
+            Los puestos de tu Programa (ej. O.D. / Founders / Experts /
+            Specialists / Partners) — cada uno con su sigla, denominación
+            completa y descripción. Orden más bajo aparece primero.
+          </p>
+          {puestoCreated && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Puesto creado.</p>}
+          {puestoSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Puesto actualizado.</p>}
+          {puestoDeleted && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Puesto eliminado.</p>}
+          {puestoError && (
+            <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>Sigla y denominación son obligatorias.</p>
+          )}
+          {program.puestos.length === 0 && (
+            <p style={{ margin: 0, font: "400 12px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
+              Todavía no hay puestos — mientras tanto cada tarjeta sigue usando su propia sigla/denominación.
+            </p>
+          )}
+          {program.puestos.map((p) => (
+            <div key={p.id} style={{ background: "#151414", borderRadius: 10, padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                <span style={{ font: "700 13px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>
+                  {p.siglas} — {p.denominacion}
+                </span>
+                <span style={{ font: "400 10px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>orden {p.order}</span>
+              </div>
+              {p.descripcion && (
+                <p style={{ margin: 0, font: "400 11.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{p.descripcion}</p>
+              )}
+              <div style={{ display: "flex", gap: 14, marginTop: 4, flexWrap: "wrap" }}>
+                <details>
+                  <summary style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#C8A15A", cursor: "pointer" }}>
+                    Editar
+                  </summary>
+                  <form
+                    action={updatePuestoAction.bind(null, p.id, program.id)}
+                    style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,.06)" }}
+                  >
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <input name="siglas" defaultValue={p.siglas} placeholder="Sigla (ej. O.D.)" style={{ flex: "1 1 100px", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
+                      <input name="order" type="number" defaultValue={p.order} placeholder="Orden" style={{ width: 80, background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
+                    </div>
+                    <input name="denominacion" defaultValue={p.denominacion} placeholder="Denominación (ej. Original Dreamer)" style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
+                    <textarea name="descripcion" defaultValue={p.descripcion} placeholder="Descripción del puesto" rows={3} style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none", resize: "vertical" }} />
+                    <button type="submit" style={{ padding: 9, border: "none", borderRadius: 8, background: "#353534", color: "#F5F2EB", font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", cursor: "pointer" }}>
+                      Guardar
+                    </button>
+                  </form>
+                </details>
+                <form action={deletePuestoAction.bind(null, p.id, program.id)}>
+                  <button type="submit" style={{ background: "none", border: "none", padding: 0, color: "#e5928a", font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", cursor: "pointer" }}>
+                    Borrar
+                  </button>
+                </form>
+              </div>
+            </div>
+          ))}
+          <form action={createPuestoAction.bind(null, program.id)} style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 6, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,.06)" }}>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input name="siglas" placeholder="Sigla (ej. O.D.)" required style={{ flex: "1 1 100px", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "9px 12px", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
+              <input name="order" type="number" defaultValue={program.puestos.length} placeholder="Orden" style={{ width: 90, background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "9px 12px", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
+            </div>
+            <input name="denominacion" placeholder="Denominación (ej. Original Dreamer)" required style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "9px 12px", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
+            <textarea name="descripcion" placeholder="Descripción del puesto" rows={2} style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "9px 12px", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none", resize: "vertical" }} />
+            <button type="submit" style={{ padding: "9px 16px", border: "none", borderRadius: 10, background: "#353534", color: "#F5F2EB", font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", cursor: "pointer" }}>
+              Agregar Puesto
             </button>
           </form>
         </section>

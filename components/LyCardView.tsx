@@ -499,8 +499,12 @@ export default function LyCardView({
   > = {
     od: {
       icon: "military_tech",
-      kicker: card.tooltip,
-      head: card.siglas,
+      // Sigla (ej. "O.D.") es la posición asignada dentro del Programa —
+      // va chica, arriba. Denominación (ej. "Original Dreamer") es el
+      // nombre completo de esa posición — va como título grande, debajo.
+      // Antes estaba al revés (PLAN.md Fase 9.1).
+      kicker: card.siglas,
+      head: card.tooltip,
       body: t(lang, "odBody"),
       meta: t(lang, "odMeta"),
     },

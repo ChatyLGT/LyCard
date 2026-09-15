@@ -79,6 +79,14 @@ model Card {
   // and show their OriginMemento instead (their own recruitment story, not
   // editable content), so this stays empty for them.
   officeItems Json @default("[]")
+
+  // PLAN.md Fase 9.2 — when set, siglas/tooltip/O.D.-modal body are read
+  // from this Puesto instead of the fields above (which stay as a frozen
+  // snapshot + the fallback for cards with no Program or no Puesto chosen
+  // yet). SetNull on delete so a removed Puesto doesn't blank the card —
+  // it just reverts to its own snapshot.
+  puestoId String?
+  puesto   Puesto? @relation(fields: [puestoId], references: [id], onDelete: SetNull)
 }
 
 // A brand/project running on the platform (Legacy today; Mlqr, Digital
@@ -116,6 +124,27 @@ model Program {
   memberships ProgramMembership[]
   cards       Card[]
   admins      Admin[]
+  puestos     Puesto[]
+}
+
+// A position/role within a Program's own hierarchy (PLAN.md Fase 9.1) —
+// e.g. Legacy's O.D. → Founders → Experts → Specialists → Partners
+// ladder. Only the N0 builds this list; a project Card picks one instead
+// of writing its own siglas/denominación/descripción by hand.
+model Puesto {
+  id           String   @id @default(cuid())
+  programId    String
+  program      Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  siglas       String
+  denominacion String
+  descripcion  String
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  cards Card[]
+
+  @@index([programId])
 }
 
 // A real person, distinct from Admin (the platform superuser). Owns up to
