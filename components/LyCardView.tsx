@@ -9,6 +9,7 @@ import { rankById, medalById } from "@/lib/data";
 import { parseEscala } from "@/lib/escalas";
 import { INTERVIEW_SLOTS } from "@/lib/interviewSlots";
 import { registerInterviewAction, sendInvitationAction, sendContactMessageAction } from "@/app/c/actions";
+import { APP_VERSION } from "@/lib/version";
 
 type ModalKey = "od" | "ancient" | "medal" | "story" | "info" | "invite" | "contactMessage" | "office" | null;
 
@@ -689,6 +690,28 @@ export default function LyCardView({
                 >
                   <Icon name={light ? "dark_mode" : "light_mode"} />
                 </button>
+              </div>
+
+              <div
+                aria-label="Versión de la app"
+                style={{
+                  position: "absolute",
+                  top: 14,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  zIndex: 30,
+                  padding: "4px 10px",
+                  borderRadius: 999,
+                  background: "rgba(20,20,20,.72)",
+                  border: "1px solid rgba(200,161,90,.5)",
+                  backdropFilter: "blur(8px)",
+                  color: "#E5C378",
+                  font: "700 9px 'Plus Jakarta Sans',sans-serif",
+                  letterSpacing: ".08em",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                V. {APP_VERSION}
               </div>
 
               <div

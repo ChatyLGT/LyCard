@@ -970,6 +970,29 @@ Datos de prueba (1 Member + 3 Cards) revertidos en local al terminar.
 
 ---
 
+## Convención nueva (2026-09-16): versionado visual semántico
+
+Gunnar pidió que de acá en adelante cada cambio quede anotado con un
+número de versión y visible en la propia tarjeta — no solo en este
+PLAN.md. Semver estándar (semver.org): `MAJOR.MINOR.PATCH` — MAJOR
+rompe compatibilidad, MINOR agrega funcionalidad, PATCH corrige un
+bug. Se bumpea a mano en `lib/version.ts` (`APP_VERSION`) junto con
+cada cambio que se shippea, arrancando en `1.0.0` desde hoy — no se
+reconstruye retroactivamente el historial de Fases 0-9, ese ya está
+documentado arriba en este mismo archivo.
+
+`LyCardView.tsx` muestra una islita "V. {APP_VERSION}" arriba de la
+foto, centrada, a la misma altura que los íconos de idioma/tema/
+personalizar (`top:14`, igual que ellos) — visible en las 3 tarjetas
+(project/company/personal), siempre, sea cual sea el Programa.
+`CardCarousel.tsx` bajó sus 3 puntitos de posición (de `+24px` a
+`+58px` desde el borde superior) para no pisarse con la islita nueva
+cuando ambas cosas están presentes a la vez. Probado con captura en
+ambos casos (tarjeta sola y carousel) — sin superposición. `tsc`
+limpio.
+
+---
+
 **Qué sigue — Fase 8**: WhatsApp Business API real. Esta fase no depende
 de mí escribiendo código — depende de que consigan cuenta de WhatsApp
 Business verificada por Meta, un proveedor (Twilio/360dialog/Meta Cloud

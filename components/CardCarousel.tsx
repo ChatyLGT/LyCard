@@ -90,10 +90,12 @@ export default function CardCarousel({
         ))}
       </div>
 
+      {/* Sits below the version island (LyCardView renders that at the
+          same height as the top icon row) so the two never overlap. */}
       <div
         style={{
           position: "absolute",
-          top: "calc(env(safe-area-inset-top,0px) + 24px)",
+          top: "calc(env(safe-area-inset-top,0px) + 58px)",
           left: 0,
           right: 0,
           display: "flex",
