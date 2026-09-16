@@ -1674,15 +1674,31 @@ la versión en que se shippeó (mismo formato que el resto de este
 archivo) — no borrar el diagnóstico de arriba, sigue siendo válido
 como contexto aunque se vaya completando cada fase.
 
-- [ ] **Fase D1 — Reorganizar `/admin`: usuarios agrupados por
-      Programa.** Reemplazar la lista plana de `app/admin/page.tsx`
-      por una vista agrupada: un bloque colapsable por Programa
-      (nombre, cantidad de miembros/cards), cada uno desplegando sus
-      Cards/Miembros — en vez de una sola lista de 200 filas sin
-      estructura. Scoped N0 (no-MasterN0) ya aterriza directo en su
-      propio Programa, así que esto es estrictamente para la vista
-      cross-Programa de MasterN0. Reutilizar el patrón de acordeón que
-      se define en la Fase D2 en vez de inventar uno distinto acá.
+- [x] **Fase D1 — Reorganizar `/admin`: usuarios agrupados por
+      Programa.** Hecho, probado, shippeado.
+      `app/admin/page.tsx` reescrito: `groupByProgram()` agrupa cada
+      Card por su Programa real — las de proyecto por su `programId`
+      propio, las Company/Personal heredan el Programa de su hermana
+      de proyecto (comparten `memberId`, las crea juntas
+      `completeInterviewAction`). Sin Programa propio ni hermana con
+      uno → grupo "Sin Programa" (ej. `mastern0`, el seed raíz). Cada
+      Programa es un `<details>` colapsable con nombre + cantidad de
+      tarjetas + link directo a su dashboard (`/admin/programs/[id]`)
+      — abierto por defecto solo si hay 2 Programas o menos, para no
+      forzar scroll infinito con muchos. Cada fila de Card ahora
+      muestra también su tipo (Programa/Business/Personal). Confirmado
+      Gunnar: esto reemplaza la lista plana, los dashboards por
+      Programa que ya existían quedan iguales.
+
+      Probado: `tsc` limpio, `groupByProgram` verificado con un
+      script aparte contra la base local real (Programa + Card de
+      proyecto + Card de Business sin `programId` propio → las dos
+      cayeron juntas bajo el Programa correcto; `mastern0` cayó en
+      "Sin Programa") — los 3 casos dieron OK. `curl` a `/admin`
+      confirmó que sigue redirigiendo a login sin crashear (no se
+      pudo probar logueado por el bloqueo de tocar la contraseña de
+      test, igual que en la Fase 2 de skins). Datos de prueba
+      borrados al terminar. Versión: **1.12.0**.
 
 - [ ] **Fase D2 — Acordeón encendido/apagado por sección, con
       confirmación.** Patrón nuevo y reutilizable (probablemente un
