@@ -21,6 +21,7 @@ type ModalKey =
   | "office"
   | "cardInfo"
   | "versionInfo"
+  | "contacts"
   | null;
 
 type OfficeItem = { id: string; title: string; subtitle?: string; description?: string; imageUrl?: string };
@@ -97,6 +98,24 @@ const ICON_BTN: CSSProperties = {
   justifyContent: "center",
   cursor: "pointer",
 };
+
+// The two tier chips flanking the name (2026-09-16) — a gem-gradient dot
+// with an icon on top instead of a plain color dot, so the tier is
+// legible even without the text label it used to carry. `bg` is a
+// MEDALS-shaped gradient string, always light enough for a dark glyph.
+const TIER_DOT = (bg: string): CSSProperties => ({
+  width: 30,
+  height: 30,
+  borderRadius: 999,
+  flex: "none",
+  background: bg || "#C8A15A",
+  border: "1px solid rgba(255,255,255,.25)",
+  boxShadow: "inset 0 -2px 4px rgba(0,0,0,.35), 0 2px 6px rgba(0,0,0,.35)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  cursor: "pointer",
+});
 
 // The two stacked "islands" (card name + version, 2026-09-16) at the top
 // of the photo — same pill chrome as ICON_BTN, but clickable text pills
@@ -538,6 +557,11 @@ export default function LyCardView({
     });
   }
 
+  // Fullscreen CV viewer, opened by tapping the profession tag under the
+  // name (2026-09-16) — one shared demo PDF for every card until there's a
+  // real per-Member CV to upload/store.
+  const [cvOpen, setCvOpen] = useState(false);
+
   // Host sends their own QR over WhatsApp instead of scanning it themselves
   // (2026-09-16) — simulated like every other WhatsApp send in this app:
   // no real provider yet, just a fake delay and a success state, with the
@@ -591,6 +615,12 @@ export default function LyCardView({
   };
   const rankLabel = rankTier.nombre.toUpperCase();
 
+  // "Gente contactada" dot flanking the name, left side (2026-09-16) —
+  // mirrors the medal dot on the right in shape/scale on purpose (same
+  // MEDALS palette), but it's simulated: no real send/contact count feeds
+  // it yet. Swap this for a real tally once outreach is tracked somewhere.
+  const contactsTier = medalById("plata");
+
   const modalMap: Record<
     Exclude<ModalKey, null>,
     { icon: string; kicker: string; head?: string; body?: string; meta?: string }
@@ -621,6 +651,16 @@ export default function LyCardView({
       head: medalTier.nombre,
       body: medalTier.descripcion || t(lang, "medalBody"),
       meta: t(lang, "medalMeta"),
+    },
+    // Simulated (2026-09-16) — no real outreach tracking yet, see the
+    // TIER_DOT comment above where this renders. Same tier language as
+    // medal (nombre/subtitulo) so it reads consistently once it's real.
+    contacts: {
+      icon: "military_tech",
+      kicker: contactsTier.esSub,
+      head: `${contactsTier.es} · Contactados`,
+      body: "Personas a las que le enviaste tu QR o contactaste desde tu LyCard. Todavía es un dato simulado — la cuenta real llega con el envío por WhatsApp de verdad.",
+      meta: "Simulado",
     },
     story: {
       icon: "auto_stories",
@@ -848,17 +888,57 @@ export default function LyCardView({
                   pointerEvents: "none",
                 }}
               >
-                <h1
-                  style={{
-                    margin: 0,
-                    font: "600 24px/1.2 'Playfair Display',serif",
-                    letterSpacing: "-.01em",
-                    color: "var(--ink,#F5F2EB)",
-                    textShadow: "var(--nameshadow,0 1px 2px rgba(0,0,0,.35))",
-                  }}
-                >
-                  {card.name}
-                </h1>
+                {/* Name flanked by two tier dots (2026-09-16): left is
+                    "gente contactada" (simulated — no real tally yet),
+                    right is the medal dot that used to live, with its
+                    text, in the badge row below. Same icon/shape on both
+                    sides on purpose — Gunnar's call, content differs
+                    later once outreach is actually tracked. */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, pointerEvents: "auto" }}>
+                  <button
+                    type="button"
+                    onClick={() => setModal("contacts")}
+                    aria-label="Personas contactadas"
+                    style={TIER_DOT(contactsTier.gem)}
+                  >
+                    <Icon name="military_tech" size={14} style={{ color: "#141414" }} />
+                  </button>
+                  <h1
+                    style={{
+                      margin: 0,
+                      font: "600 24px/1.2 'Playfair Display',serif",
+                      letterSpacing: "-.01em",
+                      color: "var(--ink,#F5F2EB)",
+                      textShadow: "var(--nameshadow,0 1px 2px rgba(0,0,0,.35))",
+                    }}
+                  >
+                    {card.name}
+                  </h1>
+                  <button
+                    type="button"
+                    onClick={() => setModal("medal")}
+                    aria-label="Nivel de Medallón"
+                    style={TIER_DOT(medalTier.color)}
+                  >
+                    <Icon name="military_tech" size={14} style={{ color: "#141414" }} />
+                  </button>
+                </div>
+
+                {card.title && (
+                  <button
+                    type="button"
+                    onClick={() => setCvOpen(true)}
+                    aria-label="Ver CV"
+                    style={{ ...BADGE_BTN, pointerEvents: "auto" }}
+                  >
+                    <Sweep />
+                    <Icon name="work" size={12} style={{ color: "var(--goldtxt,#E5C378)" }} />
+                    <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--goldtxt,#E5C378)" }}>
+                      {card.title}
+                    </span>
+                  </button>
+                )}
+
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 8, pointerEvents: "auto" }}>
                   <button type="button" onClick={() => setModal("od")} style={BADGE_BTN}>
                     <Sweep />
@@ -876,13 +956,6 @@ export default function LyCardView({
                     </svg>
                     <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--goldtxt,#E5C378)" }}>
                       {rankLabel}
-                    </span>
-                  </button>
-                  <button type="button" onClick={() => setModal("medal")} style={BADGE_BTN}>
-                    <Sweep />
-                    <span style={{ width: 12, height: 12, borderRadius: 999, flex: "none", background: medalTier.color || "#C8A15A", boxShadow: "inset 0 -1px 2px rgba(0,0,0,.4)" }} />
-                    <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--goldtxt,#E5C378)" }}>
-                      {medalTier.nombre.toUpperCase()}
                     </span>
                   </button>
                 </div>
@@ -1772,6 +1845,38 @@ export default function LyCardView({
                 </>
               )}
             </div>
+          </div>
+        )}
+
+        {/* CV fullscreen viewer (2026-09-16) — one shared demo PDF for now,
+            triggered by the profession tag under the name. */}
+        {cvOpen && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 90, background: "#0D0D0D", display: "flex", flexDirection: "column" }}>
+            <div
+              style={{
+                flex: "none",
+                height: 52,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "0 14px",
+                background: "rgba(20,20,20,.96)",
+                borderBottom: "1px solid rgba(200,161,90,.25)",
+              }}
+            >
+              <span style={{ font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".14em", textTransform: "uppercase", color: "#E5C378" }}>
+                CV — {card.name}
+              </span>
+              <button
+                type="button"
+                onClick={() => setCvOpen(false)}
+                aria-label="Cerrar"
+                style={{ width: 32, height: 32, borderRadius: 999, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.1)", color: "#C2BEB5", cursor: "pointer", flex: "none" }}
+              >
+                ✕
+              </button>
+            </div>
+            <iframe src="/demo-cv.pdf" title={`CV de ${card.name}`} style={{ flex: "1 1 auto", width: "100%", border: "none", background: "#fff" }} />
           </div>
         )}
 

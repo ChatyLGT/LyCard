@@ -1363,6 +1363,73 @@ corporativo simulado.
 
 ---
 
+## Etiqueta de profesión + CV modal + medallón/contactos junto al nombre (2026-09-16, noche)
+
+Pedido de Gunnar: debajo del nombre, mostrar el Cargo / Título
+Profesional como una etiqueta — tocarla abre el CV en un modal de
+pantalla completa (demo inventado por ahora). Al lado del nombre, dos
+puntos con la misma estructura visual: a la derecha el Nivel de
+Medallón Principal (solo ícono, sin texto — reemplaza al badge viejo
+de medalla con texto de la fila de abajo, que se elimina); a la
+izquierda un punto simulado con la escala de gente contactada/QR
+enviado (dato placeholder, mismo formato que el de la derecha, para
+cambiar el contenido más adelante). Dos preguntas de aclaración antes
+de tocar código (confirmadas por Gunnar): (1) el punto de la derecha
+reemplaza directamente al badge de texto "Industrial"/color titanio
+existente, no convive con él; (2) los dos puntos nuevos son
+independientes entre sí — cada uno cuenta un dato distinto, mismo
+formato.
+
+- `TIER_DOT` (nuevo estilo en `LyCardView.tsx`): chip circular de 30px
+  con el gradiente de la joya como fondo y un ícono Material oscuro
+  encima — reemplaza el punto de color plano + texto.
+- Fila del nombre reestructurada: `[punto contactos] [nombre] [punto
+  medallón]`, ambos botones abren su modal correspondiente
+  (`setModal("contacts")` / `setModal("medal")`). El badge de medalla
+  con texto se sacó de la fila de abajo — ahí quedan solo O.D. y
+  Rango.
+- Debajo del nombre, si `card.title` tiene valor: etiqueta con ícono
+  "work" + el Cargo/Título — tocarla abre `cvOpen`, un modal fixed
+  inset:0 con un `<iframe src="/demo-cv.pdf">` a pantalla completa y
+  header con el nombre + botón cerrar. Sin `card.title`, no se
+  muestra nada (no se inventa texto).
+- `contacts` nuevo en `modalMap`: usa `medalById("plata")` como dato
+  simulado fijo, con copy que aclara "Todavía es un dato simulado —
+  la cuenta real llega con el envío por WhatsApp de verdad."
+- `public/demo-cv.pdf` (nuevo): CV de una página generado con
+  reportlab, persona ficticia "Alex Rivera, Director de Estrategia",
+  tema oscuro/dorado a tono con la app. Un solo PDF compartido por
+  todas las tarjetas — no es por-Member, es demo mientras no haya
+  carga real de CV.
+
+Esta pieza comparte `LyCardView.tsx`, así que aplica igual a las 3
+tarjetas (Legacy/Business/Personal) sin código extra por tipo —
+confirmado visualmente: tanto la tarjeta de proyecto (`mastern0`) como
+una de Business de prueba renderizan la misma estructura (nombre
+flanqueado por los dos puntos, etiqueta de profesión debajo, fila de
+abajo con solo O.D. + Rango).
+
+**Nota honesta sobre testing**: esta noche el entorno local de
+Playwright/Chromium tuvo una falla total de hidratación de React — se
+confirmó con `Object.getOwnPropertyNames()` sobre botones del DOM sin
+ningún fiber de React adjunto, en botones nuevos Y en botones viejos
+ya probados (como "Agendar una Entrevista", sin tocar en esta sesión).
+Se descartó que sea el código (tsc limpio, HTML de SSR correcto según
+capturas), agotamiento de recursos, bundles corruptos, errores de
+consola, y el problema de superposición visual por la fuente de
+íconos que no carga en este sandbox (un artefacto real pero distinto,
+confirmado por separado). No se identificó la causa raíz esta noche;
+quedó documentado como limitación de la herramienta local, no del
+código. Verificación completada: tipo (`tsc`), estructura/visual
+(capturas en tarjeta de proyecto y de Business). **No completada**:
+click-through interactivo en vivo — pendiente de que Gunnar confirme
+en la app real desplegada que los dos puntos y la etiqueta de
+profesión abren sus modales correctamente.
+
+Versión: **1.9.0**.
+
+---
+
 **Qué sigue — Fase 8**: WhatsApp Business API real. Esta fase no depende
 de mí escribiendo código — depende de que consigan cuenta de WhatsApp
 Business verificada por Meta, un proveedor (Twilio/360dialog/Meta Cloud
