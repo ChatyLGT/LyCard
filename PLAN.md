@@ -1430,6 +1430,90 @@ Versión: **1.9.0**.
 
 ---
 
+## Fix: límite de 1MB en Server Actions (2026-09-16, noche)
+
+Juancho reportó que "Analizar y Guardar" (carga de diseño corporativo)
+no le funcionaba. Los logs de runtime de Vercel mostraron la causa
+real: `Error: Body exceeded 1 MB limit.` en `/admin/programs/[id]` —
+el default de Next.js para Server Actions es 1MB, muy poco para una
+foto o brandbook real. `next.config.ts` ahora fija
+`experimental.serverActions.bodySizeLimit: "10mb"`. Afecta a todas las
+pantallas con carga de imagen (portrait, logo, diseño), no solo esa.
+Versión: **1.9.1**.
+
+---
+
+## Skins de Marca por Programa — Fase 1: modelo + parser + carga (2026-09-16, noche)
+
+Pedido de Gunnar: en vez de que el N0 suba una imagen suelta para el
+diseño corporativo, que suba el `design.md` real que le da una
+herramienta como Google Stitch al describir su marca — ese archivo
+trae colores, fuente y estilo de botón de verdad, no solo paleta.
+Además: hasta 3 skins guardados por Programa, prendiendo/apagando
+cuál está activo (solo uno a la vez), para poder cambiarle la cara a
+la tarjeta sin perder los otros diseños. Dos decisiones confirmadas
+por Gunnar vía preguntas: (1) el skin activo re-skinea la tarjeta
+completa (fondo + acento + fuente, no solo el acento) — más superficie
+de cambio, se hace en fases separadas por eso; (2) el `design.md`
+reemplaza por completo a la carga de imagen suelta, no conviven.
+
+- `ProgramSkin` (modelo nuevo): `programId`, `name`, `designMdRaw`
+  (el archivo completo, por si hay que re-parsear después con mejor
+  lógica), `colors` (Json: `{bg, surf, surf2, ink, ink2, accent,
+  accentDark}`), `font`, `buttonStyle`, `active`. `Program.brandDesign`
+  (el campo Json de la carga de imagen vieja) queda en el schema sin
+  usarse — no se borra para no ser una migración destructiva.
+- `lib/designMd.ts` (nuevo): parser real de texto, no un modelo de
+  IA. Busca hex codes en el archivo y los etiqueta por palabras clave
+  cercanas (background/surface/text/accent/border, en inglés porque
+  es lo que exportan estas herramientas); lo que no logra etiquetar lo
+  completa con una heurística (más oscuro → fondo, más saturado →
+  acento, etc.); lo que ni así encuentra cae al mismo dorado/oscuro
+  fijo de siempre. Fuente: matcheada contra una lista fija de Google
+  Fonts conocidas (no confía en texto libre como nombre de fuente).
+  Estilo de botón: detectado por palabras clave (pill/redondeado/
+  cuadrado, sólido/outline). Probado con 3 casos (archivo con
+  etiquetas claras, archivo solo con hex sueltos, archivo vacío) — los
+  3 devuelven un set de colores completo y coherente.
+- `createProgramSkinAction` / `activateProgramSkinAction` (transacción
+  atómica: apaga todos los del Programa, prende el elegido — nunca
+  quedan dos activos) / `deleteProgramSkinAction`, todas en
+  `app/admin/programs/actions.ts`, con el mismo scoping por
+  `adminScope.programId` que el resto de `/admin/programs/[id]`. Tope
+  de 3 por Programa, mensaje de error claro al intentar un 4to.
+- `/admin/programs/[id]`: la sección "Diseño Corporativo" (imagen +
+  paleta simulada) se reemplaza por "Skins de Marca (N/3)" — grilla de
+  tarjetas, cada una con sus swatches, fuente, estilo, botón
+  Encender/Apagar y Borrar; slot vacío con el formulario de carga si
+  quedan menos de 3. Botón "ℹ️ Cómo genero mi design.md" con una
+  explicación de Stitch (redactada de memoria, no verificada contra su
+  UI actual — puede estar desactualizada si Stitch cambió los pasos).
+  `BrandDesignUploader.tsx` y `lib/designExtraction.ts` (la paleta por
+  píxeles + fuente/botón simulados de la ronda anterior) se borraron
+  por completo, sin dejar nada muerto atrás.
+
+Probado: `tsc` limpio. El parser, con un script aparte (3 casos:
+etiquetado, heurística, vacío — los 3 correctos). La lógica de
+exclusividad y el tope de 3, con un script que crea 3 skins, activa
+una, activa otra (la primera se apaga sola), apaga la activa (queda
+ninguna prendida), borra una (baja a 2) — todo contra la base local
+real, no mockeado. No probado por Playwright: el login de admin local
+pedía resetear una contraseña, y tocar esa credencial quedó bloqueado
+por el clasificador de permisos del entorno — correctamente, es una
+acción sobre credenciales — así que no hay captura de pantalla del
+flujo completo en el navegador. La lógica de negocio y el parser están
+verificados por otra vía; falta la vuelta visual/click-through.
+
+**Todavía no cambia nada visible en la tarjeta pública** — eso es la
+Fase 2 (barrer los ~230 colores fijos de `LyCardView.tsx` por
+variables CSS con fallback al valor de hoy, cargar la fuente real, y
+que el skin activo del Programa se aplique a sus tarjetas de
+proyecto), pendiente.
+
+Versión: **1.10.0**.
+
+---
+
 **Qué sigue — Fase 8**: WhatsApp Business API real. Esta fase no depende
 de mí escribiendo código — depende de que consigan cuenta de WhatsApp
 Business verificada por Meta, un proveedor (Twilio/360dialog/Meta Cloud

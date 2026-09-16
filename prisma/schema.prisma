@@ -171,6 +171,33 @@ model Program {
   cards       Card[]
   admins      Admin[]
   puestos     Puesto[]
+  skins       ProgramSkin[]
+}
+
+// A saved brand skin for a Program (2026-09-16, noche) — up to 3 per
+// Program, at most one active at a time. Supersedes Program.brandDesign
+// (kept in the schema, unused going forward, to avoid a destructive
+// migration). Built from a design.md file (e.g. exported by Google
+// Stitch), parsed with lib/designMd.ts: real text extraction (hex codes,
+// font name, button-style keywords) — best-effort since Stitch's export
+// isn't a fixed schema, with sane fallbacks to today's fixed gold/dark
+// palette for anything it can't find. `colors` shape: {bg, surf, surf2,
+// ink, ink2, accent, accentDark} — border/glow/shadow variants get
+// derived from these at render time, not stored.
+model ProgramSkin {
+  id          String   @id @default(cuid())
+  programId   String
+  program     Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  name        String
+  designMdRaw String   @db.Text
+  colors      Json
+  font        String
+  buttonStyle String
+  active      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([programId])
 }
 
 // A position/role within a Program's own hierarchy (PLAN.md Fase 9.1) —

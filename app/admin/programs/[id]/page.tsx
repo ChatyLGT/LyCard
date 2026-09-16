@@ -4,13 +4,22 @@ import { prisma } from "@/lib/prisma";
 import { currentAdminScope } from "@/lib/auth";
 import { logoutAction } from "@/app/admin/actions";
 import { completeInterviewAction } from "@/app/admin/interviews/actions";
-import { updateProgramAction, createProgramAdminAction, updateCardLabelsAction, updateEscalaAction, updateBrandDesignAction } from "../actions";
+import {
+  updateProgramAction,
+  createProgramAdminAction,
+  updateCardLabelsAction,
+  updateEscalaAction,
+  createProgramSkinAction,
+  activateProgramSkinAction,
+  deleteProgramSkinAction,
+} from "../actions";
 import { updateMemberAction, deleteMemberAction, messageMemberAction } from "../members-actions";
 import { createPuestoAction, updatePuestoAction, deletePuestoAction } from "../puestos-actions";
 import { CARD_LABEL_FIELDS, defaultCardLabel } from "@/lib/cardLabels";
 import { parseEscala } from "@/lib/escalas";
 import EscalaEditor from "@/components/EscalaEditor";
-import BrandDesignUploader from "@/components/BrandDesignUploader";
+import ProgramSkinInfo from "@/components/ProgramSkinInfo";
+import type { SkinColors } from "@/lib/designMd";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +49,8 @@ export default async function AdminProgramDetailPage({
     puestoDeleted?: string;
     puestoError?: string;
     escalaSaved?: string;
-    brandSaved?: string;
+    skinSaved?: string;
+    skinError?: string;
   }>;
 }) {
   const { id } = await params;
@@ -59,8 +69,13 @@ export default async function AdminProgramDetailPage({
     puestoDeleted,
     puestoError,
     escalaSaved,
-    brandSaved,
+    skinSaved,
+    skinError,
   } = await searchParams;
+  const SKIN_ERROR_COPY: Record<string, string> = {
+    max: "Ya tenés los 3 skins guardados — borrá uno para subir otro.",
+    empty: "Subí un archivo design.md.",
+  };
   const ADMIN_ERROR_COPY: Record<string, string> = {
     email: "Ingresá un email válido.",
     password: "La contraseña debe tener al menos 8 caracteres.",
@@ -83,6 +98,7 @@ export default async function AdminProgramDetailPage({
     include: {
       admins: { orderBy: { createdAt: "asc" } },
       puestos: { orderBy: { order: "asc" } },
+      skins: { orderBy: { createdAt: "asc" } },
       memberships: {
         orderBy: { createdAt: "desc" },
         include: { member: { include: { cards: true } }, referredBy: { include: { member: true } } },
@@ -200,24 +216,81 @@ export default async function AdminProgramDetailPage({
           </form>
         </section>
 
-        {/* Diseño corporativo — paleta real (extraída de los píxeles de la
-            imagen subida) + fuente/estilo de botón simulados (PLAN.md,
-            2026-09-16). Form propio para no forzar re-subir el resto de la
-            marca cada vez que se cambia solo esto. */}
+        {/* Skins de marca — hasta 3 por Programa, uno activo a la vez
+            (2026-09-16, noche). Cada skin sale de un design.md real
+            (Stitch u otro), parseado de verdad en lib/designMd.ts:
+            colores, fuente y estilo de botón, no solo la paleta. El
+            skin activo se aplica a las tarjetas de proyecto de este
+            Programa (Fase 2, pendiente de cablear en LyCardView). */}
         <section style={{ background: "#201f1f", borderRadius: 14, padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
-          <h2 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#F5F2EB" }}>
-            Diseño Corporativo
-          </h2>
-          {brandSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Diseño guardado.</p>}
-          <form action={updateBrandDesignAction.bind(null, program.id)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <BrandDesignUploader current={(program.brandDesign as Record<string, unknown>) ?? {}} />
-            <button
-              type="submit"
-              style={{ marginTop: 4, padding: 13, border: "none", borderRadius: 10, background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)", color: "#0D0D0D", font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", cursor: "pointer" }}
-            >
-              Analizar y Guardar
-            </button>
-          </form>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+            <h2 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#F5F2EB" }}>
+              Skins de Marca ({program.skins.length}/3)
+            </h2>
+            <ProgramSkinInfo />
+          </div>
+          <p style={{ margin: 0, font: "400 11.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
+            Cada skin sale de un archivo design.md — colores, fuente y estilo de botón reales, leídos del archivo. Solo uno puede estar encendido a la vez.
+          </p>
+          {skinSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Guardado.</p>}
+          {skinError && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>{SKIN_ERROR_COPY[skinError] ?? "No se pudo guardar."}</p>}
+
+          {program.skins.map((skin) => {
+            const colors = skin.colors as unknown as SkinColors;
+            return (
+              <div key={skin.id} style={{ background: "#161616", border: skin.active ? "1px solid rgba(200,161,90,.6)" : "1px solid rgba(255,255,255,.08)", borderRadius: 12, padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                  <span style={{ font: "600 12.5px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>{skin.name}</span>
+                  {skin.active && (
+                    <span style={{ font: "700 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".14em", textTransform: "uppercase", color: "#8fd19e" }}>● Encendido</span>
+                  )}
+                </div>
+                <div style={{ display: "flex", gap: 4 }}>
+                  {Object.values(colors ?? {}).map((hex, i) => (
+                    <span key={i} style={{ width: 22, height: 22, borderRadius: 6, background: String(hex), border: "1px solid rgba(255,255,255,.15)" }} />
+                  ))}
+                </div>
+                <span style={{ font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#9a8f80" }}>
+                  {skin.font} · {skin.buttonStyle}
+                </span>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <form action={activateProgramSkinAction.bind(null, program.id, skin.id)}>
+                    <button
+                      type="submit"
+                      style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(200,161,90,.4)", background: skin.active ? "none" : "rgba(200,161,90,.15)", color: "#E5C378", font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", cursor: "pointer" }}
+                    >
+                      {skin.active ? "Apagar" : "Encender"}
+                    </button>
+                  </form>
+                  <form action={deleteProgramSkinAction.bind(null, program.id, skin.id)}>
+                    <button
+                      type="submit"
+                      style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,.1)", background: "none", color: "#5A5A5A", font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", cursor: "pointer" }}
+                    >
+                      Borrar
+                    </button>
+                  </form>
+                </div>
+              </div>
+            );
+          })}
+
+          {program.skins.length < 3 && (
+            <form action={createProgramSkinAction.bind(null, program.id)} style={{ background: "#161616", border: "1px dashed rgba(200,161,90,.3)", borderRadius: 12, padding: 14, display: "flex", flexDirection: "column", gap: 8 }}>
+              <input
+                name="skinName"
+                placeholder="Nombre del skin (opcional)"
+                style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 8, padding: "8px 12px", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
+              />
+              <input type="file" name="designMd" accept=".md,text/markdown,text/plain" style={{ font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }} />
+              <button
+                type="submit"
+                style={{ padding: 11, border: "none", borderRadius: 8, background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)", color: "#0D0D0D", font: "700 10.5px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", cursor: "pointer" }}
+              >
+                Subir y Analizar
+              </button>
+            </form>
+          )}
         </section>
 
         {/* Card labels — title-only override for buttons/modals on project

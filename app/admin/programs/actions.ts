@@ -9,6 +9,7 @@ import { slugify, uniqueSlug } from "@/lib/slug";
 import { CARD_LABEL_FIELDS } from "@/lib/cardLabels";
 import { parseEscala } from "@/lib/escalas";
 import { saveUpload } from "@/lib/storage";
+import { parseDesignMd } from "@/lib/designMd";
 
 // Only MasterN0 (programId === null) can create Programs or their scoped N0
 // admins — PLAN.md Fase 6 is explicit that this is the one thing a Program
@@ -117,56 +118,77 @@ export async function updateProgramAction(programId: string, formData: FormData)
   redirect(`/admin/programs/${programId}?saved=1`);
 }
 
-// Persists the brand-guidelines image + what got "read" from it
-// (PLAN.md, "diseño corporativo", 2026-09-16). The palette arrives
-// pre-computed from BrandDesignUploader.tsx (real pixel analysis, done
-// client-side); font/buttonStyle are the simulated part. Separate form
-// from updateProgramAction so uploading a new brand image doesn't force
-// re-submitting the whole branding section.
-export async function updateBrandDesignAction(programId: string, formData: FormData) {
+const MAX_SKINS_PER_PROGRAM = 3;
+
+// One skin = one design.md upload, parsed for real (lib/designMd.ts) into
+// a full color/font/button-style set. Up to 3 saved per Program; activating
+// one deactivates the others (see activateProgramSkinAction) so exactly one
+// or zero is ever live. Supersedes the old single-image brandDesign flow —
+// Program.brandDesign stays in the schema, unused, rather than a
+// destructive migration.
+export async function createProgramSkinAction(programId: string, formData: FormData) {
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
   if (scope.programId && scope.programId !== programId) redirect("/admin");
 
-  const program = await prisma.program.findUnique({ where: { id: programId }, select: { brandDesign: true } });
-  if (!program) redirect("/admin/programs");
+  const count = await prisma.programSkin.count({ where: { programId } });
+  if (count >= MAX_SKINS_PER_PROGRAM) redirect(`/admin/programs/${programId}?skinError=max`);
 
-  const existing = (program.brandDesign && typeof program.brandDesign === "object" ? program.brandDesign : {}) as Record<string, unknown>;
+  const file = formData.get("designMd");
+  if (!(file instanceof File) || file.size === 0) redirect(`/admin/programs/${programId}?skinError=empty`);
 
-  const brandImage = formData.get("brandImage");
-  let imageUrl: string | undefined;
-  if (brandImage instanceof File && brandImage.size > 0) {
-    imageUrl = await saveUpload(brandImage, `${programId}-brand`);
-  }
+  const raw = await file.text();
+  const parsed = parseDesignMd(raw);
+  const name = String(formData.get("skinName") || "").trim() || `Skin ${count + 1}`;
 
-  let palette: string[] = [];
-  try {
-    const parsed = JSON.parse(String(formData.get("palette") || "[]"));
-    if (Array.isArray(parsed)) palette = parsed.filter((v): v is string => typeof v === "string");
-  } catch {
-    // malformed JSON from the client — keep the previous palette instead of failing the save
-  }
-
-  const font = String(formData.get("font") || "");
-  const buttonStyle = String(formData.get("buttonStyle") || "");
-
-  if (!imageUrl && !palette.length && !font) redirect(`/admin/programs/${programId}`); // nothing submitted
-
-  await prisma.program.update({
-    where: { id: programId },
+  await prisma.programSkin.create({
     data: {
-      brandDesign: {
-        imageUrl: imageUrl ?? (existing.imageUrl as string | undefined) ?? "",
-        palette: palette.length ? palette : (existing.palette as string[] | undefined) ?? [],
-        font: font || (existing.font as string | undefined) || "",
-        buttonStyle: buttonStyle || (existing.buttonStyle as string | undefined) || "",
-        extractedAt: new Date().toISOString(),
-      },
+      programId,
+      name,
+      designMdRaw: raw,
+      colors: parsed.colors,
+      font: parsed.font,
+      buttonStyle: parsed.buttonStyle,
     },
   });
 
   revalidatePath(`/admin/programs/${programId}`);
-  redirect(`/admin/programs/${programId}?brandSaved=1`);
+  redirect(`/admin/programs/${programId}?skinSaved=1`);
+}
+
+// Activating a skin is exclusive — a single transaction turns this one on
+// and every sibling off, so the card never reads two "active" skins for
+// the same Program (PLAN.md: "solo se puede encender uno").
+export async function activateProgramSkinAction(programId: string, skinId: string) {
+  const scope = await currentAdminScope();
+  if (!scope) redirect("/admin/login");
+  if (scope.programId && scope.programId !== programId) redirect("/admin");
+
+  const skin = await prisma.programSkin.findUnique({ where: { id: skinId } });
+  if (!skin || skin.programId !== programId) redirect(`/admin/programs/${programId}`);
+
+  const nextActive = !skin.active;
+  await prisma.$transaction([
+    prisma.programSkin.updateMany({ where: { programId }, data: { active: false } }),
+    ...(nextActive ? [prisma.programSkin.update({ where: { id: skinId }, data: { active: true } })] : []),
+  ]);
+
+  revalidatePath(`/admin/programs/${programId}`);
+  redirect(`/admin/programs/${programId}?skinSaved=1`);
+}
+
+export async function deleteProgramSkinAction(programId: string, skinId: string) {
+  const scope = await currentAdminScope();
+  if (!scope) redirect("/admin/login");
+  if (scope.programId && scope.programId !== programId) redirect("/admin");
+
+  const skin = await prisma.programSkin.findUnique({ where: { id: skinId } });
+  if (!skin || skin.programId !== programId) redirect(`/admin/programs/${programId}`);
+
+  await prisma.programSkin.delete({ where: { id: skinId } });
+
+  revalidatePath(`/admin/programs/${programId}`);
+  redirect(`/admin/programs/${programId}?skinSaved=1`);
 }
 
 // Title-only override of the fixed set of button/modal labels a project
