@@ -90,12 +90,14 @@ export default function CardCarousel({
         ))}
       </div>
 
-      {/* Sits below the two stacked name+version islands LyCardView renders
-          at the top of the photo (2026-09-16) so nothing overlaps. */}
+      {/* Bottom-anchored (2026-09-16), below whatever CTA a card ends
+          with (schedule button, or the cube row on personal cards) —
+          absolute against the whole carousel viewport, so it lands in
+          the same safe spot regardless of card kind. */}
       <div
         style={{
           position: "absolute",
-          top: "calc(env(safe-area-inset-top,0px) + 84px)",
+          bottom: "calc(env(safe-area-inset-bottom,0px) + 6px)",
           left: 0,
           right: 0,
           display: "flex",

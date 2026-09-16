@@ -1135,6 +1135,23 @@ comparten el mismo `LyCardView.tsx`.
    **47px, delta 0.00** en ambos lados. Confirmado también con
    captura. `tsc` limpio. Versión: **1.2.1**.
 
+2. **Puntitos del carousel, hasta abajo** (hecho, probado localmente).
+   Vivían pegados arriba (`top: +84px`), justo debajo de las islitas —
+   Gunnar los quiere abajo del todo, debajo del botón principal de cada
+   tarjeta (Agendar Entrevista/Reunión en project/company; el cubo
+   inferior en personal, que hoy no tiene ese botón). En vez de
+   hardcodear un `bottom` distinto por kind (frágil, ligado a un layout
+   que va a cambiar en la Fase 2 de esta ronda), lo anclé una sola vez
+   contra el viewport entero del carousel:
+   `bottom: calc(env(safe-area-inset-bottom,0) + 6px)` — cae en la
+   franja de aire que ya deja el padding inferior del layout, debajo de
+   lo que sea que termine la columna de cada tarjeta, sin overlap, sin
+   importar el kind. Probado con datos de prueba locales (Member +
+   3 Cards compartiendo memberId, revertidos al terminar): captura del
+   carousel completo en Legacy (con botón de Agendar) y en Personal (sin
+   ese botón, termina en el cubo) — puntitos limpios abajo de los dos.
+   `tsc` limpio. Versión: **1.2.2**.
+
 ---
 
 **Qué sigue — Fase 8**: WhatsApp Business API real. Esta fase no depende
