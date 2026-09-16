@@ -1300,6 +1300,34 @@ arreglé un off-by-one en el cálculo de profundidad durante la prueba
 (sin referido calculaba N0 en vez de N1). Datos de prueba revertidos al
 terminar. `tsc` limpio. Versión: **1.6.0**.
 
+**5. Panel de admin para Empresa — Mi Red de Clientes** (hecho, probado
+localmente). Gemelo Member-scoped de `/admin/interviews` +
+`completeInterviewAction`, pero acotado a la Company del dueño: nunca
+puede ver ni tocar la red de otra Empresa.
+- `app/m/dashboard/company/network/page.tsx`: lista los
+  `CardNetworkMembership` de la Card del dueño (join con `Member` y su
+  última `Registration`, si agendó), con badge "Invitado" o "✓ N1
+  Activo" y un botón "Marcar reunión hecha" cuando todavía no está
+  activo.
+- `activateNetworkMembershipAction` (nuevo): verifica que la Card sea
+  del dueño logueado antes de tocar nada, flip a `status: "active"` +
+  `interviewedAt`. A diferencia de `completeInterviewAction` de
+  Program, **no crea tarjetas nuevas** para el cliente — nadie pidió
+  eso todavía, no lo inventé.
+- Link "Ver mi Red de Clientes →" agregado al editor de Company
+  (`MemberCardEditor`, solo `kind==="company"`).
+
+Probado con Playwright: dueño logueado entra desde el editor, ve un
+cliente invitado con su reunión agendada, toca "Marcar reunión hecha"
+→ desaparece el botón, pasa a "✓ N1 Activo", mensaje "✓ Activado."
+confirmado. Reseteado el estado de prueba y re-corrido para confirmar
+que no era un falso positivo de una corrida anterior. Datos de prueba
+revertidos al terminar. `tsc` limpio. Versión: **1.7.0**.
+
+Con esto se cierra el bloque completo que Gunnar pidió esta ronda
+(independencia por tarjeta + fractal propio de Empresa) salvo la Fase
+4 (diseño corporativo + IA simulada), que sigue en cola.
+
 ---
 
 **Qué sigue — Fase 8**: WhatsApp Business API real. Esta fase no depende

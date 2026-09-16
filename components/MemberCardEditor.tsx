@@ -197,6 +197,14 @@ export default function MemberCardEditor({
               ✓ Tarjeta guardada.
             </p>
           )}
+          {kind === "company" && (
+            <Link
+              href="/m/dashboard/company/network"
+              style={{ alignSelf: "flex-start", font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#C8A15A" }}
+            >
+              Ver mi Red de Clientes →
+            </Link>
+          )}
         </div>
 
         <section style={SECTION}>
