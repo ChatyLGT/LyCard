@@ -1590,3 +1590,172 @@ de mandarlo por WhatsApp real; ese es el único lugar que hay que tocar
 para reemplazar el envío simulado por el real, sin tocar el resto del
 flujo de login. El resto de la plataforma (Fases 0-7) ya está completo y
 en producción.
+
+---
+
+# Dashboard 2.0 — diagnóstico y plan (arrancado 2026-09-16/17)
+
+Pedido de Gunnar, verbatim: *"realmente necesito un mejor dashboard..
+ahorita todo esta muy desorganizado.. las ediciones se hacen en una
+lista general.. [...] ayudame a que cada badget de la tarjeta pueda
+ser encendido o apagado.. que si lo enciendo entonces ahi aparezca la
+opcion de editar los campos y cuando lo guarde.. que salga aparezca
+guardado y haya que picarle a editar para editarlo de nuevo. Ayudame a
+que los usuarios esten organizados por sus respectivos programas, que
+ademas cada usuario tenga un dashboard con los QRs que envio [...] y
+cuantos QR que mando se registraron, crearon su tarjeta de programa,
+su tarjeta business y su tarjeta personal."*
+
+Instrucción explícita: documentar todo acá primero, marcar el estado
+actual, y tildar cada fase a medida que se completa — para que
+cualquier sesión futura (de este LLM o de otro, conectando solo el
+repo de GitHub) pueda retomar exactamente donde quedó, sin tener que
+releer todo el código de cero. Esta sección es la fuente de verdad
+para eso: **antes de tocar código de esta sección, leer completo el
+diagnóstico + las 5 fases de abajo.**
+
+## Diagnóstico del dashboard actual (2026-09-16, noche)
+
+Estado real de cada pantalla de administración, revisado línea por
+línea, no supuesto:
+
+1. **`app/admin/page.tsx` (roster MasterN0)** — una sola lista plana
+   de *todas* las Cards de *todos* los Programas, ordenadas solo por
+   `createdAt`. Sin agrupar por Programa, sin filtros, sin buscador.
+   Cada fila: nombre + slug + botones Ver/Editar. Esto es "la lista
+   general" que Gunnar señala.
+2. **`components/EditorForm.tsx` (editor de una Card de proyecto,
+   MasterN0-only, vía `/admin/[slug]`)** — un solo `<form>` de 529
+   líneas con 6 secciones siempre abiertas a la vez (Retrato,
+   Identidad Fiduciaria, Programa, Distintivos & Honores, Sabiduría,
+   Canales de Contacto) y un único botón "Guardar Tarjeta" al final
+   que manda todo junto. No hay manera de editar solo una sección, no
+   hay confirmación por sección, no hay estado "guardado" por campo —
+   todo se recarga entero.
+3. **`components/MemberCardEditor.tsx` (editor self-service del host,
+   vía `/m/dashboard/{company,personal}`, 552 líneas)** — mismo
+   patrón: todo abierto, un solo submit. No revisado campo por campo
+   todavía pero confirmado por estructura que comparte el problema.
+4. **`app/admin/programs/[id]/page.tsx` (dashboard de un Programa,
+   ~530 líneas)** — ya está bien organizado *por Programa* (eso ya
+   existe), pero todas sus secciones (Marca, Skins, Textos de
+   Botones, Escalas, Miembros, Inscriptos a Entrevistas) están
+   apiladas en una sola página larga, sin pestañas ni navegación
+   interna. La sección "Miembros" ya usa `<details>/<summary>` nativo
+   para Editar/Mensaje por fila — es el precedente más cercano a lo
+   que Gunnar pide (colapsado por defecto, un click lo abre), pero no
+   tiene el paso de confirmación "✓ Guardado" + vuelta a colapsado
+   que pidió explícitamente — hoy simplemente recarga la página y el
+   `<details>` vuelve a su estado cerrado por defecto (funciona pero
+   no se siente como un paso confirmado).
+5. **QR enviado — no existe tracking, punto.** `sendQrByWhatsappAction`
+   (`app/c/actions.ts`) es 100% simulado: valida el WhatsApp, hace un
+   `console.log`, devuelve `{ok:true}`. No crea ninguna fila en la
+   base. Hoy es imposible saber cuántos QR mandó alguien, a quién, si
+   se abrieron, o si esa persona terminó registrándose — no hay
+   ningún dato que consultar todavía.
+6. **Lo que SÍ existe y sirve de cimiento para el embudo que pide
+   Gunnar** (no hay que inventarlo de nuevo):
+   - `ProgramMembership.status` (`invited → interviewed → active`) +
+     `Registration` (se crea al agendar una entrevista) +
+     `completeInterviewAction` (activa la membership Y crea las 3
+     Cards — Programa/Business/Personal — de una sola vez). O sea: el
+     momento exacto en que "se registró y creó sus 3 tarjetas" ya
+     está modelado, solo falta conectarlo con el origen (qué QR lo
+     trajo).
+   - `CardNetworkMembership` — el mismo patrón pero para la red de
+     clientes de una Company (Fase N, ya en prod).
+
+## Plan — 5 fases, en orden de dependencia
+
+**Regla para cualquiera que retome esto**: marcar `[x]` cada fase
+completa, agregar debajo de cada una una nota corta de qué se hizo y
+la versión en que se shippeó (mismo formato que el resto de este
+archivo) — no borrar el diagnóstico de arriba, sigue siendo válido
+como contexto aunque se vaya completando cada fase.
+
+- [ ] **Fase D1 — Reorganizar `/admin`: usuarios agrupados por
+      Programa.** Reemplazar la lista plana de `app/admin/page.tsx`
+      por una vista agrupada: un bloque colapsable por Programa
+      (nombre, cantidad de miembros/cards), cada uno desplegando sus
+      Cards/Miembros — en vez de una sola lista de 200 filas sin
+      estructura. Scoped N0 (no-MasterN0) ya aterriza directo en su
+      propio Programa, así que esto es estrictamente para la vista
+      cross-Programa de MasterN0. Reutilizar el patrón de acordeón que
+      se define en la Fase D2 en vez de inventar uno distinto acá.
+
+- [ ] **Fase D2 — Acordeón encendido/apagado por sección, con
+      confirmación.** Patrón nuevo y reutilizable (probablemente un
+      componente `components/EditableSection.tsx` client-side):
+      colapsado por defecto mostrando un resumen de solo-lectura +
+      badge "✓ Guardado" (o "Sin completar" si está vacío) + botón
+      "Editar"; al tocar Editar se expande mostrando el form de esa
+      sección sola, con su propio submit — al guardar (server action
+      redirige con un query param tipo `?sectionSaved=medal`), la
+      sección vuelve a colapsarse mostrando "✓ Guardado" y hay que
+      tocar "Editar" de nuevo para volver a tocarla. Aplicar esto a
+      **cada sección** de `EditorForm.tsx` (Retrato, Identidad,
+      Programa, Distintivos, Sabiduría, Canales) y de
+      `MemberCardEditor.tsx` — probablemente signifique partir el
+      `updateCardAction`/`updateMemberCardAction` actuales (que hoy
+      reciben el form entero) en acciones más chicas por sección, o
+      aceptar un campo `section` en el FormData para saber qué guardar
+      sin pisar el resto. Definir esa mecánica exacta es lo primero
+      que hay que resolver acá, antes de tocar el componente visual.
+
+- [ ] **Fase D3 — Schema + tracking real de QR enviados.** Nuevo
+      modelo `QrSend`:
+      ```prisma
+      model QrSend {
+        id            String    @id @default(cuid())
+        cardId        String
+        card          Card      @relation(fields: [cardId], references: [id], onDelete: Cascade)
+        toWhatsapp    String
+        token         String    @unique
+        createdAt     DateTime  @default(now())
+        firstOpenedAt DateTime?
+        openCount     Int       @default(0)
+      }
+      ```
+      `sendQrByWhatsappAction` deja de ser 100% simulado: crea esta
+      fila y arma el link real que "se manda" (`/q/<token>` en vez de
+      `/c/<slug>` directo). Nueva ruta `app/q/[token]/page.tsx` (o
+      route handler): busca el `QrSend` por token, si es la primera
+      vez marca `firstOpenedAt`, siempre suma `openCount`, y redirige
+      a `/c/<slug>` de la Card real — así "visto en un teléfono" se
+      define honestamente como *"se abrió el link"*, no como una
+      detección de cámara/escaneo real (eso no existe sin una app
+      nativa o permisos de cámara, sería inventado). Dejar esto
+      explícito en la UI para no prometer de más.
+
+- [ ] **Fase D4 — Dashboard "Mis QRs" con embudo por usuario.** Nueva
+      pantalla (`/m/dashboard/qrs` o similar) que lista los `QrSend`
+      del usuario logueado con 4 estados por fila: **Enviado** (
+      siempre) → **Visto** (`firstOpenedAt` no nulo) → **Registrado**
+      (existe un `Member` con ese mismo `toWhatsapp` que tiene una
+      `Registration`/`ProgramMembership`) → **Tarjetas creadas** (ese
+      Member tiene sus 3 Cards — project/company/personal). Arriba,
+      un resumen agregado: cuántos QR mandó, cuántos se vieron,
+      cuántos se registraron, cuántos completaron las 3 tarjetas —
+      los 4 números que pidió Gunnar explícitamente. El cruce
+      "Registrado"/"Tarjetas creadas" se hace por número de WhatsApp
+      normalizado (mismo criterio que ya usa `Member.whatsapp`), no
+      por un ID que el visitante no tiene hasta que se loguea — es un
+      match heurístico razonable (dos personas no comparten
+      WhatsApp), no 100% infalible si alguien cambia de número entre
+      que recibe el QR y se registra, pero es lo mismo que ya hace
+      toda la lógica de login existente.
+
+- [ ] **Fase D5 (opcional/stretch, evaluar si hace falta después de
+      D1-D4)** — Consistencia visual entre `/admin` (N0) y `/m/dashboard`
+      (host self-service): hoy comparten paleta pero no componentes.
+      Con `EditableSection` ya construido en D2, podría reusarse acá
+      también. No arrancar esta fase sin confirmar con Gunnar que
+      sigue haciendo falta después de las otras 4.
+
+**Estado al cerrar esta sesión**: diagnóstico completo, plan escrito,
+nada de D1-D5 implementado todavía — quedó pendiente de 3
+confirmaciones de diseño con Gunnar (mecánica exacta de guardado por
+sección en D2, alcance de "organizados por Programa" en D1, y
+confirmar el criterio de "visto"/match por WhatsApp en D3-D4) antes de
+empezar a escribir código.

@@ -990,11 +990,30 @@ export default function LyCardView({
                     type="button"
                     onClick={() => setCvOpen(true)}
                     aria-label="Ver CV"
-                    style={{ ...BADGE_BTN, pointerEvents: "auto" }}
+                    style={{
+                      ...BADGE_BTN,
+                      pointerEvents: "auto",
+                      padding: "3.5px 10px",
+                      gap: 4,
+                      width: 150,
+                      maxWidth: "70%",
+                      justifyContent: "center",
+                    }}
                   >
                     <Sweep />
-                    <Icon name="work" size={12} style={{ color: "var(--goldtxt,#E5C378)" }} />
-                    <span style={{ font: "700 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--goldtxt,#E5C378)" }}>
+                    <Icon name="work" size={8} style={{ flex: "none", color: "var(--goldtxt,#E5C378)" }} />
+                    <span
+                      style={{
+                        minWidth: 0,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        font: "700 7px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
+                        letterSpacing: ".14em",
+                        textTransform: "uppercase",
+                        color: "var(--goldtxt,#E5C378)",
+                      }}
+                    >
                       {card.title}
                     </span>
                   </button>
