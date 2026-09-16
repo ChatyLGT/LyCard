@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { prisma } from "@/lib/prisma";
-import { isAdminAuthed } from "@/lib/auth";
+import { currentAdminScope } from "@/lib/auth";
 import { currentMemberId } from "@/lib/memberAuth";
+import { computeBadge } from "@/lib/badge";
 import LyCardView from "@/components/LyCardView";
 import CardCarousel, { type CarouselBundle } from "@/components/CardCarousel";
 import type { Card, Program, Puesto } from "@/generated/prisma/client";
@@ -15,10 +16,12 @@ const KIND_ORDER = ["project", "company", "personal"];
 
 async function buildCardBundle(
   card: Card & { program: Program | null; puesto: Puesto | null },
-  baseUrl: string
+  baseUrl: string,
+  adminScope: { id: string; programId: string | null } | null,
+  memberId: string | null
 ): Promise<CarouselBundle> {
   const cardUrl = `${baseUrl}/c/${card.slug}`;
-  const [qrSvg, originMemento] = await Promise.all([
+  const [qrSvg, originMemento, badge] = await Promise.all([
     QRCode.toString(cardUrl, {
       type: "svg",
       margin: 1,
@@ -29,8 +32,11 @@ async function buildCardBundle(
     card.kind === "project" && card.memberId
       ? prisma.originMemento.findUnique({ where: { memberId: card.memberId } })
       : null,
+    // Independent per Card (2026-09-16) — unlike isHost/isAdmin, which are
+    // shared across the whole carousel, each slide computes its own N.
+    computeBadge(card, adminScope, memberId),
   ]);
-  return { card, qrSvg, originMemento, program: card.program, puesto: card.puesto };
+  return { card, qrSvg, originMemento, program: card.program, puesto: card.puesto, badge };
 }
 
 export default async function CardPage({
@@ -43,7 +49,8 @@ export default async function CardPage({
   if (!card) notFound();
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-  const [isAdmin, memberId] = await Promise.all([isAdminAuthed(), currentMemberId()]);
+  const [adminScope, memberId] = await Promise.all([currentAdminScope(), currentMemberId()]);
+  const isAdmin = adminScope !== null;
 
   // MasterN0 always sees host mode (same reasoning as the existing tune-icon
   // edit access: admin already has full control over every card). The one
@@ -65,7 +72,7 @@ export default async function CardPage({
     (c): c is typeof siblings[number] => Boolean(c)
   );
 
-  const bundles = await Promise.all(ordered.map((c) => buildCardBundle(c, baseUrl)));
+  const bundles = await Promise.all(ordered.map((c) => buildCardBundle(c, baseUrl, adminScope, memberId)));
 
   if (bundles.length <= 1) {
     const b = bundles[0];
@@ -75,6 +82,7 @@ export default async function CardPage({
         qrSvg={b.qrSvg}
         isAdmin={isAdmin}
         isHost={isHost}
+        badge={b.badge}
         originMemento={b.originMemento}
         program={b.program}
         puesto={b.puesto}

@@ -1249,6 +1249,57 @@ cualquiera) toca el QR, carga un WhatsApp, confirma, ve "¡Listo! Te lo
 enviamos a +521234567890." Datos de prueba revertidos al terminar.
 `tsc` limpio. Versión: **1.5.0**.
 
+**4. Modelo `CardNetworkMembership` + badge N0/N1/NA** (hecho, probado
+localmente). Antes de tocar código negociamos 2 cosas con Gunnar: el N es
+del que MIRA la tarjeta (no del dueño — MasterN0 ve N0 en cualquier
+tarjeta porque es N0 de todo el fractal), y Empresa se lleva un fractal
+propio y completo (a diferencia de Personal, que es solo libreta de
+contactos, sin fractal) porque "en el futuro cuando se haga cliente
+podremos hacer uso de esa plataforma".
+
+- Modelo nuevo `CardNetworkMembership`, calcado de `ProgramMembership`
+  (mismo `referredByMembershipId` autoreferenciado, mismo `status`) pero
+  anclado a una Card de Empresa en vez de a un Program — el dueño de la
+  Empresa es el N0 de su propia red, sin necesitar una fila propia.
+  `Registration` suma `networkMembershipId` (mismo patrón que ya tenía
+  `membershipId` para Program).
+- `registerInterviewAction`: al agendar una reunión en una Company card,
+  ahora hace `upsert` de un `CardNetworkMembership` en estado "invited"
+  para el visitante logueado (find-or-create, porque a diferencia de
+  Program no hay un paso de onboarding separado — agendar ES la entrada
+  a la red). De paso, hasta ahora esa función linkeaba `membershipId`
+  (Program) sin importar el kind de la tarjeta, cayendo a "la membership
+  más reciente del Member" en company/personal — un bug menor que no se
+  notaba porque nada leía ese link fuera de project; lo acoto a
+  `card.kind === "project"` al tocar esta misma función.
+- `lib/badge.ts` (nuevo): `computeBadge(card, adminScope, memberId)` —
+  MasterN0 → N0 en cualquier tarjeta; N0 acotado a un Programa → N0 solo
+  en las project cards de ESE Programa; dueño de una Company → N0 en la
+  suya; Member con membership `active` → `N{profundidad+1}` (el +1 porque
+  N0 lo ocupa el root real —admin o dueño—, nunca una fila de membership,
+  así que "sin referido" ya es N1, no N0); sin relación con esa tarjeta,
+  o Personal (no tiene fractal), o anónimo → NA.
+- `LyCardView`: el círculo ya no depende de `isAdmin` — ahora recibe
+  `badge` (calculado por-tarjeta en `page.tsx`, a diferencia de
+  `isHost`/`isAdmin` que siguen siendo compartidos por todo el carousel)
+  y **siempre se renderiza**, nunca desaparece. Solo enlaza a `/admin`
+  cuando de verdad sos Admin (un dueño de Empresa también puede leer
+  "N0" ahí, pero clickearlo no debe mandarlo a un login que no le sirve).
+
+Punto abierto, documentado a propósito y no resuelto acá: cómo se arma
+la cadena de referidos dentro de la red de una Empresa (quién invitó a
+quién) — hoy todo cliente activado entra con `referredByMembershipId`
+null (todos N1 directos bajo el dueño). Construir ese mecanismo de
+invitación en cadena queda para cuando haga falta, no antes.
+
+Probado con Playwright con Programa + dueño + cliente activo + cliente
+invitado de prueba: anónimo → NA; MasterN0 → N0 con link a `/admin` en
+cualquier tarjeta; dueño en su propia Company → N0 sin link; cliente
+activo → N1; cliente todavía invitado (no activado) → NA. Encontré y
+arreglé un off-by-one en el cálculo de profundidad durante la prueba
+(sin referido calculaba N0 en vez de N1). Datos de prueba revertidos al
+terminar. `tsc` limpio. Versión: **1.6.0**.
+
 ---
 
 **Qué sigue — Fase 8**: WhatsApp Business API real. Esta fase no depende

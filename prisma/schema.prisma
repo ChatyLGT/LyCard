@@ -112,6 +112,13 @@ model Card {
   // when empty. A project card's island label is computed from its
   // Program's name instead, no field needed.
   islandLabel String @default("")
+
+  // A Company's own client network (PLAN.md, "independencia por tarjeta",
+  // 2026-09-16) — same referral-chain shape as ProgramMembership, but
+  // rooted at this specific Card instead of a Program. Empty for
+  // project/personal (project has ProgramMembership instead; personal has
+  // no fractal at all, just a contact list).
+  networkMemberships CardNetworkMembership[]
 }
 
 // A brand/project running on the platform (Legacy today; Mlqr, Digital
@@ -193,9 +200,10 @@ model Member {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  memberships ProgramMembership[]
-  cards       Card[]
-  origin      OriginMemento?
+  memberships        ProgramMembership[]
+  cards              Card[]
+  origin             OriginMemento?
+  networkMemberships CardNetworkMembership[]
 }
 
 // A simulated WhatsApp OTP (PLAN.md Fase 1 — real sending is Fase 8).
@@ -235,6 +243,33 @@ model ProgramMembership {
   @@unique([memberId, programId])
 }
 
+// A Company Card's own client network (PLAN.md, "independencia por
+// tarjeta", 2026-09-16) — same referral-chain shape as ProgramMembership
+// (referredByMembershipId), but rooted at a specific Card instead of a
+// Program: the Company's owner is that network's N0 by definition, no row
+// of their own needed. Created (status "invited") when a visitor books a
+// meeting via registerInterviewAction; flipped to "active" the same way a
+// ProgramMembership is — a human admin/owner action, not automatic (see
+// the Company admin panel, PLAN.md "Qué sigue").
+model CardNetworkMembership {
+  id                     String                  @id @default(cuid())
+  cardId                 String
+  card                   Card                    @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  memberId               String
+  member                 Member                  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  referredByMembershipId String?
+  referredBy             CardNetworkMembership?  @relation("CardReferrals", fields: [referredByMembershipId], references: [id])
+  referred               CardNetworkMembership[] @relation("CardReferrals")
+  status                 String                  @default("invited") // invited | active
+  interviewedAt          DateTime?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+
+  registrations Registration[]
+
+  @@unique([memberId, cardId])
+}
+
 // Snapshot of "the card that recruited me" archived into a Member's own
 // Virtual Office once they graduate from guest to host (PLAN.md Fase 4) —
 // the live guest-mode view disappears, this is what's left of it.
@@ -267,6 +302,13 @@ model Registration {
   membershipId String?
   membership   ProgramMembership? @relation(fields: [membershipId], references: [id], onDelete: SetNull)
 
+  // Same idea, for a booking against a Company card's own client network
+  // (2026-09-16) — set/found-or-created in registerInterviewAction when
+  // card.kind === "company" and the visitor is a logged-in Member.
+  networkMembershipId String?
+  networkMembership   CardNetworkMembership? @relation(fields: [networkMembershipId], references: [id], onDelete: SetNull)
+
   @@index([cardId])
   @@index([membershipId])
+  @@index([networkMembershipId])
 }

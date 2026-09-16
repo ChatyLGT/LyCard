@@ -30,7 +30,7 @@ export async function registerInterviewAction(input: {
   // just unlinked, exactly as before.
   const memberId = await currentMemberId();
   let membershipId: string | null = null;
-  if (memberId) {
+  if (memberId && card.kind === "project") {
     const membership = card.programId
       ? await prisma.programMembership.findUnique({
           where: { memberId_programId: { memberId, programId: card.programId } },
@@ -42,6 +42,21 @@ export async function registerInterviewAction(input: {
     membershipId = membership?.id ?? null;
   }
 
+  // Same idea for a Company card's own client network (2026-09-16) — but
+  // there's no separate onboarding step here like Program has, so booking
+  // a meeting IS the entry point: find-or-create the (still "invited")
+  // membership rather than only looking one up. The owner never books a
+  // meeting on their own card, but the check is cheap insurance either way.
+  let networkMembershipId: string | null = null;
+  if (memberId && card.kind === "company" && memberId !== card.memberId) {
+    const membership = await prisma.cardNetworkMembership.upsert({
+      where: { memberId_cardId: { memberId, cardId: card.id } },
+      update: {},
+      create: { memberId, cardId: card.id },
+    });
+    networkMembershipId = membership.id;
+  }
+
   await prisma.registration.create({
     data: {
       cardId: card.id,
@@ -51,6 +66,7 @@ export async function registerInterviewAction(input: {
       whatsapp,
       email,
       membershipId,
+      networkMembershipId,
     },
   });
 

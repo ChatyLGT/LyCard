@@ -367,14 +367,21 @@ export default function LyCardView({
   qrSvg,
   isAdmin,
   isHost,
+  badge,
   originMemento,
   program,
   puesto,
 }: {
   card: Card;
   qrSvg: string;
+  // Only still needed to decide whether the N0 badge links into /admin —
+  // a Company owner can also read "N0" (they're their own network's root)
+  // but isn't an Admin and /admin would just bounce them to a login screen.
   isAdmin: boolean;
   isHost: boolean;
+  // Viewer-relative N0/N1/.../NA (2026-09-16) — replaces the old
+  // isAdmin-only "N0" badge; see lib/badge.ts for how it's computed.
+  badge: string;
   originMemento: OriginMemento | null;
   program: Program | null;
   puesto: Puesto | null;
@@ -750,7 +757,11 @@ export default function LyCardView({
                   <Link href={`/admin/${card.slug}`} aria-label={L("customize")} style={ICON_BTN}>
                     <Icon name="tune" size={17} />
                   </Link>
-                  {isAdmin && (
+                  {/* Viewer-relative N badge (2026-09-16) — always renders,
+                      never hidden, so this cluster's width never changes.
+                      MasterN0 keeps the shortcut into /admin; every other
+                      value (N1, N2, NA...) is purely informational. */}
+                  {badge === "N0" && isAdmin ? (
                     <Link
                       href="/admin"
                       aria-label="MasterN0"
@@ -758,6 +769,13 @@ export default function LyCardView({
                     >
                       N0
                     </Link>
+                  ) : (
+                    <span
+                      aria-label="Tu nivel"
+                      style={{ ...ICON_BTN, cursor: "default", font: "800 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".02em" }}
+                    >
+                      {badge}
+                    </span>
                   )}
                 </div>
 

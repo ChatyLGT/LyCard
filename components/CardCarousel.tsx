@@ -10,6 +10,9 @@ export type CarouselBundle = {
   originMemento: OriginMemento | null;
   program: Program | null;
   puesto: Puesto | null;
+  // Viewer-relative N0/N1/.../NA (2026-09-16) — independent per Card, unlike
+  // isAdmin/isHost below which are shared across the whole carousel.
+  badge: string;
 };
 
 // Swipeable Programa/Business/Personal carousel for a Member's 3 Cards —
@@ -82,6 +85,7 @@ export default function CardCarousel({
               qrSvg={c.qrSvg}
               isAdmin={isAdmin}
               isHost={isHost}
+              badge={c.badge}
               originMemento={c.originMemento}
               program={c.program}
               puesto={c.puesto}
