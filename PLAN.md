@@ -1107,6 +1107,36 @@ en local al terminar.
 
 ---
 
+**Detalles de diseño (2026-09-16, tarde)** — arranca una fase nueva,
+más chica y granular, de pulido visual sobre lo ya construido. Regla
+que fija Gunnar para toda esta fase: *todo* detalle de diseño aplica a
+las 3 Cards (project/company/personal) salvo que él diga lo contrario
+— lo cual, en la práctica, ya sale gratis casi siempre porque las 3
+comparten el mismo `LyCardView.tsx`.
+
+1. **Centrado de los círculos de íconos contra el hueco entre islitas**
+   (hecho, probado localmente). Los 3 clusters de arriba (tune/N0 a la
+   izquierda, islita de nombre + islita de versión al centro,
+   idioma/tema a la derecha) eran 3 `<div>` con `position:absolute` y
+   un `top:14` fijo cada uno — así, los círculos de 36px quedaban
+   pegados arriba en vez de centrados contra el hueco entre las dos
+   islitas apiladas. En vez de ajustar el `top` a mano por prueba y
+   error (frágil — depende del alto real que renderiza la fuente),
+   los uní en una sola fila flex (`display:flex, alignItems:"center"`)
+   con dos spacers `flex:1` a los costados de la islita central para
+   mantenerla centrada horizontalmente igual que antes. Con
+   `alignItems:"center"`, el navegador centra cada hijo contra el
+   alto real de la fila — y como las dos islitas comparten el mismo
+   estilo y una sola línea de texto, el centro del hueco entre ambas
+   coincide matemáticamente con el centro de toda la pila, que es
+   contra lo que ahora se centran los círculos. Medido con Playwright
+   (bounding boxes reales, no visual a ojo): centro Y del ícono
+   izquierdo, del ícono derecho y del hueco entre islitas — los 3 en
+   **47px, delta 0.00** en ambos lados. Confirmado también con
+   captura. `tsc` limpio. Versión: **1.2.1**.
+
+---
+
 **Qué sigue — Fase 8**: WhatsApp Business API real. Esta fase no depende
 de mí escribiendo código — depende de que consigan cuenta de WhatsApp
 Business verificada por Meta, un proveedor (Twilio/360dialog/Meta Cloud

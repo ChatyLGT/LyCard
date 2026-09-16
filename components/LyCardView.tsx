@@ -711,69 +711,72 @@ export default function LyCardView({
                 </div>
               )}
 
-              <div style={{ position: "absolute", top: 14, left: 14, zIndex: 30, display: "flex", alignItems: "center", gap: 8 }}>
-                <Link href={`/admin/${card.slug}`} aria-label={L("customize")} style={ICON_BTN}>
-                  <Icon name="tune" size={17} />
-                </Link>
-                {isAdmin && (
-                  <Link
-                    href="/admin"
-                    aria-label="MasterN0"
-                    style={{ ...ICON_BTN, font: "800 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".02em" }}
-                  >
-                    N0
+              {/* Single flex row (2026-09-16) instead of 3 independently
+                  top-positioned clusters: alignItems:"center" makes every
+                  child's vertical center land on the row's true center —
+                  which, since both islands share one style/one line of
+                  text, is the same point as the center of the gap between
+                  them. Equal flex:1 spacers keep the island stack
+                  horizontally centered no matter how wide either icon
+                  cluster is, same as the old left:50% trick but now
+                  sharing one cross-axis with the icon circles. */}
+              <div style={{ position: "absolute", top: 14, left: 14, right: 14, zIndex: 30, display: "flex", alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Link href={`/admin/${card.slug}`} aria-label={L("customize")} style={ICON_BTN}>
+                    <Icon name="tune" size={17} />
                   </Link>
-                )}
-              </div>
+                  {isAdmin && (
+                    <Link
+                      href="/admin"
+                      aria-label="MasterN0"
+                      style={{ ...ICON_BTN, font: "800 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".02em" }}
+                    >
+                      N0
+                    </Link>
+                  )}
+                </div>
 
-              <div style={{ position: "absolute", top: 14, right: 14, zIndex: 30, display: "flex", alignItems: "center", gap: 8 }}>
-                <button
-                  type="button"
-                  aria-label="Idioma"
-                  onClick={() => setLang((l) => (l === "es" ? "en" : "es"))}
-                  style={{ ...ICON_BTN, font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em" }}
-                >
-                  {lang === "es" ? "ES" : "EN"}
-                </button>
-                <button
-                  type="button"
-                  aria-label="Tema"
-                  onClick={() => setTheme((th) => (th === "dark" ? "light" : "dark"))}
-                  style={ICON_BTN}
-                >
-                  <Icon name={light ? "dark_mode" : "light_mode"} />
-                </button>
-              </div>
+                <div style={{ flex: 1 }} />
 
-              <div
-                style={{
-                  position: "absolute",
-                  top: 14,
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  zIndex: 30,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: 4,
-                }}
-              >
-                <button
-                  type="button"
-                  aria-label="Sobre esta tarjeta"
-                  onClick={() => setModal("cardInfo")}
-                  style={ISLAND_BADGE}
-                >
-                  {cardIslandLabel}
-                </button>
-                <button
-                  type="button"
-                  aria-label="Versión de la app"
-                  onClick={() => setModal("versionInfo")}
-                  style={ISLAND_BADGE}
-                >
-                  V. {APP_VERSION}
-                </button>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                  <button
+                    type="button"
+                    aria-label="Sobre esta tarjeta"
+                    onClick={() => setModal("cardInfo")}
+                    style={ISLAND_BADGE}
+                  >
+                    {cardIslandLabel}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Versión de la app"
+                    onClick={() => setModal("versionInfo")}
+                    style={ISLAND_BADGE}
+                  >
+                    V. {APP_VERSION}
+                  </button>
+                </div>
+
+                <div style={{ flex: 1 }} />
+
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <button
+                    type="button"
+                    aria-label="Idioma"
+                    onClick={() => setLang((l) => (l === "es" ? "en" : "es"))}
+                    style={{ ...ICON_BTN, font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em" }}
+                  >
+                    {lang === "es" ? "ES" : "EN"}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Tema"
+                    onClick={() => setTheme((th) => (th === "dark" ? "light" : "dark"))}
+                    style={ICON_BTN}
+                  >
+                    <Icon name={light ? "dark_mode" : "light_mode"} />
+                  </button>
+                </div>
               </div>
 
               <div
