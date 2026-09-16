@@ -152,6 +152,28 @@ export default async function AdminProgramDetailPage({
               <input name="name" defaultValue={program.name} style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "10px 14px", color: "#F5F2EB", font: "400 13px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
             </label>
             <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+              <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#C2BEB5" }}>
+                Logo (abre en el botón de Oficina Virtual de cada tarjeta de este Programa)
+              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {program.logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={program.logoUrl} alt="" style={{ width: 44, height: 44, borderRadius: 999, objectFit: "cover", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)" }} />
+                ) : (
+                  <span style={{ width: 44, height: 44, borderRadius: 999, background: "#0D0D0D", border: "1px dashed rgba(200,161,90,.3)", flex: "none" }} />
+                )}
+                <input
+                  type="file"
+                  name="logo"
+                  accept="image/*"
+                  style={{ font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}
+                />
+              </div>
+              <span style={{ font: "400 10.5px/1.5 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
+                Sin logo, se muestra el emblema decorativo de siempre.
+              </span>
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
               <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#C2BEB5" }}>Color primario</span>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <input type="color" name="primaryColor" defaultValue={program.primaryColor} style={{ width: 40, height: 34, border: "none", borderRadius: 8, background: "none", padding: 0 }} />

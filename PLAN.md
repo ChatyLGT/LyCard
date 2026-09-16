@@ -1196,6 +1196,32 @@ por WhatsApp simulado (código leído de pantalla, no hardcodeado) →
 en la base que persistió. Datos de prueba revertidos al terminar.
 `tsc` limpio. Versión: **1.3.0**.
 
+**2. Logo real en el botón de Oficina Virtual** (hecho, probado
+localmente). `Program.logoUrl` existía en el schema desde hace rato y
+no se usaba en ningún lado — cero UI de carga, cero renderizado. Ahora:
+- Nuevo `Card.logoUrl` (migración `20260916150138_card_logo_url`) para
+  el logo propio de una Company — un Project lee `program.logoUrl` en
+  vez de eso, Personal no tiene logo (se queda con la gema decorativa,
+  no hay "empresa" que representar ahí).
+- `/admin/programs/[id]`: input de carga junto al resto de "Marca del
+  Programa", reusando `saveUpload` (mismo storage que los retratos —
+  disco local en dev, Vercel Blob en prod). `updateProgramAction`
+  guarda `logoUrl` solo si llega un archivo nuevo, igual que el patrón
+  ya usado para `portraitUrl`.
+- `MemberCardEditor.tsx`: mismo input, pero solo quiere kind==="company"
+  — `updateMemberCardAction` gana el mismo manejo de archivo.
+- `LyCardView.tsx`: el botón de Oficina Virtual computa
+  `officeLogoUrl = isProject ? program?.logoUrl : isCompany ? card.logoUrl
+  : null` y pinta esa imagen en vez del SVG de la gema cuando existe —
+  fallback exacto a la gema (con su `Sweep` y animación) si no hay logo.
+
+Probado con Playwright: Programa + Member + Company card de prueba
+locales, login real de admin y de miembro, subida de un PNG de prueba
+en cada editor, guardado, y confirmado visualmente en `/c/mastern0` y
+`/c/mastern0-business` que el botón de Oficina Virtual pasa a mostrar
+el logo cargado en vez de la gema. Datos y archivos de prueba
+revertidos al terminar. `tsc` limpio. Versión: **1.4.0**.
+
 ---
 
 **Qué sigue — Fase 8**: WhatsApp Business API real. Esta fase no depende

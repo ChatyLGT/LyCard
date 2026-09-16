@@ -118,6 +118,7 @@ export default function MemberCardEditor({
   const [medal, setMedal] = useState(card.medal);
   const [rank, setRank] = useState(card.rank);
   const [portraitPreview, setPortraitPreview] = useState<string | null>(card.portraitUrl);
+  const [logoPreview, setLogoPreview] = useState<string | null>(card.logoUrl);
   const [officeItems, setOfficeItems] = useState<OfficeItem[]>(() => parseOfficeItems(card.officeItems));
   const copy = COPY[kind];
 
@@ -240,6 +241,50 @@ export default function MemberCardEditor({
               </label>
             </div>
           </div>
+
+          {kind === "company" && (
+            <div style={{ display: "flex", alignItems: "center", gap: 14, paddingTop: 4, borderTop: "1px solid rgba(255,255,255,.06)" }}>
+              <div style={{ width: 64, height: 64, flex: "none", borderRadius: 999, overflow: "hidden", background: "#0D0D0D", boxShadow: "0 8px 24px rgba(0,0,0,.6)" }}>
+                {logoPreview ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={logoPreview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : null}
+              </div>
+              <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+                <span style={{ font: "400 11px/1.5 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
+                  Logo de la Empresa — reemplaza el emblema decorativo del botón de Oficina Virtual.
+                </span>
+                <label
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 7,
+                    padding: 10,
+                    borderRadius: 10,
+                    background: "#353534",
+                    color: "#F5F2EB",
+                    font: "600 11px 'Plus Jakarta Sans',sans-serif",
+                    letterSpacing: ".1em",
+                    textTransform: "uppercase",
+                    cursor: "pointer",
+                  }}
+                >
+                  Subir logo
+                  <input
+                    type="file"
+                    name="logo"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) setLogoPreview(URL.createObjectURL(file));
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
+          )}
         </section>
 
         <section style={SECTION}>

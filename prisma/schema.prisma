@@ -62,6 +62,10 @@ model Card {
   // Media
   portraitUrl       String?
   videoThumbnailUrl String?
+  // Company's own logo, rendered as the Virtual Office trigger instead of
+  // the fixed gem SVG (PLAN.md, "independencia por tarjeta", 2026-09-16).
+  // Project cards use program.logoUrl instead; personal keeps the gem.
+  logoUrl           String?
 
   // Display defaults for first paint (viewer can still toggle)
   defaultTheme String @default("dark")

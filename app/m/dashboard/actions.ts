@@ -47,6 +47,15 @@ export async function updateMemberCardAction(slug: string, formData: FormData) {
     portraitUrl = await saveUpload(portrait, `${slug}-portrait`);
   }
 
+  // Company's own logo, shown in the Virtual Office trigger instead of the
+  // fixed gem SVG (2026-09-16) — only company cards render the field, but
+  // saved generically like every other upload here.
+  const logo = formData.get("logo");
+  let logoUrl: string | undefined;
+  if (logo instanceof File && logo.size > 0) {
+    logoUrl = await saveUpload(logo, `${slug}-logo`);
+  }
+
   // Virtual Office content (PLAN.md Fase 7) — a portfolio (company) or
   // résumé/gallery (personal), sent as a JSON string. Sanitized here rather
   // than trusted as-is, same as every other field in this action.
@@ -77,6 +86,7 @@ export async function updateMemberCardAction(slug: string, formData: FormData) {
     data: {
       ...data,
       ...(portraitUrl ? { portraitUrl } : {}),
+      ...(logoUrl ? { logoUrl } : {}),
       ...(officeItems ? { officeItems } : {}),
     },
   });

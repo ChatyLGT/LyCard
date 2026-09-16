@@ -8,6 +8,7 @@ import { currentAdminScope } from "@/lib/auth";
 import { slugify, uniqueSlug } from "@/lib/slug";
 import { CARD_LABEL_FIELDS } from "@/lib/cardLabels";
 import { parseEscala } from "@/lib/escalas";
+import { saveUpload } from "@/lib/storage";
 
 // Only MasterN0 (programId === null) can create Programs or their scoped N0
 // admins — PLAN.md Fase 6 is explicit that this is the one thing a Program
@@ -102,7 +103,15 @@ export async function updateProgramAction(programId: string, formData: FormData)
     if (typeof v === "string") data[key] = v;
   }
 
-  await prisma.program.update({ where: { id: programId }, data });
+  // Program logo — rendered as the Virtual Office trigger on every project
+  // card under this Program instead of the fixed gem SVG (2026-09-16).
+  const logo = formData.get("logo");
+  let logoUrl: string | undefined;
+  if (logo instanceof File && logo.size > 0) {
+    logoUrl = await saveUpload(logo, `${programId}-logo`);
+  }
+
+  await prisma.program.update({ where: { id: programId }, data: { ...data, ...(logoUrl ? { logoUrl } : {}) } });
 
   revalidatePath(`/admin/programs/${programId}`);
   redirect(`/admin/programs/${programId}?saved=1`);

@@ -384,6 +384,10 @@ export default function LyCardView({
   const isProject = card.kind === "project";
   const isCompany = card.kind === "company";
   const isPersonal = card.kind === "personal";
+  // The logo that opens the Virtual Office (2026-09-16) — Program's for
+  // project, the Company's own for company; personal keeps the decorative
+  // gem, no logo concept there. Falls back to the gem when nothing's set.
+  const officeLogoUrl = isProject ? program?.logoUrl : isCompany ? card.logoUrl : null;
   // Project cards' official social channels live on the Program, not the
   // Card (each N0 defines their project's branding once, at Program level —
   // see PLAN.md Fase 7.1). card.wa stays personal/per-host regardless of kind.
@@ -893,31 +897,38 @@ export default function LyCardView({
                     overflow: "hidden",
                   }}
                 >
-                  <Sweep />
-                  <svg
-                    viewBox="0 0 100 100"
-                    style={{ width: 56, height: 56, animation: "emblemFloat 3s ease-in-out infinite", filter: "drop-shadow(0 2px 8px rgba(200,161,90,.5))" }}
-                    fill="none"
-                  >
-                    <defs>
-                      <linearGradient id="jgg" gradientUnits="userSpaceOnUse" x1="10" x2="90" y1="10" y2="90">
-                        <stop offset="0%" stopColor="#FFFFFF" />
-                        <stop offset="25%" stopColor="#FFF0CA" />
-                        <stop offset="55%" stopColor="#D4AF37" />
-                        <stop offset="85%" stopColor="#99732B" />
-                        <stop offset="100%" stopColor="#E5C378" />
-                      </linearGradient>
-                      <radialGradient id="orbg" cx="50%" cy="40%" r="60%">
-                        <stop offset="0%" stopColor="#FFFFFF" />
-                        <stop offset="50%" stopColor="#FFE6A3" />
-                        <stop offset="100%" stopColor="#C8A15A" />
-                      </radialGradient>
-                    </defs>
-                    <path d="M14 74 C 32 47, 68 47, 86 74" stroke="url(#jgg)" strokeLinecap="round" strokeWidth="6.2" />
-                    <path d="M23 74 V 64 M34 74 V 58 M46 74 V 53 M58 74 V 53 M70 74 V 58 M81 74 V 64" stroke="#F0D38D" strokeLinecap="round" strokeWidth="3.2" />
-                    <path d="M48 20 C 43 36, 27 52, 18 70 C 28 70, 56 63, 82 72" stroke="url(#jgg)" strokeLinecap="round" strokeWidth="6" />
-                    <circle cx="50" cy="49" r="4.8" fill="url(#orbg)" stroke="#FFFFFF" strokeWidth="1.4" />
-                  </svg>
+                  {officeLogoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={officeLogoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <>
+                      <Sweep />
+                      <svg
+                        viewBox="0 0 100 100"
+                        style={{ width: 56, height: 56, animation: "emblemFloat 3s ease-in-out infinite", filter: "drop-shadow(0 2px 8px rgba(200,161,90,.5))" }}
+                        fill="none"
+                      >
+                        <defs>
+                          <linearGradient id="jgg" gradientUnits="userSpaceOnUse" x1="10" x2="90" y1="10" y2="90">
+                            <stop offset="0%" stopColor="#FFFFFF" />
+                            <stop offset="25%" stopColor="#FFF0CA" />
+                            <stop offset="55%" stopColor="#D4AF37" />
+                            <stop offset="85%" stopColor="#99732B" />
+                            <stop offset="100%" stopColor="#E5C378" />
+                          </linearGradient>
+                          <radialGradient id="orbg" cx="50%" cy="40%" r="60%">
+                            <stop offset="0%" stopColor="#FFFFFF" />
+                            <stop offset="50%" stopColor="#FFE6A3" />
+                            <stop offset="100%" stopColor="#C8A15A" />
+                          </radialGradient>
+                        </defs>
+                        <path d="M14 74 C 32 47, 68 47, 86 74" stroke="url(#jgg)" strokeLinecap="round" strokeWidth="6.2" />
+                        <path d="M23 74 V 64 M34 74 V 58 M46 74 V 53 M58 74 V 53 M70 74 V 58 M81 74 V 64" stroke="#F0D38D" strokeLinecap="round" strokeWidth="3.2" />
+                        <path d="M48 20 C 43 36, 27 52, 18 70 C 28 70, 56 63, 82 72" stroke="url(#jgg)" strokeLinecap="round" strokeWidth="6" />
+                        <circle cx="50" cy="49" r="4.8" fill="url(#orbg)" stroke="#FFFFFF" strokeWidth="1.4" />
+                      </svg>
+                    </>
+                  )}
                 </span>
               </button>
               <SocialDock channels={["li", "yt", "web"]} card={socialCard} tone="ruby" />
