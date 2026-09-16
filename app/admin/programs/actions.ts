@@ -117,6 +117,58 @@ export async function updateProgramAction(programId: string, formData: FormData)
   redirect(`/admin/programs/${programId}?saved=1`);
 }
 
+// Persists the brand-guidelines image + what got "read" from it
+// (PLAN.md, "diseño corporativo", 2026-09-16). The palette arrives
+// pre-computed from BrandDesignUploader.tsx (real pixel analysis, done
+// client-side); font/buttonStyle are the simulated part. Separate form
+// from updateProgramAction so uploading a new brand image doesn't force
+// re-submitting the whole branding section.
+export async function updateBrandDesignAction(programId: string, formData: FormData) {
+  const scope = await currentAdminScope();
+  if (!scope) redirect("/admin/login");
+  if (scope.programId && scope.programId !== programId) redirect("/admin");
+
+  const program = await prisma.program.findUnique({ where: { id: programId }, select: { brandDesign: true } });
+  if (!program) redirect("/admin/programs");
+
+  const existing = (program.brandDesign && typeof program.brandDesign === "object" ? program.brandDesign : {}) as Record<string, unknown>;
+
+  const brandImage = formData.get("brandImage");
+  let imageUrl: string | undefined;
+  if (brandImage instanceof File && brandImage.size > 0) {
+    imageUrl = await saveUpload(brandImage, `${programId}-brand`);
+  }
+
+  let palette: string[] = [];
+  try {
+    const parsed = JSON.parse(String(formData.get("palette") || "[]"));
+    if (Array.isArray(parsed)) palette = parsed.filter((v): v is string => typeof v === "string");
+  } catch {
+    // malformed JSON from the client — keep the previous palette instead of failing the save
+  }
+
+  const font = String(formData.get("font") || "");
+  const buttonStyle = String(formData.get("buttonStyle") || "");
+
+  if (!imageUrl && !palette.length && !font) redirect(`/admin/programs/${programId}`); // nothing submitted
+
+  await prisma.program.update({
+    where: { id: programId },
+    data: {
+      brandDesign: {
+        imageUrl: imageUrl ?? (existing.imageUrl as string | undefined) ?? "",
+        palette: palette.length ? palette : (existing.palette as string[] | undefined) ?? [],
+        font: font || (existing.font as string | undefined) || "",
+        buttonStyle: buttonStyle || (existing.buttonStyle as string | undefined) || "",
+        extractedAt: new Date().toISOString(),
+      },
+    },
+  });
+
+  revalidatePath(`/admin/programs/${programId}`);
+  redirect(`/admin/programs/${programId}?brandSaved=1`);
+}
+
 // Title-only override of the fixed set of button/modal labels a project
 // card renders (lib/cardLabels.ts) — atajo version of the full per-Program
 // identity system in PLAN.md Fase 9. Blank field = revert to the i18n

@@ -1324,9 +1324,42 @@ confirmado. Reseteado el estado de prueba y re-corrido para confirmar
 que no era un falso positivo de una corrida anterior. Datos de prueba
 revertidos al terminar. `tsc` limpio. Versión: **1.7.0**.
 
-Con esto se cierra el bloque completo que Gunnar pidió esta ronda
-(independencia por tarjeta + fractal propio de Empresa) salvo la Fase
-4 (diseño corporativo + IA simulada), que sigue en cola.
+**6. Carga de diseño corporativo + IA simulada** (hecho, probado
+localmente). Última pieza del bloque grande.
+- `Program.brandDesign` (Json, nuevo) — `{imageUrl, palette, font,
+  buttonStyle, extractedAt}`.
+- `lib/designExtraction.ts`: `simulateDesignExtraction(paletteHex)` —
+  el único punto de integración para un modelo real (Gemini, cuando
+  haya cuenta) más adelante; hoy devuelve una fuente y un estilo de
+  botón de una lista fija, elegidos determinísticamente a partir de la
+  paleta (misma imagen → siempre el mismo resultado, no aleatorio en
+  cada carga).
+- `BrandDesignUploader.tsx` (nuevo, cliente): al elegir el archivo, la
+  paleta de colores se calcula **de verdad** — dibuja la imagen en un
+  canvas, cuantiza los píxeles en baldes gruesos de RGB y toma los 5
+  colores más frecuentes. Nada de esto es simulado; es la única parte
+  del pedido de Gunnar ("la IA lo traduce en el diseño") que se podía
+  resolver sin modelo, así que se resuelve de verdad — solo fuente y
+  estilo de botón quedan pendientes de un modelo real.
+- Badge "🎨 Colores y estilo detectados" junto al input de carga, tal
+  cual lo pidió Gunnar → abre un modal simple con los swatches, la
+  fuente y el estilo. `updateBrandDesignAction` (nuevo, en
+  `app/admin/programs/actions.ts`) persiste todo, en un form separado
+  del resto de "Marca del Programa" para no forzar resubir todo lo
+  demás cada vez que cambia solo el diseño.
+
+Probado con Playwright: subí una imagen de prueba dos tonos (rojo/azul)
+→ paleta detectada con los 2 colores reales más 2 tonos de mezcla del
+borde (esperable al reescalar a 60×60 para el muestreo) → modal
+muestra los 4 swatches + "Inter" + "Cuadrado, bordes rectos, color
+sólido" → guardado → confirmado en la base que `brandDesign` persistió
+completo (`imageUrl`, `palette`, `font`, `buttonStyle`, `extractedAt`).
+Datos y archivo de prueba revertidos al terminar. `tsc` limpio.
+Versión: **1.8.0**.
+
+Con esto se cierra el bloque completo que Gunnar pidió esta ronda:
+independencia por tarjeta, fractal propio de Empresa, y diseño
+corporativo simulado.
 
 ---
 

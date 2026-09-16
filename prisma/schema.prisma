@@ -157,6 +157,13 @@ model Program {
   // existing Cards' medal/rank values keep resolving exactly as before.
   medalScale        Json     @default("[]")
   rankScale         Json     @default("[]")
+  // Uploaded brand-guidelines image + what got "read" from it (2026-09-16)
+  // — {imageUrl, palette: string[] hex, font, buttonStyle, extractedAt}.
+  // The color palette is real (extracted client-side from the actual
+  // pixels); font/buttonStyle are simulated until there's a real model —
+  // see lib/designExtraction.ts for the one place that changes. Empty
+  // object means nothing uploaded yet.
+  brandDesign       Json     @default("{}")
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

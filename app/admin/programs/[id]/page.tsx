@@ -4,12 +4,13 @@ import { prisma } from "@/lib/prisma";
 import { currentAdminScope } from "@/lib/auth";
 import { logoutAction } from "@/app/admin/actions";
 import { completeInterviewAction } from "@/app/admin/interviews/actions";
-import { updateProgramAction, createProgramAdminAction, updateCardLabelsAction, updateEscalaAction } from "../actions";
+import { updateProgramAction, createProgramAdminAction, updateCardLabelsAction, updateEscalaAction, updateBrandDesignAction } from "../actions";
 import { updateMemberAction, deleteMemberAction, messageMemberAction } from "../members-actions";
 import { createPuestoAction, updatePuestoAction, deletePuestoAction } from "../puestos-actions";
 import { CARD_LABEL_FIELDS, defaultCardLabel } from "@/lib/cardLabels";
 import { parseEscala } from "@/lib/escalas";
 import EscalaEditor from "@/components/EscalaEditor";
+import BrandDesignUploader from "@/components/BrandDesignUploader";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,7 @@ export default async function AdminProgramDetailPage({
     puestoDeleted?: string;
     puestoError?: string;
     escalaSaved?: string;
+    brandSaved?: string;
   }>;
 }) {
   const { id } = await params;
@@ -57,6 +59,7 @@ export default async function AdminProgramDetailPage({
     puestoDeleted,
     puestoError,
     escalaSaved,
+    brandSaved,
   } = await searchParams;
   const ADMIN_ERROR_COPY: Record<string, string> = {
     email: "Ingresá un email válido.",
@@ -193,6 +196,26 @@ export default async function AdminProgramDetailPage({
               style={{ marginTop: 4, padding: 13, border: "none", borderRadius: 10, background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)", color: "#0D0D0D", font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", cursor: "pointer" }}
             >
               Guardar
+            </button>
+          </form>
+        </section>
+
+        {/* Diseño corporativo — paleta real (extraída de los píxeles de la
+            imagen subida) + fuente/estilo de botón simulados (PLAN.md,
+            2026-09-16). Form propio para no forzar re-subir el resto de la
+            marca cada vez que se cambia solo esto. */}
+        <section style={{ background: "#201f1f", borderRadius: 14, padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
+          <h2 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#F5F2EB" }}>
+            Diseño Corporativo
+          </h2>
+          {brandSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Diseño guardado.</p>}
+          <form action={updateBrandDesignAction.bind(null, program.id)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <BrandDesignUploader current={(program.brandDesign as Record<string, unknown>) ?? {}} />
+            <button
+              type="submit"
+              style={{ marginTop: 4, padding: 13, border: "none", borderRadius: 10, background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)", color: "#0D0D0D", font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", cursor: "pointer" }}
+            >
+              Analizar y Guardar
             </button>
           </form>
         </section>
