@@ -1035,6 +1035,78 @@ seteado todavía (se creó antes de este cambio); hay que entrar a
 
 ---
 
+## Tres cambios del 2026-09-16 (tarde): fix del N0 confuso, Business/Personal desde backoffice, islitas nombre+versión
+
+**Fix chico — mensaje de error al agregar N0 con tu propio email.**
+Gunnar intentó agregarse a sí mismo como N0 de Legacy y no pudo — el
+programa ya tiene un N0 implícito (vos como MasterN0 administrás
+cualquier Programa sin necesidad de un N0 acotado aparte), y
+`createProgramAdminAction` correctamente rechaza un email que ya es
+Admin (constraint `@unique`). El comportamiento estaba bien, el mensaje
+no explicaba por qué. Cambié la copia de `exists` en
+`/admin/programs/[id]/page.tsx` para que diga explícitamente que si el
+email es el tuyo, no hace falta agregarlo. Cero cambio de código
+funcional.
+
+**"Crear Business y Personal" desde el backoffice** (hecho, probado
+localmente, en producción). El OTP de WhatsApp sigue siendo simulado
+(Fase 8 pendiente), así que no tiene sentido pasar por ahí para que
+Gunnar arme sus propias tarjetas de Business/Personal — nuevo botón en
+`/admin/[slug]` (`app/admin/siblings-actions.ts`,
+`createSiblingCardsAction`) que:
+1. Si la Card de Programa no tiene `memberId`, crea (o reusa, `upsert`
+   por `whatsapp`) un Member con el WhatsApp que ya tiene la Card — sin
+   ningún OTP de por medio, es una acción de Admin.
+2. Crea las Cards `company`/`personal` que falten, mismo Member, slugs
+   `{slug}-business`/`{slug}-personal`, copiando nombre, título, cita,
+   siglas/denominación, medallón, rango, redes, retrato, tema/idioma
+   como punto de partida editable. No copia `storyQuote/storyBody`,
+   `officeItems`, `programId`/`puestoId` ni `isOrigin` — esos son
+   conceptos propios de cada tipo de Card.
+3. Idempotente — si ya existen, no duplica nada.
+
+El `upsert` por whatsapp importa: si esa persona ya pasó por el chat de
+onboarding real (creando su propio Member), lo reusa en vez de
+duplicarlo — que fue exactamente lo que le pasó a Gunnar (Legacy ya
+tenía 1 miembro real).
+
+Probado con Playwright: crea las 2 Cards con los campos copiados
+correctamente; segundo click no duplica nada (0 creadas); sin WhatsApp
+cargado, rebota con mensaje claro en vez de fallar; las 3 Cards
+comparten `memberId` y el carousel (2026-09-16, más arriba en este
+mismo archivo) las swipea correctamente de punta a punta. Encontré y
+arreglé un bug propio en el camino: había anidado un `<form>` dentro de
+otro (HTML inválido, rompía la hidratación) — lo saqué del form
+principal, mismo patrón que ya usa el botón de "Eliminar esta LyCard".
+`tsc` limpio.
+
+**Islitas nombre + versión, clickeables** (hecho, probado localmente,
+en producción). Segunda islita arriba de la foto, mismo tamaño que la
+de versión, mostrando el nombre de la tarjeta — `{Programa} Card` para
+la de Proyecto (ej. "Legacy Card", del nombre del Programa), o
+`Card.islandLabel` editable para Business/Personal (default "My
+Business Card"/"My Personal Card", nuevo campo en el editor). Ambas
+islitas son botones que abren el mismo modal bottom-sheet que ya usa
+toda la app (blur + slide-in) — no un popup nuevo:
+- Islita de nombre → modal corto explicando para qué sirve ese tipo de
+  tarjeta (copy fija por kind, con sus claves i18n ES/EN nuevas).
+- Islita de versión → la bitácora visual: `lib/version.ts` ahora
+  exporta también `CHANGELOG` (array de `{versión, fecha, nota}`), el
+  modal muestra la nota de la versión actual como cuerpo y un
+  breadcrumb de las 2 anteriores como pie — mismo criterio que un
+  panel de "novedades" de cualquier app top — lo mantengo a mano en
+  cada bump junto con el número.
+
+Los puntitos del carousel bajaron de `+58px` a `+84px` para despejar
+las dos islitas apiladas. Probado con captura: sin overlaps en tarjeta
+sola, con las dos islitas + modal de cada una, y con el carousel de 3
+tarjetas reales (dots + 2 islitas conviviendo). `Card.islandLabel`
+editable confirmado de punta a punta (editor → guardar → tarjeta
+pública). Versión: **1.2.0**. `tsc` limpio. Datos de prueba revertidos
+en local al terminar.
+
+---
+
 **Qué sigue — Fase 8**: WhatsApp Business API real. Esta fase no depende
 de mí escribiendo código — depende de que consigan cuenta de WhatsApp
 Business verificada por Meta, un proveedor (Twilio/360dialog/Meta Cloud

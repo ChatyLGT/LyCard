@@ -106,6 +106,7 @@ export async function updateCardAction(slug: string, formData: FormData) {
     "tiktok",
     "yt",
     "web",
+    "islandLabel",
   ]) {
     const v = formData.get(key);
     if (typeof v === "string") data[key] = v;

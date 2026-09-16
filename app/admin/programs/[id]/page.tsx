@@ -61,7 +61,7 @@ export default async function AdminProgramDetailPage({
   const ADMIN_ERROR_COPY: Record<string, string> = {
     email: "Ingresá un email válido.",
     password: "La contraseña debe tener al menos 8 caracteres.",
-    exists: "Ya existe un admin con ese email.",
+    exists: "Ese email ya es una cuenta de Admin — si es el tuyo, no hace falta agregarlo: ya administrás este Programa como MasterN0. Para delegarlo, usá el email de otra persona.",
   };
   const MEMBER_ERROR_COPY: Record<string, string> = {
     hasCards: "No se puede borrar — ya tiene tarjetas activas con links circulando.",

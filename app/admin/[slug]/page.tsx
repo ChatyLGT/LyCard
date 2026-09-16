@@ -11,10 +11,10 @@ export default async function AdminCardEditorPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ saved?: string }>;
+  searchParams: Promise<{ saved?: string; siblingsCreated?: string; siblingError?: string }>;
 }) {
   const { slug } = await params;
-  const { saved } = await searchParams;
+  const { saved, siblingsCreated, siblingError } = await searchParams;
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
   const card = await prisma.card.findUnique({
@@ -37,6 +37,8 @@ export default async function AdminCardEditorPage({
       medalScale={parseEscala(card.program?.medalScale)}
       rankScale={parseEscala(card.program?.rankScale)}
       saved={saved === "1"}
+      siblingsCreated={siblingsCreated}
+      siblingError={siblingError}
     />
   );
 }

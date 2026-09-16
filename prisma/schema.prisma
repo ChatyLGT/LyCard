@@ -102,6 +102,12 @@ model Card {
   // it just reverts to its own snapshot.
   puestoId String?
   puesto   Puesto? @relation(fields: [puestoId], references: [id], onDelete: SetNull)
+
+  // Label shown in the top "island" (2026-09-16) — company/personal only,
+  // editable, default "My Business Card"/"My Personal Card" in LyCardView
+  // when empty. A project card's island label is computed from its
+  // Program's name instead, no field needed.
+  islandLabel String @default("")
 }
 
 // A brand/project running on the platform (Legacy today; Mlqr, Digital

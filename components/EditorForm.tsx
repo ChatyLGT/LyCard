@@ -4,6 +4,7 @@ import { useState, type CSSProperties } from "react";
 import Link from "next/link";
 import type { Card, Program, Puesto } from "@/generated/prisma/client";
 import { updateCardAction, deleteCardAction } from "@/app/admin/actions";
+import { createSiblingCardsAction } from "@/app/admin/siblings-actions";
 import { MEDALS, RANKS, CHANNELS } from "@/lib/data";
 import type { EscalaItem } from "@/lib/escalas";
 
@@ -50,6 +51,8 @@ export default function EditorForm({
   medalScale,
   rankScale,
   saved,
+  siblingsCreated,
+  siblingError,
 }: {
   card: Card;
   isMasterN0: boolean;
@@ -58,6 +61,8 @@ export default function EditorForm({
   medalScale: EscalaItem[];
   rankScale: EscalaItem[];
   saved: boolean;
+  siblingsCreated?: string;
+  siblingError?: string;
 }) {
   const [medal, setMedal] = useState(card.medal);
   const [rank, setRank] = useState(card.rank);
@@ -66,6 +71,7 @@ export default function EditorForm({
   // (see LyCardView) — only their own personal WhatsApp stays editable
   // here. Company/Personal cards keep editing all 8 as before.
   const isProject = card.kind === "project";
+  const isCompany = card.kind === "company";
   // Project cards under a Program with a custom Escala (Fase 9.4/9.5) pick
   // from it instead of the fixed lib/data.ts lists — same "empty = keep the
   // default" fallback as the Puesto select right below this.
@@ -220,6 +226,19 @@ export default function EditorForm({
               <input name="quote" defaultValue={card.quote} style={{ ...FIELD_INPUT, fontStyle: "italic" }} />
             </div>
           </label>
+          {!isProject && (
+            <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+              <span style={LABEL}>Nombre en la Islita (arriba de la foto)</span>
+              <div style={FIELD_WRAP}>
+                <input
+                  name="islandLabel"
+                  defaultValue={card.islandLabel}
+                  placeholder={isCompany ? "My Business Card" : "My Personal Card"}
+                  style={FIELD_INPUT}
+                />
+              </div>
+            </label>
+          )}
         </section>
 
         {isProject && isMasterN0 && (
@@ -451,6 +470,37 @@ export default function EditorForm({
           </button>
         </div>
       </form>
+
+      {isProject && (
+        <section style={{ ...SECTION, maxWidth: 520, margin: "0 auto 20px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            <h3 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#F5F2EB" }}>
+              Business y Personal
+            </h3>
+            <p style={{ margin: 0, font: "400 12px/1.6 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
+              Crea las otras 2 tarjetas de esta persona (copiando lo que ya tiene esta como punto de partida) directamente desde acá, sin pasar por el WhatsApp simulado. Si ya existen, no hace nada.
+            </p>
+          </div>
+          {siblingError === "noWa" && (
+            <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>
+              Cargá un WhatsApp en Canales de Contacto y guardá antes de crearlas — hace falta para identificar a la persona.
+            </p>
+          )}
+          {siblingsCreated != null && (
+            <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>
+              {siblingsCreated === "0" ? "Ya existían las dos — no se creó nada nuevo." : `✓ ${siblingsCreated} tarjeta(s) nueva(s) creada(s).`}
+            </p>
+          )}
+          <form action={createSiblingCardsAction.bind(null, card.slug)}>
+            <button
+              type="submit"
+              style={{ padding: "10px 16px", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, background: "#353534", color: "#F5F2EB", font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", cursor: "pointer" }}
+            >
+              Crear Business y Personal
+            </button>
+          </form>
+        </section>
+      )}
 
       <form
         action={deleteCardAction.bind(null, card.slug)}

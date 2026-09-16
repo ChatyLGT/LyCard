@@ -9,9 +9,20 @@ import { rankById, medalById } from "@/lib/data";
 import { parseEscala } from "@/lib/escalas";
 import { INTERVIEW_SLOTS } from "@/lib/interviewSlots";
 import { registerInterviewAction, sendInvitationAction, sendContactMessageAction } from "@/app/c/actions";
-import { APP_VERSION } from "@/lib/version";
+import { APP_VERSION, CHANGELOG } from "@/lib/version";
 
-type ModalKey = "od" | "ancient" | "medal" | "story" | "info" | "invite" | "contactMessage" | "office" | null;
+type ModalKey =
+  | "od"
+  | "ancient"
+  | "medal"
+  | "story"
+  | "info"
+  | "invite"
+  | "contactMessage"
+  | "office"
+  | "cardInfo"
+  | "versionInfo"
+  | null;
 
 type OfficeItem = { id: string; title: string; subtitle?: string; description?: string; imageUrl?: string };
 
@@ -86,6 +97,24 @@ const ICON_BTN: CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   cursor: "pointer",
+};
+
+// The two stacked "islands" (card name + version, 2026-09-16) at the top
+// of the photo — same pill chrome as ICON_BTN, but clickable text pills
+// instead of icon circles, opening the bottom-sheet modal on tap (same
+// modalIn spring + backdrop blur every other modal already uses).
+const ISLAND_BADGE: CSSProperties = {
+  padding: "4px 10px",
+  borderRadius: 999,
+  background: "rgba(20,20,20,.72)",
+  border: "1px solid rgba(200,161,90,.5)",
+  backdropFilter: "blur(8px)",
+  color: "#E5C378",
+  font: "700 9px 'Plus Jakarta Sans',sans-serif",
+  letterSpacing: ".08em",
+  whiteSpace: "nowrap",
+  cursor: "pointer",
+  transition: "transform .15s ease, opacity .15s ease",
 };
 
 const BADGE_BTN: CSSProperties = {
@@ -368,6 +397,13 @@ export default function LyCardView({
   const displaySiglas = puesto?.siglas || card.siglas;
   const displayDenominacion = puesto?.denominacion || card.tooltip;
   const displayDescripcion = puesto?.descripcion || undefined;
+  // Name island (2026-09-16), same slot as the version island below it —
+  // a project card's name comes from its Program (already the one place
+  // the N0 names their brand); Business/Personal get their own editable
+  // label from the Card editor, defaulting to "My Business/Personal Card".
+  const cardIslandLabel = isProject
+    ? `${program?.name || "Legacy"} Card`
+    : card.islandLabel || (isCompany ? "My Business Card" : "My Personal Card");
   const [theme, setTheme] = useState<"dark" | "light">(
     (card.defaultTheme as "dark" | "light") || "dark"
   );
@@ -574,6 +610,23 @@ export default function LyCardView({
       icon: isProject ? "auto_awesome" : isCompany ? "storefront" : "badge",
       kicker: L(isProject ? "officeKickerProject" : isCompany ? "officeKickerCompany" : "officeKickerPersonal"),
     },
+    // Name island (2026-09-16) — short explainer of what this Card type is
+    // for. Fixed copy per kind, not Program-configurable yet.
+    cardInfo: {
+      icon: isProject ? "military_tech" : isCompany ? "storefront" : "badge",
+      kicker: cardIslandLabel,
+      head: t(lang, isProject ? "cardInfoProjectHead" : isCompany ? "cardInfoCompanyHead" : "cardInfoPersonalHead"),
+      body: t(lang, isProject ? "cardInfoProjectBody" : isCompany ? "cardInfoCompanyBody" : "cardInfoPersonalBody"),
+    },
+    // Version island (2026-09-16) — the visual bitácora: current entry's
+    // note as the body, a breadcrumb of the last couple versions as meta.
+    versionInfo: {
+      icon: "history_edu",
+      kicker: t(lang, "versionInfoKicker"),
+      head: `v${CHANGELOG[0].version}`,
+      body: CHANGELOG[0].notes,
+      meta: CHANGELOG.slice(1, 3).map((e) => `v${e.version}`).join(" · ") || t(lang, "versionInfoMeta"),
+    },
   };
   const activeModal = modal ? modalMap[modal] : null;
 
@@ -693,25 +746,34 @@ export default function LyCardView({
               </div>
 
               <div
-                aria-label="Versión de la app"
                 style={{
                   position: "absolute",
                   top: 14,
                   left: "50%",
                   transform: "translateX(-50%)",
                   zIndex: 30,
-                  padding: "4px 10px",
-                  borderRadius: 999,
-                  background: "rgba(20,20,20,.72)",
-                  border: "1px solid rgba(200,161,90,.5)",
-                  backdropFilter: "blur(8px)",
-                  color: "#E5C378",
-                  font: "700 9px 'Plus Jakarta Sans',sans-serif",
-                  letterSpacing: ".08em",
-                  whiteSpace: "nowrap",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 4,
                 }}
               >
-                V. {APP_VERSION}
+                <button
+                  type="button"
+                  aria-label="Sobre esta tarjeta"
+                  onClick={() => setModal("cardInfo")}
+                  style={ISLAND_BADGE}
+                >
+                  {cardIslandLabel}
+                </button>
+                <button
+                  type="button"
+                  aria-label="Versión de la app"
+                  onClick={() => setModal("versionInfo")}
+                  style={ISLAND_BADGE}
+                >
+                  V. {APP_VERSION}
+                </button>
               </div>
 
               <div
