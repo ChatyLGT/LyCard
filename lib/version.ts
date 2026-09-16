@@ -3,4 +3,4 @@
 // Convención desde 2026-09-16: cada cambio que se shippea bumpea este
 // número a mano junto con el código — MAJOR para cambios que rompen
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes.
-export const APP_VERSION = "1.0.0";
+export const APP_VERSION = "1.1.0";
