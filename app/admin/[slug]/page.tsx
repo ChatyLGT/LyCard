@@ -36,6 +36,7 @@ export default async function AdminCardEditorPage({
       puestos={card.program?.puestos ?? []}
       medalScale={parseEscala(card.program?.medalScale)}
       rankScale={parseEscala(card.program?.rankScale)}
+      contactsScale={parseEscala(card.program?.contactsScale)}
       saved={saved === "1"}
       siblingsCreated={siblingsCreated}
       siblingError={siblingError}

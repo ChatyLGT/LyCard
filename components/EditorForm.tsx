@@ -50,6 +50,7 @@ export default function EditorForm({
   puestos,
   medalScale,
   rankScale,
+  contactsScale,
   saved,
   siblingsCreated,
   siblingError,
@@ -60,12 +61,14 @@ export default function EditorForm({
   puestos: Puesto[];
   medalScale: EscalaItem[];
   rankScale: EscalaItem[];
+  contactsScale: EscalaItem[];
   saved: boolean;
   siblingsCreated?: string;
   siblingError?: string;
 }) {
   const [medal, setMedal] = useState(card.medal);
   const [rank, setRank] = useState(card.rank);
+  const [contacts, setContacts] = useState(card.contacts);
   const [portraitPreview, setPortraitPreview] = useState<string | null>(card.portraitUrl);
   // Project cards inherit their official social channels from the Program
   // (see LyCardView) — only their own personal WhatsApp stays editable
@@ -83,6 +86,13 @@ export default function EditorForm({
     isProject && rankScale.length > 0
       ? rankScale.map((r) => ({ id: r.key, label: r.nombre, sub: r.subtitulo, icon: r.icono || "auto_awesome" }))
       : RANKS.map((r) => ({ id: r.id, label: r.es, sub: r.esSub, icon: r.icon }));
+  // "Gente contactada" (2026-09-16) — same key space/fallback pattern as
+  // medalOptions, just a separate Program scale so it can carry its own
+  // tiers/icons independent of the real Medallón.
+  const contactsOptions =
+    isProject && contactsScale.length > 0
+      ? contactsScale.map((c) => ({ id: c.key, label: c.nombre, sub: c.subtitulo, swatch: c.color || "#8C5A2B" }))
+      : MEDALS.map((m) => ({ id: m.id, label: m.es, sub: m.esSub, swatch: m.gem }));
 
   const boundAction = updateCardAction.bind(null, card.slug);
 
@@ -139,6 +149,7 @@ export default function EditorForm({
       <form action={boundAction} style={{ padding: "18px 16px 40px", display: "flex", flexDirection: "column", gap: 20, maxWidth: 520, margin: "0 auto" }}>
         <input type="hidden" name="medal" value={medal} />
         <input type="hidden" name="rank" value={rank} />
+        <input type="hidden" name="contacts" value={contacts} />
 
         <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
@@ -319,6 +330,38 @@ export default function EditorForm({
                     <span style={{ font: `${on ? 700 : 500} 10px 'Plus Jakarta Sans',sans-serif`, color: on ? "#E5C378" : "#C2BEB5" }}>{m.label}</span>
                     <span style={{ font: "500 8px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".04em", textTransform: "uppercase", color: on ? "#C8A15A" : "#5A5A5A" }}>
                       {m.sub}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+            <span style={LABEL}>Nivel de Gente Contactada</span>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5,minmax(0,1fr))", gap: 7 }}>
+              {contactsOptions.map((c) => {
+                const on = c.id === contacts;
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setContacts(c.id)}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 5,
+                      padding: "9px 4px",
+                      borderRadius: 10,
+                      border: "none",
+                      cursor: "pointer",
+                      background: on ? "#353534" : "#1c1b1b",
+                    }}
+                  >
+                    <span style={{ width: 22, height: 22, borderRadius: 999, background: c.swatch, boxShadow: "inset 0 -2px 4px rgba(0,0,0,.35)" }} />
+                    <span style={{ font: `${on ? 700 : 500} 10px 'Plus Jakarta Sans',sans-serif`, color: on ? "#E5C378" : "#C2BEB5" }}>{c.label}</span>
+                    <span style={{ font: "500 8px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".04em", textTransform: "uppercase", color: on ? "#C8A15A" : "#5A5A5A" }}>
+                      {c.sub}
                     </span>
                   </button>
                 );

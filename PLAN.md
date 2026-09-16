@@ -1769,9 +1769,98 @@ como contexto aunque se vaya completando cada fase.
       también. No arrancar esta fase sin confirmar con Gunnar que
       sigue haciendo falta después de las otras 4.
 
-**Estado al cerrar esta sesión**: diagnóstico completo, plan escrito,
-nada de D1-D5 implementado todavía — quedó pendiente de 3
-confirmaciones de diseño con Gunnar (mecánica exacta de guardado por
-sección en D2, alcance de "organizados por Programa" en D1, y
-confirmar el criterio de "visto"/match por WhatsApp en D3-D4) antes de
-empezar a escribir código.
+**Estado**: D1 hecho, probado y shippeado (v1.12.0, ver arriba). D2-D5
+siguen en cola con su spec técnica completa ya escrita arriba —
+listas para retomar por cualquier LLM sin contexto previo, nomás
+conectando el repo. Las 3 confirmaciones de diseño con Gunnar ya están
+resueltas (quedaron anotadas en cada fase: guardado por sección
+independiente en D2, alcance de "organizados por Programa" ya
+implementado en D1, criterio de "visto" = abrió el link en D3-D4).
+
+## Badges con ícono editable + "gente contactada" deja de ser simulado (2026-09-16, noche)
+
+Pedido de Gunnar: el punto de "gente contactada" junto al nombre
+(izquierda) no se podía editar desde el dashboard — el de Medallón
+(derecha) sí. Además, en las 4 islitas que abren modal (O.D., Ancient,
+Medallón, Contactados) el ícono mostrado estaba fijo en el código
+(diamante para O.D., un sparkle decorativo para Ancient, etc.) en vez
+de ser el que el N0 elige — como ya pasaba con el grado de Sabiduría,
+que tenía un campo `icono` de texto libre (nombre de un Material
+Symbol) pero no se usaba para pintar el badge visible, solo el modal.
+
+**Contactos deja de ser simulado.** Nuevo campo real `Card.contacts`
+(mismo espacio de claves que `medal`: la lista fija `MEDALS` de
+`lib/data.ts`, o la escala custom del Programa si la definió) + nuevo
+`Program.contactsScale` (mismo patrón "vacío = usar la lista fija" que
+`medalScale`/`rankScale`, Fase 9.4/9.5). Sigue sin trackearse el
+*conteo* real de gente contactada — solo el nivel/tier ahora es real y
+editable, la cuenta real llega cuando el envío por WhatsApp deje de
+ser simulado (ver Fase D3/D4 arriba).
+
+**Ícono editable en todos los badges.** Nuevo campo `Puesto.icono`
+(Material Symbol, default `"diamond"` para no romper tarjetas
+existentes) — el grado de Sabiduría ya tenía `icono`, ahora Medallón y
+Contactos también lo tienen en su editor de escala
+(`components/EscalaEditor.tsx`, que antes solo mostraba el campo
+Ícono para el tipo `rank`, ahora lo muestra siempre). En
+`components/LyCardView.tsx`:
+- El punto de Contactos (izquierda del nombre) y el de Medallón
+  (derecha) ahora pintan `contactsTier.icono`/`medalTier.icono` en vez
+  del `military_tech` fijo.
+- El badge O.D. (fila de abajo) pinta `puesto?.icono || "diamond"` en
+  vez del diamante fijo.
+- El badge Ancient (fila de abajo) pinta `rankTier.icono ||
+  "auto_awesome"` en vez de un SVG decorativo hardcodeado que no tenía
+  ninguna relación con la escala configurada — el modal de Ancient ya
+  usaba `rankTier.icono` correctamente, ahora el badge visible
+  coincide con el modal.
+- Se aprovechó para hacer lo mismo en `modalMap` (medal/od/contacts),
+  que antes tenían íconos fijos distintos a los de sus badges.
+
+**El ícono "elegido para Ancient" pasa a ser el infinito.** Ejemplo
+textual de Gunnar: hoy sale un solecito para Ancient, debería salir el
+símbolo de infinito. Como la escala de Sabiduría de un Programa viene
+vacía por defecto (cae a la lista fija `RANKS` de `lib/data.ts`), se
+cambió el ícono fijo de la fila `ancient` en esa lista de
+`auto_awesome` a `all_inclusive` (el símbolo de infinito en Material
+Symbols) — así el default de fábrica ya sale como pidió, y cualquier
+Programa lo puede pisar desde su propia Escala de Sabiduría si quiere
+otro.
+
+**Asimetría aceptada (no bloqueante):** `Puesto.icono` no se
+snapshotea sobre `Card` como sí pasa con `siglas`/`tooltip` cuando se
+elige un Puesto y se guarda — si ese Puesto se borra después, el badge
+O.D. de esa Card vuelve al diamante default (mientras que
+siglas/tooltip sí quedan guardados). Se aceptó como trade-off de
+alcance; si en algún momento importa, hay que sumar `Card.icono` y
+snapshotearlo igual que los otros dos campos en `updateCardAction`.
+
+Archivos tocados: `prisma/schema.prisma` (+`Puesto.icono`,
++`Card.contacts`, +`Program.contactsScale`, migración
+`20260916211334_badge_icons_and_contacts`), `components/EscalaEditor.tsx`,
+`app/admin/programs/actions.ts` (`updateEscalaAction` acepta tipo
+`"contacts"`), `app/admin/programs/puestos-actions.ts` (crear/editar
+Puesto persiste `icono`), `app/admin/programs/[id]/page.tsx` (tercera
+sección "Escala de Gente Contactada" + inputs de ícono en el CRUD de
+Puestos), `app/admin/actions.ts` y `app/m/dashboard/actions.ts`
+(`contacts` sumado a la lista de campos editables), `app/admin/[slug]/page.tsx`
+(pasa `contactsScale`), `components/EditorForm.tsx` y
+`components/MemberCardEditor.tsx` (picker de Nivel de Gente
+Contactada, EditorForm con awareness de la escala del Programa,
+MemberCardEditor con la lista fija ya que Business/Personal no tienen
+Programa), `components/LyCardView.tsx` (contactsTier real +
+todos los íconos dinámicos descritos arriba), `lib/data.ts` (ícono de
+Ancient a infinito).
+
+Probado: `npx prisma migrate status` OK (migración ya aplicada),
+`npx tsc --noEmit` limpio. Script contra la base local real: Programa
+con `contactsScale` custom (`diversity_3`) + Puesto con `icono`
+custom (`rocket_launch`) + Card con `rank: "ancient"`, `contacts:
+"custom1"` → lectura desde Prisma confirmó los 3 valores persistidos
+correctamente. Verificado además en el HTML servido por
+`/c/[slug]` (SSR real, sin login): aparecen `rocket_launch`,
+`diversity_3` y `all_inclusive` exactamente donde se esperaba (badge
+O.D., punto de Contactos + su modal, badge/modal de Ancient). Datos de
+prueba borrados al terminar. No se pudo probar con click real en
+navegador logueado por el mismo bloqueo de credenciales de sesiones
+anteriores. Versión: **1.13.0**.

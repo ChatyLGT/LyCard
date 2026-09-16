@@ -216,7 +216,7 @@ export async function updateCardLabelsAction(programId: string, formData: FormDa
 // shot — the client-side EscalaEditor sends it as a single JSON blob, same
 // pattern as officeItems in MemberCardEditor. Empty list = fall back to the
 // fixed scale in lib/data.ts (PLAN.md Fase 9.4/9.5).
-export async function updateEscalaAction(programId: string, type: "medal" | "rank", formData: FormData) {
+export async function updateEscalaAction(programId: string, type: "medal" | "rank" | "contacts", formData: FormData) {
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
   if (scope.programId && scope.programId !== programId) redirect("/admin");
@@ -233,7 +233,8 @@ export async function updateEscalaAction(programId: string, type: "medal" | "ran
 
   await prisma.program.update({
     where: { id: programId },
-    data: type === "medal" ? { medalScale: items } : { rankScale: items },
+    data:
+      type === "medal" ? { medalScale: items } : type === "rank" ? { rankScale: items } : { contactsScale: items },
   });
 
   revalidatePath(`/admin/programs/${programId}`);

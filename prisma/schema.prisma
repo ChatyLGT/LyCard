@@ -48,6 +48,12 @@ model Card {
   // Badges & Honors
   medal String @default("oro")
   rank  String @default("aprendiz")
+  // "Gente contactada" dot flanking the name, left side (2026-09-16) — was
+  // fully simulated (`medalById("plata")` hardcoded) until now. Real field,
+  // same key space as `medal` (lib/data.ts MEDALS, or Program.contactsScale
+  // when set) so the picker/render logic is identical — the *count* behind
+  // it is still not tracked anywhere, only the tier label is real now.
+  contacts String @default("plata")
 
   // Contact channels (the ones exposed by the Editor screen)
   wa     String @default("")
@@ -157,6 +163,9 @@ model Program {
   // existing Cards' medal/rank values keep resolving exactly as before.
   medalScale        Json     @default("[]")
   rankScale         Json     @default("[]")
+  // Same idea for the "gente contactada" dot (2026-09-16) — empty means
+  // "use the fixed MEDALS list in lib/data.ts", same as medalScale.
+  contactsScale     Json     @default("[]")
   // Uploaded brand-guidelines image + what got "read" from it (2026-09-16)
   // — {imageUrl, palette: string[] hex, font, buttonStyle, extractedAt}.
   // The color palette is real (extracted client-side from the actual
@@ -212,6 +221,10 @@ model Puesto {
   denominacion String
   descripcion  String
   order        Int      @default(0)
+  // Material Symbols name shown on the O.D. badge next to `siglas` on the
+  // public card (2026-09-16) — was hardcoded to "diamond" everywhere until
+  // now; editable per Puesto same as a rank tier's `icono`.
+  icono        String   @default("diamond")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

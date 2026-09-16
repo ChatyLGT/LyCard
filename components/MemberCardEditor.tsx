@@ -117,6 +117,7 @@ export default function MemberCardEditor({
 }) {
   const [medal, setMedal] = useState(card.medal);
   const [rank, setRank] = useState(card.rank);
+  const [contacts, setContacts] = useState(card.contacts);
   const [portraitPreview, setPortraitPreview] = useState<string | null>(card.portraitUrl);
   const [logoPreview, setLogoPreview] = useState<string | null>(card.logoUrl);
   const [officeItems, setOfficeItems] = useState<OfficeItem[]>(() => parseOfficeItems(card.officeItems));
@@ -187,6 +188,7 @@ export default function MemberCardEditor({
       <form action={boundAction} style={{ padding: "18px 16px 40px", display: "flex", flexDirection: "column", gap: 20, maxWidth: 520, margin: "0 auto" }}>
         <input type="hidden" name="medal" value={medal} />
         <input type="hidden" name="rank" value={rank} />
+        <input type="hidden" name="contacts" value={contacts} />
         <input type="hidden" name="officeItems" value={JSON.stringify(officeItems.filter((it) => it.title.trim()))} />
 
         <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -364,6 +366,38 @@ export default function MemberCardEditor({
                     key={m.id}
                     type="button"
                     onClick={() => setMedal(m.id)}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 5,
+                      padding: "9px 4px",
+                      borderRadius: 10,
+                      border: "none",
+                      cursor: "pointer",
+                      background: on ? "#353534" : "#1c1b1b",
+                    }}
+                  >
+                    <span style={{ width: 22, height: 22, borderRadius: 999, background: m.gem, boxShadow: "inset 0 -2px 4px rgba(0,0,0,.35)" }} />
+                    <span style={{ font: `${on ? 700 : 500} 10px 'Plus Jakarta Sans',sans-serif`, color: on ? "#E5C378" : "#C2BEB5" }}>{m.es}</span>
+                    <span style={{ font: "500 8px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".04em", textTransform: "uppercase", color: on ? "#C8A15A" : "#5A5A5A" }}>
+                      {m.esSub}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+            <span style={LABEL}>Nivel de Gente Contactada</span>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5,minmax(0,1fr))", gap: 7 }}>
+              {MEDALS.map((m) => {
+                const on = m.id === contacts;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setContacts(m.id)}
                     style={{
                       display: "flex",
                       flexDirection: "column",

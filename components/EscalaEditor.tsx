@@ -3,22 +3,23 @@
 import { useState } from "react";
 import type { EscalaItem } from "@/lib/escalas";
 
-// Client-side array editor for a Program's Medallón/Sabiduría scale
-// (PLAN.md Fase 9.4/9.5) — same shape as officeItems in MemberCardEditor:
-// local state, one hidden JSON input, one save action for the whole list.
+// Client-side array editor for a Program's Medallón/Sabiduría/Contactos
+// scale (PLAN.md Fase 9.4/9.5, + Fase Contactos 2026-09-16) — same shape
+// as officeItems in MemberCardEditor: local state, one hidden JSON input,
+// one save action for the whole list. Color e Ícono se editan siempre los
+// dos, para cualquier tipo de escala — antes solo uno era editable según
+// `type`, dejando el ícono de Medallón/Contactos fijo en el badge.
 export default function EscalaEditor({
   type,
   initialItems,
   action,
 }: {
-  type: "medal" | "rank";
+  type: "medal" | "rank" | "contacts";
   initialItems: EscalaItem[];
   action: (formData: FormData) => Promise<void>;
 }) {
   const [items, setItems] = useState<EscalaItem[]>(initialItems);
-  const colorLabel = type === "medal" ? "Color" : "Ícono (Material Symbols)";
-  const colorPlaceholder = type === "medal" ? "#C8A15A" : "auto_awesome";
-  const colorField: keyof EscalaItem = type === "medal" ? "color" : "icono";
+  const colorPlaceholder = type === "rank" ? "" : "#C8A15A";
 
   function addItem() {
     setItems((its) => [...its, { key: "", nombre: "", subtitulo: "", icono: "", color: "", descripcion: "" }]);
@@ -66,15 +67,28 @@ export default function EscalaEditor({
               style={{ flex: 1, minWidth: 0, background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#C2BEB5", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
             />
           </div>
-          <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>{colorLabel}</span>
-            <input
-              placeholder={colorPlaceholder}
-              value={item[colorField]}
-              onChange={(e) => updateItem(i, { [colorField]: e.target.value } as Partial<EscalaItem>)}
-              style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#C2BEB5", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
-            />
-          </label>
+          <div style={{ display: "flex", gap: 8 }}>
+            {type !== "rank" && (
+              <label style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+                <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>Color</span>
+                <input
+                  placeholder={colorPlaceholder}
+                  value={item.color}
+                  onChange={(e) => updateItem(i, { color: e.target.value })}
+                  style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#C2BEB5", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
+                />
+              </label>
+            )}
+            <label style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+              <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>Ícono (Material Symbols)</span>
+              <input
+                placeholder="military_tech"
+                value={item.icono}
+                onChange={(e) => updateItem(i, { icono: e.target.value })}
+                style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#C2BEB5", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
+              />
+            </label>
+          </div>
           <textarea
             placeholder="Descripción (aparece al tocar el distintivo en la tarjeta)"
             value={item.descripcion}

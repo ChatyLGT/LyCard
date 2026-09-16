@@ -47,7 +47,11 @@ export const RANKS = [
   { id: "practicante", es: "Practicante", en: "Practitioner", esSub: "Ejecución", enSub: "Execution", icon: "trending_up" },
   { id: "maestro", es: "Maestro", en: "Master", esSub: "Dominio", enSub: "Mastery", icon: "workspace_premium" },
   { id: "sherpa", es: "Sherpa", en: "Sherpa", esSub: "Guía", enSub: "Guide", icon: "terrain" },
-  { id: "ancient", es: "Ancient", en: "Ancient", esSub: "Consejo", enSub: "Council", icon: "auto_awesome" },
+  // Infinito (símbolo elegido para Ancient, 2026-09-16) — antes usaba un
+  // sparkle genérico (auto_awesome); esta es la única fila de RANKS cuyo
+  // ícono importa fuera del fallback, ya que ahora se muestra tal cual en
+  // el badge visible (ver LyCardView.tsx rankTier.icono).
+  { id: "ancient", es: "Ancient", en: "Ancient", esSub: "Consejo", enSub: "Council", icon: "all_inclusive" },
 ] as const;
 
 export const CHANNELS = [

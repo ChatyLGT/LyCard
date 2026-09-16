@@ -620,11 +620,21 @@ export default function LyCardView({
   };
   const rankLabel = rankTier.nombre.toUpperCase();
 
-  // "Gente contactada" dot flanking the name, left side (2026-09-16) —
-  // mirrors the medal dot on the right in shape/scale on purpose (same
-  // MEDALS palette), but it's simulated: no real send/contact count feeds
-  // it yet. Swap this for a real tally once outreach is tracked somewhere.
-  const contactsTier = medalById("plata");
+  // "Gente contactada" dot flanking the name, left side (2026-09-16) — was
+  // fully simulated (`medalById("plata")` hardcoded) until now. Real field
+  // (Card.contacts) + Program-scoped scale (Program.contactsScale), same
+  // shape/fallback pattern as medalTier above. The *count* behind it is
+  // still not tracked anywhere, only the tier label/icon are real now.
+  const contactsScale = parseEscala(program?.contactsScale);
+  const contactsFallback = medalById(card.contacts);
+  const contactsTier = contactsScale.find((c) => c.key === card.contacts) ?? {
+    key: contactsFallback.id,
+    nombre: lang === "en" ? contactsFallback.en : contactsFallback.es,
+    subtitulo: lang === "en" ? contactsFallback.enSub : contactsFallback.esSub,
+    icono: "",
+    color: contactsFallback.gem,
+    descripcion: "",
+  };
 
   // Fase 2 del sistema de skins (2026-09-16): el skin activo del Programa
   // (si hay uno) pisa el tema dark/light de siempre — una identidad de
@@ -686,7 +696,7 @@ export default function LyCardView({
     { icon: string; kicker: string; head?: string; body?: string; meta?: string }
   > = {
     od: {
-      icon: "military_tech",
+      icon: puesto?.icono || "diamond",
       // Sigla (ej. "O.D.") es la posición asignada dentro del Programa —
       // va chica, arriba. Denominación (ej. "Original Dreamer") es el
       // nombre completo de esa posición — va como título grande, debajo.
@@ -706,20 +716,22 @@ export default function LyCardView({
       meta: t(lang, "ancMeta"),
     },
     medal: {
-      icon: "workspace_premium",
+      icon: medalTier.icono || "workspace_premium",
       kicker: medalTier.subtitulo || t(lang, "medalKicker"),
       head: medalTier.nombre,
       body: medalTier.descripcion || t(lang, "medalBody"),
       meta: t(lang, "medalMeta"),
     },
-    // Simulated (2026-09-16) — no real outreach tracking yet, see the
-    // TIER_DOT comment above where this renders. Same tier language as
-    // medal (nombre/subtitulo) so it reads consistently once it's real.
+    // Tier label/icon are real (Card.contacts + Program.contactsScale,
+    // 2026-09-16) — the *count* behind it is still simulated, no real
+    // send/contact tally feeds it yet.
     contacts: {
-      icon: "military_tech",
-      kicker: contactsTier.esSub,
-      head: `${contactsTier.es} · Contactados`,
-      body: "Personas a las que le enviaste tu QR o contactaste desde tu LyCard. Todavía es un dato simulado — la cuenta real llega con el envío por WhatsApp de verdad.",
+      icon: contactsTier.icono || "military_tech",
+      kicker: contactsTier.subtitulo || t(lang, "medalKicker"),
+      head: `${contactsTier.nombre} · Contactados`,
+      body:
+        contactsTier.descripcion ||
+        "Personas a las que le enviaste tu QR o contactaste desde tu LyCard. Todavía es un dato simulado — la cuenta real llega con el envío por WhatsApp de verdad.",
       meta: "Simulado",
     },
     story: {
@@ -950,19 +962,18 @@ export default function LyCardView({
                 }}
               >
                 {/* Name flanked by two tier dots (2026-09-16): left is
-                    "gente contactada" (simulated — no real tally yet),
-                    right is the medal dot that used to live, with its
-                    text, in the badge row below. Same icon/shape on both
-                    sides on purpose — Gunnar's call, content differs
-                    later once outreach is actually tracked. */}
+                    "gente contactada" (tier is real, count still
+                    simulated), right is the medal dot that used to live,
+                    with its text, in the badge row below. Each dot's icon
+                    is now editable per Card/Program, same as its color. */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, pointerEvents: "auto" }}>
                   <button
                     type="button"
                     onClick={() => setModal("contacts")}
                     aria-label="Personas contactadas"
-                    style={TIER_DOT(contactsTier.gem)}
+                    style={TIER_DOT(contactsTier.color)}
                   >
-                    <Icon name="military_tech" size={14} style={{ color: "#141414" }} />
+                    <Icon name={contactsTier.icono || "military_tech"} size={14} style={{ color: "#141414" }} />
                   </button>
                   <h1
                     style={{
@@ -981,7 +992,7 @@ export default function LyCardView({
                     aria-label="Nivel de Medallón"
                     style={TIER_DOT(medalTier.color)}
                   >
-                    <Icon name="military_tech" size={14} style={{ color: "#141414" }} />
+                    <Icon name={medalTier.icono || "military_tech"} size={14} style={{ color: "#141414" }} />
                   </button>
                 </div>
 
@@ -1022,18 +1033,14 @@ export default function LyCardView({
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 8, pointerEvents: "auto" }}>
                   <button type="button" onClick={() => setModal("od")} style={BADGE_BTN}>
                     <Sweep />
-                    <Icon name="diamond" size={12} style={{ color: "var(--goldtxt,#E5C378)" }} />
+                    <Icon name={puesto?.icono || "diamond"} size={12} style={{ color: "var(--goldtxt,#E5C378)" }} />
                     <span style={{ font: "700 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--goldtxt,#E5C378)" }}>
                       {displaySiglas}
                     </span>
                   </button>
                   <button type="button" onClick={() => setModal("ancient")} style={BADGE_BTN}>
                     <Sweep />
-                    <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, flex: "none" }} fill="none" stroke="var(--accentLight,#E5C378)">
-                      <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" strokeLinecap="round" strokeWidth="1.8" />
-                      <circle cx="12" cy="12" r="4.5" stroke="var(--accentLight,#E5C378)" strokeWidth="1.6" />
-                      <circle cx="12" cy="12" r="2" fill="var(--accentMid,#D4AF37)" />
-                    </svg>
+                    <Icon name={rankTier.icono || "auto_awesome"} size={14} style={{ color: "var(--accentLight,#E5C378)" }} />
                     <span style={{ font: "700 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--goldtxt,#E5C378)" }}>
                       {rankLabel}
                     </span>

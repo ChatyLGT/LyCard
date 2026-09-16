@@ -98,6 +98,7 @@ export async function updateCardAction(slug: string, formData: FormData) {
     "tooltip",
     "medal",
     "rank",
+    "contacts",
     "wa",
     "ig",
     "li",

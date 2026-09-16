@@ -27,10 +27,11 @@ export async function createPuestoAction(programId: string, formData: FormData) 
   const denominacion = String(formData.get("denominacion") || "").trim();
   const descripcion = String(formData.get("descripcion") || "").trim();
   const order = Number(formData.get("order") || 0) || 0;
+  const icono = String(formData.get("icono") || "").trim() || "diamond";
 
   if (!siglas || !denominacion) redirect(`/admin/programs/${programId}?puestoError=required`);
 
-  await prisma.puesto.create({ data: { programId, siglas, denominacion, descripcion, order } });
+  await prisma.puesto.create({ data: { programId, siglas, denominacion, descripcion, order, icono } });
 
   revalidatePath(`/admin/programs/${programId}`);
   redirect(`/admin/programs/${programId}?puestoCreated=1`);
@@ -44,10 +45,11 @@ export async function updatePuestoAction(puestoId: string, programId: string, fo
   const denominacion = String(formData.get("denominacion") || "").trim();
   const descripcion = String(formData.get("descripcion") || "").trim();
   const order = Number(formData.get("order") || 0) || 0;
+  const icono = String(formData.get("icono") || "").trim() || "diamond";
 
   if (!siglas || !denominacion) redirect(`/admin/programs/${programId}?puestoError=required`);
 
-  await prisma.puesto.update({ where: { id: puestoId }, data: { siglas, denominacion, descripcion, order } });
+  await prisma.puesto.update({ where: { id: puestoId }, data: { siglas, denominacion, descripcion, order, icono } });
 
   revalidatePath(`/admin/programs/${programId}`);
   redirect(`/admin/programs/${programId}?puestoSaved=1`);
