@@ -1864,3 +1864,100 @@ O.D., punto de Contactos + su modal, badge/modal de Ancient). Datos de
 prueba borrados al terminar. No se pudo probar con click real en
 navegador logueado por el mismo bloqueo de credenciales de sesiones
 anteriores. Versión: **1.13.0**.
+
+## Rediseño en acordeón: dashboard de Programa + editor de tarjeta (2026-09-16, noche)
+
+Pedido de Gunnar: las pantallas de personalización (dashboard de
+Programa en `/admin/programs/[id]` y el editor de tarjeta en
+`/admin/[slug]` + `/m/dashboard/*`) mostraban TODAS sus categorías
+expandidas al mismo tiempo — un formulario larguísimo de scroll
+infinito. Pidió acordeones tipo Apple: cada categoría colapsada por
+defecto, se abre al tocarla; y dentro de las listas (Puestos, escalas
+de Medallón/Sabiduría/Contactos), un "Agregar nuevo" + cada ítem
+existente colapsado que se abre para editar.
+
+**Nuevo `components/Accordion.tsx`** — tres piezas reutilizables, sin
+librerías externas, animación 100% CSS (el truco `grid-template-rows:
+0fr → 1fr`, sin medir alto por JS, sin saltos de layout):
+- `AccordionSection` — la categoría de nivel superior ("Marca del
+  Programa", "Distintivos & Honores", etc.). Colapsada por defecto
+  salvo `defaultOpen`.
+- `AccordionRow` — un ítem dentro de una lista de una categoría (un
+  Puesto, un nivel de escala, un Miembro, un ítem de Oficina Virtual).
+  Soporta modo no controlado (maneja su propio estado — un Puesto
+  suelto en una lista server-rendered) o controlado (`open`/`onToggle`
+  desde el padre — así EscalaEditor mantiene solo un nivel abierto a
+  la vez).
+- `AccordionAddRow` — el disparador "+ Agregar" con la misma forma que
+  `AccordionRow`, que al abrirse revela el form de creación en blanco.
+
+**Qué categoría abre por defecto**: para no esconder una confirmación
+de guardado detrás de un acordeón cerrado, cada `AccordionSection` en
+`/admin/programs/[id]` arranca abierta si su propio flash message de
+la URL está presente (`saved`, `skinSaved`/`skinError`, `labelsSaved`,
+`puestoCreated`/`puestoSaved`/`puestoDeleted`/`puestoError`,
+`escalaSaved` por tipo, `adminCreated`/`adminError`,
+`memberSaved`/`memberDeleted`/`memberMessaged`/`memberError`,
+`activated`) — si no hay ninguno, queda cerrada salvo "Marca del
+Programa" (primera, para no aterrizar en una página vacía). En los
+editores de tarjeta (`EditorForm.tsx`, `MemberCardEditor.tsx`) abren
+por defecto "Retrato"/"Foto" e "Identidad" (lo más editado primero),
+el resto arranca cerrado.
+
+**Listas reescritas como acordeón**:
+- Escalera de Puestos (`admin/programs/[id]/page.tsx`): el viejo
+  `<details>` de "Editar" por Puesto pasa a `AccordionRow` (ícono +
+  sigla/denominación colapsados, "Borrar" como botón aparte que no
+  abre el acordeón); "Agregar Puesto" pasa a `AccordionAddRow`
+  (abierto por defecto solo si el Programa no tiene ningún Puesto
+  todavía).
+- `EscalaEditor.tsx` (Medallón/Sabiduría/Contactos, los tres
+  reutilizan el mismo componente): cada nivel es un `AccordionRow`
+  (swatch de color o ícono según el tipo + nombre/clave colapsados),
+  solo uno abierto a la vez — "+ Agregar nivel" crea un nivel en
+  blanco y lo abre automáticamente. Identidad estable de cada fila
+  para el estado de React vía un `_uid` interno generado al crear/
+  cargar cada ítem (nunca se manda al server — se descarta al armar
+  el JSON que sí viaja, que sigue siendo el shape `EscalaItem` de
+  siempre).
+- Miembros (`admin/programs/[id]/page.tsx`): cada membership pasa a
+  `AccordionRow` (nombre + badge Activo/Invitado colapsados, Borrar
+  aparte); adentro, los dos `<details>` de "Editar"/"Mensaje" que
+  tenía antes se muestran juntos (no se anidó un acordeón dentro de
+  otro ahí, dos forms cortos no lo justifican).
+- Oficina Virtual (`MemberCardEditor.tsx`): mismo patrón que
+  EscalaEditor — cada ítem (trabajo/experiencia) es un `AccordionRow`
+  con solo uno abierto a la vez, "+ Agregar" crea uno en blanco y lo
+  abre.
+
+**Lo que NO cambió**: ningún server action, ningún campo del schema,
+ninguna lógica de guardado — esto es puramente la capa visual/de
+interacción sobre el mismo `<form>`/`action={...}` de siempre. En
+particular, esto NO es la Fase D2 del plan del Dashboard 2.0 (acordeón
+con guardado independiente por sección + badge "Guardado" que exige
+re-tocar "Editar" para volver a editar) — esa sigue en cola, documentada
+arriba, para cuando haga falta guardado asíncrono por sección en
+`/m/dashboard`. Esto es el colapsado visual que Gunnar pidió ahora,
+aplicado tanto al dashboard de Programa como a los dos editores de
+tarjeta (`EditorForm.tsx` para Legacy/project, `MemberCardEditor.tsx`
+para Business/Personal).
+
+Archivos tocados: `components/Accordion.tsx` (nuevo),
+`components/EscalaEditor.tsx`, `app/admin/programs/[id]/page.tsx`,
+`components/EditorForm.tsx`, `components/MemberCardEditor.tsx`.
+
+Probado: `npx tsc --noEmit` limpio, `npx next build` completo sin
+errores (compila los 20 routes, incluidas las 4 páginas tocadas y sus
+componentes cliente — confirma que el límite servidor/cliente al pasar
+`children`/`trailing`/`meta` con `<form action={...}>` de Server
+Actions embebidos hacia los componentes de acordeón (client) es válido,
+mismo patrón que ya usaba `EscalaEditor` antes de este cambio). `curl`
+sin sesión a `/admin`, `/admin/programs` y `/admin/programs/[id]`
+confirma que siguen redirigiendo a login sin crashear. **No se pudo
+probar con clicks reales en un navegador logueado** — mismo bloqueo de
+credenciales de sesiones anteriores (no tengo forma de loguearme sin
+resetear la contraseña del Admin de prueba local, y esa escritura de
+credencial quedó bloqueada explícitamente). Gunnar: probalo vos con tu
+sesión real antes de darlo por bueno del todo — si algo del
+comportamiento de abrir/cerrar no se siente bien, avisame. Versión:
+**1.14.0**.

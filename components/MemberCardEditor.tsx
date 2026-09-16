@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Card } from "@/generated/prisma/client";
 import { updateMemberCardAction } from "@/app/m/dashboard/actions";
 import { MEDALS, RANKS, CHANNELS } from "@/lib/data";
+import { AccordionSection, AccordionRow } from "@/components/Accordion";
 
 const FIELD_WRAP: CSSProperties = {
   display: "flex",
@@ -32,13 +33,14 @@ const LABEL: CSSProperties = {
   color: "#C2BEB5",
 };
 
-const SECTION: CSSProperties = {
-  background: "#201f1f",
-  borderRadius: 14,
-  padding: 16,
-  display: "flex",
-  flexDirection: "column",
-  gap: 14,
+const FIELD: CSSProperties = {
+  background: "#0D0D0D",
+  border: "1px solid rgba(200,161,90,.25)",
+  borderRadius: 8,
+  padding: "9px 11px",
+  color: "#C2BEB5",
+  font: "400 12px 'Plus Jakarta Sans',sans-serif",
+  outline: "none",
 };
 
 const COPY: Record<
@@ -57,6 +59,7 @@ const COPY: Record<
     officeTitle: string;
     officeSub: string;
     officeAdd: string;
+    officeItemNoun: string;
   }
 > = {
   company: {
@@ -73,6 +76,7 @@ const COPY: Record<
     officeTitle: "Oficina Virtual — Portfolio",
     officeSub: "Lo que ve un visitante al entrar a tu Oficina Virtual. Un ítem por trabajo o servicio.",
     officeAdd: "Agregar trabajo",
+    officeItemNoun: "trabajo",
   },
   personal: {
     kicker: "Mi tarjeta Personal",
@@ -88,6 +92,7 @@ const COPY: Record<
     officeTitle: "Oficina Virtual — Currículum",
     officeSub: "Lo que ve un visitante al entrar a tu Oficina Virtual. Un ítem por experiencia o logro.",
     officeAdd: "Agregar experiencia",
+    officeItemNoun: "experiencia",
   },
 };
 
@@ -121,18 +126,22 @@ export default function MemberCardEditor({
   const [portraitPreview, setPortraitPreview] = useState<string | null>(card.portraitUrl);
   const [logoPreview, setLogoPreview] = useState<string | null>(card.logoUrl);
   const [officeItems, setOfficeItems] = useState<OfficeItem[]>(() => parseOfficeItems(card.officeItems));
+  const [openOfficeId, setOpenOfficeId] = useState<string | null>(null);
   const copy = COPY[kind];
 
   const boundAction = updateMemberCardAction.bind(null, card.slug);
 
   function addOfficeItem() {
-    setOfficeItems((items) => [...items, { id: Math.random().toString(36).slice(2), title: "", subtitle: "", description: "", imageUrl: "" }]);
+    const id = Math.random().toString(36).slice(2);
+    setOfficeItems((items) => [...items, { id, title: "", subtitle: "", description: "", imageUrl: "" }]);
+    setOpenOfficeId(id);
   }
   function updateOfficeItem(id: string, patch: Partial<OfficeItem>) {
     setOfficeItems((items) => items.map((it) => (it.id === id ? { ...it, ...patch } : it)));
   }
   function removeOfficeItem(id: string) {
     setOfficeItems((items) => items.filter((it) => it.id !== id));
+    setOpenOfficeId((cur) => (cur === id ? null : cur));
   }
 
   return (
@@ -185,13 +194,13 @@ export default function MemberCardEditor({
         </Link>
       </div>
 
-      <form action={boundAction} style={{ padding: "18px 16px 40px", display: "flex", flexDirection: "column", gap: 20, maxWidth: 520, margin: "0 auto" }}>
+      <form action={boundAction} style={{ padding: "18px 16px 40px", display: "flex", flexDirection: "column", gap: 12, maxWidth: 520, margin: "0 auto" }}>
         <input type="hidden" name="medal" value={medal} />
         <input type="hidden" name="rank" value={rank} />
         <input type="hidden" name="contacts" value={contacts} />
         <input type="hidden" name="officeItems" value={JSON.stringify(officeItems.filter((it) => it.title.trim()))} />
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 6 }}>
           <h2 style={{ margin: 0, font: "500 22px 'Playfair Display',serif", color: "#F5F2EB" }}>{copy.title}</h2>
           <p style={{ margin: 0, font: "400 12px/1.6 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{copy.sub}</p>
           {saved && (
@@ -209,10 +218,7 @@ export default function MemberCardEditor({
           )}
         </div>
 
-        <section style={SECTION}>
-          <h3 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#F5F2EB" }}>
-            Foto
-          </h3>
+        <AccordionSection title="Foto" defaultOpen={true}>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div style={{ width: 96, height: 96, flex: "none", borderRadius: 999, overflow: "hidden", background: "#0D0D0D", boxShadow: "0 8px 24px rgba(0,0,0,.6)" }}>
               {portraitPreview ? (
@@ -295,12 +301,9 @@ export default function MemberCardEditor({
               </div>
             </div>
           )}
-        </section>
+        </AccordionSection>
 
-        <section style={SECTION}>
-          <h3 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#F5F2EB" }}>
-            Identidad
-          </h3>
+        <AccordionSection title="Identidad" defaultOpen={true}>
           <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
             <span style={LABEL}>{copy.nameLabel}</span>
             <div style={FIELD_WRAP}>
@@ -319,15 +322,9 @@ export default function MemberCardEditor({
               <input name="quote" defaultValue={card.quote} style={{ ...FIELD_INPUT, fontStyle: "italic" }} />
             </div>
           </label>
-        </section>
+        </AccordionSection>
 
-        <section style={SECTION}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            <h3 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#F5F2EB" }}>
-              {copy.storyTitle}
-            </h3>
-            <p style={{ margin: 0, font: "400 12px/1.6 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{copy.storySub}</p>
-          </div>
+        <AccordionSection title={copy.storyTitle} subtitle={copy.storySub}>
           <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
             <span style={LABEL}>{copy.storyQuoteLabel}</span>
             <div style={FIELD_WRAP}>
@@ -345,17 +342,9 @@ export default function MemberCardEditor({
               />
             </div>
           </label>
-        </section>
+        </AccordionSection>
 
-        <section style={SECTION}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            <h3 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#F5F2EB" }}>
-              Distintivos & Honores
-            </h3>
-            <p style={{ margin: 0, font: "400 12px/1.6 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
-              Los sellos/certificaciones que se muestran en tu tarjeta.
-            </p>
-          </div>
+        <AccordionSection title="Distintivos & Honores" subtitle="Los sellos/certificaciones que se muestran en tu tarjeta.">
           <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
             <span style={LABEL}>Nivel de Medallón Principal</span>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(5,minmax(0,1fr))", gap: 7 }}>
@@ -438,14 +427,9 @@ export default function MemberCardEditor({
               </div>
             </label>
           </div>
-        </section>
+        </AccordionSection>
 
-        <section style={SECTION}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            <h3 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#F5F2EB" }}>
-              Rango
-            </h3>
-          </div>
+        <AccordionSection title="Rango">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 7 }}>
             {RANKS.map((r) => {
               const on = r.id === rank;
@@ -479,71 +463,71 @@ export default function MemberCardEditor({
               );
             })}
           </div>
-        </section>
+        </AccordionSection>
 
-        <section style={SECTION}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            <h3 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#F5F2EB" }}>
-              {copy.officeTitle}
-            </h3>
-            <p style={{ margin: 0, font: "400 12px/1.6 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{copy.officeSub}</p>
-          </div>
-
+        <AccordionSection title={copy.officeTitle} subtitle={copy.officeSub}>
+          {officeItems.length === 0 && (
+            <p style={{ margin: 0, font: "400 12px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
+              Todavía no hay nada acá — tocá &quot;{copy.officeAdd}&quot; para sumar tu primer{kind === "company" ? "" : "a"} {copy.officeItemNoun}.
+            </p>
+          )}
           {officeItems.map((item) => (
-            <div key={item.id} style={{ background: "#1c1b1b", borderRadius: 12, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-              <div style={{ display: "flex", gap: 8 }}>
-                <input
-                  placeholder="Título"
-                  value={item.title}
-                  onChange={(e) => updateOfficeItem(item.id, { title: e.target.value })}
-                  style={{ flex: 1, minWidth: 0, background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "9px 11px", color: "#F5F2EB", font: "600 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
-                />
+            <AccordionRow
+              key={item.id}
+              open={openOfficeId === item.id}
+              onToggle={() => setOpenOfficeId((cur) => (cur === item.id ? null : item.id))}
+              title={item.title || "(sin título)"}
+              subtitle={item.subtitle || undefined}
+              trailing={
                 <button
                   type="button"
                   onClick={() => removeOfficeItem(item.id)}
                   aria-label="Quitar"
-                  style={{ flex: "none", width: 34, height: 34, border: "none", borderRadius: 8, background: "rgba(229,146,138,.15)", color: "#e5928a", cursor: "pointer" }}
+                  style={{ flex: "none", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", border: "none", borderRadius: 8, background: "rgba(229,146,138,.12)", color: "#e5928a", cursor: "pointer" }}
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: 17, display: "block" }}>
-                    close
-                  </span>
+                  <span className="material-symbols-outlined" style={{ fontSize: 15 }}>close</span>
                 </button>
-              </div>
+              }
+            >
+              <input
+                placeholder="Título"
+                value={item.title}
+                onChange={(e) => updateOfficeItem(item.id, { title: e.target.value })}
+                style={{ ...FIELD, color: "#F5F2EB", font: "600 12.5px 'Plus Jakarta Sans',sans-serif" }}
+              />
               <input
                 placeholder="Subtítulo (opcional)"
                 value={item.subtitle}
                 onChange={(e) => updateOfficeItem(item.id, { subtitle: e.target.value })}
-                style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "9px 11px", color: "#C2BEB5", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
+                style={FIELD}
               />
               <textarea
                 placeholder="Descripción (opcional)"
                 value={item.description}
                 onChange={(e) => updateOfficeItem(item.id, { description: e.target.value })}
                 rows={2}
-                style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "9px 11px", color: "#C2BEB5", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none", resize: "vertical" }}
+                style={{ ...FIELD, resize: "vertical" }}
               />
               <input
                 placeholder="Imagen — URL (opcional)"
                 value={item.imageUrl}
                 onChange={(e) => updateOfficeItem(item.id, { imageUrl: e.target.value })}
-                style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "9px 11px", color: "#C2BEB5", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
+                style={FIELD}
               />
-            </div>
+            </AccordionRow>
           ))}
 
           <button
             type="button"
             onClick={addOfficeItem}
-            style={{ padding: 11, border: "1px dashed rgba(200,161,90,.4)", borderRadius: 10, background: "none", color: "#C8A15A", font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", cursor: "pointer" }}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, padding: 11, border: "1px dashed rgba(200,161,90,.4)", borderRadius: 10, background: "none", color: "#C8A15A", font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", cursor: "pointer" }}
           >
-            + {copy.officeAdd}
+            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add</span>
+            {copy.officeAdd}
           </button>
-        </section>
+        </AccordionSection>
 
-        <section style={SECTION}>
-          <h3 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#F5F2EB" }}>
-            Canales de Contacto
-          </h3>
+        <AccordionSection title="Canales de Contacto">
           {CHANNELS.map((c) => (
             <label key={c.id} style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 4 }}>
               <span style={LABEL}>{c.label}</span>
@@ -559,9 +543,9 @@ export default function MemberCardEditor({
               </div>
             </label>
           ))}
-        </section>
+        </AccordionSection>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 6 }}>
           <button
             type="submit"
             style={{

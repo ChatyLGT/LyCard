@@ -19,16 +19,70 @@ import { CARD_LABEL_FIELDS, defaultCardLabel } from "@/lib/cardLabels";
 import { parseEscala } from "@/lib/escalas";
 import EscalaEditor from "@/components/EscalaEditor";
 import ProgramSkinInfo from "@/components/ProgramSkinInfo";
+import { AccordionSection, AccordionRow, AccordionAddRow } from "@/components/Accordion";
 import type { SkinColors } from "@/lib/designMd";
 
 export const dynamic = "force-dynamic";
 
 const CHANNEL_FIELDS = ["wa", "ig", "li", "x", "fb", "tiktok", "yt", "web"] as const;
 
+const PILL = {
+  font: "700 10px 'Plus Jakarta Sans',sans-serif",
+  color: "#8a8378",
+  background: "rgba(255,255,255,.05)",
+  borderRadius: 999,
+  padding: "3px 9px",
+} as const;
+
+const INPUT = {
+  background: "#0D0D0D",
+  border: "1px solid rgba(200,161,90,.25)",
+  borderRadius: 8,
+  padding: "8px 11px",
+  color: "#F5F2EB",
+  font: "400 12px 'Plus Jakarta Sans',sans-serif",
+  outline: "none",
+} as const;
+
+const SAVE_BTN = {
+  padding: 9,
+  border: "none",
+  borderRadius: 8,
+  background: "#353534",
+  color: "#F5F2EB",
+  font: "700 10px 'Plus Jakarta Sans',sans-serif",
+  letterSpacing: ".06em",
+  textTransform: "uppercase",
+  cursor: "pointer",
+} as const;
+
+const DELETE_ICON_BTN = {
+  flex: "none",
+  width: 28,
+  height: 28,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  border: "none",
+  borderRadius: 8,
+  background: "rgba(229,146,138,.12)",
+  color: "#e5928a",
+  cursor: "pointer",
+} as const;
+
 // A Program's own scoped dashboard (PLAN.md Fase 6): branding, its Members,
 // and its interview queue. MasterN0 can open any Program's; a scoped
 // Program N0 only their own — everything here is filtered to this one
 // Program, which is the whole point of the permissions layer.
+//
+// Rediseño en acordeón (2026-09-16): cada categoría era una <section>
+// siempre expandida, todo visible a la vez. Ahora cada una es un
+// <AccordionSection> colapsado por defecto — salvo que su propio mensaje
+// de confirmación/error necesite mostrarse, en cuyo caso arranca abierta
+// para que esa confirmación no quede escondida. Puestos y Miembros, que
+// ya tenían un <details> de edición por ítem, pasan a <AccordionRow>
+// (mismo patrón visual que las demás listas) con un <AccordionAddRow>
+// para crear.
 export default async function AdminProgramDetailPage({
   params,
   searchParams,
@@ -159,12 +213,9 @@ export default async function AdminProgramDetailPage({
         </form>
       </div>
 
-      <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px", display: "flex", flexDirection: "column", gap: 24 }}>
+      <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
         {/* Branding */}
-        <section style={{ background: "#201f1f", borderRadius: 14, padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
-          <h2 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#F5F2EB" }}>
-            Marca del Programa
-          </h2>
+        <AccordionSection title="Marca del Programa" defaultOpen={true}>
           {saved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Guardado.</p>}
           <form action={updateProgramAction.bind(null, program.id)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -215,7 +266,7 @@ export default async function AdminProgramDetailPage({
               Guardar
             </button>
           </form>
-        </section>
+        </AccordionSection>
 
         {/* Skins de marca — hasta 3 por Programa, uno activo a la vez
             (2026-09-16, noche). Cada skin sale de un design.md real
@@ -223,16 +274,17 @@ export default async function AdminProgramDetailPage({
             colores, fuente y estilo de botón, no solo la paleta. El
             skin activo se aplica de verdad a las tarjetas de proyecto de
             este Programa (Fase 2, LyCardView.tsx). */}
-        <section style={{ background: "#201f1f", borderRadius: 14, padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
+        <AccordionSection
+          title="Skins de Marca"
+          meta={<span style={PILL}>{program.skins.length}/3</span>}
+          defaultOpen={Boolean(skinSaved || skinError)}
+        >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-            <h2 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#F5F2EB" }}>
-              Skins de Marca ({program.skins.length}/3)
-            </h2>
+            <p style={{ margin: 0, font: "400 11.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
+              Cada skin sale de un archivo design.md — colores, fuente y estilo de botón reales, leídos del archivo. Solo uno puede estar encendido a la vez.
+            </p>
             <ProgramSkinInfo />
           </div>
-          <p style={{ margin: 0, font: "400 11.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
-            Cada skin sale de un archivo design.md — colores, fuente y estilo de botón reales, leídos del archivo. Solo uno puede estar encendido a la vez.
-          </p>
           {skinSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Guardado.</p>}
           {skinError && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>{SKIN_ERROR_COPY[skinError] ?? "No se pudo guardar."}</p>}
 
@@ -292,14 +344,11 @@ export default async function AdminProgramDetailPage({
               </button>
             </form>
           )}
-        </section>
+        </AccordionSection>
 
         {/* Card labels — title-only override for buttons/modals on project
             cards under this Program (PLAN.md Fase 9, atajo). Blank = default. */}
-        <section style={{ background: "#201f1f", borderRadius: 14, padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
-          <h2 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#F5F2EB" }}>
-            Textos de Botones y Modales
-          </h2>
+        <AccordionSection title="Textos de Botones y Modales" defaultOpen={Boolean(labelsSaved)}>
           <p style={{ margin: 0, font: "400 11.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
             Aplica a las tarjetas de Proyecto de este Programa. Dejá un campo
             vacío para usar el texto original.
@@ -331,132 +380,113 @@ export default async function AdminProgramDetailPage({
               Guardar Textos
             </button>
           </form>
-        </section>
+        </AccordionSection>
 
         {/* Puestos — the N0-designed ladder of positions (PLAN.md Fase 9.1)
             that project Cards will pick from instead of writing their own
             siglas/denominación/descripción by hand (wiring is Fase 9.2). */}
-        <section style={{ background: "#201f1f", borderRadius: 14, padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
-          <h2 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#F5F2EB" }}>
-            Escalera de Puestos ({program.puestos.length})
-          </h2>
-          <p style={{ margin: 0, font: "400 11.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
-            Los puestos de tu Programa (ej. O.D. / Founders / Experts /
-            Specialists / Partners) — cada uno con su sigla, denominación
-            completa y descripción. Orden más bajo aparece primero.
-          </p>
+        <AccordionSection
+          title="Escalera de Puestos"
+          subtitle="Ej. O.D. / Founders / Experts / Specialists / Partners — cada uno con sigla, ícono, denominación y descripción. Orden más bajo aparece primero."
+          meta={<span style={PILL}>{program.puestos.length}</span>}
+          defaultOpen={Boolean(puestoCreated || puestoSaved || puestoDeleted || puestoError)}
+        >
           {puestoCreated && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Puesto creado.</p>}
           {puestoSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Puesto actualizado.</p>}
           {puestoDeleted && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Puesto eliminado.</p>}
           {puestoError && (
             <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>Sigla y denominación son obligatorias.</p>
           )}
-          {program.puestos.length === 0 && (
-            <p style={{ margin: 0, font: "400 12px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
-              Todavía no hay puestos — mientras tanto cada tarjeta sigue usando su propia sigla/denominación.
-            </p>
-          )}
-          {program.puestos.map((p) => (
-            <div key={p.id} style={{ background: "#151414", borderRadius: 10, padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                <span style={{ font: "700 13px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>
-                  {p.siglas} — {p.denominacion}
-                </span>
-                <span style={{ font: "400 10px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>orden {p.order}</span>
+
+          <AccordionAddRow label="Agregar Puesto" defaultOpen={program.puestos.length === 0}>
+            <form action={createPuestoAction.bind(null, program.id)} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input name="siglas" placeholder="Sigla (ej. O.D.)" required style={{ ...INPUT, flex: "1 1 100px" }} />
+                <input name="order" type="number" defaultValue={program.puestos.length} placeholder="Orden" style={{ ...INPUT, width: 80 }} />
               </div>
-              {p.descripcion && (
-                <p style={{ margin: 0, font: "400 11.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{p.descripcion}</p>
-              )}
-              <div style={{ display: "flex", gap: 14, marginTop: 4, flexWrap: "wrap" }}>
-                <details>
-                  <summary style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#C8A15A", cursor: "pointer" }}>
-                    Editar
-                  </summary>
-                  <form
-                    action={updatePuestoAction.bind(null, p.id, program.id)}
-                    style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,.06)" }}
-                  >
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <input name="siglas" defaultValue={p.siglas} placeholder="Sigla (ej. O.D.)" style={{ flex: "1 1 100px", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
-                      <input name="order" type="number" defaultValue={p.order} placeholder="Orden" style={{ width: 80, background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
-                    </div>
-                    <input name="icono" defaultValue={p.icono} placeholder="Ícono del badge (Material Symbols, ej. diamond)" style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
-                    <input name="denominacion" defaultValue={p.denominacion} placeholder="Denominación (ej. Original Dreamer)" style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
-                    <textarea name="descripcion" defaultValue={p.descripcion} placeholder="Descripción del puesto" rows={3} style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none", resize: "vertical" }} />
-                    <button type="submit" style={{ padding: 9, border: "none", borderRadius: 8, background: "#353534", color: "#F5F2EB", font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", cursor: "pointer" }}>
-                      Guardar
-                    </button>
-                  </form>
-                </details>
+              <input name="icono" placeholder="Ícono del badge (Material Symbols, ej. diamond)" style={INPUT} />
+              <input name="denominacion" placeholder="Denominación (ej. Original Dreamer)" required style={INPUT} />
+              <textarea name="descripcion" placeholder="Descripción del puesto" rows={2} style={{ ...INPUT, resize: "vertical" }} />
+              <button type="submit" style={SAVE_BTN}>
+                Crear Puesto
+              </button>
+            </form>
+          </AccordionAddRow>
+
+          {program.puestos.map((p) => (
+            <AccordionRow
+              key={p.id}
+              title={`${p.siglas} — ${p.denominacion}`}
+              subtitle={p.descripcion || `orden ${p.order}`}
+              leading={
+                <span className="material-symbols-outlined" style={{ flex: "none", fontSize: 19, color: "#C8A15A" }}>
+                  {p.icono}
+                </span>
+              }
+              trailing={
                 <form action={deletePuestoAction.bind(null, p.id, program.id)}>
-                  <button type="submit" style={{ background: "none", border: "none", padding: 0, color: "#e5928a", font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", cursor: "pointer" }}>
-                    Borrar
+                  <button type="submit" aria-label="Borrar" style={DELETE_ICON_BTN}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 15 }}>delete</span>
                   </button>
                 </form>
-              </div>
-            </div>
+              }
+            >
+              <form action={updatePuestoAction.bind(null, p.id, program.id)} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input name="siglas" defaultValue={p.siglas} placeholder="Sigla (ej. O.D.)" style={{ ...INPUT, flex: "1 1 100px" }} />
+                  <input name="order" type="number" defaultValue={p.order} placeholder="Orden" style={{ ...INPUT, width: 80 }} />
+                </div>
+                <input name="icono" defaultValue={p.icono} placeholder="Ícono del badge (Material Symbols, ej. diamond)" style={INPUT} />
+                <input name="denominacion" defaultValue={p.denominacion} placeholder="Denominación (ej. Original Dreamer)" style={INPUT} />
+                <textarea name="descripcion" defaultValue={p.descripcion} placeholder="Descripción del puesto" rows={3} style={{ ...INPUT, resize: "vertical" }} />
+                <button type="submit" style={SAVE_BTN}>
+                  Guardar
+                </button>
+              </form>
+            </AccordionRow>
           ))}
-          <form action={createPuestoAction.bind(null, program.id)} style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 6, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,.06)" }}>
-            <div style={{ display: "flex", gap: 8 }}>
-              <input name="siglas" placeholder="Sigla (ej. O.D.)" required style={{ flex: "1 1 100px", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "9px 12px", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
-              <input name="order" type="number" defaultValue={program.puestos.length} placeholder="Orden" style={{ width: 90, background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "9px 12px", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
-            </div>
-            <input name="icono" placeholder="Ícono del badge (Material Symbols, ej. diamond)" style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "9px 12px", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
-            <input name="denominacion" placeholder="Denominación (ej. Original Dreamer)" required style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "9px 12px", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
-            <textarea name="descripcion" placeholder="Descripción del puesto" rows={2} style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "9px 12px", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none", resize: "vertical" }} />
-            <button type="submit" style={{ padding: "9px 16px", border: "none", borderRadius: 10, background: "#353534", color: "#F5F2EB", font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", cursor: "pointer" }}>
-              Agregar Puesto
-            </button>
-          </form>
-        </section>
+        </AccordionSection>
 
-        {/* Medallón + Sabiduría scales — PLAN.md Fase 9.4/9.5. Empty = keep
-            the fixed scale in lib/data.ts, same fallback as every other
-            piece of Fase 9. */}
-        <section style={{ background: "#201f1f", borderRadius: 14, padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
-          <h2 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#F5F2EB" }}>
-            Escala de Medallón
-          </h2>
-          <p style={{ margin: 0, font: "400 11.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
-            Sin niveles acá, las tarjetas de Proyecto siguen usando la escala
-            fija (Bronce → Diamante). La clave de cada nivel es lo que se
-            guarda en la tarjeta — cambiarla después de asignada la rompe.
-          </p>
+        {/* Medallón + Sabiduría + Contactos scales — PLAN.md Fase 9.4/9.5
+            + Fase Contactos (2026-09-16). Empty = keep the fixed scale in
+            lib/data.ts, same fallback as every other piece of Fase 9. */}
+        <AccordionSection
+          title="Escala de Medallón"
+          subtitle="Sin niveles acá, las tarjetas de Proyecto siguen usando la escala fija (Bronce → Diamante). La clave de cada nivel es lo que se guarda en la tarjeta — cambiarla después de asignada la rompe."
+          meta={<span style={PILL}>{medalScale.length || "fija"}</span>}
+          defaultOpen={escalaSaved === "medal"}
+        >
           {escalaSaved === "medal" && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Escala guardada.</p>}
           <EscalaEditor type="medal" initialItems={medalScale} action={updateEscalaAction.bind(null, program.id, "medal")} />
-        </section>
+        </AccordionSection>
 
-        <section style={{ background: "#201f1f", borderRadius: 14, padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
-          <h2 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#F5F2EB" }}>
-            Escala de Sabiduría
-          </h2>
-          <p style={{ margin: 0, font: "400 11.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
-            Sin niveles acá, las tarjetas de Proyecto siguen usando la escala
-            fija (Curioso → Ancient).
-          </p>
+        <AccordionSection
+          title="Escala de Sabiduría"
+          subtitle="Sin niveles acá, las tarjetas de Proyecto siguen usando la escala fija (Curioso → Ancient)."
+          meta={<span style={PILL}>{rankScale.length || "fija"}</span>}
+          defaultOpen={escalaSaved === "rank"}
+        >
           {escalaSaved === "rank" && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Escala guardada.</p>}
           <EscalaEditor type="rank" initialItems={rankScale} action={updateEscalaAction.bind(null, program.id, "rank")} />
-        </section>
+        </AccordionSection>
 
-        <section style={{ background: "#201f1f", borderRadius: 14, padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
-          <h2 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#F5F2EB" }}>
-            Escala de Gente Contactada
-          </h2>
-          <p style={{ margin: 0, font: "400 11.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
-            Sin niveles acá, las tarjetas siguen usando la escala fija de
-            medallones (Bronce → Diamante). El ícono de cada nivel es el que
-            se muestra en el badge junto al nombre.
-          </p>
+        <AccordionSection
+          title="Escala de Gente Contactada"
+          subtitle="Sin niveles acá, las tarjetas siguen usando la escala fija de medallones (Bronce → Diamante). El ícono de cada nivel es el que se muestra en el badge junto al nombre."
+          meta={<span style={PILL}>{contactsScale.length || "fija"}</span>}
+          defaultOpen={escalaSaved === "contacts"}
+        >
           {escalaSaved === "contacts" && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Escala guardada.</p>}
           <EscalaEditor type="contacts" initialItems={contactsScale} action={updateEscalaAction.bind(null, program.id, "contacts")} />
-        </section>
+        </AccordionSection>
 
         {/* N0 admins — MasterN0 only, per PLAN.md Fase 6 */}
         {isMasterN0 && (
-          <section style={{ background: "#201f1f", borderRadius: 14, padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
-            <h2 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#F5F2EB" }}>
-              N0 de este Programa
-            </h2>
+          <AccordionSection
+            title="N0 de este Programa"
+            meta={<span style={PILL}>{program.admins.length}</span>}
+            defaultOpen={Boolean(adminCreated || adminError)}
+          >
             {adminCreated && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ N0 creado.</p>}
             {adminError && (
               <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>
@@ -479,14 +509,15 @@ export default async function AdminProgramDetailPage({
                 Agregar N0
               </button>
             </form>
-          </section>
+          </AccordionSection>
         )}
 
         {/* Members */}
-        <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <h2 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#F5F2EB" }}>
-            Miembros ({program.memberships.length})
-          </h2>
+        <AccordionSection
+          title="Miembros"
+          meta={<span style={PILL}>{program.memberships.length}</span>}
+          defaultOpen={Boolean(memberSaved || memberDeleted || memberMessaged || memberError)}
+        >
           {memberSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Miembro actualizado.</p>}
           {memberDeleted && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Miembro eliminado.</p>}
           {memberMessaged && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Mensaje enviado.</p>}
@@ -495,84 +526,92 @@ export default async function AdminProgramDetailPage({
               {MEMBER_ERROR_COPY[memberError] || "Algo falló."}
             </p>
           )}
-          {program.memberships.length === 0 && <p style={{ color: "#5A5A5A", font: "400 12.5px 'Plus Jakarta Sans',sans-serif" }}>Todavía no hay miembros.</p>}
+          {program.memberships.length === 0 && <p style={{ margin: 0, color: "#5A5A5A", font: "400 12.5px 'Plus Jakarta Sans',sans-serif" }}>Todavía no hay miembros.</p>}
           {program.memberships.map((m) => {
             const projectCard = m.member.cards.find((c) => c.kind === "project");
             return (
-              <div key={m.id} style={{ background: "#201f1f", borderRadius: 12, padding: 14, display: "flex", flexDirection: "column", gap: 4 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                  <span style={{ font: "700 13px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>{m.member.name || "(sin nombre)"}</span>
-                  <span style={{ font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: m.status === "active" ? "#7BC98E" : "#C8A15A" }}>
+              <AccordionRow
+                key={m.id}
+                title={m.member.name || "(sin nombre)"}
+                subtitle={[m.member.whatsapp, m.member.email].filter(Boolean).join(" · ") || undefined}
+                leading={
+                  <span
+                    style={{
+                      flex: "none",
+                      font: "700 9px 'Plus Jakarta Sans',sans-serif",
+                      letterSpacing: ".06em",
+                      textTransform: "uppercase",
+                      color: m.status === "active" ? "#7BC98E" : "#C8A15A",
+                      background: m.status === "active" ? "rgba(123,201,142,.12)" : "rgba(200,161,90,.12)",
+                      borderRadius: 6,
+                      padding: "3px 6px",
+                    }}
+                  >
                     {m.status === "active" ? "Activo" : "Invitado"}
                   </span>
-                </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 12, font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
-                  {m.member.whatsapp && <span>WhatsApp: {m.member.whatsapp}</span>}
-                  {m.member.email && <span>Email: {m.member.email}</span>}
-                  {m.referredBy && <span>Referido por: {m.referredBy.member.name}</span>}
-                  {projectCard && (
-                    <Link href={`/c/${projectCard.slug}`} style={{ color: "#C8A15A" }}>
-                      /c/{projectCard.slug}
-                    </Link>
-                  )}
-                </div>
-
-                <div style={{ display: "flex", gap: 14, marginTop: 6, flexWrap: "wrap" }}>
-                  <details>
-                    <summary style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#C8A15A", cursor: "pointer" }}>
-                      Editar
-                    </summary>
-                    <form
-                      action={updateMemberAction.bind(null, m.member.id, program.id)}
-                      style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,.06)" }}
-                    >
-                      <input name="name" defaultValue={m.member.name} placeholder="Nombre" style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
-                      <input name="whatsapp" defaultValue={m.member.whatsapp || ""} placeholder="WhatsApp" style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
-                      <input name="email" type="email" defaultValue={m.member.email} placeholder="Email" style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
-                      <button type="submit" style={{ padding: 9, border: "none", borderRadius: 8, background: "#353534", color: "#F5F2EB", font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", cursor: "pointer" }}>
-                        Guardar
-                      </button>
-                    </form>
-                  </details>
-
-                  <details>
-                    <summary style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#C8A15A", cursor: "pointer" }}>
-                      Mensaje
-                    </summary>
-                    <form
-                      action={messageMemberAction.bind(null, m.member.id, program.id)}
-                      style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,.06)" }}
-                    >
-                      <input name="subject" placeholder="Asunto" style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
-                      <textarea name="message" placeholder="Mensaje" rows={3} style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none", resize: "vertical" }} />
-                      <button type="submit" style={{ padding: 9, border: "none", borderRadius: 8, background: "#353534", color: "#F5F2EB", font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", cursor: "pointer" }}>
-                        Enviar
-                      </button>
-                    </form>
-                  </details>
-
+                }
+                trailing={
                   <form action={deleteMemberAction.bind(null, m.member.id, program.id)}>
-                    <button type="submit" style={{ background: "none", border: "none", padding: 0, color: "#e5928a", font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", cursor: "pointer" }}>
-                      Borrar
+                    <button type="submit" aria-label="Borrar" style={DELETE_ICON_BTN}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 15 }}>delete</span>
+                    </button>
+                  </form>
+                }
+              >
+                {m.referredBy && (
+                  <p style={{ margin: 0, font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>Referido por: {m.referredBy.member.name}</p>
+                )}
+                {projectCard && (
+                  <Link href={`/c/${projectCard.slug}`} style={{ font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#C8A15A" }}>
+                    /c/{projectCard.slug}
+                  </Link>
+                )}
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#5A5A5A" }}>Editar</span>
+                  <form
+                    action={updateMemberAction.bind(null, m.member.id, program.id)}
+                    style={{ display: "flex", flexDirection: "column", gap: 8 }}
+                  >
+                    <input name="name" defaultValue={m.member.name} placeholder="Nombre" style={INPUT} />
+                    <input name="whatsapp" defaultValue={m.member.whatsapp || ""} placeholder="WhatsApp" style={INPUT} />
+                    <input name="email" type="email" defaultValue={m.member.email} placeholder="Email" style={INPUT} />
+                    <button type="submit" style={SAVE_BTN}>
+                      Guardar
                     </button>
                   </form>
                 </div>
-              </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 6, borderTop: "1px solid rgba(255,255,255,.06)" }}>
+                  <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#5A5A5A" }}>Mensaje</span>
+                  <form
+                    action={messageMemberAction.bind(null, m.member.id, program.id)}
+                    style={{ display: "flex", flexDirection: "column", gap: 8 }}
+                  >
+                    <input name="subject" placeholder="Asunto" style={INPUT} />
+                    <textarea name="message" placeholder="Mensaje" rows={3} style={{ ...INPUT, resize: "vertical" }} />
+                    <button type="submit" style={SAVE_BTN}>
+                      Enviar
+                    </button>
+                  </form>
+                </div>
+              </AccordionRow>
             );
           })}
-        </section>
+        </AccordionSection>
 
         {/* Interviews */}
-        <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <h2 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#F5F2EB" }}>
-            Inscriptos a Entrevistas ({registrations.length})
-          </h2>
+        <AccordionSection
+          title="Inscriptos a Entrevistas"
+          meta={<span style={PILL}>{registrations.length}</span>}
+          defaultOpen={Boolean(activated)}
+        >
           {activated && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Membership activada.</p>}
-          {registrations.length === 0 && <p style={{ color: "#5A5A5A", font: "400 12.5px 'Plus Jakarta Sans',sans-serif" }}>Todavía no hay inscripciones.</p>}
+          {registrations.length === 0 && <p style={{ margin: 0, color: "#5A5A5A", font: "400 12.5px 'Plus Jakarta Sans',sans-serif" }}>Todavía no hay inscripciones.</p>}
           {registrations.map((r) => {
             const isActive = r.membership?.status === "active";
             return (
-              <div key={r.id} style={{ background: "#201f1f", borderRadius: 12, padding: 14, display: "flex", flexDirection: "column", gap: 4 }}>
+              <div key={r.id} style={{ background: "#151414", borderRadius: 12, padding: 14, display: "flex", flexDirection: "column", gap: 4 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
                   <span style={{ font: "700 13px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>{r.name}</span>
                   <span style={{ font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#C8A15A" }}>{r.slotLabel}</span>
@@ -598,7 +637,7 @@ export default async function AdminProgramDetailPage({
               </div>
             );
           })}
-        </section>
+        </AccordionSection>
       </div>
     </div>
   );

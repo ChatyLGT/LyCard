@@ -7,6 +7,7 @@ import { updateCardAction, deleteCardAction } from "@/app/admin/actions";
 import { createSiblingCardsAction } from "@/app/admin/siblings-actions";
 import { MEDALS, RANKS, CHANNELS } from "@/lib/data";
 import type { EscalaItem } from "@/lib/escalas";
+import { AccordionSection } from "@/components/Accordion";
 
 const FIELD_WRAP: CSSProperties = {
   display: "flex",
@@ -32,15 +33,6 @@ const LABEL: CSSProperties = {
   letterSpacing: ".16em",
   textTransform: "uppercase",
   color: "#C2BEB5",
-};
-
-const SECTION: CSSProperties = {
-  background: "#201f1f",
-  borderRadius: 14,
-  padding: 16,
-  display: "flex",
-  flexDirection: "column",
-  gap: 14,
 };
 
 export default function EditorForm({
@@ -146,12 +138,12 @@ export default function EditorForm({
         </Link>
       </div>
 
-      <form action={boundAction} style={{ padding: "18px 16px 40px", display: "flex", flexDirection: "column", gap: 20, maxWidth: 520, margin: "0 auto" }}>
+      <form action={boundAction} style={{ padding: "18px 16px 40px", display: "flex", flexDirection: "column", gap: 12, maxWidth: 520, margin: "0 auto" }}>
         <input type="hidden" name="medal" value={medal} />
         <input type="hidden" name="rank" value={rank} />
         <input type="hidden" name="contacts" value={contacts} />
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 6 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
             <span style={{ width: 6, height: 6, borderRadius: 999, background: "#C8A15A" }} />
             <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".24em", textTransform: "uppercase", color: "#C8A15A" }}>
@@ -169,12 +161,7 @@ export default function EditorForm({
           )}
         </div>
 
-        <section style={SECTION}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-            <h3 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#F5F2EB" }}>
-              Retrato Oficial
-            </h3>
-          </div>
+        <AccordionSection title="Retrato Oficial" defaultOpen={true}>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div style={{ width: 96, height: 96, flex: "none", borderRadius: 999, overflow: "hidden", background: "#0D0D0D", boxShadow: "0 8px 24px rgba(0,0,0,.6)" }}>
               {portraitPreview ? (
@@ -213,12 +200,9 @@ export default function EditorForm({
               </label>
             </div>
           </div>
-        </section>
+        </AccordionSection>
 
-        <section style={SECTION}>
-          <h3 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#F5F2EB" }}>
-            Identidad Fiduciaria
-          </h3>
+        <AccordionSection title="Identidad Fiduciaria" defaultOpen={true}>
           <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
             <span style={LABEL}>Nombre Completo</span>
             <div style={FIELD_WRAP}>
@@ -250,22 +234,14 @@ export default function EditorForm({
               </div>
             </label>
           )}
-        </section>
+        </AccordionSection>
 
         {isProject && isMasterN0 && (
-          <section style={SECTION}>
+          <AccordionSection title="Programa" subtitle="De qué Programa depende esta tarjeta: sus puestos, escalas y textos personalizados.">
             {/* Gates isOrigin processing in updateCardAction — present
                 whenever this MasterN0-only section renders, independent of
                 whether the Programa select below has anything to show. */}
             <input type="hidden" name="masterN0Section" value="1" />
-            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-              <h3 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#F5F2EB" }}>
-                Programa
-              </h3>
-              <p style={{ margin: 0, font: "400 12px/1.6 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
-                De qué Programa depende esta tarjeta: sus puestos, escalas y textos personalizados.
-              </p>
-            </div>
             {programs.length > 0 ? (
               <div style={{ background: "#0D0D0D", borderRadius: 10, padding: 9 }}>
                 <select
@@ -292,18 +268,10 @@ export default function EditorForm({
                 Es el Origen — visible en modo host para cualquiera, sin necesitar login (debería haber sólo una)
               </span>
             </label>
-          </section>
+          </AccordionSection>
         )}
 
-        <section style={SECTION}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            <h3 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#F5F2EB" }}>
-              Distintivos & Honores
-            </h3>
-            <p style={{ margin: 0, font: "400 12px/1.6 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
-              Personaliza los distintivos de rango y honores que se mostrarán en tu tarjeta.
-            </p>
-          </div>
+        <AccordionSection title="Distintivos & Honores" subtitle="Personaliza los distintivos de rango y honores que se mostrarán en tu tarjeta.">
           <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
             <span style={LABEL}>Nivel de Medallón Principal</span>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(5,minmax(0,1fr))", gap: 7 }}>
@@ -409,17 +377,9 @@ export default function EditorForm({
               </label>
             </div>
           )}
-        </section>
+        </AccordionSection>
 
-        <section style={SECTION}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            <h3 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#F5F2EB" }}>
-              Sabiduría
-            </h3>
-            <p style={{ margin: 0, font: "400 12px/1.6 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
-              Jerarquía fiduciaria en el consejo intergeneracional de gobernanza.
-            </p>
-          </div>
+        <AccordionSection title="Sabiduría" subtitle="Jerarquía fiduciaria en el consejo intergeneracional de gobernanza.">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 7 }}>
             {rankOptions.map((r) => {
               const on = r.id === rank;
@@ -453,12 +413,9 @@ export default function EditorForm({
               );
             })}
           </div>
-        </section>
+        </AccordionSection>
 
-        <section style={SECTION}>
-          <h3 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#F5F2EB" }}>
-            Canales de Contacto
-          </h3>
+        <AccordionSection title="Canales de Contacto">
           {isProject ? (
             <>
               <label style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 4 }}>
@@ -491,9 +448,9 @@ export default function EditorForm({
               </label>
             ))
           )}
-        </section>
+        </AccordionSection>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 6 }}>
           <button
             type="submit"
             style={{
@@ -515,58 +472,53 @@ export default function EditorForm({
       </form>
 
       {isProject && (
-        <section style={{ ...SECTION, maxWidth: 520, margin: "0 auto 20px" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            <h3 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#F5F2EB" }}>
-              Business y Personal
-            </h3>
-            <p style={{ margin: 0, font: "400 12px/1.6 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
-              Crea las otras 2 tarjetas de esta persona (copiando lo que ya tiene esta como punto de partida) directamente desde acá, sin pasar por el WhatsApp simulado. Si ya existen, no hace nada.
-            </p>
-          </div>
-          {siblingError === "noWa" && (
-            <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>
-              Cargá un WhatsApp en Canales de Contacto y guardá antes de crearlas — hace falta para identificar a la persona.
-            </p>
-          )}
-          {siblingsCreated != null && (
-            <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>
-              {siblingsCreated === "0" ? "Ya existían las dos — no se creó nada nuevo." : `✓ ${siblingsCreated} tarjeta(s) nueva(s) creada(s).`}
-            </p>
-          )}
-          <form action={createSiblingCardsAction.bind(null, card.slug)}>
-            <button
-              type="submit"
-              style={{ padding: "10px 16px", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, background: "#353534", color: "#F5F2EB", font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", cursor: "pointer" }}
-            >
-              Crear Business y Personal
-            </button>
-          </form>
-        </section>
+        <div style={{ maxWidth: 520, margin: "0 auto 12px", padding: "0 16px" }}>
+          <AccordionSection title="Business y Personal" subtitle="Crea las otras 2 tarjetas de esta persona (copiando lo que ya tiene esta como punto de partida) directamente desde acá, sin pasar por el WhatsApp simulado. Si ya existen, no hace nada.">
+            {siblingError === "noWa" && (
+              <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>
+                Cargá un WhatsApp en Canales de Contacto y guardá antes de crearlas — hace falta para identificar a la persona.
+              </p>
+            )}
+            {siblingsCreated != null && (
+              <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>
+                {siblingsCreated === "0" ? "Ya existían las dos — no se creó nada nuevo." : `✓ ${siblingsCreated} tarjeta(s) nueva(s) creada(s).`}
+              </p>
+            )}
+            <form action={createSiblingCardsAction.bind(null, card.slug)}>
+              <button
+                type="submit"
+                style={{ padding: "10px 16px", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, background: "#353534", color: "#F5F2EB", font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", cursor: "pointer" }}
+              >
+                Crear Business y Personal
+              </button>
+            </form>
+          </AccordionSection>
+        </div>
       )}
 
-      <form
-        action={deleteCardAction.bind(null, card.slug)}
-        style={{ maxWidth: 520, margin: "0 auto", padding: "0 16px 40px" }}
-      >
-        <button
-          type="submit"
-          style={{
-            width: "100%",
-            padding: 12,
-            border: "1px solid rgba(229,146,138,.35)",
-            borderRadius: 12,
-            background: "transparent",
-            color: "#e5928a",
-            font: "600 11px 'Plus Jakarta Sans',sans-serif",
-            letterSpacing: ".1em",
-            textTransform: "uppercase",
-            cursor: "pointer",
-          }}
-        >
-          Eliminar esta LyCard
-        </button>
-      </form>
+      <div style={{ maxWidth: 520, margin: "0 auto", padding: "0 16px 40px" }}>
+        <AccordionSection title="Eliminar esta LyCard" tone="danger">
+          <form action={deleteCardAction.bind(null, card.slug)}>
+            <button
+              type="submit"
+              style={{
+                width: "100%",
+                padding: 12,
+                border: "1px solid rgba(229,146,138,.35)",
+                borderRadius: 12,
+                background: "transparent",
+                color: "#e5928a",
+                font: "600 11px 'Plus Jakarta Sans',sans-serif",
+                letterSpacing: ".1em",
+                textTransform: "uppercase",
+                cursor: "pointer",
+              }}
+            >
+              Eliminar esta LyCard
+            </button>
+          </form>
+        </AccordionSection>
+      </div>
     </div>
   );
 }
