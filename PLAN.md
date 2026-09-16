@@ -1514,6 +1514,71 @@ Versión: **1.10.0**.
 
 ---
 
+## Skins de Marca — Fase 2: aplicación real a la tarjeta (2026-09-16, noche)
+
+Pedido de Gunnar: "completa la fase 2.. que pueda aplicarse realmente y
+que todo el skin de la tarjeta pueda cambiar" — eligió antes la opción
+completa (fondo + acento + fuente, no solo el acento).
+
+- Barrido de `LyCardView.tsx`: ~180 literales (colores dorados fijos
+  `#E5C378`/`#C8A15A`/`#D4AF37`/`#99732B`, texto `#F5F2EB`/`#C2BEB5`,
+  fondos `#0D0D0D`/`#141414`/`#1C1C1C`/`#09090b`, los 42 bordes
+  `rgba(200,161,90,X)` en 11 alphas distintos, y las dos familias de
+  fuente) reemplazados por `var(--x,valorDeHoy)` — mismo fallback
+  exacto en cada sitio, así que sin skin activo la tarjeta no cambia
+  ni un píxel. El bloque `THEME_VARS` (dark/light) quedó deliberadamente
+  afuera del barrido para no crear una referencia circular consigo
+  mismo. Dejados sin tocar a propósito: los dos íconos de los puntos
+  de medalla/contactos (contrastan contra el gradiente de esa medalla,
+  no contra la marca) y el dock social jade/ruby (tinte decorativo,
+  no es identidad de marca).
+- `lib/color.ts` (nuevo): `hexToRgb`/`lightness`/`saturation`/`shade`
+  compartidos entre `lib/designMd.ts` (que antes los tenía duplicados)
+  y `LyCardView.tsx`.
+- `lib/googleFont.ts` (nuevo): URLs de Google Fonts CSS2 solo para las
+  fuentes de `KNOWN_FONTS` — nunca confía en el nombre libre de un
+  design.md como URL.
+- En `LyCardView.tsx`: cuando el Programa tiene un skin activo, sus
+  colores pisan `THEME_VARS[theme]` (una identidad de marca fija, no
+  un par claro/oscuro — apagar/prender el tema deja de tener efecto
+  visual con un skin puesto) y se derivan variables nuevas
+  (`--deepBg`, `--accentLight/Mid/Deep`, `--accentRgb`, `--surfHi`,
+  `--onAccent` — texto/ícono claro u oscuro según qué tan clara sea
+  la marca, calculado por luminancia real, no adivinado — y
+  `--brandFont`, solo si la fuente detectada está en `KNOWN_FONTS`).
+  Un `useEffect` inyecta el `<link>` de Google Fonts real cuando hay
+  fuente conocida.
+- `app/c/[slug]/page.tsx` y `CardCarousel.tsx`: el `include` de
+  `program` ahora trae `skins: { where: { active: true } }` — como
+  mucho una fila, así `LyCardView` nunca tiene que elegir cuál de los
+  3 guardados es el que manda. Solo tarjetas de Proyecto (las únicas
+  con `programId`) se ven afectadas — Business y Personal, sin cambio.
+
+Probado: `tsc` limpio. Programa + skin de prueba (paleta teal/azul,
+fuente Montserrat) contra la base local real → el HTML de SSR mostró
+cada variable CSS resuelta exactamente a los valores del skin
+(`--accentMid:#2fb8c6`, `--deepBg:#0a1420`, `--brandFont:"Montserrat"`,
+etc.) y una captura de Playwright confirmó el cambio visual completo:
+fondo, badges, botones y el CTA de agendar, todos en el teal de la
+marca de prueba. Segunda captura de `mastern0` (sin Programa, sin
+skin) confirmó cero regresión — idéntica al dorado/oscuro de siempre.
+Datos de prueba borrados al terminar.
+
+**No verificado**: la descarga real de la Google Font vía el
+`<link>` inyectado por el `useEffect` — el navegador local de esta
+sesión tiene hidratación de React rota (confirmado con el mismo
+método de la sesión anterior: cero fibers de React en los botones del
+DOM, ningún click hace nada), así que el efecto nunca llegó a
+correr en esta prueba. No es un defecto nuevo — es la misma limitación
+de entorno ya documentada, y la variable `--brandFont` en sí se
+comprobó correcta por SSR. Si Gunnar sube un design.md con una fuente
+bien distinta (ej. "Cormorant Garamond") y la letra no cambia en el
+navegador real, avisar — ahí sí sería un bug de verdad.
+
+Versión: **1.11.0**.
+
+---
+
 **Qué sigue — Fase 8**: WhatsApp Business API real. Esta fase no depende
 de mí escribiendo código — depende de que consigan cuenta de WhatsApp
 Business verificada por Meta, un proveedor (Twilio/360dialog/Meta Cloud

@@ -2,13 +2,16 @@
 
 import { useState, useRef, useEffect, useTransition, type CSSProperties, type ReactElement } from "react";
 import Link from "next/link";
-import type { Card, OriginMemento, Program, Puesto } from "@/generated/prisma/client";
+import type { Card, OriginMemento, Program, ProgramSkin, Puesto } from "@/generated/prisma/client";
 import { t, type Lang } from "@/lib/i18n";
 import { rankById, medalById } from "@/lib/data";
 import { parseEscala } from "@/lib/escalas";
 import { INTERVIEW_SLOTS } from "@/lib/interviewSlots";
 import { registerInterviewAction, sendInvitationAction, sendContactMessageAction, sendQrByWhatsappAction } from "@/app/c/actions";
 import { APP_VERSION, CHANGELOG } from "@/lib/version";
+import { isSkinColors, KNOWN_FONTS } from "@/lib/designMd";
+import { googleFontHref } from "@/lib/googleFont";
+import { hexToRgbString, lightness, shade } from "@/lib/color";
 
 type ModalKey =
   | "od"
@@ -90,9 +93,9 @@ const ICON_BTN: CSSProperties = {
   height: 36,
   borderRadius: 999,
   background: "rgba(20,20,20,.72)",
-  border: "1px solid rgba(200,161,90,.5)",
+  border: "1px solid rgba(var(--accentRgb,200,161,90),.5)",
   backdropFilter: "blur(8px)",
-  color: "#E5C378",
+  color: "var(--accentLight,#E5C378)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -108,7 +111,7 @@ const TIER_DOT = (bg: string): CSSProperties => ({
   height: 30,
   borderRadius: 999,
   flex: "none",
-  background: bg || "#C8A15A",
+  background: bg || "var(--accentMid,#C8A15A)",
   border: "1px solid rgba(255,255,255,.25)",
   boxShadow: "inset 0 -2px 4px rgba(0,0,0,.35), 0 2px 6px rgba(0,0,0,.35)",
   display: "flex",
@@ -125,10 +128,10 @@ const ISLAND_BADGE: CSSProperties = {
   padding: "4px 10px",
   borderRadius: 999,
   background: "rgba(20,20,20,.72)",
-  border: "1px solid rgba(200,161,90,.5)",
+  border: "1px solid rgba(var(--accentRgb,200,161,90),.5)",
   backdropFilter: "blur(8px)",
-  color: "#E5C378",
-  font: "700 9px 'Plus Jakarta Sans',sans-serif",
+  color: "var(--accentLight,#E5C378)",
+  font: "700 9px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
   letterSpacing: ".08em",
   whiteSpace: "nowrap",
   cursor: "pointer",
@@ -144,8 +147,8 @@ const BADGE_BTN: CSSProperties = {
   padding: "5px 14px",
   borderRadius: 999,
   background: "var(--pill,rgba(20,20,20,.95))",
-  border: "1px solid var(--line2,rgba(200,161,90,.5))",
-  boxShadow: "0 0 14px rgba(200,161,90,.3)",
+  border: "1px solid var(--line2,rgba(var(--accentRgb,200,161,90),.5))",
+  boxShadow: "0 0 14px rgba(var(--accentRgb,200,161,90),.3)",
   backdropFilter: "blur(8px)",
   cursor: "pointer",
 };
@@ -157,9 +160,9 @@ const CUBE_MEDIUM: CSSProperties = {
   height: "clamp(62px,15dvh,82px)",
   borderRadius: 18,
   border: "1px solid rgba(255,230,163,.45)",
-  background: "linear-gradient(160deg,#E5C378,#C8A15A 55%,#99732B)",
-  boxShadow: "0 6px 18px rgba(200,161,90,.38)",
-  color: "#141414",
+  background: "linear-gradient(160deg,var(--accentLight,#E5C378),var(--accentMid,#C8A15A) 55%,var(--accentDeep,#99732B))",
+  boxShadow: "0 6px 18px rgba(var(--accentRgb,200,161,90),.38)",
+  color: "var(--onAccent,#141414)",
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
@@ -172,13 +175,13 @@ const CUBE_MEDIUM: CSSProperties = {
 const CUBE_MEDIUM_ALT: CSSProperties = {
   ...CUBE_MEDIUM,
   background: "var(--surf,#141414)",
-  border: "1px solid var(--line2,rgba(200,161,90,.5))",
+  border: "1px solid var(--line2,rgba(var(--accentRgb,200,161,90),.5))",
   boxShadow: "0 4px 14px rgba(0,0,0,.35)",
   color: "var(--goldtxt,#E5C378)",
 };
 
 const CUBE_LABEL: CSSProperties = {
-  font: "700 8.5px 'Plus Jakarta Sans',sans-serif",
+  font: "700 8.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
   letterSpacing: ".06em",
   textTransform: "uppercase",
   textAlign: "center",
@@ -402,7 +405,9 @@ export default function LyCardView({
   // isAdmin-only "N0" badge; see lib/badge.ts for how it's computed.
   badge: string;
   originMemento: OriginMemento | null;
-  program: Program | null;
+  // `skins` carries only the active one (query already filters it, see
+  // app/c/[slug]/page.tsx) — 0 or 1 entries, never more.
+  program: (Program & { skins: ProgramSkin[] }) | null;
   puesto: Puesto | null;
 }) {
   const isProject = card.kind === "project";
@@ -621,6 +626,61 @@ export default function LyCardView({
   // it yet. Swap this for a real tally once outreach is tracked somewhere.
   const contactsTier = medalById("plata");
 
+  // Fase 2 del sistema de skins (2026-09-16): el skin activo del Programa
+  // (si hay uno) pisa el tema dark/light de siempre — una identidad de
+  // marca fija, no un par claro/oscuro — inyectando el mismo tipo de
+  // variables CSS que ya usaba THEME_VARS más un puñado nuevas para las
+  // partes de LyCardView que antes tenían el dorado/oscuro fijo escrito a
+  // mano. Sin skin activo, brandVars queda vacío y cada var() cae a su
+  // literal de siempre — cero cambio visual.
+  const activeSkin = program?.skins?.[0] ?? null;
+  const skinColors = activeSkin && isSkinColors(activeSkin.colors) ? activeSkin.colors : null;
+  const brandVars: CSSProperties = skinColors
+    ? {
+        ["--ink" as string]: skinColors.ink,
+        ["--ink2" as string]: skinColors.ink2,
+        ["--surf" as string]: skinColors.surf,
+        ["--surf2" as string]: skinColors.surf2,
+        ["--surfHi" as string]: skinColors.surf2,
+        ["--line" as string]: `rgba(${hexToRgbString(skinColors.accent)},.22)`,
+        ["--line2" as string]: `rgba(${hexToRgbString(skinColors.accent)},.5)`,
+        ["--pill" as string]: `rgba(${hexToRgbString(skinColors.surf)},.95)`,
+        ["--goldtxt" as string]: skinColors.accent,
+        ["--photofade" as string]: skinColors.bg,
+        ["--photofade2" as string]: `rgba(${hexToRgbString(skinColors.bg)},.52)`,
+        ["--photofade3" as string]: `rgba(${hexToRgbString(skinColors.bg)},.25)`,
+        ["--qrbg" as string]: `rgba(${hexToRgbString(skinColors.surf)},.95)`,
+        ["--nameshadow" as string]:
+          lightness(skinColors.bg) > 140 ? "0 1px 1px rgba(255,255,255,.7)" : "0 1px 2px rgba(0,0,0,.35)",
+        ["--card" as string]: "transparent",
+        ["--deepBg" as string]: skinColors.bg,
+        ["--accentLight" as string]: shade(skinColors.accent, 0.35),
+        ["--accentMid" as string]: skinColors.accent,
+        ["--accentDeep" as string]: skinColors.accentDark,
+        ["--accentRgb" as string]: hexToRgbString(skinColors.accent),
+        ["--onAccent" as string]: lightness(skinColors.accent) > 150 ? "#141414" : "#F5F2EB",
+        ...(activeSkin && (KNOWN_FONTS as readonly string[]).includes(activeSkin.font)
+          ? { ["--brandFont" as string]: `"${activeSkin.font}"` }
+          : {}),
+      }
+    : {};
+
+  // Carga la Google Font real del skin activo, si es una que reconocemos —
+  // nunca confía en texto libre como URL. Sin skin o fuente desconocida,
+  // no hace nada (queda la tipografía fija de siempre).
+  useEffect(() => {
+    const font = activeSkin?.font;
+    if (!font) return;
+    const href = googleFontHref(font);
+    if (!href) return;
+    if (document.querySelector(`link[data-lycard-font="${font}"]`)) return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = href;
+    link.dataset.lycardFont = font;
+    document.head.appendChild(link);
+  }, [activeSkin?.font]);
+
   const modalMap: Record<
     Exclude<ModalKey, null>,
     { icon: string; kicker: string; head?: string; body?: string; meta?: string }
@@ -722,10 +782,11 @@ export default function LyCardView({
         display: "flex",
         justifyContent: "center",
         overflow: "hidden",
-        background: "#09090b",
-        fontFamily: "'Plus Jakarta Sans',sans-serif",
+        background: "var(--deepBg,#09090b)",
+        fontFamily: "var(--brandFont,'Plus Jakarta Sans'),sans-serif",
         WebkitFontSmoothing: "antialiased",
         ...THEME_VARS[theme],
+        ...brandVars,
       }}
     >
       <div style={{ position: "relative", width: "100%", maxWidth: 430, height: "100%", overflow: "hidden" }}>
@@ -753,9 +814,9 @@ export default function LyCardView({
                 maxHeight: 420,
                 borderRadius: 24,
                 overflow: "hidden",
-                border: "1px solid var(--line,rgba(200,161,90,.22))",
+                border: "1px solid var(--line,rgba(var(--accentRgb,200,161,90),.22))",
                 boxShadow: "0 16px 40px rgba(0,0,0,.85)",
-                background: "#0D0D0D",
+                background: "var(--deepBg,#0D0D0D)",
               }}
             >
               {card.portraitUrl ? (
@@ -774,7 +835,7 @@ export default function LyCardView({
                     alignItems: "center",
                     justifyContent: "center",
                     color: "rgba(245,242,235,.3)",
-                    font: "500 11px 'Plus Jakarta Sans',sans-serif",
+                    font: "500 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
                     letterSpacing: ".08em",
                     textTransform: "uppercase",
                   }}
@@ -805,14 +866,14 @@ export default function LyCardView({
                     <Link
                       href="/admin"
                       aria-label="MasterN0"
-                      style={{ ...ICON_BTN, font: "800 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".02em" }}
+                      style={{ ...ICON_BTN, font: "800 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".02em" }}
                     >
                       N0
                     </Link>
                   ) : (
                     <span
                       aria-label="Tu nivel"
-                      style={{ ...ICON_BTN, cursor: "default", font: "800 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".02em" }}
+                      style={{ ...ICON_BTN, cursor: "default", font: "800 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".02em" }}
                     >
                       {badge}
                     </span>
@@ -847,7 +908,7 @@ export default function LyCardView({
                     type="button"
                     aria-label="Idioma"
                     onClick={() => setLang((l) => (l === "es" ? "en" : "es"))}
-                    style={{ ...ICON_BTN, font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em" }}
+                    style={{ ...ICON_BTN, font: "700 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".06em" }}
                   >
                     {lang === "es" ? "ES" : "EN"}
                   </button>
@@ -906,7 +967,7 @@ export default function LyCardView({
                   <h1
                     style={{
                       margin: 0,
-                      font: "600 24px/1.2 'Playfair Display',serif",
+                      font: "600 24px/1.2 var(--brandFont,'Playfair Display'),serif",
                       letterSpacing: "-.01em",
                       color: "var(--ink,#F5F2EB)",
                       textShadow: "var(--nameshadow,0 1px 2px rgba(0,0,0,.35))",
@@ -933,7 +994,7 @@ export default function LyCardView({
                   >
                     <Sweep />
                     <Icon name="work" size={12} style={{ color: "var(--goldtxt,#E5C378)" }} />
-                    <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--goldtxt,#E5C378)" }}>
+                    <span style={{ font: "700 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--goldtxt,#E5C378)" }}>
                       {card.title}
                     </span>
                   </button>
@@ -943,18 +1004,18 @@ export default function LyCardView({
                   <button type="button" onClick={() => setModal("od")} style={BADGE_BTN}>
                     <Sweep />
                     <Icon name="diamond" size={12} style={{ color: "var(--goldtxt,#E5C378)" }} />
-                    <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--goldtxt,#E5C378)" }}>
+                    <span style={{ font: "700 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--goldtxt,#E5C378)" }}>
                       {displaySiglas}
                     </span>
                   </button>
                   <button type="button" onClick={() => setModal("ancient")} style={BADGE_BTN}>
                     <Sweep />
-                    <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, flex: "none" }} fill="none" stroke="#E5C378">
+                    <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, flex: "none" }} fill="none" stroke="var(--accentLight,#E5C378)">
                       <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" strokeLinecap="round" strokeWidth="1.8" />
-                      <circle cx="12" cy="12" r="4.5" stroke="#E5C378" strokeWidth="1.6" />
-                      <circle cx="12" cy="12" r="2" fill="#D4AF37" />
+                      <circle cx="12" cy="12" r="4.5" stroke="var(--accentLight,#E5C378)" strokeWidth="1.6" />
+                      <circle cx="12" cy="12" r="2" fill="var(--accentMid,#D4AF37)" />
                     </svg>
-                    <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--goldtxt,#E5C378)" }}>
+                    <span style={{ font: "700 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--goldtxt,#E5C378)" }}>
                       {rankLabel}
                     </span>
                   </button>
@@ -987,8 +1048,8 @@ export default function LyCardView({
                   height: 80,
                   borderRadius: 999,
                   padding: 2,
-                  background: "linear-gradient(180deg,rgba(229,195,120,.7),rgba(200,161,90,.5),#141414)",
-                  border: "1px solid rgba(200,161,90,.4)",
+                  background: "linear-gradient(180deg,rgba(229,195,120,.7),rgba(var(--accentRgb,200,161,90),.5),var(--deepBg,#141414))",
+                  border: "1px solid rgba(var(--accentRgb,200,161,90),.4)",
                   boxShadow: "0 12px 32px rgba(0,0,0,.85)",
                   cursor: "pointer",
                   overflow: "hidden",
@@ -1002,7 +1063,7 @@ export default function LyCardView({
                     width: "100%",
                     height: "100%",
                     borderRadius: 999,
-                    background: "linear-gradient(180deg,#1C1C1C,#141414 55%,#0D0D0D)",
+                    background: "linear-gradient(180deg,var(--surfHi,#1C1C1C),var(--surf,#141414) 55%,var(--deepBg,#0D0D0D))",
                     border: "1px solid rgba(255,255,255,.1)",
                     position: "relative",
                     overflow: "hidden",
@@ -1016,21 +1077,21 @@ export default function LyCardView({
                       <Sweep />
                       <svg
                         viewBox="0 0 100 100"
-                        style={{ width: 56, height: 56, animation: "emblemFloat 3s ease-in-out infinite", filter: "drop-shadow(0 2px 8px rgba(200,161,90,.5))" }}
+                        style={{ width: 56, height: 56, animation: "emblemFloat 3s ease-in-out infinite", filter: "drop-shadow(0 2px 8px rgba(var(--accentRgb,200,161,90),.5))" }}
                         fill="none"
                       >
                         <defs>
                           <linearGradient id="jgg" gradientUnits="userSpaceOnUse" x1="10" x2="90" y1="10" y2="90">
                             <stop offset="0%" stopColor="#FFFFFF" />
                             <stop offset="25%" stopColor="#FFF0CA" />
-                            <stop offset="55%" stopColor="#D4AF37" />
-                            <stop offset="85%" stopColor="#99732B" />
-                            <stop offset="100%" stopColor="#E5C378" />
+                            <stop offset="55%" stopColor="var(--accentMid,#D4AF37)" />
+                            <stop offset="85%" stopColor="var(--accentDeep,#99732B)" />
+                            <stop offset="100%" stopColor="var(--accentLight,#E5C378)" />
                           </linearGradient>
                           <radialGradient id="orbg" cx="50%" cy="40%" r="60%">
                             <stop offset="0%" stopColor="#FFFFFF" />
                             <stop offset="50%" stopColor="#FFE6A3" />
-                            <stop offset="100%" stopColor="#C8A15A" />
+                            <stop offset="100%" stopColor="var(--accentMid,#C8A15A)" />
                           </radialGradient>
                         </defs>
                         <path d="M14 74 C 32 47, 68 47, 86 74" stroke="url(#jgg)" strokeLinecap="round" strokeWidth="6.2" />
@@ -1052,9 +1113,9 @@ export default function LyCardView({
               style={{
                 margin: 0,
                 padding: "0 16px",
-                font: "italic 400 clamp(12px,2.6dvh,15px)/1.4 'Playfair Display',serif",
+                font: "italic 400 clamp(12px,2.6dvh,15px)/1.4 var(--brandFont,'Playfair Display'),serif",
                 letterSpacing: ".01em",
-                color: "var(--ink2,#C2BEB5)",
+                color: "var(--ink2,var(--ink2,#C2BEB5))",
                 display: "-webkit-box",
                 WebkitLineClamp: 2,
                 WebkitBoxOrient: "vertical",
@@ -1073,16 +1134,16 @@ export default function LyCardView({
                 padding: "clamp(6px,1dvh,9px) 16px",
                 borderRadius: 999,
                 background: "var(--surf,#141414)",
-                border: "1px solid var(--line2,rgba(200,161,90,.4))",
+                border: "1px solid var(--line2,rgba(var(--accentRgb,200,161,90),.4))",
                 color: "var(--goldtxt,#E5C378)",
-                font: "600 11px 'Plus Jakarta Sans',sans-serif",
+                font: "600 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
                 letterSpacing: ".14em",
                 textTransform: "uppercase",
                 cursor: "pointer",
                 boxShadow: "0 2px 10px rgba(0,0,0,.25)",
               }}
             >
-              <span style={{ color: "#C8A15A" }}>✦</span>
+              <span style={{ color: "var(--accentMid,#C8A15A)" }}>✦</span>
               <span>{L(isProject ? "storyBtn" : isCompany ? "storyBtnCompany" : "storyBtnPersonal")}</span>
               <Icon name="north_east" size={15} style={{ opacity: 0.8 }} />
             </button>
@@ -1132,10 +1193,10 @@ export default function LyCardView({
                   cursor: "pointer",
                 }}
               >
-                <span style={{ position: "absolute", top: 7, left: 7, width: 16, height: 16, borderTop: "2px solid #D4AF37", borderLeft: "2px solid #D4AF37", borderRadius: "6px 0 0 0" }} />
-                <span style={{ position: "absolute", top: 7, right: 7, width: 16, height: 16, borderTop: "2px solid #D4AF37", borderRight: "2px solid #D4AF37", borderRadius: "0 6px 0 0" }} />
-                <span style={{ position: "absolute", bottom: 7, left: 7, width: 16, height: 16, borderBottom: "2px solid #D4AF37", borderLeft: "2px solid #D4AF37", borderRadius: "0 0 0 6px" }} />
-                <span style={{ position: "absolute", bottom: 7, right: 7, width: 16, height: 16, borderBottom: "2px solid #D4AF37", borderRight: "2px solid #D4AF37", borderRadius: "0 0 6px 0" }} />
+                <span style={{ position: "absolute", top: 7, left: 7, width: 16, height: 16, borderTop: "2px solid var(--accentMid,#D4AF37)", borderLeft: "2px solid var(--accentMid,#D4AF37)", borderRadius: "6px 0 0 0" }} />
+                <span style={{ position: "absolute", top: 7, right: 7, width: 16, height: 16, borderTop: "2px solid var(--accentMid,#D4AF37)", borderRight: "2px solid var(--accentMid,#D4AF37)", borderRadius: "0 6px 0 0" }} />
+                <span style={{ position: "absolute", bottom: 7, left: 7, width: 16, height: 16, borderBottom: "2px solid var(--accentMid,#D4AF37)", borderLeft: "2px solid var(--accentMid,#D4AF37)", borderRadius: "0 0 0 6px" }} />
+                <span style={{ position: "absolute", bottom: 7, right: 7, width: 16, height: 16, borderBottom: "2px solid var(--accentMid,#D4AF37)", borderRight: "2px solid var(--accentMid,#D4AF37)", borderRadius: "0 0 6px 0" }} />
                 <div
                   style={{ width: "clamp(84px,15dvh,140px)", height: "clamp(84px,15dvh,140px)", background: "#fff", borderRadius: 8, padding: 6 }}
                   dangerouslySetInnerHTML={{ __html: qrSvg }}
@@ -1151,23 +1212,23 @@ export default function LyCardView({
                   width: "clamp(84px,15dvh,140px)",
                   height: "clamp(84px,15dvh,140px)",
                   borderRadius: 20,
-                  background: "linear-gradient(160deg,#E5C378,#C8A15A 55%,#99732B)",
+                  background: "linear-gradient(160deg,var(--accentLight,#E5C378),var(--accentMid,#C8A15A) 55%,var(--accentDeep,#99732B))",
                   border: "1px solid rgba(255,230,163,.5)",
-                  boxShadow: "0 12px 36px rgba(200,161,90,.45)",
+                  boxShadow: "0 12px 36px rgba(var(--accentRgb,200,161,90),.45)",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center",
                   gap: 8,
                   padding: 10,
-                  color: "#141414",
+                  color: "var(--onAccent,#141414)",
                   textDecoration: "none",
                 }}
               >
                 <Icon name="add_card" size={32} />
                 <span
                   style={{
-                    font: "800 10.5px 'Plus Jakarta Sans',sans-serif",
+                    font: "800 10.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
                     letterSpacing: ".07em",
                     textTransform: "uppercase",
                     textAlign: "center",
@@ -1204,12 +1265,12 @@ export default function LyCardView({
                 padding: "clamp(9px,1.6dvh,15px) 20px",
                 border: "1px solid rgba(255,230,163,.45)",
                 borderRadius: 16,
-                background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)",
-                color: "#141414",
-                font: "800 13px 'Plus Jakarta Sans',sans-serif",
+                background: "linear-gradient(90deg,var(--accentLight,#E5C378),var(--accentMid,#C8A15A) 50%,var(--accentDeep,#99732B))",
+                color: "var(--onAccent,#141414)",
+                font: "800 13px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
                 letterSpacing: ".16em",
                 textTransform: "uppercase",
-                boxShadow: "0 6px 22px rgba(200,161,90,.42)",
+                boxShadow: "0 6px 22px rgba(var(--accentRgb,200,161,90),.42)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -1260,8 +1321,8 @@ export default function LyCardView({
                 maxWidth: 406,
                 maxHeight: "88vh",
                 overflowY: "auto",
-                background: "linear-gradient(180deg,#1C1C1C,#0D0D0D)",
-                border: "1px solid rgba(200,161,90,.4)",
+                background: "linear-gradient(180deg,var(--surfHi,#1C1C1C),var(--deepBg,#0D0D0D))",
+                border: "1px solid rgba(var(--accentRgb,200,161,90),.4)",
                 borderBottom: "none",
                 borderRadius: "24px 24px 0 0",
                 padding: "22px 22px 28px",
@@ -1272,11 +1333,11 @@ export default function LyCardView({
                 animation: "modalIn .25s ease-out",
               }}
             >
-              <span style={{ width: 48, height: 5, borderRadius: 999, background: "rgba(200,161,90,.4)", margin: "0 auto" }} />
+              <span style={{ width: 48, height: 5, borderRadius: 999, background: "rgba(var(--accentRgb,200,161,90),.4)", margin: "0 auto" }} />
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Icon name={activeModal.icon} style={{ color: "#C8A15A" }} />
-                  <span style={{ font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".2em", textTransform: "uppercase", color: "#E5C378" }}>
+                  <Icon name={activeModal.icon} style={{ color: "var(--accentMid,#C8A15A)" }} />
+                  <span style={{ font: "700 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".2em", textTransform: "uppercase", color: "var(--accentLight,#E5C378)" }}>
                     {activeModal.kicker}
                   </span>
                 </div>
@@ -1284,7 +1345,7 @@ export default function LyCardView({
                   type="button"
                   onClick={closeModal}
                   aria-label="Close"
-                  style={{ width: 32, height: 32, borderRadius: 999, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "#C2BEB5", cursor: "pointer", flex: "none" }}
+                  style={{ width: 32, height: 32, borderRadius: 999, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "var(--ink2,#C2BEB5)", cursor: "pointer", flex: "none" }}
                 >
                   ✕
                 </button>
@@ -1292,41 +1353,41 @@ export default function LyCardView({
 
               {modal === "info" && isProject ? (
                 <>
-                  <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", borderRadius: 16, overflow: "hidden", border: "1px solid rgba(200,161,90,.4)", background: "#000" }}>
+                  <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", borderRadius: 16, overflow: "hidden", border: "1px solid rgba(var(--accentRgb,200,161,90),.4)", background: "#000" }}>
                     {card.videoThumbnailUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={card.videoThumbnailUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : null}
                     <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
-                      <span style={{ width: 56, height: 56, borderRadius: 999, padding: 2, background: "linear-gradient(45deg,#99732B,#C8A15A,#E5C378)", boxShadow: "0 0 25px rgba(200,161,90,.8)", display: "flex" }}>
+                      <span style={{ width: 56, height: 56, borderRadius: 999, padding: 2, background: "linear-gradient(45deg,var(--accentDeep,#99732B),var(--accentMid,#C8A15A),var(--accentLight,#E5C378))", boxShadow: "0 0 25px rgba(var(--accentRgb,200,161,90),.8)", display: "flex" }}>
                         <span style={{ width: "100%", height: "100%", borderRadius: 999, background: "rgba(0,0,0,.8)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <Icon name="play_arrow" size={26} style={{ color: "#E5C378", marginLeft: 3 }} />
+                          <Icon name="play_arrow" size={26} style={{ color: "var(--accentLight,#E5C378)", marginLeft: 3 }} />
                         </span>
                       </span>
                     </div>
                     <div style={{ position: "absolute", bottom: 10, left: 12, right: 12, display: "flex", alignItems: "center", justifyContent: "space-between", pointerEvents: "none" }}>
-                      <span style={{ padding: "2px 8px", borderRadius: 5, background: "rgba(0,0,0,.7)", border: "1px solid rgba(255,255,255,.2)", font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#F5F2EB" }}>
+                      <span style={{ padding: "2px 8px", borderRadius: 5, background: "rgba(0,0,0,.7)", border: "1px solid rgba(255,255,255,.2)", font: "600 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ink,#F5F2EB)" }}>
                         {t(lang, "infoTag")}
                       </span>
-                      <span style={{ font: "600 10px 'Plus Jakarta Sans',sans-serif", color: "#E5C378" }}>4K ULTRA HD</span>
+                      <span style={{ font: "600 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--accentLight,#E5C378)" }}>4K ULTRA HD</span>
                     </div>
                   </div>
-                  <h3 style={{ margin: 0, font: "600 17px 'Playfair Display',serif", color: "#E5C378" }}>{L("infoTitle")}</h3>
-                  <p style={{ margin: 0, font: "400 12.5px/1.75 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{t(lang, "infoP1")}</p>
+                  <h3 style={{ margin: 0, font: "600 17px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>{L("infoTitle")}</h3>
+                  <p style={{ margin: 0, font: "400 12.5px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>{t(lang, "infoP1")}</p>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 8 }}>
                     {[
                       ["token", t(lang, "pil1"), t(lang, "pil1s")],
                       ["groups", t(lang, "pil2"), t(lang, "pil2s")],
                       ["shield_with_heart", t(lang, "pil3"), t(lang, "pil3s")],
                     ].map(([icon, label, sub]) => (
-                      <div key={icon} style={{ padding: "11px 8px", borderRadius: 12, background: "#141414", border: "1px solid rgba(200,161,90,.25)", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, textAlign: "center" }}>
-                        <Icon name={icon} style={{ color: "#C8A15A" }} />
-                        <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>{label}</span>
-                        <span style={{ font: "400 9px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{sub}</span>
+                      <div key={icon} style={{ padding: "11px 8px", borderRadius: 12, background: "var(--surf,#141414)", border: "1px solid rgba(var(--accentRgb,200,161,90),.25)", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, textAlign: "center" }}>
+                        <Icon name={icon} style={{ color: "var(--accentMid,#C8A15A)" }} />
+                        <span style={{ font: "700 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink,#F5F2EB)" }}>{label}</span>
+                        <span style={{ font: "400 9px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>{sub}</span>
                       </div>
                     ))}
                   </div>
-                  <p style={{ margin: 0, font: "400 12.5px/1.75 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
+                  <p style={{ margin: 0, font: "400 12.5px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
                     {t(lang, "infoP2", { name: card.name })}
                   </p>
                   <a
@@ -1340,9 +1401,9 @@ export default function LyCardView({
                       width: "100%",
                       padding: 14,
                       borderRadius: 12,
-                      background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)",
-                      color: "#0D0D0D",
-                      font: "700 12.5px 'Plus Jakarta Sans',sans-serif",
+                      background: "linear-gradient(90deg,var(--accentLight,#E5C378),var(--accentMid,#C8A15A) 50%,var(--accentDeep,#99732B))",
+                      color: "var(--deepBg,#0D0D0D)",
+                      font: "700 12.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
                       letterSpacing: ".12em",
                       textTransform: "uppercase",
                       display: "flex",
@@ -1357,18 +1418,18 @@ export default function LyCardView({
                 </>
               ) : modal === "invite" ? (
                 <>
-                  <p style={{ margin: 0, font: "400 12.5px/1.75 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
+                  <p style={{ margin: 0, font: "400 12.5px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
                     {t(lang, isCompany ? "inviteSubCompany" : "inviteSub")}
                   </p>
                   {inviteSent ? (
-                    <div style={{ padding: 18, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(200,161,90,.3)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
-                      <Icon name="mark_email_read" size={28} style={{ color: "#C8A15A" }} />
-                      <span style={{ font: "700 13px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>{t(lang, "inviteSuccess")}</span>
+                    <div style={{ padding: 18, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
+                      <Icon name="mark_email_read" size={28} style={{ color: "var(--accentMid,#C8A15A)" }} />
+                      <span style={{ font: "700 13px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink,#F5F2EB)" }}>{t(lang, "inviteSuccess")}</span>
                     </div>
                   ) : (
                     <>
                       <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                        <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#C2BEB5" }}>
+                        <span style={{ font: "500 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--ink2,#C2BEB5)" }}>
                           {t(lang, "fInviteeEmail")}
                         </span>
                         <input
@@ -1376,11 +1437,11 @@ export default function LyCardView({
                           value={inviteEmail}
                           onChange={(e) => setInviteEmail(e.target.value)}
                           placeholder="nombre@correo.com"
-                          style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "11px 14px", color: "#F5F2EB", font: "400 14px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
+                          style={{ background: "var(--deepBg,#0D0D0D)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", borderRadius: 10, padding: "11px 14px", color: "var(--ink,#F5F2EB)", font: "400 14px var(--brandFont,'Plus Jakarta Sans'),sans-serif", outline: "none" }}
                         />
                       </label>
                       {inviteError && (
-                        <span style={{ font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>{inviteError}</span>
+                        <span style={{ font: "600 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "#e5928a" }}>{inviteError}</span>
                       )}
                       <button
                         type="button"
@@ -1391,9 +1452,9 @@ export default function LyCardView({
                           padding: 14,
                           border: "none",
                           borderRadius: 12,
-                          background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)",
-                          color: "#0D0D0D",
-                          font: "700 12.5px 'Plus Jakarta Sans',sans-serif",
+                          background: "linear-gradient(90deg,var(--accentLight,#E5C378),var(--accentMid,#C8A15A) 50%,var(--accentDeep,#99732B))",
+                          color: "var(--deepBg,#0D0D0D)",
+                          font: "700 12.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
                           letterSpacing: ".12em",
                           textTransform: "uppercase",
                           display: "flex",
@@ -1412,28 +1473,28 @@ export default function LyCardView({
                 </>
               ) : modal === "contactMessage" ? (
                 <>
-                  <p style={{ margin: 0, font: "400 12.5px/1.75 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
+                  <p style={{ margin: 0, font: "400 12.5px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
                     {t(lang, "contactSub", { name: card.name })}
                   </p>
                   {contactSent ? (
-                    <div style={{ padding: 18, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(200,161,90,.3)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
-                      <Icon name="mark_email_read" size={28} style={{ color: "#C8A15A" }} />
-                      <span style={{ font: "700 13px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>{t(lang, "contactSuccess")}</span>
+                    <div style={{ padding: 18, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
+                      <Icon name="mark_email_read" size={28} style={{ color: "var(--accentMid,#C8A15A)" }} />
+                      <span style={{ font: "700 13px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink,#F5F2EB)" }}>{t(lang, "contactSuccess")}</span>
                     </div>
                   ) : (
                     <>
                       <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                        <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#C2BEB5" }}>
+                        <span style={{ font: "500 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--ink2,#C2BEB5)" }}>
                           {t(lang, "fSenderName")}
                         </span>
                         <input
                           value={senderName}
                           onChange={(e) => setSenderName(e.target.value)}
-                          style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "11px 14px", color: "#F5F2EB", font: "400 14px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
+                          style={{ background: "var(--deepBg,#0D0D0D)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", borderRadius: 10, padding: "11px 14px", color: "var(--ink,#F5F2EB)", font: "400 14px var(--brandFont,'Plus Jakarta Sans'),sans-serif", outline: "none" }}
                         />
                       </label>
                       <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                        <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#C2BEB5" }}>
+                        <span style={{ font: "500 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--ink2,#C2BEB5)" }}>
                           {t(lang, "fSenderEmail")}
                         </span>
                         <input
@@ -1441,22 +1502,22 @@ export default function LyCardView({
                           value={senderEmail}
                           onChange={(e) => setSenderEmail(e.target.value)}
                           placeholder="nombre@correo.com"
-                          style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "11px 14px", color: "#F5F2EB", font: "400 14px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
+                          style={{ background: "var(--deepBg,#0D0D0D)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", borderRadius: 10, padding: "11px 14px", color: "var(--ink,#F5F2EB)", font: "400 14px var(--brandFont,'Plus Jakarta Sans'),sans-serif", outline: "none" }}
                         />
                       </label>
                       <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                        <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#C2BEB5" }}>
+                        <span style={{ font: "500 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--ink2,#C2BEB5)" }}>
                           {t(lang, "fMessage")}
                         </span>
                         <textarea
                           value={messageText}
                           onChange={(e) => setMessageText(e.target.value)}
                           rows={4}
-                          style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "11px 14px", color: "#F5F2EB", font: "400 14px 'Plus Jakarta Sans',sans-serif", outline: "none", resize: "vertical" }}
+                          style={{ background: "var(--deepBg,#0D0D0D)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", borderRadius: 10, padding: "11px 14px", color: "var(--ink,#F5F2EB)", font: "400 14px var(--brandFont,'Plus Jakarta Sans'),sans-serif", outline: "none", resize: "vertical" }}
                         />
                       </label>
                       {contactError && (
-                        <span style={{ font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>{contactError}</span>
+                        <span style={{ font: "600 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "#e5928a" }}>{contactError}</span>
                       )}
                       <button
                         type="button"
@@ -1467,9 +1528,9 @@ export default function LyCardView({
                           padding: 14,
                           border: "none",
                           borderRadius: 12,
-                          background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)",
-                          color: "#0D0D0D",
-                          font: "700 12.5px 'Plus Jakarta Sans',sans-serif",
+                          background: "linear-gradient(90deg,var(--accentLight,#E5C378),var(--accentMid,#C8A15A) 50%,var(--accentDeep,#99732B))",
+                          color: "var(--deepBg,#0D0D0D)",
+                          font: "700 12.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
                           letterSpacing: ".12em",
                           textTransform: "uppercase",
                           display: "flex",
@@ -1491,62 +1552,62 @@ export default function LyCardView({
                   {isProject ? (
                     origin ? (
                       <>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 14, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(200,161,90,.3)" }}>
-                          <div style={{ width: 52, height: 52, flex: "none", borderRadius: 999, overflow: "hidden", background: "#0D0D0D" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 14, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)" }}>
+                          <div style={{ width: 52, height: 52, flex: "none", borderRadius: 999, overflow: "hidden", background: "var(--deepBg,#0D0D0D)" }}>
                             {origin.referrerPortraitUrl ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img src={origin.referrerPortraitUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                             ) : null}
                           </div>
                           <div style={{ minWidth: 0 }}>
-                            <span style={{ display: "block", font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".14em", textTransform: "uppercase", color: "#C8A15A" }}>
+                            <span style={{ display: "block", font: "600 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".14em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
                               {t(lang, "officeReferredBy")}
                             </span>
-                            <span style={{ display: "block", font: "700 15px 'Playfair Display',serif", color: "#F5F2EB" }}>{origin.referrerName}</span>
+                            <span style={{ display: "block", font: "700 15px var(--brandFont,'Playfair Display'),serif", color: "var(--ink,#F5F2EB)" }}>{origin.referrerName}</span>
                             {origin.referrerCardTitle && (
-                              <span style={{ display: "block", font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{origin.referrerCardTitle}</span>
+                              <span style={{ display: "block", font: "400 11.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>{origin.referrerCardTitle}</span>
                             )}
                           </div>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,.1)" }}>
-                          <span style={{ font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#C8A15A" }}>
+                          <span style={{ font: "600 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
                             {t(lang, "officeProgramLabel")}: {origin.programName}
                           </span>
                           {origin.recruitedAt && (
-                            <span style={{ font: "italic 400 12.5px 'Playfair Display',serif", color: "#F5F2EB" }}>
+                            <span style={{ font: "italic 400 12.5px var(--brandFont,'Playfair Display'),serif", color: "var(--ink,#F5F2EB)" }}>
                               {t(lang, "officeJoinedOn", { date: new Date(origin.recruitedAt).toLocaleDateString(lang === "en" ? "en-US" : "es-MX") })}
                             </span>
                           )}
                         </div>
                       </>
                     ) : (
-                      <div style={{ padding: 14, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(200,161,90,.3)", textAlign: "center", display: "flex", flexDirection: "column", gap: 8 }}>
-                        <span style={{ font: "700 17px 'Playfair Display',serif", color: "#E5C378" }}>{t(lang, "officeFounderHead")}</span>
-                        <p style={{ margin: 0, font: "400 13px/1.6 'Plus Jakarta Sans',sans-serif", color: "rgba(245,242,235,.92)" }}>
+                      <div style={{ padding: 14, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", textAlign: "center", display: "flex", flexDirection: "column", gap: 8 }}>
+                        <span style={{ font: "700 17px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>{t(lang, "officeFounderHead")}</span>
+                        <p style={{ margin: 0, font: "400 13px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "rgba(245,242,235,.92)" }}>
                           {t(lang, "officeFounderBody", { name: card.name })}
                         </p>
                       </div>
                     )
                   ) : officeItems.length === 0 ? (
-                    <p style={{ margin: 0, font: "400 13px/1.7 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5", textAlign: "center", padding: "18px 4px" }}>
+                    <p style={{ margin: 0, font: "400 13px/1.7 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)", textAlign: "center", padding: "18px 4px" }}>
                       {t(lang, isCompany ? "officeEmptyCompany" : "officeEmptyPersonal", { name: card.name })}
                     </p>
                   ) : (
                     officeItems.map((item) => (
-                      <div key={item.id || item.title} style={{ display: "flex", gap: 12, padding: 14, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(200,161,90,.3)" }}>
+                      <div key={item.id || item.title} style={{ display: "flex", gap: 12, padding: 14, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)" }}>
                         {item.imageUrl && (
-                          <div style={{ width: 56, height: 56, flex: "none", borderRadius: 10, overflow: "hidden", background: "#0D0D0D" }}>
+                          <div style={{ width: 56, height: 56, flex: "none", borderRadius: 10, overflow: "hidden", background: "var(--deepBg,#0D0D0D)" }}>
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={item.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                           </div>
                         )}
                         <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-                          <span style={{ font: "700 13.5px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>{item.title}</span>
+                          <span style={{ font: "700 13.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink,#F5F2EB)" }}>{item.title}</span>
                           {item.subtitle && (
-                            <span style={{ font: "600 10.5px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#C8A15A" }}>{item.subtitle}</span>
+                            <span style={{ font: "600 10.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>{item.subtitle}</span>
                           )}
                           {item.description && (
-                            <span style={{ font: "400 12px/1.5 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{item.description}</span>
+                            <span style={{ font: "400 12px/1.5 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>{item.description}</span>
                           )}
                         </div>
                       </div>
@@ -1555,13 +1616,13 @@ export default function LyCardView({
                 </>
               ) : (
                 <>
-                  <div style={{ padding: 14, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(200,161,90,.3)", textAlign: "center" }}>
-                    <span style={{ font: "700 17px 'Playfair Display',serif", color: "#E5C378" }}>{activeModal.head}</span>
+                  <div style={{ padding: 14, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", textAlign: "center" }}>
+                    <span style={{ font: "700 17px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>{activeModal.head}</span>
                   </div>
-                  <p style={{ margin: 0, font: "400 13px/1.8 'Plus Jakarta Sans',sans-serif", color: "rgba(245,242,235,.92)" }}>{activeModal.body}</p>
+                  <p style={{ margin: 0, font: "400 13px/1.8 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "rgba(245,242,235,.92)" }}>{activeModal.body}</p>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,.1)" }}>
-                    <span style={{ font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#C8A15A" }}>{activeModal.meta}</span>
-                    <span style={{ font: "italic 400 14px 'Playfair Display',serif", color: "#F5F2EB" }}>{card.name}</span>
+                    <span style={{ font: "600 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>{activeModal.meta}</span>
+                    <span style={{ font: "italic 400 14px var(--brandFont,'Playfair Display'),serif", color: "var(--ink,#F5F2EB)" }}>{card.name}</span>
                   </div>
                 </>
               )}
@@ -1592,8 +1653,8 @@ export default function LyCardView({
                 maxWidth: 406,
                 maxHeight: "88vh",
                 overflowY: "auto",
-                background: "linear-gradient(180deg,#1C1C1C,#0D0D0D)",
-                border: "1px solid rgba(200,161,90,.4)",
+                background: "linear-gradient(180deg,var(--surfHi,#1C1C1C),var(--deepBg,#0D0D0D))",
+                border: "1px solid rgba(var(--accentRgb,200,161,90),.4)",
                 borderTop: "none",
                 borderRadius: "0 0 24px 24px",
                 padding: "22px 22px 28px",
@@ -1606,8 +1667,8 @@ export default function LyCardView({
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Icon name="event" style={{ color: "#C8A15A" }} />
-                  <span style={{ font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".2em", textTransform: "uppercase", color: "#E5C378" }}>
+                  <Icon name="event" style={{ color: "var(--accentMid,#C8A15A)" }} />
+                  <span style={{ font: "700 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".2em", textTransform: "uppercase", color: "var(--accentLight,#E5C378)" }}>
                     {L("scheduleKicker")}
                   </span>
                 </div>
@@ -1615,26 +1676,26 @@ export default function LyCardView({
                   type="button"
                   onClick={closeSchedule}
                   aria-label="Close"
-                  style={{ width: 32, height: 32, borderRadius: 999, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "#C2BEB5", cursor: "pointer", flex: "none" }}
+                  style={{ width: 32, height: 32, borderRadius: 999, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "var(--ink2,#C2BEB5)", cursor: "pointer", flex: "none" }}
                 >
                   ✕
                 </button>
               </div>
 
-              <h3 style={{ margin: 0, font: "600 17px 'Playfair Display',serif", color: "#E5C378" }}>
+              <h3 style={{ margin: 0, font: "600 17px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>
                 {L(isProject ? "scheduleTitle" : isCompany ? "meetingTitle" : "coffeeTitle")}
               </h3>
 
               {scheduleResult ? (
-                <div style={{ padding: 18, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(200,161,90,.3)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
-                  <Icon name="event_available" size={28} style={{ color: "#C8A15A" }} />
-                  <span style={{ font: "700 13px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>
+                <div style={{ padding: 18, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
+                  <Icon name="event_available" size={28} style={{ color: "var(--accentMid,#C8A15A)" }} />
+                  <span style={{ font: "700 13px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink,#F5F2EB)" }}>
                     {t(lang, "scheduleSuccess", { slot: scheduleResult.slotLabel })}
                   </span>
                 </div>
               ) : (
                 <>
-                  <p style={{ margin: 0, font: "400 12.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
+                  <p style={{ margin: 0, font: "400 12.5px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
                     {t(lang, isProject ? "scheduleSub" : isCompany ? "meetingSub" : "coffeeSub", { name: card.name })}
                   </p>
 
@@ -1652,20 +1713,20 @@ export default function LyCardView({
                             gap: 10,
                             padding: 12,
                             borderRadius: 12,
-                            border: `1px solid ${on ? "rgba(200,161,90,.6)" : "rgba(255,255,255,.1)"}`,
-                            background: on ? "rgba(200,161,90,.14)" : "#141414",
+                            border: `1px solid ${on ? "rgba(var(--accentRgb,200,161,90),.6)" : "rgba(255,255,255,.1)"}`,
+                            background: on ? "rgba(var(--accentRgb,200,161,90),.14)" : "var(--surf,#141414)",
                             cursor: "pointer",
                             textAlign: "left",
                           }}
                         >
-                          <span style={{ width: 18, height: 18, borderRadius: 999, border: `2px solid ${on ? "#E5C378" : "#5A5A5A"}`, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
-                            {on && <span style={{ width: 9, height: 9, borderRadius: 999, background: "#E5C378" }} />}
+                          <span style={{ width: 18, height: 18, borderRadius: 999, border: `2px solid ${on ? "var(--accentLight,#E5C378)" : "#5A5A5A"}`, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+                            {on && <span style={{ width: 9, height: 9, borderRadius: 999, background: "var(--accentLight,#E5C378)" }} />}
                           </span>
                           <span style={{ display: "flex", flexDirection: "column" }}>
-                            <span style={{ font: "600 12.5px 'Plus Jakarta Sans',sans-serif", color: on ? "#E5C378" : "#F5F2EB" }}>
+                            <span style={{ font: "600 12.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: on ? "var(--accentLight,#E5C378)" : "var(--ink,#F5F2EB)" }}>
                               {lang === "en" ? slot.labelEn : slot.label}
                             </span>
-                            <span style={{ font: "400 10.5px 'Plus Jakarta Sans',sans-serif", color: "#9a8f80" }}>{slot.time}</span>
+                            <span style={{ font: "400 10.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "#9a8f80" }}>{slot.time}</span>
                           </span>
                         </button>
                       );
@@ -1673,40 +1734,40 @@ export default function LyCardView({
                   </div>
 
                   <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                    <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#C2BEB5" }}>
+                    <span style={{ font: "500 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--ink2,#C2BEB5)" }}>
                       {t(lang, "fFullName")}
                     </span>
                     <input
                       value={scheduleName}
                       onChange={(e) => setScheduleName(e.target.value)}
-                      style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "11px 14px", color: "#F5F2EB", font: "400 14px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
+                      style={{ background: "var(--deepBg,#0D0D0D)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", borderRadius: 10, padding: "11px 14px", color: "var(--ink,#F5F2EB)", font: "400 14px var(--brandFont,'Plus Jakarta Sans'),sans-serif", outline: "none" }}
                     />
                   </label>
                   <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                    <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#C2BEB5" }}>
+                    <span style={{ font: "500 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--ink2,#C2BEB5)" }}>
                       {t(lang, "fWhatsapp")}
                     </span>
                     <input
                       value={scheduleWa}
                       onChange={(e) => setScheduleWa(e.target.value)}
                       placeholder="+52 998 000 0000"
-                      style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "11px 14px", color: "#F5F2EB", font: "400 14px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
+                      style={{ background: "var(--deepBg,#0D0D0D)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", borderRadius: 10, padding: "11px 14px", color: "var(--ink,#F5F2EB)", font: "400 14px var(--brandFont,'Plus Jakarta Sans'),sans-serif", outline: "none" }}
                     />
                   </label>
                   <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                    <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#C2BEB5" }}>
+                    <span style={{ font: "500 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--ink2,#C2BEB5)" }}>
                       {t(lang, "fEmailOptional")}
                     </span>
                     <input
                       type="email"
                       value={scheduleEmail}
                       onChange={(e) => setScheduleEmail(e.target.value)}
-                      style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "11px 14px", color: "#F5F2EB", font: "400 14px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
+                      style={{ background: "var(--deepBg,#0D0D0D)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", borderRadius: 10, padding: "11px 14px", color: "var(--ink,#F5F2EB)", font: "400 14px var(--brandFont,'Plus Jakarta Sans'),sans-serif", outline: "none" }}
                     />
                   </label>
 
                   {scheduleError && (
-                    <span style={{ font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>{scheduleError}</span>
+                    <span style={{ font: "600 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "#e5928a" }}>{scheduleError}</span>
                   )}
 
                   <button
@@ -1718,9 +1779,9 @@ export default function LyCardView({
                       padding: 14,
                       border: "none",
                       borderRadius: 12,
-                      background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)",
-                      color: "#0D0D0D",
-                      font: "700 12.5px 'Plus Jakarta Sans',sans-serif",
+                      background: "linear-gradient(90deg,var(--accentLight,#E5C378),var(--accentMid,#C8A15A) 50%,var(--accentDeep,#99732B))",
+                      color: "var(--deepBg,#0D0D0D)",
+                      font: "700 12.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
                       letterSpacing: ".12em",
                       textTransform: "uppercase",
                       display: "flex",
@@ -1763,8 +1824,8 @@ export default function LyCardView({
                 maxWidth: 406,
                 maxHeight: "88vh",
                 overflowY: "auto",
-                background: "linear-gradient(180deg,#1C1C1C,#0D0D0D)",
-                border: "1px solid rgba(200,161,90,.4)",
+                background: "linear-gradient(180deg,var(--surfHi,#1C1C1C),var(--deepBg,#0D0D0D))",
+                border: "1px solid rgba(var(--accentRgb,200,161,90),.4)",
                 borderTop: "none",
                 borderRadius: "0 0 24px 24px",
                 padding: "22px 22px 28px",
@@ -1777,8 +1838,8 @@ export default function LyCardView({
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Icon name="qr_code_2" style={{ color: "#C8A15A" }} />
-                  <span style={{ font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".2em", textTransform: "uppercase", color: "#E5C378" }}>
+                  <Icon name="qr_code_2" style={{ color: "var(--accentMid,#C8A15A)" }} />
+                  <span style={{ font: "700 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".2em", textTransform: "uppercase", color: "var(--accentLight,#E5C378)" }}>
                     {t(lang, "qrSendKicker")}
                   </span>
                 </div>
@@ -1786,36 +1847,36 @@ export default function LyCardView({
                   type="button"
                   onClick={closeQrSend}
                   aria-label="Close"
-                  style={{ width: 32, height: 32, borderRadius: 999, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "#C2BEB5", cursor: "pointer", flex: "none" }}
+                  style={{ width: 32, height: 32, borderRadius: 999, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "var(--ink2,#C2BEB5)", cursor: "pointer", flex: "none" }}
                 >
                   ✕
                 </button>
               </div>
 
-              <h3 style={{ margin: 0, font: "600 17px 'Playfair Display',serif", color: "#E5C378" }}>{t(lang, "qrSendTitle")}</h3>
+              <h3 style={{ margin: 0, font: "600 17px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>{t(lang, "qrSendTitle")}</h3>
 
               {qrSent ? (
-                <div style={{ padding: 18, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(200,161,90,.3)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
-                  <Icon name="check_circle" size={28} style={{ color: "#C8A15A" }} />
-                  <span style={{ font: "700 13px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>{t(lang, "qrSendSuccess", { whatsapp: qrWa })}</span>
+                <div style={{ padding: 18, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
+                  <Icon name="check_circle" size={28} style={{ color: "var(--accentMid,#C8A15A)" }} />
+                  <span style={{ font: "700 13px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink,#F5F2EB)" }}>{t(lang, "qrSendSuccess", { whatsapp: qrWa })}</span>
                 </div>
               ) : (
                 <>
-                  <p style={{ margin: 0, font: "400 12.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{t(lang, "qrSendSub")}</p>
+                  <p style={{ margin: 0, font: "400 12.5px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>{t(lang, "qrSendSub")}</p>
 
                   <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                    <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#C2BEB5" }}>
+                    <span style={{ font: "500 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--ink2,#C2BEB5)" }}>
                       {t(lang, "fWhatsapp")}
                     </span>
                     <input
                       value={qrWa}
                       onChange={(e) => setQrWa(e.target.value)}
                       placeholder="+52 998 000 0000"
-                      style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "11px 14px", color: "#F5F2EB", font: "400 14px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
+                      style={{ background: "var(--deepBg,#0D0D0D)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", borderRadius: 10, padding: "11px 14px", color: "var(--ink,#F5F2EB)", font: "400 14px var(--brandFont,'Plus Jakarta Sans'),sans-serif", outline: "none" }}
                     />
                   </label>
 
-                  {qrError && <span style={{ font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>{qrError}</span>}
+                  {qrError && <span style={{ font: "600 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "#e5928a" }}>{qrError}</span>}
 
                   <button
                     type="button"
@@ -1826,9 +1887,9 @@ export default function LyCardView({
                       padding: 14,
                       border: "none",
                       borderRadius: 12,
-                      background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)",
-                      color: "#0D0D0D",
-                      font: "700 12.5px 'Plus Jakarta Sans',sans-serif",
+                      background: "linear-gradient(90deg,var(--accentLight,#E5C378),var(--accentMid,#C8A15A) 50%,var(--accentDeep,#99732B))",
+                      color: "var(--deepBg,#0D0D0D)",
+                      font: "700 12.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
                       letterSpacing: ".12em",
                       textTransform: "uppercase",
                       display: "flex",
@@ -1851,7 +1912,7 @@ export default function LyCardView({
         {/* CV fullscreen viewer (2026-09-16) — one shared demo PDF for now,
             triggered by the profession tag under the name. */}
         {cvOpen && (
-          <div style={{ position: "fixed", inset: 0, zIndex: 90, background: "#0D0D0D", display: "flex", flexDirection: "column" }}>
+          <div style={{ position: "fixed", inset: 0, zIndex: 90, background: "var(--deepBg,#0D0D0D)", display: "flex", flexDirection: "column" }}>
             <div
               style={{
                 flex: "none",
@@ -1861,17 +1922,17 @@ export default function LyCardView({
                 justifyContent: "space-between",
                 padding: "0 14px",
                 background: "rgba(20,20,20,.96)",
-                borderBottom: "1px solid rgba(200,161,90,.25)",
+                borderBottom: "1px solid rgba(var(--accentRgb,200,161,90),.25)",
               }}
             >
-              <span style={{ font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".14em", textTransform: "uppercase", color: "#E5C378" }}>
+              <span style={{ font: "700 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".14em", textTransform: "uppercase", color: "var(--accentLight,#E5C378)" }}>
                 CV — {card.name}
               </span>
               <button
                 type="button"
                 onClick={() => setCvOpen(false)}
                 aria-label="Cerrar"
-                style={{ width: 32, height: 32, borderRadius: 999, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.1)", color: "#C2BEB5", cursor: "pointer", flex: "none" }}
+                style={{ width: 32, height: 32, borderRadius: 999, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.1)", color: "var(--ink2,#C2BEB5)", cursor: "pointer", flex: "none" }}
               >
                 ✕
               </button>
@@ -1900,15 +1961,15 @@ export default function LyCardView({
           >
             <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 22 }}>
               <span style={{ position: "absolute", width: 96, height: 96, borderRadius: 999, background: "rgba(212,175,55,.2)", filter: "blur(16px)", animation: "softPulse 1.4s ease-in-out infinite" }} />
-              <span style={{ width: 80, height: 80, borderRadius: 999, border: "2px solid rgba(229,195,120,.6)", borderTopColor: "#D4AF37", animation: "spinSlow 1s linear infinite", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Icon name="key" size={30} style={{ color: "#E5C378" }} />
+              <span style={{ width: 80, height: 80, borderRadius: 999, border: "2px solid rgba(229,195,120,.6)", borderTopColor: "var(--accentMid,#D4AF37)", animation: "spinSlow 1s linear infinite", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Icon name="key" size={30} style={{ color: "var(--accentLight,#E5C378)" }} />
               </span>
             </div>
-            <span style={{ font: "700 10.5px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".28em", textTransform: "uppercase", color: "#C8A15A" }}>
+            <span style={{ font: "700 10.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".28em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
               {t(lang, "legacyPass")}
             </span>
-            <h2 style={{ margin: 0, font: "600 21px 'Playfair Display',serif", color: "#F5F2EB" }}>{t(lang, "portalTitle")}</h2>
-            <p style={{ margin: "6px 0 0", maxWidth: 270, font: "400 12px/1.6 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
+            <h2 style={{ margin: 0, font: "600 21px var(--brandFont,'Playfair Display'),serif", color: "var(--ink,#F5F2EB)" }}>{t(lang, "portalTitle")}</h2>
+            <p style={{ margin: "6px 0 0", maxWidth: 270, font: "400 12px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
               {t(lang, "portalSub", { name: card.name })}
             </p>
           </div>
@@ -1929,14 +1990,14 @@ export default function LyCardView({
               padding: "11px 18px",
               borderRadius: 999,
               background: "rgba(28,28,28,.96)",
-              border: "1px solid rgba(200,161,90,.5)",
+              border: "1px solid rgba(var(--accentRgb,200,161,90),.5)",
               boxShadow: "0 12px 32px rgba(0,0,0,.7)",
               maxWidth: "92%",
               animation: "toastIn .2s ease-out",
             }}
           >
-            <Icon name="verified_user" size={17} style={{ color: "#C8A15A", flex: "none" }} />
-            <span style={{ font: "600 10.5px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#F5F2EB" }}>
+            <Icon name="verified_user" size={17} style={{ color: "var(--accentMid,#C8A15A)", flex: "none" }} />
+            <span style={{ font: "600 10.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ink,#F5F2EB)" }}>
               {toast}
             </span>
           </div>

@@ -6,7 +6,12 @@ import { currentMemberId } from "@/lib/memberAuth";
 import { computeBadge } from "@/lib/badge";
 import LyCardView from "@/components/LyCardView";
 import CardCarousel, { type CarouselBundle } from "@/components/CardCarousel";
-import type { Card, Program, Puesto } from "@/generated/prisma/client";
+import type { Card, Program, ProgramSkin, Puesto } from "@/generated/prisma/client";
+
+// A project card's Program plus only its active skin (0 or 1 rows) — the
+// filter lives in the Prisma query itself (Fase 2 del sistema de skins,
+// 2026-09-16), so LyCardView never has to pick the right one out of 3.
+const PROGRAM_INCLUDE = { skins: { where: { active: true } } } as const;
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +20,7 @@ export const dynamic = "force-dynamic";
 const KIND_ORDER = ["project", "company", "personal"];
 
 async function buildCardBundle(
-  card: Card & { program: Program | null; puesto: Puesto | null },
+  card: Card & { program: (Program & { skins: ProgramSkin[] }) | null; puesto: Puesto | null },
   baseUrl: string,
   adminScope: { id: string; programId: string | null } | null,
   memberId: string | null
@@ -45,7 +50,7 @@ export default async function CardPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const card = await prisma.card.findUnique({ where: { slug }, include: { program: true, puesto: true } });
+  const card = await prisma.card.findUnique({ where: { slug }, include: { program: { include: PROGRAM_INCLUDE }, puesto: true } });
   if (!card) notFound();
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
@@ -66,7 +71,7 @@ export default async function CardPage({
   // with no memberId (a standalone/legacy card, or the MasterN0 seed) has
   // no siblings and just renders on its own, unchanged.
   const siblings = card.memberId
-    ? await prisma.card.findMany({ where: { memberId: card.memberId }, include: { program: true, puesto: true } })
+    ? await prisma.card.findMany({ where: { memberId: card.memberId }, include: { program: { include: PROGRAM_INCLUDE }, puesto: true } })
     : [card];
   const ordered = KIND_ORDER.map((k) => siblings.find((c) => c.kind === k)).filter(
     (c): c is typeof siblings[number] => Boolean(c)

@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { Card, OriginMemento, Program, Puesto } from "@/generated/prisma/client";
+import type { Card, OriginMemento, Program, ProgramSkin, Puesto } from "@/generated/prisma/client";
 import LyCardView from "./LyCardView";
 
 export type CarouselBundle = {
   card: Card;
   qrSvg: string;
   originMemento: OriginMemento | null;
-  program: Program | null;
+  program: (Program & { skins: ProgramSkin[] }) | null;
   puesto: Puesto | null;
   // Viewer-relative N0/N1/.../NA (2026-09-16) — independent per Card, unlike
   // isAdmin/isHost below which are shared across the whole carousel.

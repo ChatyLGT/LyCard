@@ -220,8 +220,8 @@ export default async function AdminProgramDetailPage({
             (2026-09-16, noche). Cada skin sale de un design.md real
             (Stitch u otro), parseado de verdad en lib/designMd.ts:
             colores, fuente y estilo de botón, no solo la paleta. El
-            skin activo se aplica a las tarjetas de proyecto de este
-            Programa (Fase 2, pendiente de cablear en LyCardView). */}
+            skin activo se aplica de verdad a las tarjetas de proyecto de
+            este Programa (Fase 2, LyCardView.tsx). */}
         <section style={{ background: "#201f1f", borderRadius: 14, padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
             <h2 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#F5F2EB" }}>
