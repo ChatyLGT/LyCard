@@ -593,13 +593,14 @@ export default function LyCardView({
     },
     story: {
       icon: "auto_stories",
-      kicker: L("storyKicker"),
-      // Each host's own words (PLAN.md Fase 9.3, editable at
-      // /m/dashboard/project) — falls back to the fixed Legacy copy until
-      // they write their own.
-      head: card.storyQuote || t(lang, "storyHead"),
-      body: card.storyBody || t(lang, "storyBody"),
-      meta: t(lang, "storyMeta"),
+      kicker: isProject ? L("storyKicker") : t(lang, isCompany ? "storyKickerCompany" : "storyKickerPersonal"),
+      // Each host's own words (PLAN.md Fase 9.3, editable at /m/dashboard) —
+      // project falls back to the fixed Legacy copy until they write their
+      // own; company/personal have no built-in lore to fall back to, so
+      // theirs is a plain "not written yet" placeholder instead (2026-09-16).
+      head: card.storyQuote || (isProject ? t(lang, "storyHead") : t(lang, "storyHeadEmpty", { name: card.name })),
+      body: card.storyBody || (isProject ? t(lang, "storyBody") : t(lang, "storyBodyEmpty", { name: card.name })),
+      meta: isProject ? t(lang, "storyMeta") : undefined,
     },
     info: isCompany
       ? { icon: "storefront", kicker: t(lang, "companyInfoKicker"), head: card.title || card.name, body: card.quote, meta: t(lang, "companyInfoMeta") }
@@ -940,31 +941,29 @@ export default function LyCardView({
             >
               {card.quote}
             </p>
-            {isProject && (
-              <button
-                type="button"
-                onClick={() => setModal("story")}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "clamp(6px,1dvh,9px) 16px",
-                  borderRadius: 999,
-                  background: "var(--surf,#141414)",
-                  border: "1px solid var(--line2,rgba(200,161,90,.4))",
-                  color: "var(--goldtxt,#E5C378)",
-                  font: "600 11px 'Plus Jakarta Sans',sans-serif",
-                  letterSpacing: ".14em",
-                  textTransform: "uppercase",
-                  cursor: "pointer",
-                  boxShadow: "0 2px 10px rgba(0,0,0,.25)",
-                }}
-              >
-                <span style={{ color: "#C8A15A" }}>✦</span>
-                <span>{L("storyBtn")}</span>
-                <Icon name="north_east" size={15} style={{ opacity: 0.8 }} />
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => setModal("story")}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "clamp(6px,1dvh,9px) 16px",
+                borderRadius: 999,
+                background: "var(--surf,#141414)",
+                border: "1px solid var(--line2,rgba(200,161,90,.4))",
+                color: "var(--goldtxt,#E5C378)",
+                font: "600 11px 'Plus Jakarta Sans',sans-serif",
+                letterSpacing: ".14em",
+                textTransform: "uppercase",
+                cursor: "pointer",
+                boxShadow: "0 2px 10px rgba(0,0,0,.25)",
+              }}
+            >
+              <span style={{ color: "#C8A15A" }}>✦</span>
+              <span>{L(isProject ? "storyBtn" : isCompany ? "storyBtnCompany" : "storyBtnPersonal")}</span>
+              <Icon name="north_east" size={15} style={{ opacity: 0.8 }} />
+            </button>
           </div>
 
           {/* Cubes: left (info/save-contact) / QR (large) / right (invite/message) */}
@@ -1089,35 +1088,49 @@ export default function LyCardView({
             )}
           </div>
 
-          {/* Schedule / meeting CTA — project cards book an interview, company cards book a meeting; personal cards skip this row entirely */}
-          {!isPersonal && (
-            <div style={{ flex: "0 0 auto", width: "100%" }}>
-              <button
-                type="button"
-                onClick={() => setScheduleOpen(true)}
-                style={{
-                  width: "100%",
-                  padding: "clamp(9px,1.6dvh,15px) 20px",
-                  border: "1px solid rgba(255,230,163,.45)",
-                  borderRadius: 16,
-                  background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)",
-                  color: "#141414",
-                  font: "800 13px 'Plus Jakarta Sans',sans-serif",
-                  letterSpacing: ".16em",
-                  textTransform: "uppercase",
-                  boxShadow: "0 6px 22px rgba(200,161,90,.42)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 10,
-                  cursor: "pointer",
-                }}
-              >
-                <Icon name="event" />
-                <span>{L(isCompany ? (isHost ? "meetingBtnHost" : "meetingBtn") : isHost ? "scheduleBtnHost" : "scheduleBtn")}</span>
-              </button>
-            </div>
-          )}
+          {/* Schedule CTA — project books an interview, company books a meeting,
+              personal books a coffee. Used to skip personal entirely; now on
+              all 3 kinds (2026-09-16), each with its own copy. */}
+          <div style={{ flex: "0 0 auto", width: "100%" }}>
+            <button
+              type="button"
+              onClick={() => setScheduleOpen(true)}
+              style={{
+                width: "100%",
+                padding: "clamp(9px,1.6dvh,15px) 20px",
+                border: "1px solid rgba(255,230,163,.45)",
+                borderRadius: 16,
+                background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)",
+                color: "#141414",
+                font: "800 13px 'Plus Jakarta Sans',sans-serif",
+                letterSpacing: ".16em",
+                textTransform: "uppercase",
+                boxShadow: "0 6px 22px rgba(200,161,90,.42)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 10,
+                cursor: "pointer",
+              }}
+            >
+              <Icon name="event" />
+              <span>
+                {L(
+                  isProject
+                    ? isHost
+                      ? "scheduleBtnHost"
+                      : "scheduleBtn"
+                    : isCompany
+                    ? isHost
+                      ? "meetingBtnHost"
+                      : "meetingBtn"
+                    : isHost
+                    ? "coffeeBtnHost"
+                    : "coffeeBtn"
+                )}
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Modal */}
@@ -1504,7 +1517,9 @@ export default function LyCardView({
                 </button>
               </div>
 
-              <h3 style={{ margin: 0, font: "600 17px 'Playfair Display',serif", color: "#E5C378" }}>{L(isCompany ? "meetingTitle" : "scheduleTitle")}</h3>
+              <h3 style={{ margin: 0, font: "600 17px 'Playfair Display',serif", color: "#E5C378" }}>
+                {L(isProject ? "scheduleTitle" : isCompany ? "meetingTitle" : "coffeeTitle")}
+              </h3>
 
               {scheduleResult ? (
                 <div style={{ padding: 18, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(200,161,90,.3)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
@@ -1516,7 +1531,7 @@ export default function LyCardView({
               ) : (
                 <>
                   <p style={{ margin: 0, font: "400 12.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
-                    {t(lang, isCompany ? "meetingSub" : "scheduleSub", { name: card.name })}
+                    {t(lang, isProject ? "scheduleSub" : isCompany ? "meetingSub" : "coffeeSub", { name: card.name })}
                   </p>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

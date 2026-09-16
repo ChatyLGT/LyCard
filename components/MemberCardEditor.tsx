@@ -50,6 +50,10 @@ const COPY: Record<
     nameLabel: string;
     titleLabel: string;
     quoteLabel: string;
+    storyTitle: string;
+    storySub: string;
+    storyQuoteLabel: string;
+    storyBodyLabel: string;
     officeTitle: string;
     officeSub: string;
     officeAdd: string;
@@ -62,6 +66,10 @@ const COPY: Record<
     nameLabel: "Nombre del Negocio",
     titleLabel: "Tu Rol / Cargo",
     quoteLabel: "Tagline",
+    storyTitle: "Mi camino con la Empresa",
+    storySub: "Lo que ve quien toca el botón \"Mi camino con la Empresa\" en tu tarjeta.",
+    storyQuoteLabel: "Tu frase (aparece como cita destacada)",
+    storyBodyLabel: "Tu historia",
     officeTitle: "Oficina Virtual — Portfolio",
     officeSub: "Lo que ve un visitante al entrar a tu Oficina Virtual. Un ítem por trabajo o servicio.",
     officeAdd: "Agregar trabajo",
@@ -73,6 +81,10 @@ const COPY: Record<
     nameLabel: "Nombre",
     titleLabel: "Descripción breve",
     quoteLabel: "Cita personal",
+    storyTitle: "Mi Trayectoria",
+    storySub: "Lo que ve quien toca el botón \"Mi Trayectoria\" en tu tarjeta.",
+    storyQuoteLabel: "Tu frase (aparece como cita destacada)",
+    storyBodyLabel: "Tu trayectoria",
     officeTitle: "Oficina Virtual — Currículum",
     officeSub: "Lo que ve un visitante al entrar a tu Oficina Virtual. Un ítem por experiencia o logro.",
     officeAdd: "Agregar experiencia",
@@ -250,6 +262,32 @@ export default function MemberCardEditor({
             <span style={LABEL}>{copy.quoteLabel}</span>
             <div style={FIELD_WRAP}>
               <input name="quote" defaultValue={card.quote} style={{ ...FIELD_INPUT, fontStyle: "italic" }} />
+            </div>
+          </label>
+        </section>
+
+        <section style={SECTION}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            <h3 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#F5F2EB" }}>
+              {copy.storyTitle}
+            </h3>
+            <p style={{ margin: 0, font: "400 12px/1.6 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{copy.storySub}</p>
+          </div>
+          <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            <span style={LABEL}>{copy.storyQuoteLabel}</span>
+            <div style={FIELD_WRAP}>
+              <input name="storyQuote" defaultValue={card.storyQuote} style={{ ...FIELD_INPUT, fontStyle: "italic" }} />
+            </div>
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            <span style={LABEL}>{copy.storyBodyLabel}</span>
+            <div style={{ background: "#0D0D0D", borderRadius: 10, padding: "11px 14px" }}>
+              <textarea
+                name="storyBody"
+                defaultValue={card.storyBody}
+                rows={6}
+                style={{ width: "100%", background: "none", border: "none", outline: "none", color: "#F5F2EB", font: "400 13px/1.7 'Plus Jakarta Sans',sans-serif", resize: "vertical" }}
+              />
             </div>
           </label>
         </section>

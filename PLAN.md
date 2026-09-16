@@ -1154,6 +1154,50 @@ comparten el mismo `LyCardView.tsx`.
 
 ---
 
+**Independencia por tarjeta + fractal propio (2026-09-16, noche)** —
+bloque grande, negociado en varias rondas con Gunnar antes de tocar
+código (badge N0/N1/NA es viewer-relative; Company se lleva un fractal
+propio y completo porque a futuro esos clientes usan la plataforma;
+Personal es solo una libreta de contactos, sin fractal). Orden acordado:
+
+1. Botones "Mi camino"/"Agendar" en las 3 tarjetas
+2. Logo real en el botón de Oficina Virtual
+3. Flujo QR host/anónimo + envío por WhatsApp simulado
+4. Modelo `CardNetworkMembership` + badge N0/N1/NA
+5. Panel de admin para Empresa (clientes/red)
+6. Carga de diseño corporativo + IA simulada
+
+**1. Botones "Mi camino" y "Agendar" en las 3 tarjetas** (hecho, probado
+localmente). Los dos vivían tapados con gates de kind: "Mi camino con
+Legacy" con `isProject &&`, y el CTA de agenda con `!isPersonal` (o sea,
+ausente justo en Personal). Los saco de los dos:
+- El botón de historia ahora es `L(isProject ? "storyBtn" : isCompany ?
+  "storyBtnCompany" : "storyBtnPersonal")` — "Mi camino con la Empresa"
+  en company, "Mi Trayectoria" en personal. El modal usa `card.storyQuote/
+  storyBody` (ya eran campos genéricos, no exclusivos de project) con
+  fallback: project cae al copy fijo de Legacy, company/personal caen a
+  un placeholder neutro ("todavía no escribió su historia acá") en vez
+  del copy de Legacy, que no tenía sentido ahí.
+- El CTA de agenda ya no se saltea Personal — suma copy propio
+  ("Agendar un Café" / `coffeeBtn`, `coffeeTitle`, `coffeeSub`, nuevas
+  claves i18n ES/EN). `registerInterviewAction` no necesitó ningún
+  cambio: ya era genérico por `cardId`, sin gate de kind.
+- `MemberCardEditor.tsx` (el editor de company/personal) suma una
+  sección "Mi camino con la Empresa" / "Mi Trayectoria" con los mismos
+  dos campos que ya tenía el editor de project — reusando
+  `updateMemberCardAction` (le agregué `storyQuote`/`storyBody` a la
+  whitelist de campos) en vez de tocar `updateMemberStoryAction`, que
+  queda intacto y exclusivo de project.
+
+Probado con Playwright de punta a punta: las 3 tarjetas muestran su
+botón y su CTA con el copy correcto (capturas); login real de Miembro
+por WhatsApp simulado (código leído de pantalla, no hardcodeado) →
+`/m/dashboard/personal` → cargué frase + historia → guardé → confirmado
+en la base que persistió. Datos de prueba revertidos al terminar.
+`tsc` limpio. Versión: **1.3.0**.
+
+---
+
 **Qué sigue — Fase 8**: WhatsApp Business API real. Esta fase no depende
 de mí escribiendo código — depende de que consigan cuenta de WhatsApp
 Business verificada por Meta, un proveedor (Twilio/360dialog/Meta Cloud
