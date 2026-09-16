@@ -174,6 +174,22 @@ export async function sendContactMessageAction(input: {
   return { ok: true as const };
 }
 
+// Simulated — the owner sends their own QR over WhatsApp from their card
+// (2026-09-16), same "fake it until the real provider's connected"
+// pattern as OTP: no message actually goes out, this just validates the
+// number and reports success. The one place to plug real WhatsApp Business
+// API sending in later, without touching the button/modal that calls it.
+export async function sendQrByWhatsappAction(input: { cardSlug: string; whatsapp: string }) {
+  const whatsapp = input.whatsapp.trim();
+  if (!whatsapp) return { ok: false as const, error: "whatsapp" };
+
+  const card = await prisma.card.findUnique({ where: { slug: input.cardSlug } });
+  if (!card) return { ok: false as const, error: "card" };
+
+  console.log(`sendQrByWhatsappAction (simulado): QR de ${card.slug} "enviado" a ${whatsapp}`);
+  return { ok: true as const };
+}
+
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, "&amp;")

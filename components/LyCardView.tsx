@@ -2,13 +2,12 @@
 
 import { useState, useRef, useEffect, useTransition, type CSSProperties, type ReactElement } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import type { Card, OriginMemento, Program, Puesto } from "@/generated/prisma/client";
 import { t, type Lang } from "@/lib/i18n";
 import { rankById, medalById } from "@/lib/data";
 import { parseEscala } from "@/lib/escalas";
 import { INTERVIEW_SLOTS } from "@/lib/interviewSlots";
-import { registerInterviewAction, sendInvitationAction, sendContactMessageAction } from "@/app/c/actions";
+import { registerInterviewAction, sendInvitationAction, sendContactMessageAction, sendQrByWhatsappAction } from "@/app/c/actions";
 import { APP_VERSION, CHANGELOG } from "@/lib/version";
 
 type ModalKey =
@@ -380,7 +379,6 @@ export default function LyCardView({
   program: Program | null;
   puesto: Puesto | null;
 }) {
-  const router = useRouter();
   const isProject = card.kind === "project";
   const isCompany = card.kind === "company";
   const isPersonal = card.kind === "personal";
@@ -533,9 +531,31 @@ export default function LyCardView({
     });
   }
 
-  function shareLink() {
-    const url = `${window.location.origin}/c/${card.slug}`;
-    navigator.clipboard.writeText(url).then(() => flash(t(lang, "linkCopied")));
+  // Host sends their own QR over WhatsApp instead of scanning it themselves
+  // (2026-09-16) — simulated like every other WhatsApp send in this app:
+  // no real provider yet, just a fake delay and a success state, with the
+  // one integration point isolated in sendQrByWhatsappAction for later.
+  const [qrSendOpen, setQrSendOpen] = useState(false);
+  const [qrWa, setQrWa] = useState("");
+  const [qrError, setQrError] = useState<string | null>(null);
+  const [qrSent, setQrSent] = useState(false);
+  const [qrSending, startQrSending] = useTransition();
+
+  function closeQrSend() {
+    setQrSendOpen(false);
+    setQrWa("");
+    setQrError(null);
+    setQrSent(false);
+  }
+
+  function submitQrSend() {
+    setQrError(null);
+    if (!qrWa.trim()) return setQrError(t(lang, "scheduleErrWa"));
+    startQrSending(async () => {
+      const res = await sendQrByWhatsappAction({ cardSlug: card.slug, whatsapp: qrWa });
+      if (res.ok) setQrSent(true);
+      else setQrError(t(lang, "scheduleErrWa"));
+    });
   }
 
   const light = theme === "light";
@@ -996,11 +1016,17 @@ export default function LyCardView({
               </button>
             )}
 
-            {isProject && isHost ? (
+            {/* QR area, unified across the 3 kinds (2026-09-16): the owner
+                sees their real QR and taps it to send it over WhatsApp
+                (simulated); anyone else sees a "Create your Legacy Card"
+                funnel instead of a scannable code. Replaces the old
+                project-only split (a dev-testing "simulate scan" shortcut
+                for the host, a copy-link button for company/personal). */}
+            {isHost ? (
               <button
                 type="button"
-                onClick={() => router.push(`/m/onboarding?ref=${card.slug}`)}
-                aria-label="Simular escaneo del QR"
+                onClick={() => setQrSendOpen(true)}
+                aria-label="Enviar QR por WhatsApp"
                 style={{
                   position: "relative",
                   flex: "none",
@@ -1024,7 +1050,7 @@ export default function LyCardView({
                   dangerouslySetInnerHTML={{ __html: qrSvg }}
                 />
               </button>
-            ) : isProject ? (
+            ) : (
               <Link
                 href="/m/login"
                 aria-label={L("createCardBtn")}
@@ -1060,30 +1086,6 @@ export default function LyCardView({
                   {L("createCardBtn")}
                 </span>
               </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={shareLink}
-                aria-label="Compartir link"
-                style={{
-                  position: "relative",
-                  flex: "none",
-                  padding: 10,
-                  borderRadius: 20,
-                  background: "var(--qrbg,rgba(20,20,20,.95))",
-                  border: "1px solid var(--line2,rgba(212,175,55,.55))",
-                  boxShadow: "0 12px 36px rgba(0,0,0,.85)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                }}
-              >
-                <div
-                  style={{ width: "clamp(84px,15dvh,140px)", height: "clamp(84px,15dvh,140px)", background: "#fff", borderRadius: 8, padding: 6 }}
-                  dangerouslySetInnerHTML={{ __html: qrSvg }}
-                />
-              </button>
             )}
 
             {isPersonal ? (
@@ -1640,6 +1642,114 @@ export default function LyCardView({
                   >
                     <Icon name="check_circle" size={18} />
                     <span>{scheduling ? "..." : t(lang, "scheduleConfirm")}</span>
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Send QR by WhatsApp — host only, simulated */}
+        {qrSendOpen && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 65,
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "center",
+              padding: "0 12px",
+              background: "rgba(0,0,0,.8)",
+              backdropFilter: "blur(2px)",
+            }}
+          >
+            <div onClick={closeQrSend} style={{ position: "absolute", inset: 0 }} />
+            <div
+              style={{
+                position: "relative",
+                width: "100%",
+                maxWidth: 406,
+                maxHeight: "88vh",
+                overflowY: "auto",
+                background: "linear-gradient(180deg,#1C1C1C,#0D0D0D)",
+                border: "1px solid rgba(200,161,90,.4)",
+                borderTop: "none",
+                borderRadius: "0 0 24px 24px",
+                padding: "22px 22px 28px",
+                boxShadow: "0 10px 45px rgba(0,0,0,.95)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 14,
+                animation: "modalInTop .25s ease-out",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Icon name="qr_code_2" style={{ color: "#C8A15A" }} />
+                  <span style={{ font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".2em", textTransform: "uppercase", color: "#E5C378" }}>
+                    {t(lang, "qrSendKicker")}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeQrSend}
+                  aria-label="Close"
+                  style={{ width: 32, height: 32, borderRadius: 999, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "#C2BEB5", cursor: "pointer", flex: "none" }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <h3 style={{ margin: 0, font: "600 17px 'Playfair Display',serif", color: "#E5C378" }}>{t(lang, "qrSendTitle")}</h3>
+
+              {qrSent ? (
+                <div style={{ padding: 18, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(200,161,90,.3)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
+                  <Icon name="check_circle" size={28} style={{ color: "#C8A15A" }} />
+                  <span style={{ font: "700 13px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>{t(lang, "qrSendSuccess", { whatsapp: qrWa })}</span>
+                </div>
+              ) : (
+                <>
+                  <p style={{ margin: 0, font: "400 12.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{t(lang, "qrSendSub")}</p>
+
+                  <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                    <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#C2BEB5" }}>
+                      {t(lang, "fWhatsapp")}
+                    </span>
+                    <input
+                      value={qrWa}
+                      onChange={(e) => setQrWa(e.target.value)}
+                      placeholder="+52 998 000 0000"
+                      style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "11px 14px", color: "#F5F2EB", font: "400 14px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
+                    />
+                  </label>
+
+                  {qrError && <span style={{ font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>{qrError}</span>}
+
+                  <button
+                    type="button"
+                    onClick={submitQrSend}
+                    disabled={qrSending}
+                    style={{
+                      width: "100%",
+                      padding: 14,
+                      border: "none",
+                      borderRadius: 12,
+                      background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)",
+                      color: "#0D0D0D",
+                      font: "700 12.5px 'Plus Jakarta Sans',sans-serif",
+                      letterSpacing: ".12em",
+                      textTransform: "uppercase",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      cursor: qrSending ? "default" : "pointer",
+                      opacity: qrSending ? 0.7 : 1,
+                    }}
+                  >
+                    <Icon name="send" size={18} />
+                    <span>{qrSending ? "..." : t(lang, "qrSendBtn")}</span>
                   </button>
                 </>
               )}

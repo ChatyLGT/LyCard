@@ -1222,6 +1222,33 @@ en cada editor, guardado, y confirmado visualmente en `/c/mastern0` y
 el logo cargado en vez de la gema. Datos y archivos de prueba
 revertidos al terminar. `tsc` limpio. Versión: **1.4.0**.
 
+**3. Flujo QR host/anónimo + envío por WhatsApp simulado** (hecho,
+probado localmente). Regla que dio Gunnar: viendo tu propia tarjeta,
+acceso total — tocar el QR te deja mandártelo por WhatsApp; viendo la
+de otro, el QR se reemplaza por "Creá tu LyCard" (el funnel de
+reclutamiento al fractal, no algo específico de esa tarjeta). Antes esto
+solo existía a medias y solo en project: el dueño tocando el QR
+disparaba un atajo mío de testing (simular un escaneo, navegando a
+`/m/onboarding`) — nunca fue un pedido real, lo saco. El anónimo en
+project ya tenía "Creá tu LyCard"; company/personal en cambio mostraban
+el QR real a cualquiera, sin distinguir dueño de visitante — ahora las
+3 comparten una sola lógica: `isHost ? <QR real, abre modal de envío> :
+<Link a /m/login>`.
+
+Nuevo modal de envío: pide un WhatsApp, `sendQrByWhatsappAction`
+(`app/c/actions.ts`) simula el envío — mismo criterio que el OTP: sin
+proveedor real todavía, valida el número y devuelve éxito, con el punto
+de integración real aislado ahí para cuando haya WhatsApp Business API
+(Fase 8). De paso quedó código muerto: `shareLink` (copiar link al
+portapapeles) ya no tenía ningún llamador, se borra junto con el
+`useRouter` que solo usaba el atajo de testing.
+
+Probado con Playwright: anónimo en `/c/mastern0-business` ve "Creá tu
+LyCard" y cero botones de QR; dueño en `/c/mastern0` (Origen, host para
+cualquiera) toca el QR, carga un WhatsApp, confirma, ve "¡Listo! Te lo
+enviamos a +521234567890." Datos de prueba revertidos al terminar.
+`tsc` limpio. Versión: **1.5.0**.
+
 ---
 
 **Qué sigue — Fase 8**: WhatsApp Business API real. Esta fase no depende
