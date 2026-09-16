@@ -46,10 +46,13 @@ export default async function CardPage({
   const [isAdmin, memberId] = await Promise.all([isAdminAuthed(), currentMemberId()]);
 
   // MasterN0 always sees host mode (same reasoning as the existing tune-icon
-  // edit access: admin already has full control over every card). Otherwise
-  // host mode requires the viewer's own Member session to match the card's
-  // owner (PLAN.md Fase 2).
-  const isHost = isAdmin || (memberId !== null && memberId === card.memberId);
+  // edit access: admin already has full control over every card). The one
+  // Card marked isOrigin (Einar Horn/MasterN0, 2026-09-16) is host to EVERY
+  // visitor too — it's the root the referral fractal activates from, so it
+  // doesn't depend on a Member session to prove ownership. Otherwise host
+  // mode requires the viewer's own Member session to match the card's owner
+  // (PLAN.md Fase 2).
+  const isHost = isAdmin || card.isOrigin || (memberId !== null && memberId === card.memberId);
 
   // Swipeable Programa/Business/Personal carousel: any visitor holding a
   // link to one of a Member's 3 Cards can swipe to the other two — a Card

@@ -31,6 +31,7 @@ export default async function AdminCardEditorPage({
   return (
     <EditorForm
       card={card}
+      isMasterN0={!scope.programId}
       programs={programs}
       puestos={card.program?.puestos ?? []}
       medalScale={parseEscala(card.program?.medalScale)}

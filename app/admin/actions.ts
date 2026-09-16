@@ -139,18 +139,26 @@ export async function updateCardAction(slug: string, formData: FormData) {
     }
   }
 
-  // Program assignment (MasterN0-only field — EditorForm hides it for
-  // scoped N0s). Without this, a Card never picks up its Program's card
-  // labels/puestos/escalas no matter what the N0 configures, since every
-  // lookup in LyCardView falls back to the fixed defaults when card.program
-  // is null. Switching Program invalidates any Puesto picked above, since
-  // it belonged to the previous Program's ladder.
+  // Program assignment + "Es el Origen" (2026-09-16) both live in the
+  // MasterN0-only section of the form — gated by its own hidden marker
+  // rather than programId's presence, since that select doesn't render at
+  // all when no Program exists yet (which is exactly when marking a Card
+  // as Origin right after a reset matters most). Without programId, a
+  // Card never picks up its Program's card labels/puestos/escalas no
+  // matter what the N0 configures, since every lookup in LyCardView falls
+  // back to fixed defaults when card.program is null. Switching Program
+  // invalidates any Puesto picked above, since it belonged to the
+  // previous Program's ladder.
+  let isOrigin: boolean | undefined;
   let programId: string | null | undefined;
-  const programIdRaw = formData.get("programId");
-  if (typeof programIdRaw === "string") {
-    const current = await prisma.card.findUnique({ where: { slug }, select: { programId: true } });
-    programId = programIdRaw || null;
-    if (current && current.programId !== programId) puestoId = null;
+  if (formData.get("masterN0Section") === "1") {
+    isOrigin = formData.get("isOrigin") === "1";
+    const programIdRaw = formData.get("programId");
+    if (typeof programIdRaw === "string") {
+      const current = await prisma.card.findUnique({ where: { slug }, select: { programId: true } });
+      programId = programIdRaw || null;
+      if (current && current.programId !== programId) puestoId = null;
+    }
   }
 
   await prisma.card.update({
@@ -161,6 +169,7 @@ export async function updateCardAction(slug: string, formData: FormData) {
       ...(videoThumbnailUrl ? { videoThumbnailUrl } : {}),
       ...(puestoId !== undefined ? { puestoId } : {}),
       ...(programId !== undefined ? { programId } : {}),
+      ...(isOrigin !== undefined ? { isOrigin } : {}),
     },
   });
 

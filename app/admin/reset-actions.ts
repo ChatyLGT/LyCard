@@ -44,6 +44,9 @@ export async function resetPlatformAction(formData: FormData) {
         quote: "",
         medal: MEDALS[2].id,
         rank: RANKS[1].id,
+        // The one root/genesis identity (2026-09-16) — always host to
+        // every visitor, no login needed. See PLAN.md.
+        isOrigin: true,
       },
     }),
   ]);

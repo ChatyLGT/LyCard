@@ -87,6 +87,14 @@ model Card {
   // editable content), so this stays empty for them.
   officeItems Json @default("[]")
 
+  // The one root/genesis Card of the whole platform (Einar Horn /
+  // MasterN0, 2026-09-16) — doesn't need a Member session or an Admin
+  // login to count as "host": it IS the origin the referral fractal
+  // activates from, so any visitor sees host mode (real QR, onboarding
+  // trigger) on it. MasterN0-only toggle in the Card editor; expected to
+  // be true on exactly one Card at a time, not DB-enforced.
+  isOrigin Boolean @default(false)
+
   // PLAN.md Fase 9.2 — when set, siglas/tooltip/O.D.-modal body are read
   // from this Puesto instead of the fields above (which stay as a frozen
   // snapshot + the fallback for cards with no Program or no Puesto chosen

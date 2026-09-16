@@ -44,6 +44,7 @@ const SECTION: CSSProperties = {
 
 export default function EditorForm({
   card,
+  isMasterN0,
   programs,
   puestos,
   medalScale,
@@ -51,6 +52,7 @@ export default function EditorForm({
   saved,
 }: {
   card: Card;
+  isMasterN0: boolean;
   programs: Program[];
   puestos: Puesto[];
   medalScale: EscalaItem[];
@@ -220,8 +222,12 @@ export default function EditorForm({
           </label>
         </section>
 
-        {isProject && programs.length > 0 && (
+        {isProject && isMasterN0 && (
           <section style={SECTION}>
+            {/* Gates isOrigin processing in updateCardAction — present
+                whenever this MasterN0-only section renders, independent of
+                whether the Programa select below has anything to show. */}
+            <input type="hidden" name="masterN0Section" value="1" />
             <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
               <h3 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#F5F2EB" }}>
                 Programa
@@ -230,20 +236,32 @@ export default function EditorForm({
                 De qué Programa depende esta tarjeta: sus puestos, escalas y textos personalizados.
               </p>
             </div>
-            <div style={{ background: "#0D0D0D", borderRadius: 10, padding: 9 }}>
-              <select
-                name="programId"
-                defaultValue={card.programId || ""}
-                style={{ width: "100%", background: "none", border: "none", outline: "none", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif" }}
-              >
-                <option value="">— Sin Programa —</option>
-                {programs.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {programs.length > 0 ? (
+              <div style={{ background: "#0D0D0D", borderRadius: 10, padding: 9 }}>
+                <select
+                  name="programId"
+                  defaultValue={card.programId || ""}
+                  style={{ width: "100%", background: "none", border: "none", outline: "none", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif" }}
+                >
+                  <option value="">— Sin Programa —</option>
+                  {programs.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <p style={{ margin: 0, font: "400 11px/1.5 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
+                Todavía no hay Programas — creá uno en /admin/programs.
+              </p>
+            )}
+            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+              <input type="checkbox" name="isOrigin" value="1" defaultChecked={card.isOrigin} style={{ width: 16, height: 16, accentColor: "#C8A15A" }} />
+              <span style={{ font: "400 12px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
+                Es el Origen — visible en modo host para cualquiera, sin necesitar login (debería haber sólo una)
+              </span>
+            </label>
           </section>
         )}
 

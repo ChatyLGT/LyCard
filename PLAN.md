@@ -993,6 +993,48 @@ limpio.
 
 ---
 
+**Card.isOrigin — la tarjeta de Einar Horn no necesita host para
+activar el fractal** (hecho, probado localmente; **falta que Gunnar
+tilde el checkbox en producción**, ver abajo). Pedido: la Card raíz
+(Einar Horn/MasterN0) es "el original" — no debería depender de una
+sesión (Member ni Admin) para comportarse en modo host; cualquier
+visitante que la abra debería ver el QR real / disparador de
+onboarding, no el CTA de invitado "Creá tu LyCard". Confirmado con
+Gunnar: alcance acotado a esa Card específica, no a toda Card sin
+memberId (las de prueba/standalone siguen en modo invitado como
+siempre).
+
+Nuevo `Card.isOrigin` (Boolean, default false). `app/c/[slug]/page.tsx`:
+`isHost = isAdmin || card.isOrigin || (memberId === card.memberId)`.
+Checkbox "Es el Origen" en `EditorForm.tsx`, MasterN0-only, en la misma
+sección que el selector de Programa — con un bug propio que encontré y
+arreglé en el camino: esa sección estaba condicionada a
+`programs.length > 0`, así que el checkbox era invisible justo cuando
+más importa (recién después de un reset, con cero Programas todavía).
+Se separó con un prop `isMasterN0` explícito y un marcador hidden
+(`masterN0Section`) para que el checkbox se procese en
+`updateCardAction` sin depender de que el select de Programa también
+esté presente. `resetPlatformAction` ahora crea la Card `mastern0` ya
+con `isOrigin: true` de entrada, para que un reset futuro no necesite
+este paso manual.
+
+Probado con Playwright: visitante anónimo (sin cookies) ve el botón de
+QR real en la Card marcada `isOrigin` en vez de "Creá tu LyCard";
+desmarcar el checkbox desde el editor devuelve esa Card a modo
+invitado para anónimos, volver a marcarlo la devuelve a host — round
+trip completo vía la acción real, no solo SQL directo; verificado con
+cero Programas en la base (el caso que estaba roto) y con un Programa
+presente (regresión del selector, sigue funcionando); una Card normal
+sin el flag sigue en modo invitado para anónimos (regresión). `tsc`
+limpio. Datos de prueba revertidos en local al terminar.
+
+**Deploy**: el código ya está en producción. Falta un paso manual de
+Gunnar — la Card real de Einar Horn en producción no tiene el flag
+seteado todavía (se creó antes de este cambio); hay que entrar a
+`/admin/mastern0`, tildar "Es el Origen" y guardar.
+
+---
+
 **Qué sigue — Fase 8**: WhatsApp Business API real. Esta fase no depende
 de mí escribiendo código — depende de que consigan cuenta de WhatsApp
 Business verificada por Meta, un proveedor (Twilio/360dialog/Meta Cloud
