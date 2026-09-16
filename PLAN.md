@@ -935,6 +935,41 @@ corresponde a Gunnar, no a mí: es irreversible y afecta datos reales
 
 ---
 
+**Carousel swipeable Programa/Business/Personal en `/c/[slug]`** (hecho,
+probado localmente, en producción). Pedido de Gunnar: poder swipear entre
+las 3 tarjetas de una misma persona en el celular, en ese orden fijo.
+Decisión suya al preguntarle el alcance: cualquiera con el link de
+cualquiera de las 3 puede swipear a ver las otras dos, sin login.
+
+`app/c/[slug]/page.tsx` ahora busca los hermanos por `card.memberId`
+(las 3 Cards que crea `completeInterviewAction` en la Fase 4 ya comparten
+memberId) y arma un bundle {card, qrSvg, originMemento, program, puesto}
+por cada uno — antes solo se generaba esto para la Card pedida. Si no hay
+`memberId` (Cards standalone viejas, o la Card `MasterN0` recién creada
+por la Zona de Riesgo) sigue rindiendo un solo `LyCardView`, sin cambios
+— la rama nueva es puramente aditiva.
+
+Nuevo `components/CardCarousel.tsx` (client component) — scroll-snap
+horizontal nativo (no gesture library: `scroll-snap-type: x mandatory`,
+cada slide `scroll-snap-align: start`), así el swipe es swipe de verdad
+en el celular, no un fake con JS de drag. Cada slide es un `LyCardView`
+completo e independiente (sus propios modales, su propio estado) — no
+se tocó nada de `LyCardView.tsx`. Al abrir cualquiera de los 3 links
+arranca centrado en esa Card; 3 puntitos arriba-centro (por fuera del
+layout de `LyCardView`, superpuestos) marcan la posición activa.
+
+Probado con Playwright (viewport 390×844, simulando swipe con
+`scrollLeft` directo sobre el contenedor): abrir el link de Programa
+centra ahí; mover el scroll a los índices 1 y 2 muestra Business y
+Personal correctamente; los 3 puntitos existen; abrir el link de
+Business directamente también funciona (no depende de por cuál de los
+3 se entra); regresión confirmada con captura — los íconos superiores
+(tune/idioma/tema) no se tapan con los puntitos. Regresión aparte: la
+Card `MasterN0` (sin memberId) sigue sin armar carousel. `tsc` limpio.
+Datos de prueba (1 Member + 3 Cards) revertidos en local al terminar.
+
+---
+
 **Qué sigue — Fase 8**: WhatsApp Business API real. Esta fase no depende
 de mí escribiendo código — depende de que consigan cuenta de WhatsApp
 Business verificada por Meta, un proveedor (Twilio/360dialog/Meta Cloud
