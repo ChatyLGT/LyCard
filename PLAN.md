@@ -2467,3 +2467,119 @@ En orden de impacto/esfuerzo, ninguno depende de otro salvo donde se aclara:
 **Estado**: documento entregado, cero cambios de código en `lycard` esta
 noche (por decisión explícita). El hallazgo del punto A desbloquea el
 arranque real del Grupo K la próxima vez que se toque este proyecto.
+
+---
+
+## Fase 11 — Diseño del Letrero (Oficina Virtual) + síntesis NashMesh/Legacy Corp/Gemelo Digital (2026-09-17)
+
+Gunnar describió la primera pantalla real de "la Oficina": el **Letrero**
+público (video de la causa + KPIs de Portafolio/Malla/Cartera) con el botón
+central **Gemelo Digital** que lleva a un dashboard privado por cada
+**Legacy Corp**. Antes de diseñar la pantalla hacía falta leer la teoría de
+fondo — son ~40 documentos en Drive (NashMesh, Legacy Corp, Gemelo Digital,
+Niveles de Acceso). Se leyeron los 5 centrales. Resumen para que Sergio no
+tenga que leer los 40:
+
+### A. La teoría, en una página
+
+- **NashMesh** no es una red social ni un MLM — es un **motor matemático de
+  reparto de pago**: `Payment_i = φ_i × ψ_i × (1-ε)`, donde φ (Shapley
+  Value) mide tu contribución real a un resultado, ψ (Reliability Weight)
+  tu consistencia (empieza en 0.60, sube o baja mes a mes), y ε la comisión
+  de la plataforma (3-5%). Se llama "Malla" y no "red" porque no hay un jefe
+  arbitrando cuánto vale cada quien — una capa de auditoría (blockchain +
+  "HorusEye") calcula y paga automático. Es el reemplazo del jefe que
+  reparte a dedo.
+- **Gemelo Digital** = una IA entrenada con tu "Códice" (tu conocimiento
+  documentado en 2-3 sesiones: quién sos, tu don, tu metodología). Trabaja
+  24/7 respondiendo leads, cerrando tratos, cobrando vía NashMesh. Tiene 3
+  capas: Códice (documentación) → Legacy (historial/reputación, φ/ψ
+  públicos) → IA Operacional (el que efectivamente trabaja). En la visión
+  completa, el Gemelo no es un asistente — **es quien opera el negocio**.
+- **Legacy Corp** = el producto que EinarOS vende a una empresa para
+  estructurarla con la arquitectura fractal completa: N0 (dueño) → N1
+  (triada obligatoria Einar/estrategia + Chaty/coordinación +
+  Warren/orquestación) → N2 (Guardianas, auditoría/doctrina) → N3
+  (Expertos) → N4 (Especialistas). Tres tiers de precio ($3.5k PyME/$10k
+  corporativo/Custom). No es sinónimo de `Program` en LyCard — es más rico,
+  con jerarquía interna propia por cada Corp.
+- **Niveles de Acceso** — Seeker → Padawan → Mutant → Superhuman → Sherpa →
+  Ancient. Coincide, nombre por nombre, con lo que ya se vio en el Códice
+  de las 5 Esferas de CNV (Fase 10, punto A histórico de esta sesión).
+
+### B. Lo que ya existe en LyCard y no hay que inventar de nuevo
+
+- **`RANKS` (badge de Sabiduría, `lib/data.ts`)** ya usa exactamente esta
+  escala de 6 niveles (curioso→ancient) — es, sin saberlo, la
+  implementación parcial de "Niveles de Acceso". No hace falta modelo
+  nuevo, solo conectar el significado real (qué habilita cada nivel) en
+  vez de ser decorativo.
+- **`Puesto` (Fase 9.1 — `siglas`, `denominacion`, `descripcion`, `order`,
+  por `Program`)** es la pieza exacta para representar la jerarquía interna
+  N0→N1→N2→N3→N4 de cada Legacy Corp — ya existe el CRUD desde
+  `/admin/programs/[id]`. Un Legacy Corp nuevo simplemente carga sus 5
+  Puestos (o los que correspondan a su tier) ahí. Cero modelo nuevo.
+- **`officeItems` (Fase 7)** ya es una lista libre de `{title, subtitle,
+  description, imageUrl}` — sirve tal cual para listar el "Portafolio" del
+  Letrero (casos, proyectos, lo que el Códice documenta como trabajo
+  hecho).
+- **`CardNetworkMembership` (Fase N/10)** ya es el germen auditado de una
+  Malla — hoy solo trackea un nivel de referido y no calcula φ/ψ reales,
+  pero la forma (nodo → estado → quién lo activó) es la misma que pide
+  NashMesh a nivel conceptual.
+
+### C. Diseño del Letrero — qué se construye de verdad vs. qué es cáscara
+
+Estructura de la pantalla (primera vista al entrar a la Oficina, pública,
+sin login):
+
+1. **Video** — mismo patrón que `recursosGlobales.videoUrl` del CNV
+   (Fase 10, punto A): un campo URL, se embebe. Ya hay precedente de campo
+   de video en el proyecto (`Program.videoThumbnailUrl`).
+2. **Causa/detalle + links** — texto libre + lista de links, mismo patrón
+   que `officeItems` (reusar el modelo, no crear uno nuevo).
+3. **Fila de 3 KPIs — Portafolio / Malla / Cartera:**
+   - **Portafolio**: cantidad real de `officeItems` cargados — dato 100%
+     real, disponible hoy.
+   - **Malla**: nivel/badge (no cifra cruda) calculado sobre
+     `CardNetworkMembership` — mismo patrón que ya usa el badge N0/N1/NA,
+     mostrado como tier en vez de número. Public por diseño, igual que
+     Medallón/Sabiduría hoy.
+   - **Cartera**: acá es donde hay que ser honestos. El motor real de pago
+     (φ, ψ, blockchain, comisión automática) no existe todavía y no se
+     construye en una noche — implica blockchain, IA entrenada por
+     persona, capa de auditoría. Mostrar una cifra sería inventar un
+     número falso. Para esta entrega: cáscara "Próximamente — tu cartera
+     vive acá" (mismo patrón que Wallet en la Fase 10, punto D), sin
+     inventar `$`.
+4. **Botón central "Gemelo Digital"** — por decisión de Gunnar en esta
+   sesión: **asistente + dashboard clásico atrás**, no el operador
+   autónomo de la visión completa. Chat simulado (mismo patrón que la
+   transcripción/OTP simulados de Fases 1 y 3) que saluda, entiende qué
+   busca la persona, y la dirige a la pantalla real correspondiente del
+   dashboard privado. Nada de IA entrenada por persona todavía — eso es
+   el Gemelo Digital de verdad, y es un proyecto en sí mismo (Códice +
+   entrenamiento + auditoría), no una feature de una noche.
+5. **Dashboard privado, por Legacy Corp** — cada Legacy Corp activada usa
+   la jerarquía de `Puesto` (punto B) para su estructura interna, y el
+   resto de piezas ya construidas (officeItems, Puestos, escalas) para su
+   contenido. No hace falta modelo nuevo para arrancar — si más adelante
+   se necesita algo específico de Legacy Corp que no cubre `Program`, se
+   evalúa con un caso real en mano.
+
+### D. Honestidad sobre el alcance
+
+Todo lo que requiere blockchain real, IA entrenada por persona (Gemelo
+Digital autónomo) o cálculo de φ/ψ en vivo es **la visión completa de
+NashMesh**, no algo que se arma esta noche ni en la próxima sesión corta.
+Lo que sí se puede construir pronto, con lo que ya existe: el Letrero con
+Portafolio real, Malla como badge (reusando `CardNetworkMembership`), y
+Cartera/Gemelo Digital como cáscara honesta — mismo patrón que toda la
+plataforma ha usado desde la Fase 1 (simular lo que no está listo, dejar el
+gancho real para cuando sí lo esté).
+
+**Estado**: diseño documentado, sin código todavía (misma decisión de
+Fase 10: esta sesión es de planeación). Listo para que la próxima sesión
+arranque por el modelo de datos del Letrero (video/causa/links en
+`Program` o `Card` según sea nivel Programa o nivel Corp individual —
+pendiente de definir con Gunnar cuál).
