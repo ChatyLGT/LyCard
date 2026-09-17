@@ -1601,6 +1601,41 @@ export default function LyCardView({
                 </>
               ) : modal === "office" ? (
                 <>
+                  {/* La Malla: vitrina pública (Fase 12-A.7), visible para
+                      cualquier tipo de tarjeta — no solo company/personal */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+                      <span style={{ font: "600 8.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--ink2,#756c5e)" }}>
+                        La Malla · organismo completo
+                      </span>
+                      <span style={{ font: "400 8px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#6b6459)" }}>arrastrá para rotar</span>
+                    </div>
+                    <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", background: "var(--deepBg,#0D0D0D)" }}>
+                      <MallaGraph
+                        nodes={PUBLIC_MALLA_NODES}
+                        edges={PUBLIC_MALLA_EDGES}
+                        ghosts={PUBLIC_MALLA_GHOSTS}
+                        height={210}
+                        camRadius={165}
+                        haloScale={9}
+                      />
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: 6 }}>
+                      <div style={{ padding: "6px 4px", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, textAlign: "center", borderRight: "1px solid rgba(var(--accentRgb,200,161,90),.14)" }}>
+                        <span style={{ font: "700 14px var(--brandFont,'Playfair Display'),serif", color: "var(--accentMid,#C8A15A)" }}>{PUBLIC_MALLA_EDGES.length}</span>
+                        <span style={{ font: "600 6.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ink2,#756c5e)" }}>Enlaces creados</span>
+                      </div>
+                      <div style={{ padding: "6px 4px", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, textAlign: "center", borderRight: "1px solid rgba(var(--accentRgb,200,161,90),.14)" }}>
+                        <span style={{ font: "700 14px var(--brandFont,'Playfair Display'),serif", color: "var(--ink,#F3F0E9)" }}>{PUBLIC_MALLA_KPIS.brechasCerradas}</span>
+                        <span style={{ font: "600 6.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ink2,#756c5e)" }}>Brechas cerradas</span>
+                      </div>
+                      <div style={{ padding: "6px 4px", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, textAlign: "center" }}>
+                        <span style={{ font: "700 14px var(--brandFont,'Playfair Display'),serif", color: "var(--ink,#F3F0E9)" }}>{PUBLIC_MALLA_KPIS.serviciosOfrecidos}</span>
+                        <span style={{ font: "600 6.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ink2,#756c5e)" }}>Servicios ofrecidos</span>
+                      </div>
+                    </div>
+                  </div>
+
                   {isProject ? (
                     origin ? (
                       <>
@@ -1642,39 +1677,6 @@ export default function LyCardView({
                     )
                   ) : (
                     <>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-                          <span style={{ font: "600 8.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--ink2,#756c5e)" }}>
-                            La Malla · organismo completo
-                          </span>
-                          <span style={{ font: "400 8px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#6b6459)" }}>arrastrá para rotar</span>
-                        </div>
-                        <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", background: "var(--deepBg,#0D0D0D)" }}>
-                          <MallaGraph
-                            nodes={PUBLIC_MALLA_NODES}
-                            edges={PUBLIC_MALLA_EDGES}
-                            ghosts={PUBLIC_MALLA_GHOSTS}
-                            height={210}
-                            camRadius={165}
-                            haloScale={9}
-                          />
-                        </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: 6 }}>
-                          <div style={{ padding: "6px 4px", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, textAlign: "center", borderRight: "1px solid rgba(var(--accentRgb,200,161,90),.14)" }}>
-                            <span style={{ font: "700 14px var(--brandFont,'Playfair Display'),serif", color: "var(--accentMid,#C8A15A)" }}>{PUBLIC_MALLA_EDGES.length}</span>
-                            <span style={{ font: "600 6.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ink2,#756c5e)" }}>Enlaces creados</span>
-                          </div>
-                          <div style={{ padding: "6px 4px", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, textAlign: "center", borderRight: "1px solid rgba(var(--accentRgb,200,161,90),.14)" }}>
-                            <span style={{ font: "700 14px var(--brandFont,'Playfair Display'),serif", color: "var(--ink,#F3F0E9)" }}>{PUBLIC_MALLA_KPIS.brechasCerradas}</span>
-                            <span style={{ font: "600 6.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ink2,#756c5e)" }}>Brechas cerradas</span>
-                          </div>
-                          <div style={{ padding: "6px 4px", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, textAlign: "center" }}>
-                            <span style={{ font: "700 14px var(--brandFont,'Playfair Display'),serif", color: "var(--ink,#F3F0E9)" }}>{PUBLIC_MALLA_KPIS.serviciosOfrecidos}</span>
-                            <span style={{ font: "600 6.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ink2,#756c5e)" }}>Servicios ofrecidos</span>
-                          </div>
-                        </div>
-                      </div>
-
                       {officeItems.length === 0 ? (
                         <p style={{ margin: 0, font: "400 13px/1.7 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)", textAlign: "center", padding: "18px 4px" }}>
                           {t(lang, isCompany ? "officeEmptyCompany" : "officeEmptyPersonal", { name: card.name })}
