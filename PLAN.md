@@ -2148,26 +2148,33 @@ administrables (feature grande):**
       entrevistas Y webinars) es grande — falta el acceso al repo para
       ver el patrón real antes de diseñar el schema.
 
-### Preguntas abiertas para Gunnar (bloquean los Grupos I, J, K)
+### Preguntas abiertas — RESPONDIDAS por Gunnar (2026-09-17)
 
-1. **MayanCity**: ¿el repo es público o hace falta que me listes
-   owner/repo exacto? Sin eso no puedo mirar el funnel de referencia del
-   Grupo K.
-2. **Botón de acción (Grupo I)**: ¿tipos de acción fijos que cada
-   Programa elige (WhatsApp / Agendar Cita / Agendar Webinar / URL
-   custom), o completamente libre (título + ícono + URL, sin tipos
-   predefinidos)?
-3. **PDF→design.md con IA (Grupo J)**: ¿querés una llamada real a la
-   API de Claude para leer el PDF y generar el design.md (mejor
-   resultado, pero cuesta plata por cada subida), o mantenerlo
-   determinístico/heurístico como el extractor de imagen actual (gratis,
-   más simple, menos "inteligente")?
-4. **"Todos los tamaños editables desde el Dashboard" (mencionado en el
-   Grupo A)**: eso en serio, literal, es un sistema de tokens de diseño
-   por Programa — mucho más grande que los 5 ajustes puntuales que ya
-   pediste. ¿Arrancamos con esos 5 ajustes fijos por ahora, y dejamos
-   "todo editable" como una fase aparte más adelante si después de
-   probar la tarjeta seguís necesitando ese nivel de control?
+1. **MayanCity (Grupo K)** — Gunnar pasó dos repos candidatos:
+   `ChatyLGT/MS247` y `ChatyLGT/mis_socios_247`. **Ninguno de los dos es
+   el sitio.** Cloneados y revisados los dos (público, `add_repo` +
+   clone directo): son un sistema de agentes/bots por Python
+   (`telegram_bridge.py`, `whatsapp_bridge.py`, `agentes/`, un esquema
+   SQL con "souls"/`init_vault.sql`) — nada de Next.js, nada de web, no
+   hay ningún funnel de agendamiento ahí. No coincide con "mayancity.
+   vercel.app" que describió (un sitio web con video+formulario+lista de
+   horarios). **Sigue bloqueado** — hace falta el repo correcto (¿el
+   dominio real sí es mayancity.vercel.app? ¿tiene otro nombre en
+   GitHub?) antes de poder copiar el patrón. Mientras tanto, si Gunnar
+   prefiere, puedo construir el funnel (video + form + lista de
+   horarios administrables) directo a partir de su descripción en texto,
+   sin la referencia visual del repo — más lento de afinar el diseño
+   exacto, pero no bloquea el arranque.
+2. **Botón de acción (Grupo I)** — decidido: **tipos fijos + URL
+   custom** (WhatsApp / Agendar Cita / Agendar Webinar / URL libre),
+   cada tipo con su propio ícono y comportamiento ya armado.
+3. **PDF→design.md con IA (Grupo J)** — decidido: **IA real vía API de
+   Claude**, no heurística. Implica costo de API por cada subida y
+   agregar credenciales/llamada al SDK de Anthropic — falta diseñar el
+   prompt/parseo antes de tocar código.
+4. **Tamaños editables (Grupo A)** — decidido: arrancar con los 5
+   ajustes puntuales fijos (ratio foto, puntitos, 3 badges), NO un
+   sistema de tokens completo por ahora.
 
 ### Respuesta a la pregunta de Gunnar sobre Fase 2 ("Oficinas
 Cordiales"/Virtuales)
