@@ -2019,33 +2019,48 @@ archivo.
 ### El resto del backlog (sin empezar, priorizado a ojo — Gunnar puede reordenar)
 
 **Grupo A — retoques rápidos de la tarjeta pública (LyCardView.tsx),
-todos numéricos/mecánicos, bajo riesgo:**
-- [ ] Ratio foto vs. panel inferior (botones+social): reducir la foto
-      ~15% para que el panel de abajo respire más.
-- [ ] Puntitos del carousel: sacarlos de encima del botón "Agendar".
-- [ ] Badge de Cargo/Título profesional: +15% (viene de haberlo
-      achicado 30% en v1.11.1 — este es un ajuste sobre ese tamaño, no
-      una vuelta al original).
-- [ ] Badge "Mi camino con Legacy": -20%.
-- [ ] Badge "Agenda una visita/entrevista": -30%.
-- [ ] Línea de la cita/lema bajo el nombre ("Transformando experiencia
-      en legados", texto propio de cada tarjeta): que la cantidad de
-      líneas visibles (line-clamp) sea ajustable.
+todos numéricos/mecánicos, bajo riesgo — HECHO (2026-09-17):**
+- [x] Ratio foto vs. panel inferior: `minHeight`/`maxHeight` del
+      contenedor de foto 130/420 → 110/357 (-15%).
+- [x] Puntitos del carousel (`CardCarousel.tsx`, viven a +6px/+12px del
+      borde real) ya no pisan el último botón de la tarjeta — el padding
+      inferior de `LyCardView.tsx` sube de +10px a +24px para dejarles
+      su propio espacio.
+- [x] Badge de Cargo/Título profesional: +15% sobre el tamaño que ya
+      había bajado un 30% en v1.11.1 (ancho 150→172, ícono 8→9, texto
+      7px→8px).
+- [x] Badge "Mi camino con Legacy": -20% (texto 11px→9px, ícono 15→12,
+      padding y gap reducidos en proporción).
+- [x] Badge "Agenda una visita/entrevista": -30% (texto 13px→9px,
+      ícono 19→13, padding y gap reducidos en proporción).
+- [ ] Línea de la cita/lema: line-clamp ajustable — **sigue sin hacer**,
+      no tiene un valor puntual pedido (a diferencia de los 5 de
+      arriba) y Gunnar ya confirmó dejar "todo editable" para más
+      adelante — esta queda atada a esa misma decisión.
 
-**Grupo B — modal de versión:**
-- [ ] Cada entrada del historial debe explicar qué es (no solo el
-      texto suelto) — aclarar formato entrada por entrada.
-- [ ] Letra más chica, historial scrolleable hasta 10 versiones atrás
-      (hoy `CHANGELOG.slice(1,3)` en el `meta` solo asoma 2).
+**Grupo B — modal de versión — HECHO (2026-09-17):**
+- [x] Rama propia para `modal === "versionInfo"` (antes usaba el
+      renderer genérico de `activeModal.head/body/meta`, que solo
+      mostraba la nota de la última versión): ahora lista hasta 10
+      entradas de `CHANGELOG`, cada una con su versión + fecha + nota
+      completa. Letra más chica (11-11.5px vs. los 13-17px del resto).
+      Scrollea gratis — el contenedor del modal ya tenía
+      `maxHeight:88vh, overflowY:auto`, no hizo falta un scroll anidado.
 
-**Grupo C — modal de CV/PDF:**
-- [ ] Hoy es un `<iframe src="/demo-cv.pdf">` en un visor propio
-      (`cvOpen`, no pasa por el mismo componente de modal bottom-sheet
-      que todo lo demás) — se puede salir de pantalla en móvil. Pasarlo
-      al mismo patrón de modal que ya se usa en todos lados, y en vez de
-      embeber el PDF crudo, renderizarlo como imagen(es) con mejor
-      diseño (requiere convertir PDF→imagen server-side o client-side al
-      subir el archivo).
+**Grupo C — modal de CV/PDF — HECHO (2026-09-17):**
+- [x] Pasó del `<iframe>` fullscreen propio al mismo componente de
+      modal bottom-sheet que usa todo lo demás (`maxHeight:88vh,
+      overflowY:auto` — nunca se sale de pantalla). El PDF demo se
+      convirtió una vez a imagen (`public/demo-cv.png`, generada con
+      Playwright/Chromium headless apuntando al PDF con
+      `#toolbar=0&navpanes=0` para sacar el chrome del visor nativo) y
+      se muestra con marco/sombra, más un botón "Descargar PDF" debajo
+      que linkea al PDF real. **Alcance**: sigue siendo un único PDF
+      demo compartido por todas las tarjetas (`Card.cvUrl`/subida real
+      por tarjeta no existe todavía) — eso queda para cuando se retome
+      el "subir PDF o imágenes" que también pidió Gunnar para el modal
+      de "Mi camino" (Grupo G, mismo mecanismo probablemente sirve para
+      los dos).
 
 **Grupo D — Admin Programa, ediciones chicas:**
 - [x] Sacar "Color primario" del form (input eliminado de la UI; el
@@ -2119,22 +2134,38 @@ todos numéricos/mecánicos, bajo riesgo:**
       Puestos/Escalas — falta construirlo.
 
 **Grupo I — botón de acción principal + video + QR + Invitación
-(feature grande, necesita decisión de diseño, ver preguntas abajo):**
-- [ ] Botón de acción configurable: elegir entre WhatsApp directo,
-      agendar cita, agendar webinar, y lo que más sirva.
+(feature grande — decidido 2026-09-17, ver Fase 2 más abajo):**
+- [ ] Botón de acción configurable: tipos fijos —
+      WhatsApp directo / Agendar Cita / Agendar Webinar / URL libre —
+      **más un quinto tipo, "Funnel"**, que apunta a un funnel creado
+      dentro de la Oficina Virtual (Grupo K se vuelve, en la práctica,
+      la base de este tipo de acción — ver Fase 2 abajo). El tipo
+      "Funnel" no se puede construir hasta que exista al menos un
+      funnel para apuntar, así que depende de que la Oficina Virtual
+      tenga su primer tipo de contenido armado.
 - [ ] Que el campo de video (`videoThumbnailUrl`) acepte un link real y
       lo reproduzca (hoy es solo una miniatura estática).
 - [ ] QR y "Enviar Invitación": mismo tratamiento — acción, imagen y
       título del botón editables.
 - [ ] Títulos de TODOS los popups, editables.
 
-**Grupo J — Diseño Corporativo (Skins), subir PDF completo:**
-- [ ] Hoy el uploader de Skins acepta un `design.md` de texto; Gunnar
-      quiere poder subir directamente un PDF completo de brand
-      guidelines y que se genere el `design.md` a partir de él —
-      "para ver si podés obtener más dato". Ver pregunta abierta abajo
-      (¿IA real vía API de Claude, con costo, o solo extracción de texto
-      + heurística como ya existe para imágenes?).
+**Grupo J — Diseño Corporativo (Skins), evaluación por IA de hasta 3
+imágenes (decidido 2026-09-17 — reemplaza el enfoque de "subir un PDF
+completo"):**
+- [ ] Gunnar bajó la idea de subir un PDF; en su lugar: **hasta 3
+      imágenes** (fotos del brand book, capturas, lo que sea), evaluadas
+      TODAS JUNTAS por una llamada real a la API de Claude (visión) para
+      generar un `design.md` más completo y preciso que la heurística
+      determinística actual (`lib/designExtraction.ts`) — varias
+      imágenes desde distintos ángulos del mismo material de marca
+      debería dar una lectura más confiable de paleta/tipografía/estilo
+      que una sola imagen o un PDF parseado como texto. Implica: (a)
+      `ANTHROPIC_API_KEY` configurada como env var en Vercel/local, (b)
+      diseñar el prompt (pedirle a Claude que devuelva paleta+fuente+
+      estilo de botón en un formato parseable, ej. JSON), (c) manejar
+      el costo por subida (avisarle a Gunnar cuánto sale aproximadamente
+      antes de shippear), (d) UI del uploader pasa de 1 a hasta 3
+      inputs de imagen. No arrancado todavía.
 
 **Grupo K — Fase D del "Agendar Entrevista": funnel + horarios
 administrables (feature grande):**
@@ -2188,3 +2219,82 @@ práctica (acciones configurables, funnels, horarios) así que la línea
 entre "terminar Fase 1" y "empezar Fase 2" es más borrosa de lo que
 parece — probablemente convenga tratarlos como el arranque real de la
 Fase 2 en vez de forzarlos dentro de "Fase 1 al 100%".
+
+## Oficina Virtual 2.0 — Planeación (2026-09-17)
+
+Gunnar confirmó: cerramos los Grupos A/B/C del backlog grande (hecho,
+arriba) y arrancamos la PLANEACIÓN de esta fase — todavía no el código.
+No es la misma "Oficina Virtual" de la Fase 7 original del roadmap (ese
+ya existe: el portfolio/currículum con `officeItems`, editable desde
+`/m/dashboard`) — es una capa nueva encima: funnels, horarios
+administrables y acciones configurables que EN CONJUNTO reemplazan/
+absorben los Grupos I, J y K del backlog grande.
+
+### Qué la compone
+
+1. **Horarios administrables (Slots)** — pieza de datos base, todo lo
+   demás depende de esto. Hoy "Agendar tu Entrevista" usa una lista de
+   horarios hardcodeada en el código (`scheduleOpen` modal en
+   `LyCardView.tsx`); hace falta:
+   - Modelo nuevo, algo como `AvailabilitySlot` (`programId`, `kind`:
+     "interview" | "webinar", `startsAt`, `capacity`, `bookedCount`),
+     con CRUD desde `/admin/programs/[id]` (otro `AccordionSection` más,
+     mismo patrón que Puestos/Escalas).
+   - El modal de "Agendar" pasa de la lista fija a leer los slots
+     disponibles del Programa en tiempo real.
+   - Definir: ¿slots recurrentes (ej. "todos los martes 10am, cupo 5")
+     o fechas puntuales cargadas una por una? Recurrentes es más
+     potente pero más trabajo — probablemente arrancar con fechas
+     puntuales (más simple, calca el patrón ya usado en
+     `Registration`) y sumar recurrencia después si hace falta.
+
+2. **Funnels** — secuencia configurable que antecede a elegir un
+   horario (referencia de Gunnar: mayancity.vercel.app, todavía sin
+   confirmar el repo correcto — ver arriba). Estructura mínima
+   propuesta: un Funnel tiene una lista ordenada de "pasos", cada uno de
+   un tipo fijo para arrancar (no un builder 100% libre):
+   - `video` — mostrar un video, opcionalmente bloquear "Siguiente"
+     hasta que se reproduzca/termine.
+   - `form` — campos configurables (nombre, WhatsApp, email, y quizás
+     preguntas custom tipo texto corto).
+   - `slot_picker` — elegir un horario de los `AvailabilitySlot`
+     disponibles del Programa (paso final típico).
+   - Cada Programa puede tener uno o más Funnels guardados; el que hoy
+     es "Agendar tu Entrevista" pasaría a ser, de hecho, un Funnel con
+     pasos `form` + `slot_picker` (sin `video`) — mismo mecanismo,
+     no un sistema aparte.
+
+3. **Botón de acción configurable** (Grupo I) — una vez que existen
+   Funnels reales, el botón de acción principal (hoy fijo en "Agendar
+   Entrevista/Café/Reunión" según `card.kind`) pasa a elegir entre:
+   WhatsApp directo / Agendar Cita / Agendar Webinar / URL libre /
+   **Funnel** (apunta a uno de los Funnels del Programa). Los primeros
+   4 tipos no dependen de Funnels y se pueden construir antes.
+
+4. **QR + Invitación configurables** (Grupo I) — mismo tratamiento:
+   acción, imagen y título editables, probablemente reusando el mismo
+   selector de "tipo de acción" del punto 3.
+
+5. **Diseño Corporativo con IA real** (Grupo J) — independiente de todo
+   lo anterior, puede ir en paralelo: subir hasta 3 imágenes, evaluadas
+   juntas vía API de Claude para generar el `design.md`. Ver detalle en
+   Grupo J arriba.
+
+### Orden sugerido (por dependencias, no por importancia)
+
+`Slots administrables` → `Funnel builder básico (video+form+slot_picker,
+reusando Slots)` → `Botón de acción configurable (primero sin tipo
+Funnel, después con)` → `QR/Invitación configurables` — con
+`Diseño Corporativo IA` corriendo aparte, sin bloquear ni bloquearse con
+el resto.
+
+### Bloqueado hasta
+
+- Confirmar el repo real de MayanCity (o que Gunnar describa el funnel
+  en texto si prefiere arrancar sin la referencia visual).
+- Nada más — el resto de las decisiones de diseño (tipos de acción,
+  IA real para Skins) ya están tomadas arriba.
+
+**Estado**: planeación escrita, nada de código todavía. Arrancar por
+"Horarios administrables" en la próxima sesión que toque esto, es la
+base de la que depende todo lo demás.

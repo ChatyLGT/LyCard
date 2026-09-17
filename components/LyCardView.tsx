@@ -807,8 +807,13 @@ export default function LyCardView({
             display: "flex",
             flexDirection: "column",
             height: "100%",
+            // Bottom padding sube de +10px a +24px (2026-09-17) — los
+            // puntitos del CardCarousel viven a +6px/+12px del borde real
+            // (ver CardCarousel.tsx), pisando el botón/CTA final si la
+            // tarjeta solo dejaba +10px de aire. Ahora queda un respiro
+            // real entre el último elemento y los puntitos.
             padding:
-              "calc(env(safe-area-inset-top,0px) + 10px) 14px calc(env(safe-area-inset-bottom,0px) + 10px)",
+              "calc(env(safe-area-inset-top,0px) + 10px) 14px calc(env(safe-area-inset-bottom,0px) + 24px)",
             gap: "clamp(6px,1.4dvh,14px)",
             background: "var(--card,transparent)",
             overflow: "hidden",
@@ -821,9 +826,11 @@ export default function LyCardView({
               style={{
                 position: "relative",
                 width: "100%",
+                // -15% (2026-09-17, pedido de Gunnar): 130/420 → 110/357,
+                // para que el panel de botones/social de abajo respire más.
                 flex: "1 1 auto",
-                minHeight: 130,
-                maxHeight: 420,
+                minHeight: 110,
+                maxHeight: 357,
                 borderRadius: 24,
                 overflow: "hidden",
                 border: "1px solid var(--line,rgba(var(--accentRgb,200,161,90),.22))",
@@ -1005,6 +1012,9 @@ export default function LyCardView({
                 </div>
 
                 {card.title && (
+                  // +15% (2026-09-17, pedido de Gunnar) sobre el tamaño que
+                  // ya había bajado un 30% en v1.11.1 — no es una vuelta al
+                  // tamaño original, es un ajuste sobre ese achique.
                   <button
                     type="button"
                     onClick={() => setCvOpen(true)}
@@ -1012,22 +1022,22 @@ export default function LyCardView({
                     style={{
                       ...BADGE_BTN,
                       pointerEvents: "auto",
-                      padding: "3.5px 10px",
-                      gap: 4,
-                      width: 150,
+                      padding: "4px 11.5px",
+                      gap: 5,
+                      width: 172,
                       maxWidth: "70%",
                       justifyContent: "center",
                     }}
                   >
                     <Sweep />
-                    <Icon name="work" size={8} style={{ flex: "none", color: "var(--goldtxt,#E5C378)" }} />
+                    <Icon name="work" size={9} style={{ flex: "none", color: "var(--goldtxt,#E5C378)" }} />
                     <span
                       style={{
                         minWidth: 0,
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
-                        font: "700 7px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
+                        font: "700 8px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
                         letterSpacing: ".14em",
                         textTransform: "uppercase",
                         color: "var(--goldtxt,#E5C378)",
@@ -1158,19 +1168,20 @@ export default function LyCardView({
             >
               {card.quote}
             </p>
+            {/* -20% (2026-09-17, pedido de Gunnar) */}
             <button
               type="button"
               onClick={() => setModal("story")}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
-                gap: 8,
-                padding: "clamp(6px,1dvh,9px) 16px",
+                gap: 6,
+                padding: "clamp(5px,0.8dvh,7px) 13px",
                 borderRadius: 999,
                 background: "var(--surf,#141414)",
                 border: "1px solid var(--line2,rgba(var(--accentRgb,200,161,90),.4))",
                 color: "var(--goldtxt,#E5C378)",
-                font: "600 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
+                font: "600 9px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
                 letterSpacing: ".14em",
                 textTransform: "uppercase",
                 cursor: "pointer",
@@ -1179,7 +1190,7 @@ export default function LyCardView({
             >
               <span style={{ color: "var(--accentMid,#C8A15A)" }}>✦</span>
               <span>{L(isProject ? "storyBtn" : isCompany ? "storyBtnCompany" : "storyBtnPersonal")}</span>
-              <Icon name="north_east" size={15} style={{ opacity: 0.8 }} />
+              <Icon name="north_east" size={12} style={{ opacity: 0.8 }} />
             </button>
           </div>
 
@@ -1290,29 +1301,30 @@ export default function LyCardView({
           {/* Schedule CTA — project books an interview, company books a meeting,
               personal books a coffee. Used to skip personal entirely; now on
               all 3 kinds (2026-09-16), each with its own copy. */}
+          {/* -30% (2026-09-17, pedido de Gunnar) */}
           <div style={{ flex: "0 0 auto", width: "100%" }}>
             <button
               type="button"
               onClick={() => setScheduleOpen(true)}
               style={{
                 width: "100%",
-                padding: "clamp(9px,1.6dvh,15px) 20px",
+                padding: "clamp(6px,1.1dvh,10px) 14px",
                 border: "1px solid rgba(255,230,163,.45)",
                 borderRadius: 16,
                 background: "linear-gradient(90deg,var(--accentLight,#E5C378),var(--accentMid,#C8A15A) 50%,var(--accentDeep,#99732B))",
                 color: "var(--onAccent,#141414)",
-                font: "800 13px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
+                font: "800 9px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
                 letterSpacing: ".16em",
                 textTransform: "uppercase",
                 boxShadow: "0 6px 22px rgba(var(--accentRgb,200,161,90),.42)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: 10,
+                gap: 7,
                 cursor: "pointer",
               }}
             >
-              <Icon name="event" />
+              <Icon name="event" size={13} />
               <span>
                 {L(
                   isProject
@@ -1648,6 +1660,38 @@ export default function LyCardView({
                     ))
                   )}
                 </>
+              ) : modal === "versionInfo" ? (
+                // Historial completo (2026-09-17, pedido de Gunnar) — antes
+                // solo mostraba la nota de la última versión, con 2
+                // versiones previas sueltas como breadcrumb sin explicar
+                // nada. Ahora cada entrada trae su propia fecha + nota,
+                // hasta 10 atrás, letra más chica. El modal ya scrollea
+                // solo (maxHeight:88vh/overflowY:auto en el contenedor de
+                // arriba), no hace falta un scroll anidado.
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {CHANGELOG.slice(0, 10).map((entry, i) => (
+                    <div
+                      key={entry.version}
+                      style={{
+                        paddingTop: i === 0 ? 0 : 10,
+                        borderTop: i === 0 ? "none" : "1px solid rgba(255,255,255,.08)",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 3,
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                        <span style={{ font: "700 11.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--accentLight,#E5C378)" }}>
+                          v{entry.version}
+                        </span>
+                        <span style={{ font: "400 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#8a8378)" }}>{entry.date}</span>
+                      </div>
+                      <p style={{ margin: 0, font: "400 11px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "rgba(245,242,235,.85)" }}>
+                        {entry.notes}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               ) : (
                 <>
                   <div style={{ padding: 14, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", textAlign: "center" }}>
@@ -1943,35 +1987,93 @@ export default function LyCardView({
           </div>
         )}
 
-        {/* CV fullscreen viewer (2026-09-16) — one shared demo PDF for now,
-            triggered by the profession tag under the name. */}
+        {/* CV viewer (2026-09-17, rediseño) — pasa a usar el mismo modal
+            bottom-sheet que el resto (nunca se sale de pantalla: mismo
+            maxHeight:88vh/overflowY:auto que los demás), y en vez de
+            embeber el PDF crudo en un <iframe> (que en mobile podía
+            desbordar o quedar sin scroll propio), se muestra como imagen
+            — una captura de la página, con mejor diseño alrededor
+            (marco, sombra) y un link de descarga del PDF real debajo.
+            Un shared demo PDF por ahora (PLAN.md Grupo C: subida real de
+            CV por card, pendiente). */}
         {cvOpen && (
-          <div style={{ position: "fixed", inset: 0, zIndex: 90, background: "var(--deepBg,#0D0D0D)", display: "flex", flexDirection: "column" }}>
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 90,
+              display: "flex",
+              alignItems: "flex-end",
+              justifyContent: "center",
+              padding: "0 12px",
+              background: "rgba(0,0,0,.8)",
+              backdropFilter: "blur(2px)",
+            }}
+          >
+            <div onClick={() => setCvOpen(false)} style={{ position: "absolute", inset: 0 }} />
             <div
               style={{
-                flex: "none",
-                height: 52,
+                position: "relative",
+                width: "100%",
+                maxWidth: 406,
+                maxHeight: "88vh",
+                overflowY: "auto",
+                background: "linear-gradient(180deg,var(--surfHi,#1C1C1C),var(--deepBg,#0D0D0D))",
+                border: "1px solid rgba(var(--accentRgb,200,161,90),.4)",
+                borderBottom: "none",
+                borderRadius: "24px 24px 0 0",
+                padding: "22px 22px 28px",
+                boxShadow: "0 -10px 45px rgba(0,0,0,.95)",
                 display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "0 14px",
-                background: "rgba(20,20,20,.96)",
-                borderBottom: "1px solid rgba(var(--accentRgb,200,161,90),.25)",
+                flexDirection: "column",
+                gap: 14,
+                animation: "modalIn .25s ease-out",
               }}
             >
-              <span style={{ font: "700 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".14em", textTransform: "uppercase", color: "var(--accentLight,#E5C378)" }}>
-                CV — {card.name}
-              </span>
-              <button
-                type="button"
-                onClick={() => setCvOpen(false)}
-                aria-label="Cerrar"
-                style={{ width: 32, height: 32, borderRadius: 999, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.1)", color: "var(--ink2,#C2BEB5)", cursor: "pointer", flex: "none" }}
+              <span style={{ width: 48, height: 5, borderRadius: 999, background: "rgba(var(--accentRgb,200,161,90),.4)", margin: "0 auto" }} />
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Icon name="work" style={{ color: "var(--accentMid,#C8A15A)" }} />
+                  <span style={{ font: "700 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".2em", textTransform: "uppercase", color: "var(--accentLight,#E5C378)" }}>
+                    CV — {card.name}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCvOpen(false)}
+                  aria-label="Cerrar"
+                  style={{ width: 32, height: 32, borderRadius: 999, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "var(--ink2,#C2BEB5)", cursor: "pointer", flex: "none" }}
+                >
+                  ✕
+                </button>
+              </div>
+              <div style={{ borderRadius: 14, overflow: "hidden", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", boxShadow: "0 8px 24px rgba(0,0,0,.5)" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/demo-cv.png" alt={`CV de ${card.name}`} style={{ width: "100%", display: "block" }} />
+              </div>
+              <a
+                href="/demo-cv.pdf"
+                download
+                target="_blank"
+                rel="noopener"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  padding: 12,
+                  borderRadius: 12,
+                  border: "1px solid rgba(var(--accentRgb,200,161,90),.4)",
+                  color: "var(--accentLight,#E5C378)",
+                  font: "700 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
+                  letterSpacing: ".1em",
+                  textTransform: "uppercase",
+                }}
               >
-                ✕
-              </button>
+                <Icon name="download" size={16} />
+                Descargar PDF
+              </a>
             </div>
-            <iframe src="/demo-cv.pdf" title={`CV de ${card.name}`} style={{ flex: "1 1 auto", width: "100%", border: "none", background: "#fff" }} />
           </div>
         )}
 
