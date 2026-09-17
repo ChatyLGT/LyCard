@@ -2925,6 +2925,43 @@ con quien lleve la parte cuantitativa de NashMesh a fondo.
     (MasterN0 es `isOrigin`, host para cualquiera), botón "Volver a la
     tarjeta" regresa a `/c/mastern0`. `pnpm build` y `tsc --noEmit`
     limpios.
+- **Segunda corrección, mismo día — separación real de vistas**: Gunnar
+  probó otra vez y encontró dos cosas más. (1) El deploy de la corrección
+  anterior (`dbdff84`) había fallado en Vercel por un timeout transitorio
+  de advisory lock en `prisma migrate deploy` (patrón ya conocido en este
+  proyecto, ver commits `6HMKWXvMqfrXAXs9DKCX3UPE89hK`/
+  `FySP6tL5UcMsC5J8NZgFru4sxufG` de sesiones previas) — confirmado vía
+  Vercel MCP (`get_deployment_build_logs`), no un bug de código; el deploy
+  siguiente sí prendió. Queda anotado por si vuelve a pasar: no es señal
+  de alarma, es retriggear con un commit vacío o esperar al próximo push.
+  (2) El divisor "Acá termina lo que ve cualquiera" de la versión anterior
+  no servía — "estamos haciendo una app real no un juego". Se sacó
+  entero: `app/c/[slug]/oficina/page.tsx` ahora resuelve a dos árboles de
+  JSX completamente separados, no una página con una mitad oculta:
+  - `VisitorOficina` — exactamente lo que veía la vitrina pública antes,
+    sin ninguna mención de que existe una vista de dueño.
+  - `OwnerOficina` — ya no es la vitrina con un apéndice desbloqueado.
+    Es un dashboard propio: saludo, un botón dorado prominente arriba
+    ("Editar la información de esta Oficina" → `dashboardHref`, no
+    enterrado en la grilla de accesos directos de antes), un resumen de
+    "Lo que ve el público" (los mismos KPIs + Origin/Portafolio, para que
+    el dueño pueda revisar qué está mostrando sin tener que abrir la
+    vista pública), Cartera/ingresos (cáscara honesta, sin inventar
+    plata), Malla viva del equipo, Agenda, y accesos directos — sin
+    repetir el CTA de editar, sin los chips de marketing ni el
+    Simulador (eso es contenido de captación de visitantes, no una
+    herramienta para el dueño).
+  - Ambas comparten piezas reales via componentes (`IdentityBlock`,
+    `KpiRow`, `PortfolioBlock`, `TeamMallaBlock`) para no duplicar el
+    contenido/lógica de negocio — solo el layout que las envuelve es
+    distinto.
+  - Verificado con Playwright: `mastern0` (host siempre, es `isOrigin`)
+    → `OwnerOficina`, sin texto del divisor viejo, sin los chips de
+    marketing, con el botón de editar presente. Una Card de prueba sin
+    `isOrigin` y sin sesión de Member → `VisitorOficina`, sin "Hola,"
+    ni ningún rastro de contenido de dueño. Cero errores de consola en
+    ambas. `pnpm build`/`tsc --noEmit` limpios. Card de prueba borrada
+    después del test, no queda basura en la base.
 - Referencia técnica de producción (Sección G) y research flag de NashMesh
   (Sección H) siguen en pie, sin tocar código todavía — son para cuando el
   editor real (modelo Prisma + CRUD + `/api/malla`) se construya.
