@@ -215,7 +215,7 @@ export default async function AdminProgramDetailPage({
 
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
         {/* Branding */}
-        <AccordionSection title="Marca del Programa" defaultOpen={true}>
+        <AccordionSection title="Identidad del Programa" defaultOpen={true}>
           {saved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Guardado.</p>}
           <form action={updateProgramAction.bind(null, program.id)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -243,13 +243,6 @@ export default async function AdminProgramDetailPage({
               <span style={{ font: "400 10.5px/1.5 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
                 Sin logo, se muestra el emblema decorativo de siempre.
               </span>
-            </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-              <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#C2BEB5" }}>Color primario</span>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <input type="color" name="primaryColor" defaultValue={program.primaryColor} style={{ width: 40, height: 34, border: "none", borderRadius: 8, background: "none", padding: 0 }} />
-                <span style={{ font: "400 12px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{program.primaryColor}</span>
-              </div>
             </label>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 }}>
               {CHANNEL_FIELDS.map((ch) => (
@@ -501,14 +494,16 @@ export default async function AdminProgramDetailPage({
                 {a.email}
               </div>
             ))}
-            <form action={createProgramAdminAction} style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
-              <input type="hidden" name="programId" value={program.id} />
-              <input name="email" type="email" placeholder="Email del N0" required style={{ flex: "1 1 160px", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "9px 12px", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
-              <input name="password" type="password" placeholder="Contraseña (8+ caracteres)" required style={{ flex: "1 1 160px", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "9px 12px", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
-              <button type="submit" style={{ padding: "9px 16px", border: "none", borderRadius: 10, background: "#353534", color: "#F5F2EB", font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", cursor: "pointer" }}>
-                Agregar N0
-              </button>
-            </form>
+            <AccordionAddRow label="Agregar N0 delegado" defaultOpen={Boolean(adminError)}>
+              <form action={createProgramAdminAction} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <input type="hidden" name="programId" value={program.id} />
+                <input name="email" type="email" placeholder="Email del N0" required style={{ flex: "1 1 160px", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "9px 12px", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
+                <input name="password" type="password" placeholder="Contraseña (8+ caracteres)" required style={{ flex: "1 1 160px", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "9px 12px", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
+                <button type="submit" style={SAVE_BTN}>
+                  Crear N0
+                </button>
+              </form>
+            </AccordionAddRow>
           </AccordionSection>
         )}
 

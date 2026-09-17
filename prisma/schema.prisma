@@ -64,6 +64,11 @@ model Card {
   tiktok String @default("")
   yt     String @default("")
   web    String @default("")
+  // Email/ubicación (2026-09-17) — mismo patrón que el resto de Canales
+  // de Contacto, sin URL builder propio todavía (email es un mailto:
+  // simple, ubicación es texto libre mostrado tal cual).
+  email    String @default("")
+  location String @default("")
 
   // Media
   portraitUrl       String?

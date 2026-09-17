@@ -543,6 +543,24 @@ export default function MemberCardEditor({
               </div>
             </label>
           ))}
+          <label style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 4 }}>
+            <span style={LABEL}>Email</span>
+            <div style={FIELD_WRAP}>
+              <span className="material-symbols-outlined" style={{ fontSize: 17, color: "#C8A15A" }}>
+                mail
+              </span>
+              <input name="email" type="email" defaultValue={card.email} style={FIELD_INPUT} />
+            </div>
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            <span style={LABEL}>Ubicación</span>
+            <div style={FIELD_WRAP}>
+              <span className="material-symbols-outlined" style={{ fontSize: 17, color: "#C8A15A" }}>
+                location_on
+              </span>
+              <input name="location" defaultValue={card.location} style={FIELD_INPUT} />
+            </div>
+          </label>
         </AccordionSection>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 6 }}>

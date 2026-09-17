@@ -924,14 +924,22 @@ export default function LyCardView({
                   >
                     {lang === "es" ? "ES" : "EN"}
                   </button>
-                  <button
-                    type="button"
-                    aria-label="Tema"
-                    onClick={() => setTheme((th) => (th === "dark" ? "light" : "dark"))}
-                    style={ICON_BTN}
-                  >
-                    <Icon name={light ? "dark_mode" : "light_mode"} />
-                  </button>
+                  {/* Oculto con skin activo (2026-09-16): un skin es una
+                      identidad fija (un solo bg/ink elegido en el design.md),
+                      no un par claro/oscuro — brandVars pisa THEME_VARS sin
+                      importar `theme`, así que antes el botón quedaba ahí
+                      sin hacer nada visible. Mejor no mostrarlo que mostrar
+                      uno que no cambia nada. */}
+                  {!skinColors && (
+                    <button
+                      type="button"
+                      aria-label="Tema"
+                      onClick={() => setTheme((th) => (th === "dark" ? "light" : "dark"))}
+                      style={ICON_BTN}
+                    >
+                      <Icon name={light ? "dark_mode" : "light_mode"} />
+                    </button>
+                  )}
                 </div>
               </div>
 

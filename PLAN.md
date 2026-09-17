@@ -1961,3 +1961,223 @@ credencial quedó bloqueada explícitamente). Gunnar: probalo vos con tu
 sesión real antes de darlo por bueno del todo — si algo del
 comportamiento de abrir/cerrar no se siente bien, avisame. Versión:
 **1.14.0**.
+
+## Backlog grande post-acordeón (2026-09-16/17, madrugada) — diagnóstico + qué se hizo ya
+
+Gunnar tiró una lista larga de ~28 pedidos de una sola vez, de tamaño muy
+distinto (desde "aumentá un 15% este badge" hasta "construí un funnel de
+agendamiento con horarios administrables"). **Regla para retomar esto**:
+no tratar de hacer todo de una — picar de a un grupo por sesión, tildar
+acá conforme se cierre cada uno, mismo criterio que el resto de este
+archivo.
+
+### Ya diagnosticado y resuelto esta madrugada
+
+- [x] **Bug real: el toggle de Tema (día/noche) no hacía nada en
+      tarjetas de Programa con un skin activo.** Confirmado con Playwright
+      contra un build de producción local (no el dev server — el dev
+      server de Turbopack en este sandbox tiene sus propios problemas de
+      hydration/HMR que casi me hacen diagnosticar mal, ver nota abajo):
+      con un skin de prueba activo, el `background-color` del wrapper
+      quedaba en `rgb(255,255,255)` antes Y después de tocar el botón —
+      cero cambio. Causa exacta: en `components/LyCardView.tsx`, el
+      spread `{...THEME_VARS[theme], ...brandVars}` pone `brandVars` (los
+      colores fijos del skin) DESPUÉS de las variables de tema, así que
+      cuando hay skin, siempre gana el skin sin importar el estado de
+      `theme` — esto era intencional en el diseño original de Skins
+      ("una identidad de marca fija, no un par claro/oscuro", comentario
+      que ya estaba en el código), pero dejaba un botón que parecía roto
+      en vez de simplemente no mostrarlo. Fix: el botón de Tema ahora se
+      **oculta** cuando hay un skin activo (`!skinColors &&`) — no hay un
+      claro/oscuro que mostrar en una identidad de marca fija. Si en algún
+      momento querés que los skins sí tengan variante clara, es una
+      fase aparte (cada skin necesitaría un segundo set de colores).
+      Probado con Playwright + build de producción local. `tsc` limpio.
+
+- [x] **Diagnóstico: el toggle de Idioma SÍ funciona.** Probado con
+      Playwright contra el build de producción (ES→EN cambia el texto de
+      botones como "Agendar una Entrevista"→"Schedule..."), tanto en
+      tarjetas sin skin como con skin activo. Lo que NO traduce — y es
+      correcto que no lo haga — es el texto que vos mismo escribiste a
+      mano (nombre, cargo, cita/lema, siglas, denominación del puesto,
+      "Mi camino con..."): no hay ninguna IA traduciendo eso, es tu
+      texto literal guardado en la base. Si querés que ESE texto también
+      cambie de idioma, es una feature nueva y real (traducción por IA al
+      vuelo, con costo de API) — no una corrección de bug. Quedó como
+      pregunta abierta abajo.
+
+- [x] **Nota metodológica importante**: mientras diagnosticaba esto
+      pegué un rato probando contra el dev server de Turbopack en este
+      sandbox y los clicks NO registraban nada (ni siquiera un
+      `dispatchEvent` manual) — parecía un bug gravísimo. Resultó ser un
+      artefacto de ESTE contenedor (el WebSocket de HMR falla acá por el
+      proxy de red) y no reproduce en un build de producción real. Sirve
+      como recordatorio: de acá en adelante, cualquier prueba de
+      interactividad real se hace contra `next build && next start`
+      local, no contra `next dev`, para no perseguir fantasmas.
+
+### El resto del backlog (sin empezar, priorizado a ojo — Gunnar puede reordenar)
+
+**Grupo A — retoques rápidos de la tarjeta pública (LyCardView.tsx),
+todos numéricos/mecánicos, bajo riesgo:**
+- [ ] Ratio foto vs. panel inferior (botones+social): reducir la foto
+      ~15% para que el panel de abajo respire más.
+- [ ] Puntitos del carousel: sacarlos de encima del botón "Agendar".
+- [ ] Badge de Cargo/Título profesional: +15% (viene de haberlo
+      achicado 30% en v1.11.1 — este es un ajuste sobre ese tamaño, no
+      una vuelta al original).
+- [ ] Badge "Mi camino con Legacy": -20%.
+- [ ] Badge "Agenda una visita/entrevista": -30%.
+- [ ] Línea de la cita/lema bajo el nombre ("Transformando experiencia
+      en legados", texto propio de cada tarjeta): que la cantidad de
+      líneas visibles (line-clamp) sea ajustable.
+
+**Grupo B — modal de versión:**
+- [ ] Cada entrada del historial debe explicar qué es (no solo el
+      texto suelto) — aclarar formato entrada por entrada.
+- [ ] Letra más chica, historial scrolleable hasta 10 versiones atrás
+      (hoy `CHANGELOG.slice(1,3)` en el `meta` solo asoma 2).
+
+**Grupo C — modal de CV/PDF:**
+- [ ] Hoy es un `<iframe src="/demo-cv.pdf">` en un visor propio
+      (`cvOpen`, no pasa por el mismo componente de modal bottom-sheet
+      que todo lo demás) — se puede salir de pantalla en móvil. Pasarlo
+      al mismo patrón de modal que ya se usa en todos lados, y en vez de
+      embeber el PDF crudo, renderizarlo como imagen(es) con mejor
+      diseño (requiere convertir PDF→imagen server-side o client-side al
+      subir el archivo).
+
+**Grupo D — Admin Programa, ediciones chicas:**
+- [x] Sacar "Color primario" del form (input eliminado de la UI; el
+      campo del schema y su lugar en `updateProgramAction` quedaron
+      intactos — es inofensivo, `formData.get("primaryColor")` da
+      `null` y el loop lo ignora, no pisa el valor guardado).
+- [x] Cambiar el título de esa sección: "Marca del Programa" →
+      "Identidad del Programa" (elegido por mí, sin pedirlo explícito —
+      avisale a Gunnar si prefiere otro).
+- [x] "Agregar N0" pasa a `AccordionAddRow` (mismo patrón que Puestos)
+      en vez de estar siempre visible. El mensaje "sos vos (MasterN0)
+      quien lo administra" cuando no hay delegado ya existía de la
+      Fase D1/acordeón, ahora queda más al frente al no competir
+      visualmente con el form de creación.
+
+**Grupo E — Editor de tarjeta (EditorForm.tsx), ediciones chicas:**
+- [x] Renombrado "Identidad Fiduciaria" → "Identidad".
+- [x] **Bug de `<select>` con opciones blancas/ilegibles — arreglado.**
+      Confirmado el diagnóstico leyendo el código: el `<select>` de
+      Puesto y el de Programa en `EditorForm.tsx` tenían `color`/
+      `background` puestos en el `<select>` pero NO en cada `<option>`
+      — los navegadores pintan el popup de opciones con los colores del
+      sistema salvo que cada `<option>` los tenga explícitos. Fix:
+      nuevo `SELECT_OPTION` (`background:#0D0D0D, color:#F5F2EB`)
+      aplicado a las 4 `<option>` de esos dos selects. No se pudo
+      verificar visualmente (Playwright no reproduce fielmente el
+      dropdown nativo del SO), pero es el fix estándar y documentado
+      para este bug exacto — si sigue viéndose mal, avisame con una
+      captura.
+- [x] Canales de Contacto: sumados Email y Ubicación — nuevos
+      `Card.email`/`Card.location` (migración
+      `20260917131525_card_email_location`), inputs en ambos editores
+      (`EditorForm.tsx` y `MemberCardEditor.tsx`), persistidos en
+      `updateCardAction` y `updateMemberCardAction`. **Alcance
+      recortado a propósito**: solo quedaron como campos editables/
+      guardados — todavía NO se muestran en la tarjeta pública
+      (`LyCardView.tsx`). El dock de redes sociales de la tarjeta
+      (`SocialDock`/`socialHref`/`SOCIAL_SVG`) está fuertemente tipado
+      a una lista fija de 6 plataformas con su propio ícono SVG y
+      builder de URL cada una — sumar email/ubicación ahí a las
+      apuradas, en medio de un backlog de 28 ítems, se sentía más
+      como meter con calzador que como hacerlo bien. Queda pendiente
+      como fast-follow chico si Gunnar confirma que los quiere
+      visibles en la tarjeta (¿ícono de mail con `mailto:`? ¿ubicación
+      como texto plano o link a Maps?).
+
+**Grupo F — Textos de Botones y Modales (admin/programs/[id]):**
+- [ ] Rediseñar el editor: hoy es una lista plana de inputs
+      (`CARD_LABEL_FIELDS`); Gunnar quiere cada modal separado, con
+      posibilidad de editar TODO su contenido (no solo el título) —
+      "usá interfase de tarjeta si es más fácil visualmente" (¿un
+      preview en vivo de la tarjeta al lado del form?). Requiere decidir
+      alcance: ¿título únicamente, o título+kicker+body+meta de cada
+      modal del `modalMap`?
+
+**Grupo G — modal "Mi camino con Legacy" (story):**
+- [ ] Insertar un video que aparezca ANTES del título "Descubrí en
+      Legacy..." (hoy no hay campo de video ahí, solo `storyQuote`/
+      `storyBody`).
+- [ ] Subir PDFs o imágenes (dice "3" — ¿tope de 3 archivos?) con una
+      lista desplegable de los archivos subidos.
+
+**Grupo H — modal "Más información" ("Info Legacy"):**
+- [ ] Respuesta a la pregunta de Gunnar: es la key `info` del
+      `modalMap` en `components/LyCardView.tsx`. Para tarjeta de
+      Programa/Personal el contenido sale de `lib/i18n.ts` (`infoTitle`
+      y las keys de `infoBody` — texto fijo, no editable desde ningún
+      dashboard todavía); para Empresa usa `card.title`/`card.quote`
+      (esos sí ya son editables). Si querés que el de Programa/Personal
+      también sea editable, es el mismo patrón que ya existe para
+      Puestos/Escalas — falta construirlo.
+
+**Grupo I — botón de acción principal + video + QR + Invitación
+(feature grande, necesita decisión de diseño, ver preguntas abajo):**
+- [ ] Botón de acción configurable: elegir entre WhatsApp directo,
+      agendar cita, agendar webinar, y lo que más sirva.
+- [ ] Que el campo de video (`videoThumbnailUrl`) acepte un link real y
+      lo reproduzca (hoy es solo una miniatura estática).
+- [ ] QR y "Enviar Invitación": mismo tratamiento — acción, imagen y
+      título del botón editables.
+- [ ] Títulos de TODOS los popups, editables.
+
+**Grupo J — Diseño Corporativo (Skins), subir PDF completo:**
+- [ ] Hoy el uploader de Skins acepta un `design.md` de texto; Gunnar
+      quiere poder subir directamente un PDF completo de brand
+      guidelines y que se genere el `design.md` a partir de él —
+      "para ver si podés obtener más dato". Ver pregunta abierta abajo
+      (¿IA real vía API de Claude, con costo, o solo extracción de texto
+      + heurística como ya existe para imágenes?).
+
+**Grupo K — Fase D del "Agendar Entrevista": funnel + horarios
+administrables (feature grande):**
+- [ ] Hoy los horarios de "Agendar tu Entrevista" están hardcodeados en
+      el código (no hay tabla de slots ni CRUD de horarios).
+      MayanCity.vercel.app (repo de un socio, según Gunnar, con acceso
+      de GitHub) tendría un funnel de referencia: antes de poder elegir
+      horario, la persona ve un video + completa datos, y recién ahí
+      elige de una lista de horarios pre-creados por el N0/Programa.
+      Replicar ese funnel + agregar un CRUD de horarios (para
+      entrevistas Y webinars) es grande — falta el acceso al repo para
+      ver el patrón real antes de diseñar el schema.
+
+### Preguntas abiertas para Gunnar (bloquean los Grupos I, J, K)
+
+1. **MayanCity**: ¿el repo es público o hace falta que me listes
+   owner/repo exacto? Sin eso no puedo mirar el funnel de referencia del
+   Grupo K.
+2. **Botón de acción (Grupo I)**: ¿tipos de acción fijos que cada
+   Programa elige (WhatsApp / Agendar Cita / Agendar Webinar / URL
+   custom), o completamente libre (título + ícono + URL, sin tipos
+   predefinidos)?
+3. **PDF→design.md con IA (Grupo J)**: ¿querés una llamada real a la
+   API de Claude para leer el PDF y generar el design.md (mejor
+   resultado, pero cuesta plata por cada subida), o mantenerlo
+   determinístico/heurístico como el extractor de imagen actual (gratis,
+   más simple, menos "inteligente")?
+4. **"Todos los tamaños editables desde el Dashboard" (mencionado en el
+   Grupo A)**: eso en serio, literal, es un sistema de tokens de diseño
+   por Programa — mucho más grande que los 5 ajustes puntuales que ya
+   pediste. ¿Arrancamos con esos 5 ajustes fijos por ahora, y dejamos
+   "todo editable" como una fase aparte más adelante si después de
+   probar la tarjeta seguís necesitando ese nivel de control?
+
+### Respuesta a la pregunta de Gunnar sobre Fase 2 ("Oficinas
+Cordiales"/Virtuales)
+
+Tiene sentido cerrar este backlog grande (al menos los Grupos A-H, que
+son ajustes/bugs de la tarjeta ya existente) antes de abrir una fase
+nueva — la tarjeta todavía tiene piezas sueltas (CV en PDF crudo, menús
+rotos, botón de tema fantasma) que conviene cerrar mientras el contexto
+está fresco. Los Grupos I-K ya empiezan a ser "Oficina Virtual" en la
+práctica (acciones configurables, funnels, horarios) así que la línea
+entre "terminar Fase 1" y "empezar Fase 2" es más borrosa de lo que
+parece — probablemente convenga tratarlos como el arranque real de la
+Fase 2 en vez de forzarlos dentro de "Fase 1 al 100%".

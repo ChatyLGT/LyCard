@@ -35,6 +35,12 @@ const LABEL: CSSProperties = {
   color: "#C2BEB5",
 };
 
+// Fix: los navegadores pintan el popup de <option> con los colores del
+// sistema, ignorando el background/color puesto en el <select> padre,
+// salvo que cada <option> también los tenga explícitos — si no, el
+// dropdown se ve blanco/ilegible sobre este tema oscuro.
+const SELECT_OPTION: CSSProperties = { background: "#0D0D0D", color: "#F5F2EB" };
+
 export default function EditorForm({
   card,
   isMasterN0,
@@ -202,7 +208,7 @@ export default function EditorForm({
           </div>
         </AccordionSection>
 
-        <AccordionSection title="Identidad Fiduciaria" defaultOpen={true}>
+        <AccordionSection title="Identidad" defaultOpen={true}>
           <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
             <span style={LABEL}>Nombre Completo</span>
             <div style={FIELD_WRAP}>
@@ -249,9 +255,11 @@ export default function EditorForm({
                   defaultValue={card.programId || ""}
                   style={{ width: "100%", background: "none", border: "none", outline: "none", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif" }}
                 >
-                  <option value="">— Sin Programa —</option>
+                  <option value="" style={SELECT_OPTION}>
+                    — Sin Programa —
+                  </option>
                   {programs.map((p) => (
-                    <option key={p.id} value={p.id}>
+                    <option key={p.id} value={p.id} style={SELECT_OPTION}>
                       {p.name}
                     </option>
                   ))}
@@ -345,9 +353,11 @@ export default function EditorForm({
                   defaultValue={card.puestoId || ""}
                   style={{ width: "100%", background: "none", border: "none", outline: "none", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif" }}
                 >
-                  <option value="">— Mantener texto actual ({card.siglas} — {card.tooltip}) —</option>
+                  <option value="" style={SELECT_OPTION}>
+                    — Mantener texto actual ({card.siglas} — {card.tooltip}) —
+                  </option>
                   {puestos.map((p) => (
-                    <option key={p.id} value={p.id}>
+                    <option key={p.id} value={p.id} style={SELECT_OPTION}>
                       {p.siglas} — {p.denominacion}
                     </option>
                   ))}
@@ -448,6 +458,24 @@ export default function EditorForm({
               </label>
             ))
           )}
+          <label style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 4 }}>
+            <span style={LABEL}>Email</span>
+            <div style={FIELD_WRAP}>
+              <span className="material-symbols-outlined" style={{ fontSize: 17, color: "#C8A15A" }}>
+                mail
+              </span>
+              <input name="email" type="email" defaultValue={card.email} style={FIELD_INPUT} />
+            </div>
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            <span style={LABEL}>Ubicación</span>
+            <div style={FIELD_WRAP}>
+              <span className="material-symbols-outlined" style={{ fontSize: 17, color: "#C8A15A" }}>
+                location_on
+              </span>
+              <input name="location" defaultValue={card.location} style={FIELD_INPUT} />
+            </div>
+          </label>
         </AccordionSection>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 6 }}>

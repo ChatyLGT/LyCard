@@ -35,6 +35,8 @@ export async function updateMemberCardAction(slug: string, formData: FormData) {
     "tiktok",
     "yt",
     "web",
+    "email",
+    "location",
     "storyQuote",
     "storyBody",
   ]) {
