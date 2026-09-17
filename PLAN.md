@@ -2890,6 +2890,41 @@ con quien lleve la parte cuantitativa de NashMesh a fondo.
     este pase.
   - Pendiente explícitamente descartado por Gunnar esta ronda: el GIF
     (punto C.2) — "olvidate no lo necesitamos".
+- **Corrección sobre la marcha (mismo día)**: Gunnar probó en prod
+  (`https://lycardeo.vercel.app/c/mastern0`) y dos cosas no eran lo que
+  pidió — (1) `mastern0` es `kind: "project"`, y el panel de la Malla
+  había quedado gateado a company/personal, invisible en su propia tarjeta;
+  (2) no quería un resumen en modal, quería la Oficina Virtual completa
+  como pantalla propia, con botón de vuelta, igual para las 3 kinds de
+  Card. Se resolvió así:
+  - Nueva ruta `app/c/[slug]/oficina/page.tsx` — Server Component, puerto
+    completo del mock `6-completa.html` (identidad, video, descargas
+    cáscara, KPIs, casos de uso, antes/después, Malla 3D vitrina,
+    Simulador, y — solo si `isHost`, mismo criterio que ya usa
+    `/c/[slug]` — la vista interna con Malla viva del equipo, agenda,
+    accesos directos). `isHost` es lo que reemplaza al viejo
+    `office`/`versionInfo` gate de "modal"; ya no hay modal de oficina.
+  - `enterOffice()` en `LyCardView.tsx` conserva la animación de "portal"
+    que ya tenía (900ms), pero ahora al final hace
+    `router.push(`/c/${slug}/oficina`)` en vez de `setModal("office")` —
+    es la sensación de "te saca de la tarjeta" que pidió Gunnar, resuelta
+    en la punta que ya existía.
+  - Se sacó el modal `office` entero de `LyCardView.tsx` (código muerto:
+    nada lo abre más) — `officeItems`/`origin`/`OfficeItem`/
+    `OriginSnapshot`/`parseOfficeItems` se movieron a la nueva página, que
+    ahora es la única dueña de ese contenido.
+  - **Honestidad de datos**: la vista interna NO inventa una cifra de
+    ingresos a nombre del dueño real (ver Fase 11-C) — donde el mock
+    tenía "$48,200", esto dice "se activa cuando el motor de reparto esté
+    listo". Los accesos directos que sí existen (Editar Oficina, Mi Red)
+    son links reales a las pantallas ya construidas; los que no, quedan
+    atenuados como "Próximamente" — mismo patrón que ya usa toda la app.
+  - Verificado con Playwright + swiftshader sobre `mastern0` real
+    (local): click en el emblema → portal → navega a `/c/mastern0/oficina`
+    (no modal), se ve la vitrina completa + la vista interna completa
+    (MasterN0 es `isOrigin`, host para cualquiera), botón "Volver a la
+    tarjeta" regresa a `/c/mastern0`. `pnpm build` y `tsc --noEmit`
+    limpios.
 - Referencia técnica de producción (Sección G) y research flag de NashMesh
   (Sección H) siguen en pie, sin tocar código todavía — son para cuando el
   editor real (modelo Prisma + CRUD + `/api/malla`) se construya.

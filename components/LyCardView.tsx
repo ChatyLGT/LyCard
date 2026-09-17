@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useTransition, type CSSProperties, type ReactElement } from "react";
 import Link from "next/link";
-import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import type { Card, OriginMemento, Program, ProgramSkin, Puesto } from "@/generated/prisma/client";
 import { t, type Lang } from "@/lib/i18n";
 import { rankById, medalById } from "@/lib/data";
@@ -13,11 +13,6 @@ import { APP_VERSION, CHANGELOG } from "@/lib/version";
 import { isSkinColors, KNOWN_FONTS } from "@/lib/designMd";
 import { googleFontHref } from "@/lib/googleFont";
 import { hexToRgbString, lightness, shade } from "@/lib/color";
-import { PUBLIC_MALLA_NODES, PUBLIC_MALLA_EDGES, PUBLIC_MALLA_GHOSTS, PUBLIC_MALLA_KPIS } from "@/lib/mallaData";
-
-// WebGL, nunca en el servidor — Fase 12-B/G (PLAN.md). Datos simulados
-// (lib/mallaData.ts) hasta que exista /api/malla sobre datos reales.
-const MallaGraph = dynamic(() => import("@/components/MallaGraph"), { ssr: false });
 
 type ModalKey =
   | "od"
@@ -27,37 +22,10 @@ type ModalKey =
   | "info"
   | "invite"
   | "contactMessage"
-  | "office"
   | "cardInfo"
   | "versionInfo"
   | "contacts"
   | null;
-
-type OfficeItem = { id: string; title: string; subtitle?: string; description?: string; imageUrl?: string };
-
-function parseOfficeItems(value: unknown): OfficeItem[] {
-  if (!Array.isArray(value)) return [];
-  return value
-    .filter((v): v is Record<string, unknown> => typeof v === "object" && v !== null)
-    .map((v) => ({
-      id: typeof v.id === "string" ? v.id : "",
-      title: typeof v.title === "string" ? v.title : "",
-      subtitle: typeof v.subtitle === "string" ? v.subtitle : undefined,
-      description: typeof v.description === "string" ? v.description : undefined,
-      imageUrl: typeof v.imageUrl === "string" ? v.imageUrl : undefined,
-    }))
-    .filter((item) => item.title.trim().length > 0);
-}
-
-type OriginSnapshot = {
-  recruitedAt?: string;
-  programName?: string;
-  referrerName?: string;
-  referrerCardSlug?: string | null;
-  referrerCardName?: string | null;
-  referrerCardTitle?: string | null;
-  referrerPortraitUrl?: string | null;
-};
 
 const THEME_VARS: Record<"dark" | "light", CSSProperties> = {
   dark: {
@@ -416,6 +384,7 @@ export default function LyCardView({
   program: (Program & { skins: ProgramSkin[] }) | null;
   puesto: Puesto | null;
 }) {
+  const router = useRouter();
   const isProject = card.kind === "project";
   const isCompany = card.kind === "company";
   const isPersonal = card.kind === "personal";
@@ -468,16 +437,17 @@ export default function LyCardView({
   }
 
   function enterOffice() {
+    // Misma animación de "portal" de antes, pero ahora te lleva a la
+    // Oficina Virtual completa (app/c/[slug]/oficina) en vez de abrir un
+    // modal encima de la tarjeta — pedido explícito de Gunnar: "quiero que
+    // me lleve a una nueva pantalla", con vuelta por botón, no un resumen
+    // atrapado en un modal.
     setPortal(true);
     if (portalTimer.current) clearTimeout(portalTimer.current);
     portalTimer.current = setTimeout(() => {
-      setPortal(false);
-      setModal("office");
+      router.push(`/c/${card.slug}/oficina`);
     }, 900);
   }
-
-  const officeItems = parseOfficeItems(card.officeItems);
-  const origin = originMemento?.snapshot as OriginSnapshot | undefined;
 
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
@@ -756,10 +726,6 @@ export default function LyCardView({
       : { icon: "diamond", kicker: L("infoKicker") },
     invite: { icon: "mail", kicker: L("inviteKicker") },
     contactMessage: { icon: "chat", kicker: t(lang, "contactKicker") },
-    office: {
-      icon: isProject ? "auto_awesome" : isCompany ? "storefront" : "badge",
-      kicker: L(isProject ? "officeKickerProject" : isCompany ? "officeKickerCompany" : "officeKickerPersonal"),
-    },
     // Name island (2026-09-16) — short explainer of what this Card type is
     // for. Fixed copy per kind, not Program-configurable yet.
     cardInfo: {
@@ -1596,112 +1562,6 @@ export default function LyCardView({
                         <Icon name="send" size={18} />
                         <span>{contacting ? "..." : t(lang, "contactSend")}</span>
                       </button>
-                    </>
-                  )}
-                </>
-              ) : modal === "office" ? (
-                <>
-                  {/* La Malla: vitrina pública (Fase 12-A.7), visible para
-                      cualquier tipo de tarjeta — no solo company/personal */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-                      <span style={{ font: "600 8.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--ink2,#756c5e)" }}>
-                        La Malla · organismo completo
-                      </span>
-                      <span style={{ font: "400 8px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#6b6459)" }}>arrastrá para rotar</span>
-                    </div>
-                    <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", background: "var(--deepBg,#0D0D0D)" }}>
-                      <MallaGraph
-                        nodes={PUBLIC_MALLA_NODES}
-                        edges={PUBLIC_MALLA_EDGES}
-                        ghosts={PUBLIC_MALLA_GHOSTS}
-                        height={210}
-                        camRadius={165}
-                        haloScale={9}
-                      />
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: 6 }}>
-                      <div style={{ padding: "6px 4px", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, textAlign: "center", borderRight: "1px solid rgba(var(--accentRgb,200,161,90),.14)" }}>
-                        <span style={{ font: "700 14px var(--brandFont,'Playfair Display'),serif", color: "var(--accentMid,#C8A15A)" }}>{PUBLIC_MALLA_EDGES.length}</span>
-                        <span style={{ font: "600 6.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ink2,#756c5e)" }}>Enlaces creados</span>
-                      </div>
-                      <div style={{ padding: "6px 4px", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, textAlign: "center", borderRight: "1px solid rgba(var(--accentRgb,200,161,90),.14)" }}>
-                        <span style={{ font: "700 14px var(--brandFont,'Playfair Display'),serif", color: "var(--ink,#F3F0E9)" }}>{PUBLIC_MALLA_KPIS.brechasCerradas}</span>
-                        <span style={{ font: "600 6.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ink2,#756c5e)" }}>Brechas cerradas</span>
-                      </div>
-                      <div style={{ padding: "6px 4px", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, textAlign: "center" }}>
-                        <span style={{ font: "700 14px var(--brandFont,'Playfair Display'),serif", color: "var(--ink,#F3F0E9)" }}>{PUBLIC_MALLA_KPIS.serviciosOfrecidos}</span>
-                        <span style={{ font: "600 6.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ink2,#756c5e)" }}>Servicios ofrecidos</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {isProject ? (
-                    origin ? (
-                      <>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 14, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)" }}>
-                          <div style={{ width: 52, height: 52, flex: "none", borderRadius: 999, overflow: "hidden", background: "var(--deepBg,#0D0D0D)" }}>
-                            {origin.referrerPortraitUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={origin.referrerPortraitUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                            ) : null}
-                          </div>
-                          <div style={{ minWidth: 0 }}>
-                            <span style={{ display: "block", font: "600 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".14em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
-                              {t(lang, "officeReferredBy")}
-                            </span>
-                            <span style={{ display: "block", font: "700 15px var(--brandFont,'Playfair Display'),serif", color: "var(--ink,#F5F2EB)" }}>{origin.referrerName}</span>
-                            {origin.referrerCardTitle && (
-                              <span style={{ display: "block", font: "400 11.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>{origin.referrerCardTitle}</span>
-                            )}
-                          </div>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,.1)" }}>
-                          <span style={{ font: "600 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
-                            {t(lang, "officeProgramLabel")}: {origin.programName}
-                          </span>
-                          {origin.recruitedAt && (
-                            <span style={{ font: "italic 400 12.5px var(--brandFont,'Playfair Display'),serif", color: "var(--ink,#F5F2EB)" }}>
-                              {t(lang, "officeJoinedOn", { date: new Date(origin.recruitedAt).toLocaleDateString(lang === "en" ? "en-US" : "es-MX") })}
-                            </span>
-                          )}
-                        </div>
-                      </>
-                    ) : (
-                      <div style={{ padding: 14, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", textAlign: "center", display: "flex", flexDirection: "column", gap: 8 }}>
-                        <span style={{ font: "700 17px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>{t(lang, "officeFounderHead")}</span>
-                        <p style={{ margin: 0, font: "400 13px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "rgba(245,242,235,.92)" }}>
-                          {t(lang, "officeFounderBody", { name: card.name })}
-                        </p>
-                      </div>
-                    )
-                  ) : (
-                    <>
-                      {officeItems.length === 0 ? (
-                        <p style={{ margin: 0, font: "400 13px/1.7 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)", textAlign: "center", padding: "18px 4px" }}>
-                          {t(lang, isCompany ? "officeEmptyCompany" : "officeEmptyPersonal", { name: card.name })}
-                        </p>
-                      ) : (
-                        officeItems.map((item) => (
-                          <div key={item.id || item.title} style={{ display: "flex", gap: 12, padding: 14, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)" }}>
-                            {item.imageUrl && (
-                              <div style={{ width: 56, height: 56, flex: "none", borderRadius: 10, overflow: "hidden", background: "var(--deepBg,#0D0D0D)" }}>
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={item.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                              </div>
-                            )}
-                            <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-                              <span style={{ font: "700 13.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink,#F5F2EB)" }}>{item.title}</span>
-                              {item.subtitle && (
-                                <span style={{ font: "600 10.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>{item.subtitle}</span>
-                              )}
-                              {item.description && (
-                                <span style={{ font: "400 12px/1.5 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>{item.description}</span>
-                              )}
-                            </div>
-                          </div>
-                        ))
-                      )}
                     </>
                   )}
                 </>
