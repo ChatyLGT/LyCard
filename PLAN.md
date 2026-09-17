@@ -2750,3 +2750,146 @@ René lo tengan en el radar cuando evalúen la propuesta completa de MLQR.
 **Estado**: documentado a fondo, cero código de producción todavía. El
 Artifact interactivo + GIF del punto C se entregan en el chat de esta
 sesión (fuera del repo) inmediatamente después de este commit.
+
+### G. Referencia técnica: `second-brain-3d` confirma (y corrige) la Sección B
+
+(2026-09-17, tras clonar y leer `paultaki/second-brain-3d` como candidato de
+base para el demo.)
+
+**Qué es**: herramienta MIT que renderiza el vault de Obsidian de un usuario
+como un grafo 3D navegable — three.js + `3d-force-graph` + `three-spritetext`,
+probado a 3.900 notas / 8.200 links a 47fps. Repo clonado (solo lectura, sin
+vendorizar nada) en `/home/claude/paultaki/second-brain-3d`, fuera de este
+repo — es material de referencia, no una dependencia.
+
+**Veredicto sobre el demo de esta sesión**: no se usa como base. Es un bundle
+de 1.5MB (`vendor.min.js`) pensado para desktop full-screen con miles de
+nodos; el `malla3d.html` ya entregado es un widget mobile de 460px con ~25
+nodos, hecho a mano en three.js puro y ya ajustado al layout exacto de la
+Oficina (header, stat-row, leyenda, info-panel, CTA). Reemplazarlo por esa
+base sería cambiar 21KB que ya funcionan por 70x más peso sin ganar nada en
+este contexto.
+
+**Lo que sí confirma y corrige, para cuando Sergio arme la versión de
+producción sobre `3d-force-graph` (la librería ya decidida en la Sección
+B):**
+
+- Confirma que el stack elegido rinde a escala real (miles de nodos, no
+  docenas).
+- Confirma `cameraPosition({x,y,z}, node, ms)` como la API de "volar a mi
+  nodo" (usada en `template.html:1002`) — tal como se anotó en la Sección B.
+- **Corrige la técnica de "nodos fantasma"**: en vez de nodos invisibles
+  conectados por un link invisible (lo que describe la Sección B), la forma
+  real que usa el proyecto es una fuerza custom registrada por nombre
+  directo en la simulación —
+  `Graph.d3Force('brain', function(){ ...mueve x/y/z/vx/vy/vz de cada nodo
+  en cada tick... })` (`template.html:648-661`). Mismo resultado (clusters
+  visuales dirigidos), sin agregar nodos ni links falsos que contaminen
+  conteos, hit-testing de click/hover, o la data que después alimenta
+  Myerson (ver Sección H). Para Sergio: usar este patrón, no el de nodos
+  fantasma literales.
+- Optimizaciones de rendimiento a copiar cuando haya datos reales a escala:
+  `UnrealBloomPass` para el glow real (en vez del sprite aditivo del demo),
+  geometría de esfera compartida + caché de materiales por color/estado
+  (`template.html:664-685`).
+
+### H. Investigación pendiente: la Malla como motor de reparto NashMesh (NO construir todavía)
+
+Idea de Gunnar: que el esqueleto mismo del grafo — el mismo que ya se
+dibuja en 3D — sea la fuente de verdad de las reglas de reparto NashMesh,
+en vez de una capa visual separada y desconectada del cálculo real de
+`Payment_i = φ_i × ψ_i × (1-ε)` (Sección A de Fase 11).
+
+Hay un puente matemático real que lo hace viable — no es una idea suelta,
+es investigación conocida, para que quien la retome no arranque de cero:
+
+- **φ_i (Shapley Value) sobre un grafo → Valor de Myerson** (Myerson,
+  1977, "graph-restricted cooperative games"). Es la extensión clásica del
+  Shapley value a juegos cooperativos donde una coalición sólo puede
+  repartirse el valor de sus subcomponentes **conectados** en un grafo de
+  comunicación dado. Calcular Shapley sobre las 2^n coaliciones abstractas
+  es intratable; calcularlo sobre los subgrafos conectados de la Malla real
+  (la misma que ya se renderiza) es exactamente el problema que Myerson
+  resuelve. Existen algoritmos de aproximación polinomial por muestreo de
+  permutaciones (Castro et al., 2009) que evitan la explosión combinatoria
+  a escala real.
+- **ψ_i (Reliability Weight) → propiedad temporal nativa del grafo**: en
+  vez de un sistema de reputación aparte, ψ se podría derivar de la misma
+  metadata que el grafo ya necesita para renderizarse
+  (`createdAt`/última actividad de cada `CardNetworkMembership`/enlace):
+  decaimiento por antigüedad, consistencia de conexión mes a mes. Arranca
+  en 0.60 (ya definido en NashMesh, WHITEPAPER.md) y sube/baja con esa
+  misma señal — cero modelo nuevo, reusa lo que el grafo ya trackea.
+- **ε**: comisión de plataforma, ortogonal al grafo — config simple.
+
+**Qué falta investigar antes de que esto toque producción** (por eso queda
+como ítem de investigación, no como Fase con entregable):
+
+1. Definir `v(S)` — el valor real de una coalición conectada en el dominio
+   de Legacy (¿ingresos atribuibles? ¿brechas cerradas de la Sección E, que
+   hoy es cáscara sin modelo?).
+2. Costo computacional real a escala (miles de nodos, recalculado en cada
+   ciclo de pago) — validar que la aproximación de Castro et al. rinde en
+   el tamaño real de la Malla, no solo en el paper.
+3. Implicancia legal/regulatoria de que un algoritmo reparta pagos
+   automático sin arbitraje humano — NashMesh ya lo asume como visión
+   (WHITEPAPER.md), pero acá pasa de visión a código ejecutable que mueve
+   plata real.
+4. Si el grafo de render (con su fuerza de contención estética, Sección G)
+   puede ser el mismo grafo de cálculo, o conviene separarlos — un grafo
+   para layout visual, otro (con los mismos datos base) para Myerson — para
+   no acoplar rendering a lógica de pago crítica.
+
+**Estado**: idea con fundamento matemático real, marcada explícitamente
+como investigación futura. No se toca `generate.py`/`template.html`/
+producción por esto. Candidato fuerte para una sesión dedicada, idealmente
+con quien lleve la parte cuantitativa de NashMesh a fondo.
+
+### I. Estado global de Fase 12 al cierre de esta ronda
+
+- Artifacts de demo (fuera del repo, quedan como referencia/showcase):
+  - Standalone: https://claude.ai/artifact/LUUUDcrgny9CGcDfTLXWKA
+  - Fusionado a la tarjeta completa: https://claude.ai/artifact/VP5ont5KszRmEC8kKNFuMk
+- **Integrado a `lycard` de verdad, en código de producción** (2026-09-17,
+  a pedido explícito de Gunnar — "así como lo tienes quiero que se integre
+  a nuestra app principal"). Esto YA NO es solo Artifact:
+  - `three@0.186.0` agregado como dependencia real (antes se cargaba por
+    CDN cdnjs, válido solo dentro del sandbox de Artifacts — en la app de
+    producción se bundlea con Next, sin depender de que cdnjs esté
+    disponible en el navegador del visitante).
+  - `components/MallaGraph.tsx` — puerto a React/TS del motor
+    `mountMalla()` de los Artifacts (mismo modelo físico: repulsión +
+    resorte en enlaces + jalón a nodo fantasma por cluster). Client
+    component, monta/limpia todo en un `useEffect` (dispose de geometrías,
+    materiales y renderer al desmontar — no hay fuga si el visitante
+    navega fuera del modal). Nunca corre en el servidor.
+  - `lib/mallaData.ts` — los mismos dos datasets hardcodeados de los
+    Artifacts (vitrina 23 nodos Legacy/Libre, equipo operativo 7 nodos),
+    ahora tipados y reutilizables. **Sigue siendo data simulada** — no hay
+    modelo Prisma nuevo, tal como pidió Gunnar (nada de dashboard de
+    edición todavía, eso es Fase 12-D/futuro).
+  - Vitrina pública → `components/LyCardView.tsx`, dentro del modal real
+    `office` (el mismo que ya mostraba `officeItems`/Portfolio), arriba de
+    la lista existente, para cards `company`/`personal`. Trae el panel 3D +
+    los 3 KPIs de vitrina.
+  - Equipo operativo → `app/m/dashboard/company/network/page.tsx` (la
+    pantalla real de "Mi Red de Clientes", ya alimentada por
+    `CardNetworkMembership`), arriba de la lista real de miembros. Rotulado
+    explícitamente "Vista general de demo" para no hacerse pasar por lo
+    mismo que la lista real de abajo.
+  - **Verificado de verdad, no solo tipos**: postgres local levantado,
+    `pnpm build` (production build, Next 16 + Turbopack) limpio, `tsc
+    --noEmit` limpio. Con el dev server corriendo y una Card de prueba
+    (`kind: "company"`, borrada después del test), Playwright con
+    swiftshader abrió `/c/test-empresa`, clickeó el emblema real "Virtual
+    Office" y confirmó: el modal `office` abre, el canvas WebGL monta, el
+    grafo (cluster dorado + cluster violeta) y los KPIs (22/3/6) se ven,
+    cero `pageerror`/excepciones de consola. La vista privada
+    (`company/network`) quedó verificada por build + tipos únicamente —
+    requiere sesión de Member (Google/WhatsApp OTP) que no se simuló en
+    este pase.
+  - Pendiente explícitamente descartado por Gunnar esta ronda: el GIF
+    (punto C.2) — "olvidate no lo necesitamos".
+- Referencia técnica de producción (Sección G) y research flag de NashMesh
+  (Sección H) siguen en pie, sin tocar código todavía — son para cuando el
+  editor real (modelo Prisma + CRUD + `/api/malla`) se construya.

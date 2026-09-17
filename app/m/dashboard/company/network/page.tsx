@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { currentMemberId } from "@/lib/memberAuth";
 import { prisma } from "@/lib/prisma";
 import CardNotUnlocked from "@/components/CardNotUnlocked";
+import MallaGraph from "@/components/MallaGraph";
+import { TEAM_MALLA_NODES, TEAM_MALLA_EDGES } from "@/lib/mallaData";
 import { activateNetworkMembershipAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -57,6 +59,39 @@ export default async function CompanyNetworkPage({ searchParams }: { searchParam
           real ocurra — eso activa su lugar en tu red y su nivel (N1) empieza a mostrarse en tu tarjeta.
         </p>
         {activated === "1" && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Activado.</p>}
+
+        {/* Malla viva, modo operativo (PLAN.md Fase 12-B/I) — vista general en
+            3D del equipo + agentes. Todavía con datos de demo (lib/mallaData.ts);
+            la lista de abajo, con los clientes reales de esta Card, sigue siendo
+            la fuente de verdad hasta que esto se conecte a datos reales. */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 4 }}>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+            <span style={{ font: "600 8.5px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#756c5e" }}>
+              Malla viva · tu equipo + tus agentes
+            </span>
+            <span style={{ font: "600 9px 'Plus Jakarta Sans',sans-serif", color: "#6FCF7A" }}>4 de 6 activos</span>
+          </div>
+          <div style={{ borderRadius: 14, overflow: "hidden", border: "1px solid rgba(200,161,90,.18)", background: "#0B0B0A" }}>
+            <MallaGraph nodes={TEAM_MALLA_NODES} edges={TEAM_MALLA_EDGES} height={230} camRadius={130} maxRadius={320} repel={140} linkRest={40} fog={0.012} />
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap" }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 5, font: "400 8.5px 'Plus Jakarta Sans',sans-serif", color: "#A79E8E" }}>
+              <span style={{ width: 8, height: 8, borderRadius: 999, background: "#F3F0E9" }} /> Humano
+            </span>
+            <span style={{ display: "flex", alignItems: "center", gap: 5, font: "400 8.5px 'Plus Jakarta Sans',sans-serif", color: "#A79E8E" }}>
+              <span style={{ width: 8, height: 8, borderRadius: 999, background: "#C8A15A" }} /> Agente IA
+            </span>
+            <span style={{ display: "flex", alignItems: "center", gap: 5, font: "400 8.5px 'Plus Jakarta Sans',sans-serif", color: "#A79E8E" }}>
+              <span style={{ width: 7, height: 7, borderRadius: 999, background: "#6FCF7A", boxShadow: "0 0 6px #6FCF7A" }} /> Activo
+            </span>
+            <span style={{ display: "flex", alignItems: "center", gap: 5, font: "400 8.5px 'Plus Jakarta Sans',sans-serif", color: "#A79E8E" }}>
+              <span style={{ width: 7, height: 7, borderRadius: 999, background: "#E0954B", boxShadow: "0 0 6px #E0954B" }} /> Necesita revisión
+            </span>
+          </div>
+          <p style={{ margin: 0, font: "400 10px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A", textAlign: "center" }}>
+            Vista general de demo — la lista de abajo es tu red real.
+          </p>
+        </div>
 
         {memberships.length === 0 && (
           <p style={{ color: "#C2BEB5", font: "400 13px 'Plus Jakarta Sans',sans-serif" }}>Todavía no agendó nadie.</p>
