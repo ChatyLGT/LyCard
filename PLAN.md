@@ -2298,3 +2298,172 @@ el resto.
 **Estado**: planeación escrita, nada de código todavía. Arrancar por
 "Horarios administrables" en la próxima sesión que toque esto, es la
 base de la que depende todo lo demás.
+
+---
+
+## Fase 10 — Auditoría del funnel + hallazgo del repo MayanCity + roadmap Oficina 2.0 / Wallet (2026-09-17)
+
+Sesión de auditoría, sin cambios de código en la app (decisión explícita de
+Gunnar: esta noche se entrega documento + plan, no feature nueva). Se revisó
+el funnel de entrevista actual línea por línea, se identificó la lógica de
+"misocio" (`CardNetworkMembership`) y su rol en la Oficina Virtual, y — hallazgo
+importante — **el bloqueo de "repo de MayanCity" del Grupo K está resuelto.**
+
+### A. El bloqueo de Grupo K (Oficina Virtual 2.0) está resuelto
+
+`Bloqueado hasta` (línea ~2293 de este documento) pedía confirmar el repo real
+de MayanCity para copiar su patrón de "video + form + horario". Los repos que
+se habían descartado antes (`ChatyLGT/MS247`, `ChatyLGT/mis_socios_247`) en
+efecto no son eso. Pero esta noche, revisando el Google Drive de Gunnar,
+apareció `cnv_respaldo_app.tar` — un backup real de la app **Ciudad Nueva
+Vida (CNV / NexID)** — y dentro de ese backup, la propia tarjeta de Gunnar
+dice textual: *"Hoy, está reescribiendo el nuevo contrato social con Mayon
+City (Utopian): 1646 hectáreas"*. Es la misma familia de proyecto que
+"MayanCity", solo que vive bajo el nombre interno CNV/NexID. Ya subido
+(limpio, sin `.env.local`) a **github.com/ChatyLGT/lycardmisocio** para que
+Sergio lo tenga a mano.
+
+Adentro está exactamente el patrón que el Grupo K pedía imitar, en
+`src/pages/admin/webinars/`:
+
+- **`templates.tsx`** — plantilla de evento: título, descripción, duración en
+  minutos, recursos globales (`videoUrl`/`pdfUrl`/`driveUrl`), speakers
+  autorizados, tags. Esto ES el paso "video" del Funnel que ya estaba
+  planeado — una plantilla reusable, no un video suelto por evento.
+- **`schedule.tsx`** — el generador de horarios. Elegís una plantilla + un
+  rango de fechas + qué días de la semana + una hora fija + el link de la
+  sala → arma una vista previa de todas las instancias que van a crearse →
+  confirmás y se guardan como eventos individuales. **Esto responde la
+  pregunta abierta que quedó anotada en este mismo documento ("¿slots
+  recurrentes o fechas puntuales?", línea ~2245): la referencia real usa
+  recurrencia por días de la semana, no carga fecha por fecha.** Recomendación
+  directa para Sergio: portar esta forma (plantilla + rango + días + hora →
+  preview → confirmar) al modelo `AvailabilitySlot` ya planeado, en vez de
+  arrancar por el camino "más simple" de fechas sueltas que se había sugerido
+  antes de tener esta referencia.
+- **`[wallet].tsx`** — la tarjeta pública de CNV, resuelta por dirección de
+  wallet en vez de slug, con detección de "¿soy el dueño?" comparando la
+  wallet conectada (`useActiveAccount` de `thirdweb/react`) contra la de la
+  URL. Referencia directa para la Fase de Wallet (ver punto D).
+
+No hace falta pedirle nada más a Gunnar para arrancar el Grupo K — el
+bloqueo queda levantado.
+
+### B. Auditoría del funnel de entrevista actual — hallazgos concretos
+
+Revisado `app/c/actions.ts`, `app/admin/interviews/actions.ts`,
+`lib/interviewSlots.ts`. Ningún hallazgo es hipotético — todos verificados
+leyendo el código real:
+
+1. **`registerInterviewAction` no valida el formato del email**
+   (`app/c/actions.ts:14-16`) — valida que `name` y `whatsapp` no estén
+   vacíos, pero `email` no tiene ni chequeo de vacío ni de formato. Contraste:
+   `sendInvitationAction` y `sendContactMessageAction`, dos funciones más
+   abajo en el mismo archivo, sí usan regex de email. Inconsistencia real,
+   fácil de explotar sin querer (alguien tipea mal el mail y nunca se entera
+   de que no le va a llegar nada).
+2. **Cero rate-limiting en toda la app** — confirmado por grep, no hay ni una
+   sola referencia a rate-limit en el proyecto. Las 4 server actions públicas
+   (`registerInterviewAction`, `sendInvitationAction`,
+   `sendContactMessageAction`, `sendQrByWhatsappAction`) son invocables sin
+   límite. La más riesgosa es `sendInvitationAction`: usa la cuenta de Resend
+   del proyecto para mandar mail a cualquier dirección que le pasen — sin
+   límite, es un relay de email gratis para quien quiera abusarlo.
+3. **Horarios 100% hardcodeados y sin cupo** — `lib/interviewSlots.ts` tiene
+   4 fechas fijas en el código fuente, sin modelo en base de datos, sin
+   límite de cupo por horario. Hoy mismo podrían registrarse 200 personas en
+   el mismo slot sin que nadie lo note hasta el día de la entrevista real.
+   (Se resuelve de raíz con el modelo `AvailabilitySlot` de la Fase Oficina
+   2.0 — ver punto A.)
+4. **Sin protección contra registros duplicados** — el mismo WhatsApp/email
+   puede registrarse N veces al mismo horario o a horarios distintos, sin
+   ningún `@@unique` ni chequeo previo en `registerInterviewAction`.
+5. **Nada de esto rompe hoy** — la plataforma funciona porque el volumen real
+   es bajo y todo pasa por gente conocida. El riesgo es real recién cuando
+   este link empiece a circular más ampliamente (justamente el objetivo de
+   pedirle a Sergio que lo blinde).
+
+### C. La lógica de "misocio" (`CardNetworkMembership`) — qué es y cómo conecta con la Oficina
+
+Ya existe en el schema (`prisma/schema.prisma:306-323`) y tiene su propia
+lógica de activación (`app/m/dashboard/company/network/actions.ts`,
+`activateNetworkMembershipAction`) — es el equivalente, a nivel de una
+tarjeta de Empresa individual, de lo que `ProgramMembership` es a nivel de
+Programa completo: cada Empresa tiene su propia red de clientes, con estado
+`invited`→`active`, árbol de quién refirió a quién
+(`referredByMembershipId`), y eso ya alimenta el badge N0/N1/.../NA que se
+ve en la tarjeta (Fase N, completada). Es, en los hechos, un mini-MLM por
+tarjeta — la semilla exacta de lo que CNV llama "Esfera Social" (ver Códice
+de las 5 Esferas, resumen abajo).
+
+**Lo que falta para que sea "la Oficina" de verdad**: hoy esa red vive solo
+como panel de administración del dueño (`/m/dashboard/company/network`) — el
+visitante que abre la Oficina Virtual de esa Empresa (Fase 7, ya en
+producción) ve portfolio/catálogo, pero no ve nada de la red ni de su propio
+lugar en ella. Roadmap concreto para Sergio:
+
+- Agregar una sección "Mi Red" dentro de la Oficina Virtual pública de
+  Empresa (mismo lugar que hoy muestra `officeItems`), visible según quién
+  mira: el dueño ve el árbol completo, un cliente activo ve su propio nivel
+  y a quién refirió.
+- Comparado con el sistema de CNV (Esfera Social: Solitario→Familia→Clan→
+  Tribu→Nación, por volumen de red — ver Códice), LyCard hoy solo trackea
+  un nivel de referido por Card, sin la jerarquía de 5 niveles con nombre
+  propio. Se puede adoptar esa nomenclatura como la escala de "Sabiduría/
+  jerarquía" que ya es configurable por N0 desde la Fase 9.5 — no hace falta
+  modelo nuevo, es reusar lo que ya existe con otros nombres.
+
+### D. Wallet / Web3 — plan de cáscara para esta entrega, sin gastar en infra real
+
+De CNV se rescata el approach completo: Thirdweb SDK sobre Polygon Amoy
+(testnet), con una "wallet invisible" (Account Abstraction) generada
+automáticamente y ligada al email/WhatsApp del Miembro — la persona nunca ve
+ni instala Metamask, firma sin saber que está usando blockchain. Es la forma
+correcta de hacerlo cuando llegue el momento, pero integrar Thirdweb de
+verdad esta noche, bajo presión de entrega, es la forma más segura de romper
+algo a las 2am sin testear bien.
+
+**Para esta entrega**: dejar la cáscara visual únicamente.
+- Botón "Conectar Wallet" en `/m/dashboard` y en la Oficina Virtual, mismo
+  patrón visual que ya se usó para "Oficina Virtual" antes de que existiera
+  de verdad (Fase 7): un modal que dice "Próximamente — tu identidad on-chain
+  vive acá" en vez de intentar una conexión real.
+- Sin campo nuevo en el modelo `Card`/`Member` todavía — cuando se decida
+  integrar de verdad, agregar `Member.walletAddress` (nullable) es aditivo,
+  no rompe nada existente, mismo patrón que toda la Fase 9.
+- Cuando Gunnar/Sergio decidan avanzar en serio: Thirdweb tiene "in-app
+  wallets" (email-based) gratis en testnet — la puerta de entrada más barata
+  para probar el flujo real sin gastar en infraestructura propia.
+
+### E. Nash Mesh — pendiente de explicación
+
+Gunnar marcó que la conexión con "Nash Mesh" es la ambición grande a largo
+plazo, pero todavía no llegó la explicación de qué es concretamente (no está
+documentado en ningún repo al que tengo acceso — ni lycard, ni einaros, ni el
+backup de CNV). Queda anotado como item abierto del roadmap, sin bloquear
+nada de lo demás. Cuando Gunnar lo explique, se agrega acá.
+
+### F. Checklist "a prueba de balas, estilo top-15 Google" para Sergio
+
+En orden de impacto/esfuerzo, ninguno depende de otro salvo donde se aclara:
+
+1. Email con regex en `registerInterviewAction` (mismo patrón que las otras
+   2 actions del archivo — 10 minutos de trabajo, cero riesgo).
+2. Rate-limiting en las 4 server actions públicas (por IP o por
+   email/whatsapp, ventana corta — ej. `@upstash/ratelimit` si ya hay Redis
+   en el proyecto, o un guard simple en Postgres si no).
+3. Migrar `lib/interviewSlots.ts` a un modelo real en base (`AvailabilitySlot`,
+   ya planeado en la Fase Oficina 2.0, punto A) — mata el problema de cupo
+   sin límite de una sola vez.
+4. Dedupe de registros: `@@unique` compuesto o chequeo previo por
+   `(cardId, slotId, whatsapp)` antes de crear un `Registration` nuevo.
+5. Suite de regresión automatizada — hoy todo se prueba manualmente con
+   Playwright ad-hoc por sesión (ver todas las Fases arriba), no queda una
+   suite que corra sola en cada cambio. Es lo que separa "funciona porque lo
+   probé yo" de "a prueba de balas".
+6. Revisar headers de seguridad / CSP a nivel de `next.config.ts` — no
+   auditado en esta pasada, queda para la próxima.
+
+**Estado**: documento entregado, cero cambios de código en `lycard` esta
+noche (por decisión explícita). El hallazgo del punto A desbloquea el
+arranque real del Grupo K la próxima vez que se toque este proyecto.
