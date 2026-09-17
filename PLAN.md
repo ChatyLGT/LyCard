@@ -2962,6 +2962,61 @@ con quien lleve la parte cuantitativa de NashMesh a fondo.
     ni ningún rastro de contenido de dueño. Cero errores de consola en
     ambas. `pnpm build`/`tsc --noEmit` limpios. Card de prueba borrada
     después del test, no queda basura en la base.
+- **Tercera ronda, mismo día — pulido de jerarquía visual + concepto nuevo
+  de "primeras conexiones"**. Gunnar la vio en vivo y pidió cinco ajustes
+  concretos más una idea de producto nueva:
+  1. El botón de entrar al Simulador/Gemelo Digital pasa a ser el
+     elemento circular más importante de la pantalla — mismo lenguaje
+     visual que el emblema "Virtual Office" de la tarjeta (logo propio:
+     `Program.logoUrl` en project, `Card.logoUrl` en company, cae a la
+     inicial en personal — nunca el mismo círculo para dos dueños
+     distintos). Posición: justo debajo del video en la vista pública;
+     justo debajo de los KPIs (los datos más importantes primero) en la
+     vista privada.
+  2. Se sacó la etiqueta "Lo que ve el público" de `OwnerOficina` — no
+     hacía falta.
+  3. El botón "Editar Oficina" pasa al header, a la misma altura que
+     "Volver a la tarjeta" (antes era un botón ancho debajo del saludo).
+  4. Ese botón ahora manda a la sección real del editor en vez de a la
+     página genérica: `MemberCardEditor.tsx` acepta un nuevo prop
+     `focusOffice` (via `?focus=oficina`) que abre la
+     `AccordionSection` de "Oficina Virtual" por default y hace scroll
+     hasta ella — mismo patrón de "abrir por query string" que el propio
+     `Accordion.tsx` ya documentaba para otros flujos. Cards `project` no
+     tienen esa sección (su Oficina es la historia de origen, no
+     editable a mano), así que van directo a `MemberStoryEditor` ("Mi
+     camino") sin el query param.
+  5. **Idea nueva, validada y con un primer corte real**: "Tus primeras
+     conexiones" — en vez de (o adelante de) la Malla genérica de
+     vitrina, cada Oficina de dueño (`OwnerOficina`, solo `project`)
+     muestra una mini-Malla de 3 nodos con datos reales de
+     `OriginMemento`: vos, quien te invitó, y tu Programa. Es el ejemplo
+     que dio Gunnar — un miembro de DigitalKingdom invitado por Juancho
+     queda ligado a Juancho (por la invitación) y a DigitalKingdom (su
+     Programa) — y es un vínculo genuinamente interesante de diagramar,
+     no cáscara. **Lo que falta para completar la cadena que describió
+     (DigitalKingdom → Legacy, DigitalKingdom → su propio N0/"CEO", que
+     además puede ser la misma persona que invitó)**: `Program` no
+     tiene hoy ni un padre (`parentProgramId` o similar) ni un campo que
+     identifique a su N0/fundador — ver Sección H de esta misma Fase,
+     el research flag de NashMesh ya anotaba algo parecido. Se dice así
+     explícitamente en la propia pantalla ("el resto de la cadena
+     todavía no está modelado") en vez de inventar nodos — ninguna
+     Card ve un dato falso presentado como real. **Queda pendiente de
+     confirmación de Gunnar antes de tocar `schema.prisma`**: si vale la
+     pena modelar esa jerarquía de Programas + quién es el N0/fundador de
+     cada uno como campos reales (schema change real, no cosmético) para
+     que la cadena completa (vos → referrer → Programa → Legacy → CEO →
+     EinarOS) se pueda dibujar de verdad.
+  - Verificado con Playwright: `mastern0` (sin origin → sin sección de
+    "primeras conexiones", cae directo al bloque de "Fundador de la Red")
+    y una Card de prueba con `OriginMemento` real (referrer="EinarOS",
+    programa="DigitalKingdom") → la mini-Malla se ve, la leyenda muestra
+    los 3 nombres reales, cero errores de consola. `pnpm build`/`tsc
+    --noEmit` limpios. El flujo de `?focus=oficina` abriendo/scrolleando
+    la sección del editor se verificó por tipos + build únicamente —
+    probarlo de punta a punta requiere sesión real de Member (Google/
+    WhatsApp OTP), no simulada en este pase.
 - Referencia técnica de producción (Sección G) y research flag de NashMesh
   (Sección H) siguen en pie, sin tocar código todavía — son para cuando el
   editor real (modelo Prisma + CRUD + `/api/malla`) se construya.

@@ -6,13 +6,13 @@ import CardNotUnlocked from "@/components/CardNotUnlocked";
 
 export const dynamic = "force-dynamic";
 
-export default async function CompanyCardPage({ searchParams }: { searchParams: Promise<{ saved?: string }> }) {
+export default async function CompanyCardPage({ searchParams }: { searchParams: Promise<{ saved?: string; focus?: string }> }) {
   const memberId = await currentMemberId();
   if (!memberId) redirect("/m/login");
 
-  const { saved } = await searchParams;
+  const { saved, focus } = await searchParams;
   const card = await prisma.card.findFirst({ where: { memberId, kind: "company" } });
   if (!card) return <CardNotUnlocked label="de Empresa" />;
 
-  return <MemberCardEditor card={card} kind="company" saved={saved === "1"} />;
+  return <MemberCardEditor card={card} kind="company" saved={saved === "1"} focusOffice={focus === "oficina"} />;
 }

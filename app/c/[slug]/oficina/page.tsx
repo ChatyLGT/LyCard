@@ -15,22 +15,21 @@ import type { Card, OriginMemento, Program, Puesto } from "@/generated/prisma/cl
 export const dynamic = "force-dynamic";
 
 // La Oficina Virtual completa (PLAN.md Fase 12) — pantalla propia, no un
-// modal: se llega acá desde el emblema "Virtual Office" de cualquier Card
+// modal: se llega acá desde el emblema circular de cualquier Card
 // (project/company/personal), se vuelve con el link de arriba.
 //
-// Dos vistas totalmente separadas, sin separador visual entre ellas — un
-// visitante nunca ve un aviso de "acá hay más si sos el dueño" (esto es
-// una app real, no una demo con easter eggs): un visitante recibe
-// VisitorOficina, el dueño (isHost, mismo criterio que ya usa /c/[slug]
-// para todo lo demás) recibe OwnerOficina, y son dos árboles de JSX
-// distintos, no una página con una mitad oculta.
+// Dos vistas totalmente separadas — un visitante nunca ve un aviso de
+// "acá hay más si sos el dueño": VisitorOficina y OwnerOficina son dos
+// árboles de JSX distintos, no un layout con una sección oculta.
 //
-// Piezas reales: officeItems (Portafolio), badge (Malla), los links de
-// "Accesos directos" que sí existen, y el CTA del Simulador (manda al
-// OnboardingChat real en /m/onboarding). Piezas cáscara, marcadas como
-// tal: Cartera NashMesh, Ingresos, Agenda, Tu equipo — ninguna inventa una
-// cifra de plata real a nombre del dueño (ver Fase 11-C: "cáscara
-// honesta", nunca una cifra cruda presentada como si fuera real).
+// Piezas reales: officeItems (Portafolio), badge (Malla), "Tus primeras
+// conexiones" (referrer + Programa, de OriginMemento — solo project),
+// los links de "Accesos directos" que sí existen, y el botón de Simulador
+// (manda al OnboardingChat real en /m/onboarding). Piezas cáscara,
+// marcadas como tal: Gemelo Digital operativo del dueño (no existe
+// backend todavía), Cartera NashMesh, Agenda, Tu equipo — ninguna inventa
+// una cifra de plata real a nombre del dueño (Fase 11-C, cáscara
+// honesta).
 
 const kickerStyle: CSSProperties = {
   font: "600 8.5px 'Plus Jakarta Sans',sans-serif",
@@ -47,6 +46,7 @@ const panelStyle: CSSProperties = {
 const hr: CSSProperties = { height: 1, background: "rgba(200,161,90,.14)" };
 const tileStyle: CSSProperties = { display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center" };
 const tileIcon: CSSProperties = { width: 34, height: 34, borderRadius: 10, background: "rgba(200,161,90,.08)", border: "1px solid rgba(200,161,90,.2)" };
+const headerLinkStyle: CSSProperties = { color: "#C8A15A", font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase" };
 
 type OfficeItem = { id: string; title: string; subtitle?: string; description?: string; imageUrl?: string };
 
@@ -81,7 +81,10 @@ type OficinaData = {
   officeItems: OfficeItem[];
   origin: OriginSnapshot | undefined;
   dashboardHref: string;
+  agentLogoUrl: string | null;
 };
+
+// ---------------- Piezas compartidas ----------------
 
 function Header({ slug, right }: { slug: string; right: ReactNode }) {
   return (
@@ -93,15 +96,61 @@ function Header({ slug, right }: { slug: string; right: ReactNode }) {
         padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
       }}
     >
-      <Link href={`/c/${slug}`} style={{ color: "#C8A15A", font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase" }}>
-        ← Volver a la tarjeta
-      </Link>
+      <Link href={`/c/${slug}`} style={headerLinkStyle}>← Volver a la tarjeta</Link>
       {right}
     </div>
   );
 }
 
-// ---------------- Origin/Portafolio: contenido real, compartido por ambas vistas ----------------
+// El botón circular del agente — mismo lenguaje visual que el emblema de
+// "Virtual Office" en la tarjeta (LyCardView.tsx): logo propio si hay
+// (Programa para project, Card para company; personal cae a la inicial),
+// nunca el mismo para dos Cards distintas — cada Oficina es de su dueño.
+function AgentButton({ data, href, label, sublabel, disabled }: { data: OficinaData; href?: string; label: string; sublabel: string; disabled?: boolean }) {
+  const { card, accent, agentLogoUrl } = data;
+  const circle = (
+    <div
+      style={{
+        width: 76, height: 76, borderRadius: 999, padding: 2, flex: "none",
+        background: disabled
+          ? "rgba(255,255,255,.08)"
+          : `linear-gradient(180deg, rgba(229,195,120,.7), ${accent}80, #141414)`,
+        boxShadow: disabled ? "none" : "0 10px 26px rgba(0,0,0,.7)",
+      }}
+    >
+      <div
+        style={{
+          width: "100%", height: "100%", borderRadius: 999, overflow: "hidden",
+          background: `linear-gradient(160deg,#1C1C1C,#141414 55%,#0D0D0D)`,
+          border: "1px solid rgba(255,255,255,.1)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}
+      >
+        {agentLogoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={agentLogoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: disabled ? 0.5 : 1 }} />
+        ) : (
+          <span style={{ font: "700 24px 'Playfair Display',serif", color: disabled ? "#5A5A5A" : accent }}>{card.name.charAt(0)}</span>
+        )}
+      </div>
+    </div>
+  );
+  const text = (
+    <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+      <span style={{ font: "700 13px 'Plus Jakarta Sans',sans-serif", color: disabled ? "#8f8578" : "#F3F0E9" }}>{label}</span>
+      <span style={{ font: "400 10.5px 'Plus Jakarta Sans',sans-serif", color: "#756c5e" }}>{sublabel}</span>
+    </div>
+  );
+  const inner = (
+    <div style={{ display: "flex", alignItems: "center", gap: 14, padding: 14, borderRadius: 16, background: "rgba(255,255,255,.03)", border: `1px solid ${disabled ? "rgba(255,255,255,.08)" : "rgba(200,161,90,.3)"}` }}>
+      {circle}
+      {text}
+      {!disabled && <span style={{ marginLeft: "auto", color: accent, font: "700 16px sans-serif" }}>→</span>}
+    </div>
+  );
+  return disabled || !href ? inner : <Link href={href} style={{ display: "block" }}>{inner}</Link>;
+}
+
 function IdentityBlock({ data }: { data: OficinaData }) {
   const { card, program, puesto, accent } = data;
   const roleLabel = puesto?.denominacion || card.title;
@@ -133,8 +182,7 @@ function KpiRow({ data }: { data: OficinaData }) {
   );
 }
 
-// Origin story (project) / Portafolio (company, personal) — el contenido
-// real que antes vivía en el modal "office".
+// Origin story (project) / Portafolio (company, personal).
 function PortfolioBlock({ data }: { data: OficinaData }) {
   const { card, origin, officeItems, accent } = data;
   if (card.kind === "project") {
@@ -185,6 +233,45 @@ function PortfolioBlock({ data }: { data: OficinaData }) {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+// "Tus primeras conexiones" — quién te invitó y a qué Programa pertenecés,
+// como mini-Malla de 3 nodos con datos reales (OriginMemento). Solo tiene
+// sentido para project (es la única Card con referrer + Programa
+// modelados). La cadena completa que describió Gunnar (Programa → Legacy,
+// Programa → su propio N0/CEO) todavía no está modelada en Prisma — se
+// dice así en vez de inventar nodos, ver PLAN.md.
+function FirstConnections({ data }: { data: OficinaData }) {
+  const { card, origin, accent } = data;
+  if (card.kind !== "project" || !origin) return null;
+  const nodes = [
+    { id: "self", color: "#6FCF7A", size: 6 },
+    { id: "referrer", color: "#F3F0E9", size: 5 },
+    { id: "program", color: accent, size: 5.5 },
+  ];
+  const edges: [string, string][] = [["self", "referrer"], ["self", "program"]];
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <span style={kickerStyle}>Tus primeras conexiones</span>
+      <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid rgba(200,161,90,.18)", background: "#0B0B0A" }}>
+        <MallaGraph nodes={nodes} edges={edges} height={140} camRadius={70} maxRadius={160} repel={130} linkRest={26} fog={0.02} haloScale={8} />
+      </div>
+      <div style={{ display: "flex", justifyContent: "center", gap: 14, flexWrap: "wrap" }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 5, font: "400 9px 'Plus Jakarta Sans',sans-serif", color: "#A79E8E" }}>
+          <span style={{ width: 7, height: 7, borderRadius: 999, background: "#6FCF7A" }} /> Vos
+        </span>
+        <span style={{ display: "flex", alignItems: "center", gap: 5, font: "400 9px 'Plus Jakarta Sans',sans-serif", color: "#A79E8E" }}>
+          <span style={{ width: 7, height: 7, borderRadius: 999, background: "#F3F0E9" }} /> {origin.referrerName}
+        </span>
+        <span style={{ display: "flex", alignItems: "center", gap: 5, font: "400 9px 'Plus Jakarta Sans',sans-serif", color: "#A79E8E" }}>
+          <span style={{ width: 7, height: 7, borderRadius: 999, background: accent }} /> {origin.programName || "Programa"}
+        </span>
+      </div>
+      <p style={{ margin: 0, font: "400 9.5px/1.5 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A", textAlign: "center" }}>
+        El resto de la cadena (tu Programa hacia arriba) todavía no está modelado — próximamente.
+      </p>
     </div>
   );
 }
@@ -247,6 +334,8 @@ function VisitorOficina({ data }: { data: OficinaData }) {
             <span style={{ font: "400 10px 'Plus Jakarta Sans',sans-serif", color: "#756c5e" }}>De qué se trata {program?.name || card.name}</span>
           </div>
         )}
+
+        <AgentButton data={data} href={`/m/onboarding?ref=${card.slug}`} label="Simulá tu Gemelo Digital" sublabel="Contame a qué te dedicás" />
 
         <p style={{ margin: 0, font: "400 12px/1.55 'Plus Jakarta Sans',sans-serif", color: "#A79E8E" }}>{card.quote}</p>
 
@@ -320,24 +409,6 @@ function VisitorOficina({ data }: { data: OficinaData }) {
             </div>
           </div>
         </div>
-
-        <div style={{ borderRadius: 14, padding: "14px 15px", background: "#121611", border: "1px solid rgba(37,211,102,.22)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}>
-            <span style={{ font: "700 8px 'Plus Jakarta Sans',sans-serif", color: "#5fa96b", letterSpacing: ".08em", textTransform: "uppercase" }}>Simulador · Gemelo Digital</span>
-          </div>
-          <div style={{ background: "#1a211a", borderRadius: "10px 10px 10px 3px", padding: "9px 11px", marginBottom: 11 }}>
-            <span style={{ font: "400 10.5px/1.5 'Plus Jakarta Sans',sans-serif", color: "#E6E6E1" }}>
-              Contame a qué te dedicás y te muestro cómo sería tener tu propio Gemelo Digital.
-            </span>
-          </div>
-          <Link
-            href={`/m/onboarding?ref=${card.slug}`}
-            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", borderRadius: 10, padding: "11px 15px", background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)", color: "#0D0D0D", font: "700 11.5px 'Plus Jakarta Sans',sans-serif" }}
-          >
-            <span>Simulá tu Gemelo Digital</span>
-            <span>→</span>
-          </Link>
-        </div>
       </div>
     </div>
   );
@@ -349,7 +420,10 @@ function OwnerOficina({ data }: { data: OficinaData }) {
 
   return (
     <div style={{ minHeight: "100vh", background: "#0B0B0A", color: "#F3F0E9", fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
-      <Header slug={card.slug} right={<span style={kickerStyle}>Vista privada</span>} />
+      <Header
+        slug={card.slug}
+        right={<Link href={dashboardHref} style={headerLinkStyle}>Editar Oficina →</Link>}
+      />
 
       <div style={{ maxWidth: 460, margin: "0 auto", padding: "24px 20px 40px", display: "flex", flexDirection: "column", gap: 18 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
@@ -362,33 +436,15 @@ function OwnerOficina({ data }: { data: OficinaData }) {
           </div>
         </div>
 
-        <Link
-          href={dashboardHref}
-          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", borderRadius: 10, padding: "12px 15px", background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)", color: "#0D0D0D", font: "700 11.5px 'Plus Jakarta Sans',sans-serif" }}
-        >
-          <span>Editar la información de esta Oficina</span>
-          <span>→</span>
-        </Link>
+        <KpiRow data={data} />
+
+        <AgentButton data={data} label="Tu Gemelo Digital" sublabel="Próximamente — todavía no hay backend real" disabled />
+
+        <FirstConnections data={data} />
 
         <div style={hr} />
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={kickerStyle}>Lo que ve el público</span>
-          <KpiRow data={data} />
-          <PortfolioBlock data={data} />
-        </div>
-
-        <div style={hr} />
-
-        {/* Cartera / ingresos — todavía no hay motor de pago real, no se
-            inventa una cifra a nombre del dueño (Fase 11-C, cáscara
-            honesta). Distinto del resto de placeholders porque acá el
-            dato sería plata real de una persona real. */}
-        <div style={{ ...panelStyle, opacity: 0.6, textAlign: "center" }}>
-          <span style={{ font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#8f8578" }}>
-            Cartera NashMesh e ingresos — se activa cuando el motor de reparto esté listo (ver PLAN.md).
-          </span>
-        </div>
+        <PortfolioBlock data={data} />
 
         <div style={hr} />
 
@@ -449,6 +505,8 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
   const isHost = isAdmin || card.isOrigin || (memberId !== null && memberId === card.memberId);
   const badge = await computeBadge(card, adminScope, memberId);
 
+  const baseDashboardHref = card.kind === "project" ? "/m/dashboard/project" : card.kind === "company" ? "/m/dashboard/company" : "/m/dashboard/personal";
+
   const data: OficinaData = {
     card,
     program: card.program,
@@ -457,7 +515,12 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
     accent: card.program?.primaryColor || "#C8A15A",
     officeItems: parseOfficeItems(card.officeItems),
     origin: originMemento?.snapshot as OriginSnapshot | undefined,
-    dashboardHref: card.kind === "project" ? "/m/dashboard/project" : card.kind === "company" ? "/m/dashboard/company" : "/m/dashboard/personal",
+    // Company/personal: manda directo a la sección "Oficina Virtual" del
+    // editor (defaultOpen + auto-scroll, ver MemberCardEditor.tsx). Project
+    // no tiene esa sección (su Oficina es la historia de origen, no
+    // editable a mano) — el editor de "Mi camino" ya es la página entera.
+    dashboardHref: card.kind === "project" ? baseDashboardHref : `${baseDashboardHref}?focus=oficina`,
+    agentLogoUrl: card.kind === "project" ? card.program?.logoUrl ?? null : card.kind === "company" ? card.logoUrl : null,
   };
 
   return isHost ? <OwnerOficina data={data} /> : <VisitorOficina data={data} />;

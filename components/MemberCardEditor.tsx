@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { useState, useEffect, useRef, type CSSProperties } from "react";
 import Link from "next/link";
 import type { Card } from "@/generated/prisma/client";
 import { updateMemberCardAction } from "@/app/m/dashboard/actions";
@@ -115,10 +115,16 @@ export default function MemberCardEditor({
   card,
   kind,
   saved,
+  focusOffice = false,
 }: {
   card: Card;
   kind: "company" | "personal";
   saved: boolean;
+  // Llegar acá desde "Editar Oficina" (Oficina Virtual, app/c/[slug]/oficina)
+  // abre esta sección directo en vez de que el dueño tenga que buscarla
+  // entre las demás — mismo patrón de "abrir por default vía query string"
+  // que ya documenta Accordion.tsx.
+  focusOffice?: boolean;
 }) {
   const [medal, setMedal] = useState(card.medal);
   const [rank, setRank] = useState(card.rank);
@@ -128,6 +134,11 @@ export default function MemberCardEditor({
   const [officeItems, setOfficeItems] = useState<OfficeItem[]>(() => parseOfficeItems(card.officeItems));
   const [openOfficeId, setOpenOfficeId] = useState<string | null>(null);
   const copy = COPY[kind];
+  const officeSectionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (focusOffice) officeSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [focusOffice]);
 
   const boundAction = updateMemberCardAction.bind(null, card.slug);
 
@@ -465,7 +476,8 @@ export default function MemberCardEditor({
           </div>
         </AccordionSection>
 
-        <AccordionSection title={copy.officeTitle} subtitle={copy.officeSub}>
+        <div ref={officeSectionRef}>
+        <AccordionSection title={copy.officeTitle} subtitle={copy.officeSub} defaultOpen={focusOffice}>
           {officeItems.length === 0 && (
             <p style={{ margin: 0, font: "400 12px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
               Todavía no hay nada acá — tocá &quot;{copy.officeAdd}&quot; para sumar tu primer{kind === "company" ? "" : "a"} {copy.officeItemNoun}.
@@ -526,6 +538,7 @@ export default function MemberCardEditor({
             {copy.officeAdd}
           </button>
         </AccordionSection>
+        </div>
 
         <AccordionSection title="Canales de Contacto">
           {CHANNELS.map((c) => (
