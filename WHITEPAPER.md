@@ -386,6 +386,11 @@ al tar de `lycardmisocio`, y a este archivo.
 ## 7. Qué falta por hacer (priorizado)
 
 ### Corto plazo (próxima sesión de código)
+- [ ] **Malla 3D navegable** (`3d-force-graph`/three.js + técnica de
+      "nodos fantasma" para agrupar sin pelear con la física) — spec
+      completa en `PLAN.md`, Fase 12. Demo interactiva ya entregada por
+      chat en esta sesión; falta integrarla al repo con datos reales.
+      Candidata directa a dashboard de MLQR (Fase 12, punto F).
 - [ ] Definir dónde vive el video/causa/links del Letrero: ¿a nivel
       `Program` o a nivel `Card` individual? (pregunta abierta, Fase 11).
 - [ ] Migrar `lib/interviewSlots.ts` (hardcodeado) a modelo real

@@ -2583,3 +2583,170 @@ Fase 10: esta sesión es de planeación). Listo para que la próxima sesión
 arranque por el modelo de datos del Letrero (video/causa/links en
 `Program` o `Card` según sea nivel Programa o nivel Corp individual —
 pendiente de definir con Gunnar cuál).
+
+---
+
+## Fase 12 — Oficina Virtual: diseño final + Malla 3D navegable (2026-09-17/18)
+
+Sesión larga de diseño visual con Gunnar (mockups iterados en vivo, fuera
+de este repo — capturas enviadas por chat, no archivos del proyecto
+todavía). Se llegó a una spec completa de la Oficina Virtual, incluida una
+pieza nueva y grande: una Malla 3D navegable. Se documenta acá a detalle
+antes de construir nada, por pedido explícito de Gunnar.
+
+### A. La Oficina completa — estructura final, de arriba a abajo
+
+Una sola pantalla larga (scroll), dos mitades separadas por una frontera
+visual clara ("acá termina lo que ve cualquiera — todo lo de abajo solo
+lo ve el dueño logueado"):
+
+**Mitad pública (vitrina de ventas, cero login):**
+1. Video corto ("de qué se trata").
+2. Descripción de 1-2 líneas (la causa/proyecto).
+3. Dos descargas: Presentación (PDF) + **Audiolibro simulado "Cómo crear
+   tu socio ideal"** (gancho directo al tema de misocio).
+4. KPIs como **badges, nunca cifra cruda** (Portafolio = número real de
+   `officeItems`; Malla = nivel/tier, ej. "Nación"; Cartera = "Próx.",
+   cáscara honesta).
+5. Fila de "esto ya se lo piden todos los días" — 6 chips de casos de uso
+   reales (video a redes, presupuesto, WhatsApp 24/7, licitaciones, flyer,
+   recordatorios) — mapeados 1:1 al catálogo real de Irpavi/HeroSuite
+   (Fase 11, punto 4 de esta sesión), no inventados.
+6. Comparación "antes/después" reusando el pitch ya probado con Daniel
+   Hergo/MLQR ($200-500 vs $15-30 por acción).
+7. **La Malla 3D** (ver sección B) — la pieza nueva de esta ronda,
+   reemplaza/absorbe lo que antes era el "Cerebro" estático.
+8. KPIs de vitrina sobre la Malla: **enlaces creados, brechas cerradas,
+   servicios ofrecidos** (ver mapeo a datos en sección D).
+9. CTA final: **"Simulá tu Gemelo Digital"** — simulador tipo WhatsApp
+   (reusa `OnboardingChat.tsx`, Fase 3), NUNCA acceso real al Gemelo del
+   dueño.
+
+**Mitad privada (solo el dueño, logueado):**
+1. Saludo + botón real **"Hablar con tu Gemelo Digital"** (acá sí es la
+   puerta de verdad — high-emphasis, gradiente dorado completo).
+2. Ingresos registrados del mes (número simple, manual/propio — **no** es
+   lo mismo que "Cartera NashMesh", que sigue como cáscara: distinción
+   deliberada, ver Fase 11 punto C).
+3. Clientes activos / Pendientes / Reuniones hoy.
+4. La misma Malla 3D, pero en modo operativo: mi red real, mis agentes,
+   con nombres y estados reales en vez de datos simulados de vitrina.
+5. Agenda de hoy (lista simple).
+6. "Tu equipo esta semana" — barras de rendimiento por persona/agente.
+7. Accesos directos: Editar Oficina, Mi Red, Agenda, Mensajes, Cartera
+   (cáscara), Configuración.
+
+**Nota de producto importante:** este dashboard privado es la plantilla
+**default**. El rediseño propio (mover módulos, elegir qué KPI destacar)
+es un beneficio pago de Legacy Corp — no hace falta modelo nuevo para
+dejarlo anotado, alcanza con un flag `template`/`custom` en `Program`
+cuando se construya el paywall real.
+
+### B. La Malla 3D — qué es, técnicamente
+
+**Decisión de esta ronda:** no tiene que parecer literalmente un cerebro
+(se relaja el requisito de la Fase 11). Lo que sí importa: **3D real,
+navegable** — te alejás y ves el organismo completo, hacés zoom y volás
+hacia tu propio nodo, ves qué otros nodos brillan por estar conectados a
+vos, y podés ver relaciones cruzadas que no pasan por vos (ejemplo que dio
+Gunnar: "la panadería de Pepe tiene relación con Bimbo de Daniel" — dos
+nodos de Programas/Corps distintos, conectados entre sí, visibles aunque
+no te toquen a vos).
+
+**Librería:** `3d-force-graph` (o `react-force-graph` en su variante 3D),
+ambas del mismo autor, construidas sobre `three.js` + `d3-force`. Dan de
+fábrica: física de repulsión/atracción real, cámara 3D con `cameraPosition()`
+animado (el "volar hacia mi nodo" es una llamada de API, no hay que
+inventarlo), highlighting de nodos/links conectados al hacer hover o click,
+y renderizado de miles de nodos sin drama de performance.
+
+**La técnica de "nodos fantasma" (indicación explícita de Gunnar, y es
+correcta):** en vez de pelear contra la física para forzar una forma
+específica, se agregan nodos invisibles (mayor masa/carga) en las
+posiciones donde querramos que se agrupen visualmente ciertos clusters —
+los nodos reales se conectan a su fantasma correspondiente con un link
+invisible de cierta fuerza, y la simulación hace el resto sola. Es una
+técnica real y liviana (no exótica), mucho más simple que forzar
+posiciones nodo por nodo. Los nodos fantasma nunca se renderizan ni son
+clickeables — son andamiaje, no dato.
+
+**Lo que esto habilita del pedido de Gunnar:**
+- Zoom out completo → se ve el organismo entero (todos los Programas +
+  Corps + personas).
+- Click/hover en un nodo → sus conexiones directas brillan, el resto se
+  atenúa (comportamiento nativo de la librería).
+- "Volar" a mi propio nodo → `cameraPosition({x,y,z}, nodeCoords, ms)`
+  con una transición animada — API directa de `3d-force-graph`.
+- Ver relaciones que no me tocan (panadería↔Bimbo) → mismo grafo, no hace
+  falta nada especial, es solo otro link en la data.
+
+### C. Lo que se entrega en ESTA sesión (demo, no producción)
+
+Gunnar pidió ver algo ahora, no solo la spec — se entrega:
+1. Un **Artifact interactivo real** (no una imagen) — `d3-force`/`three.js`
+   corriendo de verdad en el navegador vía Artifact (cdnjs.cloudflare.com
+   está habilitado para cargar three.js/d3 por CDN), arrastrable,
+   navegable, con datos simulados (sección D).
+2. Un GIF de esa interacción, para poder verla en el contexto de la
+   tarjeta sin depender de que el Artifact cargue en cualquier lado (mismo
+   problema de visualización que ya pasó antes en esta sesión — las
+   imágenes estáticas por `SendUserFile` son el canal que sí funciona
+   siempre).
+
+**Esto es una demo/Artifact, no código de producción.** La versión real,
+integrada al repo con datos reales de Prisma, es tarea de Sergio sobre
+`lycard` — la librería y la técnica ya están decididas acá para que no
+tenga que investigarlas de cero.
+
+### D. No hay datos reales — se simula un "juego" alrededor de Legacy
+
+Confirmado por Gunnar: cero datos reales todavía. Se construye la
+**lógica y estructura** de datos simulados (Programas ficticios alrededor
+de Legacy, con Corps/empresas y personas), pensada para que después se
+pueda:
+- Llenar a mano con los clientes potenciales reales que Gunnar va a pasar
+  (mencionó que hay una lista, pendiente de compartir), o
+- Generarse programáticamente como hoy (semilla + reglas), como cáscara
+  mientras no hay datos reales.
+
+**Estructura de datos propuesta** (JSON simple, fácil de editar a mano):
+```json
+{
+  "programas": [{ "id", "nombre", "color" }],
+  "corps": [{ "id", "programaId", "nombre", "rubro" }],
+  "personas": [{ "id", "corpId", "nombre", "rol", "tipo": "humano|agente" }],
+  "enlaces": [{ "origen", "destino", "tipo": "referido|cliente|proveedor" }]
+}
+```
+Nada de esto se persiste en Prisma todavía — es el shape para la demo del
+punto C. Cuando haya datos reales, este mismo shape es lo que un endpoint
+`/api/malla` tendría que devolver a partir de `ProgramMembership` +
+`CardNetworkMembership`.
+
+### E. KPIs de vitrina — mapeo a lo que existe (o falta)
+
+- **Enlaces creados** → ya existe: contar filas de
+  `CardNetworkMembership` + `ProgramMembership`. Cero trabajo nuevo.
+- **Servicios ofrecidos** → ya existe: `Card.officeItems`, o contra el
+  catálogo Irpavi/HeroSuite ya relevado (Fase 11.4). Cero trabajo nuevo.
+- **Brechas cerradas** → **nuevo**. Es el concepto de HeroSuite/B4W
+  ("brecha → negocio", visto en el matching engine de René). Hoy no hay
+  ningún modelo que lo registre — hace falta un log chico de eventos por
+  Legacy Corp (`GapClosedEvent` o similar). No es grande, pero no es
+  gratis — queda anotado para cuando se decida construir de verdad.
+
+### F. Conexión con MLQR — no es solo un ejercicio de diseño
+
+Gunnar pidió explícitamente pensar esto "sobre todo para el partido" — la
+misma Malla 3D es candidata directa a convertirse en el dashboard que ya
+le vendieron a Daniel Hergo (ver Fase 10.4.6, WHITEPAPER.md sección 4.6):
+hoy ese dashboard muestra registros/contactos/seguimiento/conversión como
+tabla y gráfico de barras — la Malla podría mostrar la red de cada
+candidato como grafo navegable (sus afiliados, quién refirió a quién, qué
+municipios están más conectados). Es upsell directo sobre un cliente que
+YA está pagando, no una feature especulativa. Vale la pena que Sergio y
+René lo tengan en el radar cuando evalúen la propuesta completa de MLQR.
+
+**Estado**: documentado a fondo, cero código de producción todavía. El
+Artifact interactivo + GIF del punto C se entregan en el chat de esta
+sesión (fuera del repo) inmediatamente después de este commit.
