@@ -61,6 +61,13 @@ Sin estar en alguno de estos 3, la Oficina Virtual de sus tarjetas muestra
 el aviso honesto de "todavía sin activar" en vez de Superpoderes o bot —
 nunca acceso simulado.
 
+El precio compra **nivel de acceso**, no solo funcionalidad: Automatizado
+es todo simulado (aparentar una oficina), Normal son 3 agentes reales pero
+con objetivos acotados (aún sin definir con precisión — ver roadmap),
+Enterprise son ~10 agentes a medida más 3 empleados del cliente convertidos
+en Agentes Legacy. Detalle completo en
+[05-ROADMAP-EDT.md](./05-ROADMAP-EDT.md#modelo-de-negocio-programa-legacy-y-sus-planes).
+
 **3 motores de venta reales, no un solo canal:** (1) la propia entrevista
 Legacy como mecanismo de discovery para proyectos institucionales grandes,
 (2) un diagnóstico de riesgo cero que automatiza el proceso de venta

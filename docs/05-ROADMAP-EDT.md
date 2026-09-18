@@ -173,6 +173,26 @@ lead más avanzado y tampoco pagó todavía.
 Un Negocio se convierte en Programa al entrar a cualquiera de estos 3
 planes.
 
+**Qué compra tu plata en cada plan — el nivel de acceso, no solo el precio:**
+
+- **Automatizado ($25/mes):** tarjeta + bot simulado. Todo simulado — sirve
+  para "aparentar" una oficina operativa (el equivalente de la demo guiada
+  que ya existe hoy en `OfficeDemoChat.tsx`/`WarrenChat.tsx`). Cero agentes
+  reales, cero resultados reales.
+- **Normal ($100/mes):** equipo de **3 Agentes de Silicio reales**, con
+  resultados reales para el negocio real del cliente — por eso pagó.
+  Vienen **pre-programados con objetivos específicos y acotados**, no de
+  propósito abierto: no es lo mismo un agente que vende de punta a punta
+  que uno que solo postea y saca leads. ⚠️ **Pendiente de definir:** la
+  lista exacta de qué puede y qué no puede hacer cada agente en este tier
+  — sin esa lista, `simulateSkillRunAction` no tiene límites reales que
+  aplicar.
+- **Enterprise ($500/mes + comisión):** ~**10 agentes confeccionados a
+  medida** para ese cliente específico, más **3 Legacys**: 3 empleados
+  propios del cliente convertidos en Agentes Legacy a nivel básico (fusión
+  empleado+agente — transformación organizacional real, no solo una
+  herramienta).
+
 **3 motores de venta (GTM):**
 1. **Legacy personal → descubrimiento institucional.** La propia entrevista
    Legacy (sesiones del Módulo CRM) es el mecanismo de discovery para
