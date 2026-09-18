@@ -466,7 +466,7 @@ function OwnerOficina({ data }: { data: OficinaData }) {
 
         <KpiRow data={data} />
 
-        <AgentButton data={data} label="Tu Gemelo Digital" sublabel="Próximamente — todavía no hay backend real" disabled />
+        <AgentButton data={data} href={`/c/${card.slug}/oficina/demo`} label="Tu Gemelo Digital" sublabel="Demo del flujo — todavía no hay backend real" />
 
         {/* Para la Card raíz (sin referente, ex-"Fundador de la Red") no hay
             nada real que mostrar acá — se salta el bloque entero en vez de

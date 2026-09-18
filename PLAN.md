@@ -3238,3 +3238,26 @@ con quien lleve la parte cuantitativa de NashMesh a fondo.
   Oficina en el siguiente request. `tsc --noEmit` y `pnpm build` limpios.
 - Pendiente, ya planificada: Fase D (Gemelo Digital del dueño conectado
   a una demo guiada de chat, no al flujo real de alta de miembro).
+
+### 2026-09-18 (cont.) — Fase D: demo guiada del Gemelo Digital del dueño
+
+- El botón "Tu Gemelo Digital" del dueño dejó de estar `disabled` — ahora
+  enlaza a `/c/[slug]/oficina/demo`, una demo guiada del flujo de armar
+  una Oficina, no al Gemelo Digital operativo real (que sigue sin
+  backend, PLAN.md Fase 11-C).
+- `components/OfficeDemoChat.tsx` (nuevo): mismo lenguaje visual de chat
+  WhatsApp-simulado que `components/OnboardingChat.tsx` (burbujas,
+  "escribiendo...", timestamps, paleta) pero **no es ese componente** —
+  `OnboardingChat` está enganchado a OTP real y a
+  `joinLegacyProgramAction`; reusarlo acá arriesgaba disparar lógica de
+  alta real o confundir con su copy de "sumate como miembro". Este es
+  un componente nuevo, sin inputs libres ni llamadas a servidor: el
+  guión es 100% fijo (5 pasos sobre Letrero → Superpoderes → Malla), el
+  "usuario" solo tapea una única respuesta sugerida por paso, y termina
+  con un botón real de "Volver a tu Oficina".
+- Nueva ruta `app/c/[slug]/oficina/demo/page.tsx`.
+- Verificado con Playwright contra un build de producción real: tap
+  completo de los 5 pasos del guión sin errores de página, termina
+  mostrando el botón de vuelta. `tsc --noEmit` y `pnpm build` limpios.
+- Con esto se cierran las 4 fases (A-D) del plan aprobado "Oficina
+  Virtual — reorden + Superpoderes".
