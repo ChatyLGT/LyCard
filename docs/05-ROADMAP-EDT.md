@@ -200,6 +200,13 @@ trabajando adentro, no solo la tarjeta):
 Sigue siendo roadmap — no hay código de esta promoción todavía; queda
 anotado acá para cuando se implemente el resto de "Negocio→Programa".
 
+**Regla de acceso, confirmada por Gunnar (2026-09-19):** la persona dueña
+de ese Negocio se vuelve N0 de su Programa nuevo con el **mismo mecanismo
+que ya existe hoy** — MasterN0 la da de alta a mano vía
+`/admin/programs`, nunca automático. Ver
+[02-ARQUITECTURA.md#regla-dura-quién-puede-volverse-adminn0](./02-ARQUITECTURA.md#regla-dura-quién-puede-volverse-adminn0)
+para el detalle verificado contra el código.
+
 **Qué compra tu plata en cada plan — el nivel de acceso, no solo el precio:**
 
 - **Freemium ($0):** tarjeta real + Oficina Virtual en modo vidriera — todo

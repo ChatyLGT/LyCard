@@ -37,19 +37,48 @@ Dentro de `app/`, cada carpeta con una `actions.ts` es el server-side de esa
 sección — las Server Actions se importan directo en el Server Component que
 las usa, nunca se llaman por HTTP.
 
-## Autenticación — dos sistemas separados, no se mezclan
+## Autenticación — tres sistemas separados, no se mezclan
 
 - **Admin** (`lib/auth.ts`): cookie firmada, login con email+password contra
   el modelo `Admin`. `isMasterN0()` (Admin con `programId: null`) tiene
   acceso global; un Admin con `programId` seteado está limitado a ese
   Programa (`currentAdminScope()`).
-- **Member** (`lib/memberAuth.ts`): Google OAuth o WhatsApp OTP simulado.
-  Un Member es una persona real con hasta 3 Cards propias
-  (`project`/`company`/`personal`).
+- **Member** (`lib/memberAuth.ts`): Google OAuth (identidad, login) o
+  WhatsApp OTP simulado. Un Member es una persona real con hasta 3 Cards
+  propias (`project`/`company`/`personal`).
+- **Conexión de Google por Card** (`lib/googleOAuth.ts`, Fase F): un tercer
+  eje, ortogonal a los dos de arriba — autoriza Calendar/Tasks/Drive **de
+  esa persona, sobre su propia Card**, para que Skills como Notas de Voz
+  orquesten sobre su infraestructura real. Nunca otorga ni depende de
+  permisos de Admin/Member — solo guarda tokens en `Member.googleRefreshToken`.
 
 Nunca uses la sesión de uno donde se espera la del otro — son modelos y
-cookies distintos a propósito (separa "quien administra la plataforma" de
-"quien es dueño de una tarjeta").
+cookies distintos a propósito (separa "quien administra la plataforma", de
+"quien es dueño de una tarjeta", de "a qué cuenta externa de Google está
+conectada esa tarjeta").
+
+### Regla dura: quién puede volverse Admin/N0
+
+**Ninguna cuenta de Admin se crea sola — ni por login de Google, ni por
+ningún flujo self-service.** Verificado en el código (no solo documentado
+de palabra): en todo el repo hay un único lugar que hace
+`prisma.admin.create` — `createProgramAdminAction` en
+`app/admin/programs/actions.ts` — y está detrás de `requireMasterN0()`,
+que redirige a cualquiera que no sea el propio MasterN0
+(`Admin.programId === null`, esa cuenta es exclusivamente de Gunnar).
+Ni el login de Google de un Member (`app/m/auth/google/callback`) ni la
+conexión de Google de una Card (Fase F, `app/m/auth/google/connect-*`)
+tocan jamás el modelo `Admin` — ambos solo leen/escriben `Member`.
+
+Esto también aplica hacia adelante, para "Negocio→Programa"
+(ver [05-ROADMAP-EDT.md](./05-ROADMAP-EDT.md#modelo-de-negocio-programa-legacy-y-sus-planes)):
+cuando el Negocio de alguien se convierte en su propio Programa, esa
+persona se vuelve N0 **de ese Programa** con el mismo mecanismo de
+siempre — MasterN0 la da de alta a mano vía `/admin/programs`, nunca de
+forma automática por haberse conectado con Google ni por ningún otro
+gatillo del sistema. Sigue siendo, en todo momento, un Admin con
+`programId` seteado — nunca `null`. `programId: null` es y será siempre
+una sola cuenta: la de Gunnar.
 
 ## El patrón que se repite en todo el repo
 
