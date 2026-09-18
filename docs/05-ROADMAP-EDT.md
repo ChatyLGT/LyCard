@@ -175,6 +175,10 @@ planes.
 
 **Qué compra tu plata en cada plan — el nivel de acceso, no solo el precio:**
 
+- **Freemium ($0):** tarjeta real + Oficina Virtual en modo vidriera — todo
+  bloqueado, cero bot, cero simulación. Ya construido: es exactamente el
+  modo `VisitorOficina` que existe hoy para cualquiera que no es el dueño.
+  Cero código nuevo para dar esto.
 - **Automatizado ($25/mes):** tarjeta + bot simulado. Todo simulado — sirve
   para "aparentar" una oficina operativa (el equivalente de la demo guiada
   que ya existe hoy en `OfficeDemoChat.tsx`/`WarrenChat.tsx`). Cero agentes
@@ -192,6 +196,21 @@ planes.
   propios del cliente convertidos en Agentes Legacy a nivel básico (fusión
   empleado+agente — transformación organizacional real, no solo una
   herramienta).
+
+**El proceso Legacy es obligatorio para todos, sin excepción** (Freemium
+incluido) antes de tener acceso a cualquier plan — lo que cambia es cuánto
+dura:
+
+- **Mínimo, 3 días → Freemium.**
+- **Máximo, 3 meses → recién ahí arranca la promesa de producto real**
+  (Enterprise/empresas tipo JP Suárez):
+  1. Mes 1: entrevistas / entendimiento y diagnóstico
+  2. Mes 2: armado de Oficina Virtual / propuesta de solución
+  3. Mes 3: entrenamiento de bots / pruebas y ajustes
+
+Esto mapea directo al `crmStage` del Módulo CRM — los pasos
+`sesion1..sesion5` de ese pipeline son estas mismas etapas, con duración
+variable según el plan.
 
 **3 motores de venta (GTM):**
 1. **Legacy personal → descubrimiento institucional.** La propia entrevista

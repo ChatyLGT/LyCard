@@ -53,9 +53,14 @@ todavía sin codificar — detalle completo en
 
 | Plan | Setup | Mensual | Extra |
 | --- | --- | --- | --- |
+| Freemium | $0 | $0 | Tarjeta real + Oficina en modo vidriera, todo bloqueado |
 | Automatizado | $100 | $25 | Legacy automatizado, sin Sherpa dedicado |
 | Normal | $500 | $100 | El estándar — 1 Legacy = 3 Agentes Silicio |
 | Plan B / Enterprise | $2.500 | $500 | + comisión sobre ventas |
+
+Entrar a cualquiera de estos 4 requiere completar el proceso Legacy
+(entrevistas + armado) — mínimo 3 días (Freemium), máximo 3 meses
+(Enterprise, recién ahí arranca la entrega real del producto).
 
 Sin estar en alguno de estos 3, la Oficina Virtual de sus tarjetas muestra
 el aviso honesto de "todavía sin activar" en vez de Superpoderes o bot —
