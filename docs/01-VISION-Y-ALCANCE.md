@@ -100,6 +100,15 @@ que hace falta saber para trabajar en este repo:
 - **Karl** (dominio Bridge) es el gatekeeper: traduce info privada (Carbono)
   a pública (Silicio) — nada personal se filtra nunca.
 
+**Sobre el vocabulario (4 Nobles Verdades, GoldenTicket, la fórmula
+z=z²+t³, Protocolo Dharma):** no es mitología decorativa encima de la
+arquitectura — es el lenguaje semántico propio que Gunnar diseñó a
+propósito, con un objetivo explícito de EinarOS: invertir la relación de
+siempre entre humano y máquina, para que sea la máquina la que aprenda a
+entender a su N0 y sus órdenes, no al revés. Se documenta y se respeta
+como tal, aunque este repo (LyCard) no dependa de esos mecanismos para
+funcionar hoy.
+
 Nada de esto es necesario para escribir código en LyCard hoy — está acá
 para que el vocabulario de comentarios, nombres de agentes y el roadmap
 (HR/CRM/PM/NashMesh/MachineEngine) tenga sentido cuando aparezca.
