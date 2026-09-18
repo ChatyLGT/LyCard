@@ -23,6 +23,19 @@ model Admin {
   program   Program? @relation(fields: [programId], references: [id])
 }
 
+// Bitácora de todo intento de login de Admin, exitoso o no (2026-09-19,
+// pedido de Gunnar: "eso también es importante que siempre quede
+// registro de eso") — password y Google, los dos métodos. No se borra
+// nunca; es el primer paso del futuro CRM/auditoría del panel.
+model AdminLoginEvent {
+  id        String   @id @default(cuid())
+  email     String
+  method    String // "password" | "google"
+  success   Boolean
+  reason    String? // motivo si success=false (ej. "bad_password", "google_not_admin")
+  createdAt DateTime @default(now())
+}
+
 // One row per LyCard. Multi-tenant roster: the Admin
 // creates/edits every card; each card is publicly viewable at /c/[slug].
 model Card {

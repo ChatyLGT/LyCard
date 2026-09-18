@@ -21,6 +21,9 @@ export async function loginAction(formData: FormData) {
   const next = String(formData.get("next") || "/admin");
 
   const admin = await verifyAdminCredentials(email, password);
+  await prisma.adminLoginEvent.create({
+    data: { email: email.trim().toLowerCase(), method: "password", success: Boolean(admin), reason: admin ? null : "bad_credentials" },
+  });
   if (!admin) {
     redirect(`/admin/login?error=1&next=${encodeURIComponent(next)}`);
   }

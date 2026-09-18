@@ -144,6 +144,20 @@ Programas distintos a Legacy (MLQR u otros) definen su propia variante de
 **Verificación:** `tsc --noEmit`, probar las 3 actions con un Member de
 prueba, confirmar el promedio con 0/1/5 scores.
 
+### Pendiente de definir: CRM del dashboard vs CRM de la Oficina Virtual
+
+Gunnar marcó (2026-09-19, textual: "no sé si es lo mismo siendo fractal
+para ser honesto") que hay una segunda idea de "CRM" distinta a la de
+arriba, todavía sin especificar del todo: un CRM/auditoría **del propio
+panel de Admin** — control y registro de la creación de Programs, Cards,
+etc. — no del pipeline de onboarding de un cliente. Primer ladrillo real
+ya construido: `AdminLoginEvent` (bitácora de todo login de Admin, ver
+[04-MODULOS.md](./04-MODULOS.md)). Falta definir con Gunnar si esto se
+extiende a loguear TODA acción de escritura del panel (crear Programa,
+crear Card, cambiar un Admin de scope, etc.) como una bitácora genérica,
+o si son cosas separadas — no construir el resto de esto sin esa
+definición.
+
 ## Oficina Virtual: Resumen Ejecutivo, Negocio→Programa, Bot Warren
 
 **Lo que ya está aprobado (Fase E1–E5, plan pausado):** Keep in Flow, Check
@@ -342,6 +356,35 @@ hay una disputa de socios en curso sobre Binkio, así que NashMesh se
 construye como IP propia y separada de LyCard/EinarOS, sin depender de
 esa plataforma. Este documento no planifica esa fase todavía — la
 simulación de arriba es lo único a construir por ahora.
+
+### Simulador de escenarios fractales a escala (pedido de Gunnar, 2026-09-19 — sistema aparte)
+
+Distinto del "Paso 3" de abajo (que simula UN proyecto cargado a mano,
+nodo por nodo). Lo que pidió Gunnar es un **generador de escenarios
+masivos** para estresar el fractal completo y ver qué pasa con los
+pagos/comisiones a escala real — cita textual: *"quiero saber qué pasa
+si a Legacy le pongo 12 programas y a cada programa 12 empresas y a
+cada empresa 12 legacys... simular proyectos para ver qué pasa con los
+pagos."*
+
+Conecta con dos piezas que ya existen o están planeadas:
+- `Card.isDemo`/`Program.isDemo` (Fase E1, ya en schema) y el ambiente
+  de datos mock de Fase E5 (arriba, "Oficina Virtual") — mismo
+  mecanismo de generación en bulk, marcado y borrable de un tirón, pero
+  ahí pensado para Cards/Oficinas de ejemplo, no para árboles
+  fractales completos con N niveles de profundidad configurable.
+- `NashMeshRun`/`computePayment` (Paso 1-2 de abajo) — el motor de
+  cálculo de pagos ya planeado; el simulador de escenarios lo llamaría
+  en bulk sobre datos generados, no reemplaza ese motor.
+
+**Explícitamente marcado por Gunnar como "un sistema aparte que debemos
+armar, y Fabricio debe considerar"** — no se construye en esta ronda.
+Falta definir con Gunnar, antes de especificarlo en serio: los
+parámetros del generador (profundidad, fan-out por nivel, si es
+determinístico o con variación aleatoria), qué se mide como salida
+(¿solo pagos totales? ¿por nivel? ¿tiempo de cómputo a esa escala?), y
+si vive en `/admin/nashmesh` como una pestaña más o es una pantalla
+separada.
 
 **Paso 1 — Schema:**
 ```prisma

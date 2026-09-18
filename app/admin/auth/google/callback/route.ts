@@ -44,7 +44,11 @@ export async function GET(request: NextRequest) {
 
   if (!profile.email) return fail("google_no_email");
 
-  const admin = await prisma.admin.findUnique({ where: { email: profile.email.toLowerCase() } });
+  const email = profile.email.toLowerCase();
+  const admin = await prisma.admin.findUnique({ where: { email } });
+  await prisma.adminLoginEvent.create({
+    data: { email, method: "google", success: Boolean(admin), reason: admin ? null : "google_not_admin" },
+  });
   if (!admin) {
     return fail("google_not_admin");
   }

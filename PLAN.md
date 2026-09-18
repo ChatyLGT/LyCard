@@ -3630,3 +3630,34 @@ con quien lleve la parte cuantitativa de NashMesh a fondo.
   asimétrico y por tarjeta, no global. Datos de prueba borrados
   después, no tocó producción. `tsc --noEmit` y `pnpm build` limpios.
   Shippeado como v1.28.0.
+
+### 2026-09-19 (cont.) — Bitácora de login de Admin + diagnóstico Google en prod
+
+- Gunnar probó "Continuar con Google" en producción y le dio "El login
+  con Google no está configurado todavía" — confirmé la causa exacta
+  con `web_fetch_vercel_url` contra `/admin/auth/google/start` en
+  `lycardeo.vercel.app`: redirige a `?error=google_not_configured`, o
+  sea `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` simplemente no están
+  cargadas como env vars en Vercel — el cliente OAuth de Google Cloud
+  ya existe (Gunnar ya hizo esos pasos), solo falta copiarlo a Vercel.
+  Acción de Gunnar, no hay nada más de código para arreglar acá.
+- Pedido explícito: "eso también es importante que siempre quede
+  registro de eso... tenemos que tener un tipo CRM" — primer paso:
+  bitácora de TODO intento de login de Admin (password o Google, éxito
+  o falla). Modelo `AdminLoginEvent` (migración
+  `20260918174441_admin_login_events`), logueado desde `loginAction`
+  (`app/admin/actions.ts`) y desde el callback de Google
+  (`app/admin/auth/google/callback/route.ts`). Página nueva,
+  MasterN0-only, `/admin/login-history` (linkeada desde "Mi cuenta").
+- Verificado con un browser real (Playwright, no curl — un POST crudo a
+  una Server Action no dispara el mecanismo real de Next): un login
+  fallido con credenciales inventadas quedó en la tabla
+  (`success:false, reason:"bad_credentials"`), y uno real con la cuenta
+  de Gunnar quedó `success:true`. La página `/admin/login-history` en
+  sí no la pude ver renderizada en este entorno local — el cookie de
+  sesión usa `Secure`, que el navegador descarta sobre HTTP plano
+  (`pnpm start` local); en producción (HTTPS real) no aplica. Reusa el
+  mismo patrón ya probado de `/admin/account` línea por línea, así que
+  el riesgo real es bajo, pero quedó anotado qué sí y qué no se pudo
+  confirmar en vivo. `tsc --noEmit` y `pnpm build` limpios. Shippeado
+  como v1.29.0.

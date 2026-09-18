@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.28.0";
+export const APP_VERSION = "1.29.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.29.0",
+    date: "2026-09-19",
+    notes:
+      "Nueva bitácora de login de Admin (MasterN0 → Mi cuenta → \"Ver bitácora de login\"): cada intento de entrar al panel, con password o con Google, éxito o falla, queda registrado — quién, cómo, y si falló, por qué.",
+  },
   {
     version: "1.28.0",
     date: "2026-09-19",

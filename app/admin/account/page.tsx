@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { currentAdminId } from "@/lib/auth";
+import { currentAdminId, currentAdminScope } from "@/lib/auth";
 import { changePasswordAction } from "@/app/admin/actions";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +23,8 @@ export default async function AccountPage({
 
   const admin = await prisma.admin.findUnique({ where: { id: adminId } });
   if (!admin) redirect("/admin/login");
+  const scope = await currentAdminScope();
+  const isMasterN0 = scope !== null && scope.programId === null;
 
   return (
     <div
@@ -159,6 +161,15 @@ export default async function AccountPage({
             Actualizar password
           </button>
         </form>
+
+        {isMasterN0 && (
+          <Link
+            href="/admin/login-history"
+            style={{ textAlign: "center", font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".14em", textTransform: "uppercase", color: "#5A5A5A" }}
+          >
+            Ver bitácora de login →
+          </Link>
+        )}
       </div>
     </div>
   );

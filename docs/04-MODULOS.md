@@ -34,6 +34,16 @@ Auth: `lib/auth.ts` (`isMasterN0()`, `currentAdminScope()`). Toda action de
 `/admin` valida el scope antes de tocar datos — nunca confíes en que la UI
 ya filtró.
 
+**Bitácora de login** (`app/admin/login-history/page.tsx`, MasterN0-only,
+linkeada desde `/admin/account`): registro de todo intento de entrar al
+panel — password o Google, éxito o falla — modelo `AdminLoginEvent`,
+logueado desde `loginAction` y desde
+`app/admin/auth/google/callback/route.ts`. Primer paso de lo que Gunnar
+pidió como "un tipo CRM" de auditoría del panel — ver
+[05-ROADMAP-EDT.md](./05-ROADMAP-EDT.md#pendiente-de-definir-crm-del-dashboard-vs-crm-de-la-oficina-virtual)
+para la distinción (todavía sin resolver del todo) entre este y el CRM
+de onboarding de clientes.
+
 ## Oficina Virtual
 
 **Archivo central:** `app/c/[slug]/oficina/page.tsx`. Se bifurca en
