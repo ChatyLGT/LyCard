@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.25.0";
+export const APP_VERSION = "1.25.1";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.25.1",
+    date: "2026-09-19",
+    notes:
+      "Fix: el ícono de \"Personalizar\" (arriba a la izquierda) para alguien sin relación con esa tarjeta (NA) siempre terminaba mandándolo a la pantalla de login del Admin de todos modos — ahora, para esa persona, el ícono ya se ve como lo que es: un botón de Iniciar sesión.",
+  },
   {
     version: "1.25.0",
     date: "2026-09-19",

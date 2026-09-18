@@ -855,9 +855,22 @@ export default function LyCardView({
                   sharing one cross-axis with the icon circles. */}
               <div style={{ position: "absolute", top: 14, left: 14, right: 14, zIndex: 30, display: "flex", alignItems: "center" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Link href={`/admin/${card.slug}`} aria-label={L("customize")} style={ICON_BTN}>
-                    <Icon name="tune" size={17} />
-                  </Link>
+                  {/* Para NA (nadie logueado con relación a esta Card), este
+                      ícono siempre terminaba en /admin/login de todos modos
+                      (pedido de Gunnar, 2026-09-19: "que el ícono cambie...
+                      porque al final es donde te lleva") — mostrarlo como
+                      "personalizar" ahí era engañoso. Sigue siendo tune/
+                      /admin/[slug] para cualquiera con badge real (N0..N,
+                      donde sí tiene sentido personalizar). */}
+                  {badge === "NA" ? (
+                    <Link href="/admin/login" aria-label={L("loginIcon")} style={ICON_BTN}>
+                      <Icon name="login" size={17} />
+                    </Link>
+                  ) : (
+                    <Link href={`/admin/${card.slug}`} aria-label={L("customize")} style={ICON_BTN}>
+                      <Icon name="tune" size={17} />
+                    </Link>
+                  )}
                   {/* Viewer-relative N badge (2026-09-16) — always renders,
                       never hidden, so this cluster's width never changes.
                       MasterN0 keeps the shortcut into /admin; every other

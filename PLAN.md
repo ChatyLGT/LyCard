@@ -3485,3 +3485,23 @@ con quien lleve la parte cuantitativa de NashMesh a fondo.
   rutas nuevas aparecen compiladas). Shippeado como v1.25.0. Pendiente
   de Gunnar: el paso de Google Cloud Console de arriba, y probar el
   botón "Conectar Google" una vez hecho.
+- Gunnar hizo el paso de Google Cloud Console (guiado paso a paso, con
+  el nombre nuevo de esa sección — "Google Auth Platform" — y volvió el
+  proyecto a estado "Testing" en vez de "In production sin verificar",
+  la opción correcta para no quemar el cupo de 100 usuarios de por vida
+  que Google no resetea nunca).
+- Detectamos que `docs/04-MODULOS.md` se había quedado atrás — no
+  documentaba ni Notas de Voz ni la conexión real de Google. Se agregó
+  ambas secciones ahí y se corrigió la fila de "Notas de voz" en el
+  catálogo de Skills de `05-ROADMAP-EDT.md`, que todavía la listaba
+  como pendiente.
+- Fix chico pedido por Gunnar: el ícono de "Personalizar" (arriba a la
+  izquierda de toda tarjeta) siempre linkeaba a `/admin/[slug]` — para
+  cualquiera sin badge real (NA), esa ruta redirige derecho a
+  `/admin/login` de todos modos, así que mostrarle un ícono de
+  "personalizar" ahí era engañoso. Ahora, cuando `badge === "NA"`, el
+  mismo lugar muestra un ícono de login (`Icon name="login"`) apuntando
+  directo a `/admin/login` — para cualquiera con badge real (N0..N,
+  alguien con relación de verdad a esa Card) sigue siendo el ícono de
+  personalizar de siempre. Nueva key de i18n `loginIcon` (ES/EN).
+  `tsc --noEmit` y `pnpm build` limpios. Shippeado como v1.25.1.
