@@ -277,9 +277,15 @@ confirmado con Gunnar que blockchain **no** es parte del MVP del partido
 (MLQR) — no se le vendió eso. La idea es que encaje más adelante,
 integrado con NashMesh: smart contracts que trackeen cada operación y,
 en su momento, intervengan en el intercambio de valor y los pagos —
-posiblemente sobre infraestructura de Binkio.io (proyecto propio de
-Gunnar, detalle pendiente de confirmar). Este documento no planifica esa
-fase todavía — la simulación de arriba es lo único a construir por ahora.
+inspirado en el diseño de **Binkio.io**, proyecto propio de Gunnar
+(Fideicomiso Digital 3.0 es su creación), que ya opera con contratos
+inteligentes validados por fideicomisos reales, comisiones tipo MLM
+residuales y pagos mixtos cripto/fiat. Se documenta como **precedente/
+inspiración de Gunnar**, no como infraestructura compartida a reusar —
+hay una disputa de socios en curso sobre Binkio, así que NashMesh se
+construye como IP propia y separada de LyCard/EinarOS, sin depender de
+esa plataforma. Este documento no planifica esa fase todavía — la
+simulación de arriba es lo único a construir por ahora.
 
 **Paso 1 — Schema:**
 ```prisma
