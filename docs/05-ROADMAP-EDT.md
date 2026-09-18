@@ -212,6 +212,28 @@ Esto mapea directo al `crmStage` del Módulo CRM — los pasos
 `sesion1..sesion5` de ese pipeline son estas mismas etapas, con duración
 variable según el plan.
 
+### El "nacimiento", definido con precisión
+
+Principio recursivo confirmado por Gunnar: **todo nace de Legacy** —
+Irpavi, HeroSuite, Digital Kingdom, MLQR, Conce, todos pasaron/pasan por
+Legacy como si fueran clientes, y de cada uno nace lo suyo después. Es
+fractal de verdad, no solo de nombre — mismo espíritu que el Protocolo
+Dharma interno de EinarOS: nada tiene contexto/acceso legítimo sin pasar
+por un origen definido.
+
+El "nacimiento" (paso de prospecto a usuario real) sigue siempre esta
+secuencia: **N0 recibe el programa → lo explora → crea sus tarjetas → las
+juega en Freemium → crea un usuario real**, por uno de 2 caminos:
+
+- **Personal** (nivel más bajo de membresía): solo el Gemelo Digital,
+  ningún bot.
+- **Full**: 3 bots especialistas + infraestructura Einar completa (1 N0,
+  3 N1, 12 N2s × 4 dominios).
+
+Esto es independiente de los 4 planes de precio (Freemium/Automatizado/
+Normal/Enterprise) — es el eje de "¿sos una persona o una organización?",
+no de "¿cuánto pagás?".
+
 **3 motores de venta (GTM):**
 1. **Legacy personal → descubrimiento institucional.** La propia entrevista
    Legacy (sesiones del Módulo CRM) es el mecanismo de discovery para
