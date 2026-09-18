@@ -205,6 +205,13 @@ model ProgramSkin {
   name        String
   designMdRaw String   @db.Text
   colors      Json
+  // Segundo set de colores, para modo claro (2026-09-18, pedido de
+  // Gunnar) — mismo shape que `colors` (SkinColors), de un segundo
+  // design.md opcional. Null mientras no se suba: el toggle claro/oscuro
+  // de la tarjeta sigue oculto con un skin activo hasta que este campo
+  // tenga algo, para no mostrar un botón que no cambia nada (mismo
+  // criterio que ya regía antes de esto).
+  lightColors Json?
   font        String
   buttonStyle String
   active      Boolean  @default(false)

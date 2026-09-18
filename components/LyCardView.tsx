@@ -619,32 +619,41 @@ export default function LyCardView({
   // partes de LyCardView que antes tenían el dorado/oscuro fijo escrito a
   // mano. Sin skin activo, brandVars queda vacío y cada var() cae a su
   // literal de siempre — cero cambio visual.
+  //
+  // Un skin ahora puede traer un segundo set de colores para modo claro
+  // (2026-09-18, pedido de Gunnar) — sin ese segundo set, el toggle
+  // sigue oculto (mostrar un botón que no cambia nada era el bug
+  // original que esto reemplaza); con los dos sets, brandVars elige el
+  // que corresponda al `theme` actual en vez de pisarlo siempre con el
+  // (único) set de antes.
   const activeSkin = program?.skins?.[0] ?? null;
   const skinColors = activeSkin && isSkinColors(activeSkin.colors) ? activeSkin.colors : null;
-  const brandVars: CSSProperties = skinColors
+  const skinLightColors = activeSkin && isSkinColors(activeSkin.lightColors) ? activeSkin.lightColors : null;
+  const activeSkinColors = theme === "light" && skinLightColors ? skinLightColors : skinColors;
+  const brandVars: CSSProperties = activeSkinColors
     ? {
-        ["--ink" as string]: skinColors.ink,
-        ["--ink2" as string]: skinColors.ink2,
-        ["--surf" as string]: skinColors.surf,
-        ["--surf2" as string]: skinColors.surf2,
-        ["--surfHi" as string]: skinColors.surf2,
-        ["--line" as string]: `rgba(${hexToRgbString(skinColors.accent)},.22)`,
-        ["--line2" as string]: `rgba(${hexToRgbString(skinColors.accent)},.5)`,
-        ["--pill" as string]: `rgba(${hexToRgbString(skinColors.surf)},.95)`,
-        ["--goldtxt" as string]: skinColors.accent,
-        ["--photofade" as string]: skinColors.bg,
-        ["--photofade2" as string]: `rgba(${hexToRgbString(skinColors.bg)},.52)`,
-        ["--photofade3" as string]: `rgba(${hexToRgbString(skinColors.bg)},.25)`,
-        ["--qrbg" as string]: `rgba(${hexToRgbString(skinColors.surf)},.95)`,
+        ["--ink" as string]: activeSkinColors.ink,
+        ["--ink2" as string]: activeSkinColors.ink2,
+        ["--surf" as string]: activeSkinColors.surf,
+        ["--surf2" as string]: activeSkinColors.surf2,
+        ["--surfHi" as string]: activeSkinColors.surf2,
+        ["--line" as string]: `rgba(${hexToRgbString(activeSkinColors.accent)},.22)`,
+        ["--line2" as string]: `rgba(${hexToRgbString(activeSkinColors.accent)},.5)`,
+        ["--pill" as string]: `rgba(${hexToRgbString(activeSkinColors.surf)},.95)`,
+        ["--goldtxt" as string]: activeSkinColors.accent,
+        ["--photofade" as string]: activeSkinColors.bg,
+        ["--photofade2" as string]: `rgba(${hexToRgbString(activeSkinColors.bg)},.52)`,
+        ["--photofade3" as string]: `rgba(${hexToRgbString(activeSkinColors.bg)},.25)`,
+        ["--qrbg" as string]: `rgba(${hexToRgbString(activeSkinColors.surf)},.95)`,
         ["--nameshadow" as string]:
-          lightness(skinColors.bg) > 140 ? "0 1px 1px rgba(255,255,255,.7)" : "0 1px 2px rgba(0,0,0,.35)",
+          lightness(activeSkinColors.bg) > 140 ? "0 1px 1px rgba(255,255,255,.7)" : "0 1px 2px rgba(0,0,0,.35)",
         ["--card" as string]: "transparent",
-        ["--deepBg" as string]: skinColors.bg,
-        ["--accentLight" as string]: shade(skinColors.accent, 0.35),
-        ["--accentMid" as string]: skinColors.accent,
-        ["--accentDeep" as string]: skinColors.accentDark,
-        ["--accentRgb" as string]: hexToRgbString(skinColors.accent),
-        ["--onAccent" as string]: lightness(skinColors.accent) > 150 ? "#141414" : "#F5F2EB",
+        ["--deepBg" as string]: activeSkinColors.bg,
+        ["--accentLight" as string]: shade(activeSkinColors.accent, 0.35),
+        ["--accentMid" as string]: activeSkinColors.accent,
+        ["--accentDeep" as string]: activeSkinColors.accentDark,
+        ["--accentRgb" as string]: hexToRgbString(activeSkinColors.accent),
+        ["--onAccent" as string]: lightness(activeSkinColors.accent) > 150 ? "#141414" : "#F5F2EB",
         ...(activeSkin && (KNOWN_FONTS as readonly string[]).includes(activeSkin.font)
           ? { ["--brandFont" as string]: `"${activeSkin.font}"` }
           : {}),
@@ -903,13 +912,12 @@ export default function LyCardView({
                   >
                     {lang === "es" ? "ES" : "EN"}
                   </button>
-                  {/* Oculto con skin activo (2026-09-16): un skin es una
-                      identidad fija (un solo bg/ink elegido en el design.md),
-                      no un par claro/oscuro — brandVars pisa THEME_VARS sin
-                      importar `theme`, así que antes el botón quedaba ahí
-                      sin hacer nada visible. Mejor no mostrarlo que mostrar
-                      uno que no cambia nada. */}
-                  {!skinColors && (
+                  {/* Sin skin: el par claro/oscuro de siempre. Con skin
+                      activo, solo se muestra si el skin también definió un
+                      segundo set de colores para modo claro (2026-09-18) —
+                      mostrarlo con un solo set sería el bug original que
+                      esto reemplaza (un botón que no cambiaba nada). */}
+                  {(!skinColors || skinLightColors) && (
                     <button
                       type="button"
                       aria-label="Tema"

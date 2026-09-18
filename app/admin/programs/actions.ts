@@ -141,16 +141,44 @@ export async function createProgramSkinAction(programId: string, formData: FormD
   const parsed = parseDesignMd(raw);
   const name = String(formData.get("skinName") || "").trim() || `Skin ${count + 1}`;
 
+  // Segundo design.md opcional para el modo claro (2026-09-18) — mismo
+  // parser, mismo shape de colores, guardado aparte. Sin este archivo el
+  // skin queda solo con su set oscuro, igual que siempre.
+  const lightFile = formData.get("designMdLight");
+  const lightColors = lightFile instanceof File && lightFile.size > 0 ? parseDesignMd(await lightFile.text()).colors : undefined;
+
   await prisma.programSkin.create({
     data: {
       programId,
       name,
       designMdRaw: raw,
       colors: parsed.colors,
+      lightColors,
       font: parsed.font,
       buttonStyle: parsed.buttonStyle,
     },
   });
+
+  revalidatePath(`/admin/programs/${programId}`);
+  redirect(`/admin/programs/${programId}?skinSaved=1`);
+}
+
+// Sube (o reemplaza) el set de colores de modo claro de un skin que ya
+// existe — para los skins creados antes de que esto existiera (como el
+// de Legacy), sin tener que borrarlos y resubirlos enteros.
+export async function setProgramSkinLightColorsAction(programId: string, skinId: string, formData: FormData) {
+  const scope = await currentAdminScope();
+  if (!scope) redirect("/admin/login");
+  if (scope.programId && scope.programId !== programId) redirect("/admin");
+
+  const skin = await prisma.programSkin.findUnique({ where: { id: skinId } });
+  if (!skin || skin.programId !== programId) redirect(`/admin/programs/${programId}`);
+
+  const file = formData.get("designMdLight");
+  if (!(file instanceof File) || file.size === 0) redirect(`/admin/programs/${programId}?skinError=empty`);
+
+  const parsed = parseDesignMd(await file.text());
+  await prisma.programSkin.update({ where: { id: skinId }, data: { lightColors: parsed.colors } });
 
   revalidatePath(`/admin/programs/${programId}`);
   redirect(`/admin/programs/${programId}?skinSaved=1`);

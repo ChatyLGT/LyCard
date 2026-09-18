@@ -12,6 +12,7 @@ import {
   createProgramSkinAction,
   activateProgramSkinAction,
   deleteProgramSkinAction,
+  setProgramSkinLightColorsAction,
 } from "../actions";
 import { updateMemberAction, deleteMemberAction, messageMemberAction } from "../members-actions";
 import { createPuestoAction, updatePuestoAction, deletePuestoAction } from "../puestos-actions";
@@ -283,6 +284,7 @@ export default async function AdminProgramDetailPage({
 
           {program.skins.map((skin) => {
             const colors = skin.colors as unknown as SkinColors;
+            const lightColors = skin.lightColors as unknown as SkinColors | null;
             return (
               <div key={skin.id} style={{ background: "#161616", border: skin.active ? "1px solid rgba(200,161,90,.6)" : "1px solid rgba(255,255,255,.08)", borderRadius: 12, padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
@@ -291,11 +293,24 @@ export default async function AdminProgramDetailPage({
                     <span style={{ font: "700 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".14em", textTransform: "uppercase", color: "#8fd19e" }}>● Encendido</span>
                   )}
                 </div>
-                <div style={{ display: "flex", gap: 4 }}>
-                  {Object.values(colors ?? {}).map((hex, i) => (
-                    <span key={i} style={{ width: 22, height: 22, borderRadius: 6, background: String(hex), border: "1px solid rgba(255,255,255,.15)" }} />
-                  ))}
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <span style={{ font: "600 8.5px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#5A5A5A" }}>Oscuro</span>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    {Object.values(colors ?? {}).map((hex, i) => (
+                      <span key={i} style={{ width: 22, height: 22, borderRadius: 6, background: String(hex), border: "1px solid rgba(255,255,255,.15)" }} />
+                    ))}
+                  </div>
                 </div>
+                {lightColors && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <span style={{ font: "600 8.5px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#5A5A5A" }}>Claro</span>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {Object.values(lightColors).map((hex, i) => (
+                        <span key={i} style={{ width: 22, height: 22, borderRadius: 6, background: String(hex), border: "1px solid rgba(255,255,255,.15)" }} />
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <span style={{ font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#9a8f80" }}>
                   {skin.font} · {skin.buttonStyle}
                 </span>
@@ -317,6 +332,19 @@ export default async function AdminProgramDetailPage({
                     </button>
                   </form>
                 </div>
+                {/* Retrofit para skins creados antes de que esto existiera
+                    (2026-09-18) — subir/reemplazar solo el set claro sin
+                    tocar el resto del skin. Sin esto, el toggle claro/oscuro
+                    de la tarjeta sigue oculto (ver LyCardView.tsx). */}
+                <form action={setProgramSkinLightColorsAction.bind(null, program.id, skin.id)} style={{ display: "flex", gap: 6, alignItems: "center", paddingTop: 6, borderTop: "1px solid rgba(255,255,255,.06)" }}>
+                  <input type="file" name="designMdLight" accept=".md,text/markdown,text/plain" style={{ flex: 1, minWidth: 0, font: "400 10px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }} />
+                  <button
+                    type="submit"
+                    style={{ padding: "7px 10px", borderRadius: 8, border: "1px solid rgba(200,161,90,.3)", background: "none", color: "#C8A15A", font: "700 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", cursor: "pointer", flexShrink: 0 }}
+                  >
+                    {lightColors ? "Reemplazar claro" : "+ Modo claro"}
+                  </button>
+                </form>
               </div>
             );
           })}
@@ -328,7 +356,14 @@ export default async function AdminProgramDetailPage({
                 placeholder="Nombre del skin (opcional)"
                 style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 8, padding: "8px 12px", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
               />
-              <input type="file" name="designMd" accept=".md,text/markdown,text/plain" style={{ font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }} />
+              <label style={{ font: "400 10px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
+                design.md — modo oscuro
+                <input type="file" name="designMd" accept=".md,text/markdown,text/plain" style={{ display: "block", marginTop: 4, font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }} />
+              </label>
+              <label style={{ font: "400 10px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
+                design.md — modo claro (opcional, activa el toggle de la tarjeta)
+                <input type="file" name="designMdLight" accept=".md,text/markdown,text/plain" style={{ display: "block", marginTop: 4, font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }} />
+              </label>
               <button
                 type="submit"
                 style={{ padding: 11, border: "none", borderRadius: 8, background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)", color: "#0D0D0D", font: "700 10.5px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", cursor: "pointer" }}

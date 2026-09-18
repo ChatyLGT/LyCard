@@ -3017,6 +3017,49 @@ con quien lleve la parte cuantitativa de NashMesh a fondo.
     la sección del editor se verificó por tipos + build únicamente —
     probarlo de punta a punta requiere sesión real de Member (Google/
     WhatsApp OTP), no simulada en este pase.
+- **Cuarta ronda — foto de perfil en la Oficina + Skins con modo claro
+  real (2026-09-18)**. Gunnar pidió dos cosas viendo la app ya en prod:
+  1. **Foto**: el saludo "Hola, {nombre}" de `OwnerOficina` mostraba solo
+     la inicial en un círculo dorado — ahora usa `card.portraitUrl` (la
+     misma foto principal de la tarjeta) si existe, con la inicial como
+     fallback solo si no hay foto cargada.
+  2. **Badge claro/oscuro ausente en `mastern0`**: no era un bug — se
+     investigó primero contra producción de verdad (`mcp__Vercel__
+     web_fetch_vercel_url` sobre `https://lycardeo.vercel.app/c/mastern0`,
+     ya que la base local no refleja los datos de prod) y se confirmó que
+     el Programa Legacy tiene un `ProgramSkin` activo ("Skin 1") — el
+     botón está oculto a propósito desde el 16 de septiembre, porque un
+     skin es una identidad de marca fija (un solo set de colores), no un
+     par claro/oscuro, y mostrar un botón que no cambia nada era
+     justamente el bug que esa fecha corrigió. Se le preguntó a Gunnar
+     cómo resolverlo (podía reintroducir ese bug sin querer) y eligió la
+     opción grande: **que el skin también defina colores para modo
+     claro**, no dejarlo oculto ni mostrar un botón inerte.
+  - **Implementado de verdad, no cáscara**: `ProgramSkin.lightColors
+    Json?` nuevo (migración `20260918002234_program_skin_light_colors`,
+    aditivo — ningún skin existente se rompe, queda `null` hasta que se
+    suba). `createProgramSkinAction` acepta un segundo `design.md`
+    opcional al crear un skin nuevo; `setProgramSkinLightColorsAction`
+    (nueva) permite subírselo a un skin que ya existe — como el de Legacy
+    — sin recrearlo. `/admin/programs/[id]` muestra los swatches de
+    "Oscuro" y, si existe, "Claro" por separado, con su propio uploader.
+  - `LyCardView.tsx`: `brandVars` ahora elige `skinLightColors` en vez de
+    `skinColors` cuando `theme === "light"` **y** el skin tiene ambos sets
+    — corrige el bug real que describía el comentario del propio código
+    ("brandVars pisa THEME_VARS sin importar `theme`"), que hasta ahora
+    solo se evitaba escondiendo el botón. El botón vuelve a mostrarse
+    exactamente cuando alternar va a cambiar algo de verdad: sin skin
+    (par oscuro/claro de siempre), o con skin que ya tiene los dos sets.
+    Con skin y un solo set (el caso de casi todos los skins existentes
+    hoy) sigue oculto — mismo criterio de antes, ahora desbloqueable
+    subiendo el segundo archivo en vez de quedar cerrado para siempre.
+  - Verificado end-to-end con Playwright contra un Program/Skin/Card de
+    prueba: con solo el set oscuro, el botón no aparece (0 en el DOM);
+    tras agregarle `lightColors`, aparece (1) y clickearlo **cambia de
+    verdad** los colores renderizados de la tarjeta (capturas antes/
+    después confirman el fondo pasando de oscuro a los tonos claros
+    subidos). `pnpm build`/`tsc --noEmit` limpios. Toda la data de prueba
+    (Program/Skin/Card) borrada después.
 - Referencia técnica de producción (Sección G) y research flag de NashMesh
   (Sección H) siguen en pie, sin tocar código todavía — son para cuando el
   editor real (modelo Prisma + CRUD + `/api/malla`) se construya.

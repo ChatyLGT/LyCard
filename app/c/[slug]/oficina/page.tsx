@@ -427,8 +427,15 @@ function OwnerOficina({ data }: { data: OficinaData }) {
 
       <div style={{ maxWidth: 460, margin: "0 auto", padding: "24px 20px 40px", display: "flex", flexDirection: "column", gap: 18 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 999, background: `linear-gradient(160deg,#E5C378,${accent})`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <span style={{ font: "700 15px 'Playfair Display',serif", color: "#0D0D0D" }}>{card.name.charAt(0)}</span>
+          <div style={{ width: 40, height: 40, borderRadius: 999, padding: 2, background: `linear-gradient(160deg,#E5C378,${accent})`, flexShrink: 0 }}>
+            <div style={{ width: "100%", height: "100%", borderRadius: 999, overflow: "hidden", background: "#141414", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {card.portraitUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={card.portraitUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <span style={{ font: "700 15px 'Playfair Display',serif", color: accent }}>{card.name.charAt(0)}</span>
+              )}
+            </div>
           </div>
           <div style={{ minWidth: 0 }}>
             <div style={{ font: "700 15px 'Plus Jakarta Sans',sans-serif" }}>Hola, {card.name}</div>
