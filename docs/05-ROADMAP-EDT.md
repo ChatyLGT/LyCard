@@ -272,6 +272,15 @@ activo).
 Primera versión: **modo simulación únicamente**, cero movimiento de dinero
 real.
 
+**Sobre blockchain/smart contracts (fuera de alcance del MVP del lunes):**
+confirmado con Gunnar que blockchain **no** es parte del MVP del partido
+(MLQR) — no se le vendió eso. La idea es que encaje más adelante,
+integrado con NashMesh: smart contracts que trackeen cada operación y,
+en su momento, intervengan en el intercambio de valor y los pagos —
+posiblemente sobre infraestructura de Binkio.io (proyecto propio de
+Gunnar, detalle pendiente de confirmar). Este documento no planifica esa
+fase todavía — la simulación de arriba es lo único a construir por ahora.
+
 **Paso 1 — Schema:**
 ```prisma
 model NashMeshRun {
