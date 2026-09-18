@@ -43,11 +43,30 @@ construidas (HeroSuite, Irpavi) — ver el detalle y lo que falta en
 
 ## Cómo un Negocio se convierte en Programa
 
-Regla de negocio central (documentada, todavía sin codificar — ver roadmap):
-un Negocio pasa a ser **Programa** cuando paga al menos **1 paquete Legacy**
-(= 3 Agentes de Silicio) con una mensualidad mínima de **USD 100/mes**. Sin
-eso, la Oficina Virtual de sus tarjetas muestra el aviso honesto de
-"todavía sin activar" en vez de Superpoderes o bot — nunca acceso simulado.
+**Estado real: cero clientes hoy.** La app no salió al mercado todavía —
+todo lo de abajo es tesis de venta (leads y apuestas), no facturación
+confirmada. MLQR es el lead más avanzado y tampoco pagó todavía.
+
+Un Negocio pasa a ser **Programa** al entrar a uno de 3 planes (documentado,
+todavía sin codificar — detalle completo en
+[05-ROADMAP-EDT.md](./05-ROADMAP-EDT.md#modelo-de-negocio-programa-legacy-y-sus-planes)):
+
+| Plan | Setup | Mensual | Extra |
+| --- | --- | --- | --- |
+| Automatizado | $100 | $25 | Legacy automatizado, sin Sherpa dedicado |
+| Normal | $500 | $100 | El estándar — 1 Legacy = 3 Agentes Silicio |
+| Plan B / Enterprise | $2.500 | $500 | + comisión sobre ventas |
+
+Sin estar en alguno de estos 3, la Oficina Virtual de sus tarjetas muestra
+el aviso honesto de "todavía sin activar" en vez de Superpoderes o bot —
+nunca acceso simulado.
+
+**3 motores de venta reales, no un solo canal:** (1) la propia entrevista
+Legacy como mecanismo de discovery para proyectos institucionales grandes,
+(2) un diagnóstico de riesgo cero que automatiza el proceso de venta
+existente sin reemplazar vendedores, (3) verticales de comunidad (ej.
+Digital Kingdom para iglesias/organizaciones). Detalle de cada uno en el
+roadmap.
 
 ## Contexto de fondo: EinarOS
 

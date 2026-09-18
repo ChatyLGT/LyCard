@@ -156,17 +156,56 @@ relevantes del negocio/programa. "Check de Realidad" de E1–E5 ya es ese
 resumen; falta dejarlo explícito como propósito central (jerarquía visual
 propia, no una sección más).
 
-**Modelo de negocio — Negocio → Programa:**
-- Un Negocio se convierte en Programa al pagar por al menos **1 paquete
-  Legacy** (= 3 Agentes de Silicio) con mensualidad mínima de **USD
-  100/mes**.
-- Schema: `Program.legacyPackages Int @default(0)`,
-  `Program.monthlySubscriptionUsd Int @default(0)`. Default
-  `legacyPackages:1, monthlySubscriptionUsd:100` en la migración, para no
-  desactivar Programas ya existentes.
-- `upgradeToProgramAction(programId, legacyPackages, monthlySubscriptionUsd)`
-  en `app/admin/programs/actions.ts` — valida el mínimo antes de togglear
-  `Program.active`.
+### Modelo de negocio: Programa Legacy y sus planes
+
+**Estado real:** cero clientes hoy — la app no salió al mercado, todo esto
+es tesis de venta (leads/apuestas), no facturación confirmada. MLQR es el
+lead más avanzado y tampoco pagó todavía.
+
+**3 planes reales, no un único umbral:**
+
+| Plan | Setup | Mensual | Extra |
+| --- | --- | --- | --- |
+| Automatizado | $100 | $25 | Legacy automatizado, sin Sherpa dedicado |
+| Normal | $500 | $100 | El estándar — 1 Legacy = 3 Agentes Silicio |
+| Plan B / Enterprise | $2.500 | $500 | + comisión sobre ventas |
+
+Un Negocio se convierte en Programa al entrar a cualquiera de estos 3
+planes.
+
+**3 motores de venta (GTM):**
+1. **Legacy personal → descubrimiento institucional.** La propia entrevista
+   Legacy (sesiones del Módulo CRM) es el mecanismo de discovery para
+   proyectos grandes (gobierno, corporativo) — sin forma todavía de
+   dimensionar $ ni cantidad de agentes para este tipo de proyecto ad-hoc,
+   igual que MLQR.
+2. **Diagnóstico de riesgo cero.** Se vende mapear y automatizar todo el
+   proceso de venta del cliente (lead → proceso → pedido → despacho →
+   cobro), framed como seguro: no reemplaza vendedores, los empodera. El
+   valor está en el diagnóstico aunque la automatización no prenda.
+3. **Vertical comunidad — Digital Kingdom.** Un Programa distinto para
+   organizaciones tipo iglesias: redes sociales + administración de
+   cuentas. *Riesgo a vigilar:* el WHITEPAPER prohíbe usar iglesias/
+   pastores como **canal** de reclutamiento — este caso es la iglesia como
+   **cliente**, no como canal; no cruzar esa línea.
+
+**Schema:**
+```prisma
+model Program {
+  // ...existentes...
+  planTier              String  @default("normal") // "automatizado" | "normal" | "enterprise"
+  setupFeeUsd           Int     @default(0)
+  monthlySubscriptionUsd Int    @default(0)
+  commissionOnSalesPct  Float?  // solo Enterprise
+}
+```
+Default en la migración: los Programas ya existentes quedan en
+`planTier:"normal", setupFeeUsd:500, monthlySubscriptionUsd:100` para no
+desactivar nada que ya está andando.
+
+`upgradeToProgramAction(programId, planTier, setupFeeUsd, monthlySubscriptionUsd, commissionOnSalesPct?)`
+en `app/admin/programs/actions.ts` — valida el plan antes de togglear
+`Program.active`.
 - Gate en `app/c/[slug]/oficina/page.tsx`: sin activar, mostrar el aviso
   honesto ya establecido ("todavía sin activar — próximamente") en vez de
   Superpoderes/bot.
