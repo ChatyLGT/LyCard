@@ -99,6 +99,24 @@ que hace falta saber para trabajar en este repo:
   mapeadas y seguidas, que todavía no son un agente).
 - **Karl** (dominio Bridge) es el gatekeeper: traduce info privada (Carbono)
   a pública (Silicio) — nada personal se filtra nunca.
+- **Protocolo Dirac:** todo lo que entra a EinarOS aterriza primero en una
+  carpeta única de crudos (`99_RAW`, dominio Bridge) — nunca directo a su
+  destino final. De ahí, un agente lo "estampa" (`#dirac`: origen, timestamp,
+  autoridad, la fórmula z=z²+t³) y lo clasifica; recién con esa estampa se
+  mueve y se acomoda donde tiene más "peso específico" (una matriz fija:
+  código → su Reino, documentación de diseño → Arquitectura, datos
+  temporales → se quedan en RAW con TTL). Es el mismo principio de "nada
+  tiene contexto legítimo sin pasar por un origen definido" que ya se
+  documentó para Protocolo Dharma — Dirac es la versión de ese principio
+  para *archivos y contenido*, no para autenticación de agentes. Referencia
+  completa (fuera del scope de LyCard hoy, pero relevante para cualquier
+  Skill que vaya a "entender" contenido nuevo — ej. Notas de Voz → NashMesh):
+  carpeta de Drive
+  [`1xatFWg7lcPVd58FO8Fi5V2sXebJiIICc`](https://drive.google.com/drive/folders/1xatFWg7lcPVd58FO8Fi5V2sXebJiIICc)
+  (raíz que contiene EinarOS V3.0 completo + Legacy + WhatsApp Chats).
+  **Pendiente de Gunnar:** darle acceso a esta carpeta a la cuenta de Google
+  que use el asistente de Fabricio, para que pueda leerla igual que este
+  repo de GitHub.
 
 **Sobre el vocabulario (4 Nobles Verdades, GoldenTicket, la fórmula
 z=z²+t³, Protocolo Dharma):** no es mitología decorativa encima de la
