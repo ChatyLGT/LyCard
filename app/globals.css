@@ -34,6 +34,19 @@ button {
   font: inherit;
 }
 
+/* Self-hosted (no runtime fetch to fonts.googleapis.com) — antes cada ícono
+   dependía de esa red externa cargando a tiempo; sin ella (offline, firewall,
+   bloqueador) el ícono se veía como texto crudo ("diamond", "mail", etc.)
+   pisado con el resto del layout. Un solo peso estático (400, sin variar
+   FILL/GRAD/opsz) porque es lo único que usa el resto del código. */
+@font-face {
+  font-family: "Material Symbols Outlined";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("/fonts/material-symbols-outlined.woff2") format("woff2");
+}
+
 .material-symbols-outlined {
   font-family: "Material Symbols Outlined";
   font-weight: normal;
