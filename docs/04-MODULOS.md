@@ -12,6 +12,15 @@ identidad, medallón, badges, canales, carrusel, QR, modal de versión).
 Resuelve por `slug` sin importar sesión — pública por diseño. Si
 `card.isOrigin` es true, se muestra en modo host a cualquiera sin login.
 
+**Privacidad entre las 3 Cards de un Member** (`lib/shareScope.ts`,
+2026-09-19): cada Card tiene su propio `shareScope` (qué otros `kind`
+sumar al carrusel swipeable cuando UN VISITANTE abre esa Card puntual).
+Vacío por default — una Card se ve sola hasta que su dueño prende a
+mano, desde su propio editor, cuáles de las otras 2 mostrar también. El
+dueño mirando sus propias 3 Cards (`isHost`) no tiene esta restricción,
+siempre las ve juntas — es sobre lo que ve un tercero, no sobre la
+navegación propia.
+
 ## Admin (panel del Admin/N0)
 
 **Archivos:** `app/admin/page.tsx` (roster, agrupado por Programa),

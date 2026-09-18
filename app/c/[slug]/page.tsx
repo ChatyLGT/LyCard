@@ -5,6 +5,7 @@ import { currentAdminScope } from "@/lib/auth";
 import { currentMemberId } from "@/lib/memberAuth";
 import { computeBadge } from "@/lib/badge";
 import { buildCardMetadata } from "@/lib/cardMetadata";
+import { parseShareScope } from "@/lib/shareScope";
 import LyCardView from "@/components/LyCardView";
 import CardCarousel, { type CarouselBundle } from "@/components/CardCarousel";
 import type { Card, Program, ProgramSkin, Puesto } from "@/generated/prisma/client";
@@ -72,16 +73,21 @@ export default async function CardPage({
   // (PLAN.md Fase 2).
   const isHost = isAdmin || card.isOrigin || (memberId !== null && memberId === card.memberId);
 
-  // Swipeable Programa/Business/Personal carousel: any visitor holding a
-  // link to one of a Member's 3 Cards can swipe to the other two — a Card
-  // with no memberId (a standalone/legacy card, or the MasterN0 seed) has
-  // no siblings and just renders on its own, unchanged.
+  // Swipeable Programa/Business/Personal carousel — pero solo hasta donde
+  // ESTA tarjeta puntual lo permite (2026-09-19, pedido de Gunnar): un
+  // visitante que abre el link de la Personal no debería enterarse en qué
+  // Programa está alguien, a menos que el dueño lo prenda a mano
+  // (Card.shareScope). El propio dueño (isHost) siempre ve sus 3 juntas,
+  // sin restricción — esto es sobre lo que ve un tercero, no sobre la
+  // navegación propia. Una Card sin memberId (standalone/MasterN0 seed) no
+  // tiene hermanas y renderiza sola, sin cambios.
   const siblings = card.memberId
     ? await prisma.card.findMany({ where: { memberId: card.memberId }, include: { program: { include: PROGRAM_INCLUDE }, puesto: true } })
     : [card];
-  const ordered = KIND_ORDER.map((k) => siblings.find((c) => c.kind === k)).filter(
-    (c): c is typeof siblings[number] => Boolean(c)
-  );
+  const visibleKinds = isHost ? KIND_ORDER : [card.kind, ...parseShareScope(card.shareScope)];
+  const ordered = KIND_ORDER.filter((k) => visibleKinds.includes(k))
+    .map((k) => siblings.find((c) => c.kind === k))
+    .filter((c): c is typeof siblings[number] => Boolean(c));
 
   const bundles = await Promise.all(ordered.map((c) => buildCardBundle(c, baseUrl, adminScope, memberId)));
 

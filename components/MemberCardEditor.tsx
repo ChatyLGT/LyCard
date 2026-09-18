@@ -6,6 +6,7 @@ import type { Card } from "@/generated/prisma/client";
 import { updateMemberCardAction } from "@/app/m/dashboard/actions";
 import { MEDALS, RANKS, CHANNELS } from "@/lib/data";
 import { AccordionSection, AccordionRow } from "@/components/Accordion";
+import { CARD_KINDS, CARD_KIND_LABEL, parseShareScope } from "@/lib/shareScope";
 
 const FIELD_WRAP: CSSProperties = {
   display: "flex",
@@ -333,6 +334,28 @@ export default function MemberCardEditor({
               <input name="quote" defaultValue={card.quote} style={{ ...FIELD_INPUT, fontStyle: "italic" }} />
             </div>
           </label>
+        </AccordionSection>
+
+        <AccordionSection
+          title="Privacidad al compartir"
+          subtitle="Qué otras de tus tarjetas mostrar cuando alguien abre el link o QR de ESTA."
+        >
+          {CARD_KINDS.filter((k) => k !== card.kind).map((k) => (
+            <label key={k} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                name="shareScope"
+                value={k}
+                defaultChecked={parseShareScope(card.shareScope).includes(k)}
+                style={{ width: 16, height: 16, accentColor: "#C8A15A" }}
+              />
+              <span style={{ font: "400 12px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{CARD_KIND_LABEL[k]}</span>
+            </label>
+          ))}
+          <p style={{ margin: 0, font: "400 10.5px/1.5 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
+            Sin marcar nada, esta tarjeta se ve sola — nadie ve las otras 2
+            solo por tener este link, hasta que las prendas acá.
+          </p>
         </AccordionSection>
 
         <AccordionSection title={copy.storyTitle} subtitle={copy.storySub}>

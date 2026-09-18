@@ -13,6 +13,7 @@ import {
 import { saveUpload } from "@/lib/storage";
 import { MEDALS, RANKS } from "@/lib/data";
 import { slugify } from "@/lib/slug";
+import { parseShareScope } from "@/lib/shareScope";
 
 export async function loginAction(formData: FormData) {
   const email = String(formData.get("email") || "");
@@ -165,10 +166,17 @@ export async function updateCardAction(slug: string, formData: FormData) {
     }
   }
 
+  // Privacidad entre las 3 tarjetas (2026-09-19) — qué otras sumar al
+  // carrusel cuando alguien abre esta. Siempre presente en el form (un
+  // fieldset de checkboxes), así que getAll() vacío = las destildaron
+  // todas, no "no se tocó el campo".
+  const shareScope = parseShareScope(formData.getAll("shareScope"));
+
   await prisma.card.update({
     where: { slug },
     data: {
       ...data,
+      shareScope,
       ...(portraitUrl ? { portraitUrl } : {}),
       ...(videoThumbnailUrl ? { videoThumbnailUrl } : {}),
       ...(puestoId !== undefined ? { puestoId } : {}),

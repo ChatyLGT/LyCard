@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.27.0";
+export const APP_VERSION = "1.28.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.28.0",
+    date: "2026-09-19",
+    notes:
+      "Privacidad entre tus 3 tarjetas: antes, mandar cualquiera de tus 3 links dejaba ver las otras 2 igual. Ahora cada tarjeta se ve SOLA por default — vos elegís, tarjeta por tarjeta, cuáles de las otras 2 sumar cuando la compartís (nuevo campo en cada editor). Vos mismo, mirando tus propias tarjetas, seguís viendo las 3 juntas como siempre.",
+  },
   {
     version: "1.27.0",
     date: "2026-09-19",

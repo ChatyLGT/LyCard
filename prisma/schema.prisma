@@ -73,6 +73,13 @@ model Card {
   // Media
   portraitUrl       String?
   videoThumbnailUrl String?
+  // Privacidad entre las 3 tarjetas de un Member (2026-09-19, pedido de
+  // Gunnar): qué otros `kind` sumar al carrusel cuando ALGUIEN ABRE
+  // ESTA tarjeta puntual — vacío (default) = esta tarjeta se ve sola,
+  // nunca revela las otras 2 sin que el dueño lo prenda a mano. Antes,
+  // abrir cualquiera de las 3 siempre mostraba las 3 juntas.
+  shareScope Json @default("[]")
+
   // Company's own logo, rendered as the Virtual Office trigger instead of
   // the fixed gem SVG (PLAN.md, "independencia por tarjeta", 2026-09-16).
   // Project cards use program.logoUrl instead; personal keeps the gem.

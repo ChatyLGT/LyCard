@@ -3591,3 +3591,42 @@ con quien lleve la parte cuantitativa de NashMesh a fondo.
   Pendiente de Gunnar: escribir "Legacy Card" en el campo nuevo del
   dashboard de Legacy — el logo ya está cargado, ese solo se recoge
   solo.
+
+### 2026-09-19 (cont.) — Privacidad entre las 3 tarjetas (shareScope)
+
+- Gunnar marcó un problema real de privacidad: hoy, sin excepción,
+  abrir CUALQUIERA de las 3 Cards de un Member (project/company/
+  personal) deja swipear a las otras dos — así estuvo armado desde el
+  principio (`app/c/[slug]/page.tsx`, comentario propio: "any visitor
+  holding a link to one of a Member's 3 Cards can swipe to the other
+  two"). Si mandás tu tarjeta Personal, el que la recibe no debería
+  enterarse en qué Programa estás, a menos que vos lo permitas.
+- Propuesta acordada: cada Card tiene su propio `shareScope` — qué
+  otros `kind` sumar al carrusel cuando ALGUIEN ABRE ESA tarjeta
+  puntual. Vacío (default) = se ve sola. Nada de un selector "elegí
+  ahora al compartir" (pediría un sistema de links con token por
+  combinación) — más simple: se configura una vez por tarjeta,
+  consistente cada vez que se comparte.
+- Schema: `Card.shareScope Json @default("[]")` (migración
+  `20260918173810_card_share_scope`). `lib/shareScope.ts` (nuevo):
+  `CardKind`, `CARD_KINDS`, `CARD_KIND_LABEL`, `parseShareScope`.
+- `app/c/[slug]/page.tsx`: el carrusel ahora filtra por
+  `[card.kind, ...parseShareScope(card.shareScope)]` — **pero solo
+  para un visitante**; el propio dueño (`isHost`) sigue viendo sus 3
+  juntas siempre, esto es sobre lo que ve un tercero, no sobre la
+  navegación propia.
+- Editor: nueva sección "Privacidad al compartir" (checkboxes, una por
+  cada uno de los otros 2 `kind`) en `EditorForm.tsx` (project, vía
+  `updateCardAction`) y `MemberCardEditor.tsx` (company/personal, vía
+  `updateMemberCardAction`) — mismo patrón visual que el checkbox de
+  "Es el Origen" que ya existía.
+- **Verificado de punta a punta contra un build real, no solo tsc**:
+  creé 3 Cards hermanas de prueba (`test-proj`/`test-comp`/
+  `test-pers`) bajo un Member de prueba, confirmé con curl que (1) con
+  `shareScope` vacío cada una se ve sola, (2) activar `["company"]` en
+  `test-pers` hace que su link muestre Personal+Empresa pero no
+  Proyecto, y (3) el link de `test-comp` (que no tocó su propio
+  `shareScope`) sigue mostrando solo Empresa — confirma que es
+  asimétrico y por tarjeta, no global. Datos de prueba borrados
+  después, no tocó producción. `tsc --noEmit` y `pnpm build` limpios.
+  Shippeado como v1.28.0.
