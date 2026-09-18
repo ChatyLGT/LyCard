@@ -14,6 +14,7 @@ import { getFathomBrief, type FathomBrief } from "@/lib/fathom";
 import { parseOfficeSkills, DEFAULT_OFFICE_SKILLS, type OfficeSkill } from "@/lib/officeSkills";
 import OfficeSkillsBlock from "@/components/OfficeSkillsBlock";
 import type { VoiceNoteSummary } from "@/components/VoiceNotesBlock";
+import { parseCalendarEvents, type CalendarEvent } from "@/lib/oficinaExtras";
 import type { Card, OriginMemento, Program, Puesto } from "@/generated/prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -94,6 +95,9 @@ type OficinaData = {
   officeSkills: OfficeSkill[];
   officeSkillsKicker: string;
   voiceNotes: VoiceNoteSummary[];
+  calendarEvents: CalendarEvent[];
+  googleConnected: boolean;
+  connectUrl: string;
 };
 
 // ---------------- Piezas compartidas ----------------
@@ -430,6 +434,9 @@ function VisitorOficina({ data }: { data: OficinaData }) {
           companyNetworkHref={null}
           cardId={data.card.id}
           voiceNotes={[]}
+          calendarEvents={[]}
+          googleConnected={false}
+          connectUrl={data.connectUrl}
         />
       </div>
     </div>
@@ -500,6 +507,9 @@ function OwnerOficina({ data }: { data: OficinaData }) {
           companyNetworkHref={card.kind === "company" ? "/m/dashboard/company/network" : null}
           cardId={data.card.id}
           voiceNotes={data.voiceNotes}
+          calendarEvents={data.calendarEvents}
+          googleConnected={data.googleConnected}
+          connectUrl={data.connectUrl}
         />
       </div>
     </div>
@@ -547,6 +557,13 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
       }))
     : [];
 
+  // Fase F (2026-09-19): si el dueño ya conectó Google (Calendar+Tasks+
+  // Drive real), la Agenda lo dice y el botón de conectar desaparece.
+  const ownerMember = isHost && card.memberId ? await prisma.member.findUnique({ where: { id: card.memberId } }) : null;
+  const googleConnected = Boolean(ownerMember?.googleRefreshToken);
+  const connectUrl = `/m/auth/google/connect-start?cardId=${card.id}&returnTo=${encodeURIComponent(`/c/${slug}/oficina`)}`;
+  const calendarEvents = isHost ? parseCalendarEvents(card.calendarEvents) : [];
+
   const parsedSkills = parseOfficeSkills(card.program?.officeSkills);
   const officeSkills = parsedSkills.length > 0 ? parsedSkills : DEFAULT_OFFICE_SKILLS;
   const officeSkillsKickerOverride = card.program?.cardLabels;
@@ -587,6 +604,9 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
     officeSkills,
     officeSkillsKicker: typeof officeSkillsKicker === "string" && officeSkillsKicker.trim() ? officeSkillsKicker : "Superpoderes",
     voiceNotes,
+    calendarEvents,
+    googleConnected,
+    connectUrl,
   };
 
   return isHost ? <OwnerOficina data={data} /> : <VisitorOficina data={data} />;

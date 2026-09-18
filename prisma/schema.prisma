@@ -329,6 +329,17 @@ model Member {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Conexión real de Google más allá del login (Fase F, 2026-09-19) —
+  // separada de googleId/OIDC de arriba: esto es consentimiento offline
+  // adicional (Calendar + Tasks + Drive-file) para que EinarOS pueda
+  // escribir eventos/tareas reales y, para el N0, su carpeta Bridge en
+  // Drive (Protocolo Dirac). Null = todavía no conectó, se usa la
+  // versión simulada en su lugar (cáscara honesta).
+  googleRefreshToken   String?
+  googleScopes         String?
+  googleConnectedAt    DateTime?
+  googleBridgeFolderId String?
+
   memberships        ProgramMembership[]
   cards              Card[]
   origin             OriginMemento?

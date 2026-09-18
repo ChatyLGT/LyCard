@@ -3,14 +3,35 @@
 // GOOGLE_CLIENT_SECRET set to actually work; see .env.example.
 
 export const GOOGLE_STATE_COOKIE = "lycard_google_state";
+export const GOOGLE_CONNECT_COOKIE = "lycard_google_connect";
 
 const AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo";
 
+// Alcance real, a propósito acotado (Fase F, 2026-09-19): Calendar +
+// Tasks para orquestar Notas de Voz/reuniones, y drive.file — no `drive`
+// completo — para la carpeta Bridge de #Dirac. drive.file solo ve lo que
+// esta app crea, así que nunca dispara la revisión de apps sensibles de
+// Google; a cambio, la carpeta Bridge la crea la app (Gunnar la reubica
+// una vez dentro de su 99_RAW real si quiere).
+export const GOOGLE_CONNECT_SCOPES = [
+  "openid",
+  "email",
+  "profile",
+  "https://www.googleapis.com/auth/calendar.events",
+  "https://www.googleapis.com/auth/tasks",
+  "https://www.googleapis.com/auth/drive.file",
+].join(" ");
+
 function redirectUri() {
   const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
   return `${base}/m/auth/google/callback`;
+}
+
+function connectRedirectUri() {
+  const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  return `${base}/m/auth/google/connect-callback`;
 }
 
 export function isGoogleAuthConfigured() {
@@ -61,4 +82,73 @@ export async function exchangeGoogleCode(code: string) {
     throw new Error(`Google userinfo failed: ${userRes.status}`);
   }
   return (await userRes.json()) as { sub: string; email?: string; name?: string; picture?: string };
+}
+
+// Flujo "Conectar Google" (Fase F) — access_type=offline + prompt=consent
+// para forzar que Google emita un refresh_token, distinto del login de
+// arriba (que es access_type=online, sin refresh_token, y no lo necesita).
+export function buildGoogleConnectUrl(state: string) {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  if (!clientId) throw new Error("GOOGLE_CLIENT_ID is not set");
+
+  const params = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: connectRedirectUri(),
+    response_type: "code",
+    scope: GOOGLE_CONNECT_SCOPES,
+    access_type: "offline",
+    prompt: "consent",
+    include_granted_scopes: "true",
+    state,
+  });
+  return `${AUTH_URL}?${params.toString()}`;
+}
+
+export async function exchangeGoogleConnectCode(code: string) {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) throw new Error("Google OAuth is not configured");
+
+  const res = await fetch(TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      code,
+      grant_type: "authorization_code",
+      redirect_uri: connectRedirectUri(),
+    }),
+  });
+  if (!res.ok) {
+    throw new Error(`Google connect token exchange failed: ${res.status} ${await res.text()}`);
+  }
+  return (await res.json()) as {
+    access_token: string;
+    refresh_token?: string;
+    scope: string;
+    expires_in: number;
+  };
+}
+
+export async function refreshGoogleAccessToken(refreshToken: string) {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) throw new Error("Google OAuth is not configured");
+
+  const res = await fetch(TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    }),
+  });
+  if (!res.ok) {
+    throw new Error(`Google token refresh failed: ${res.status} ${await res.text()}`);
+  }
+  const { access_token } = (await res.json()) as { access_token: string };
+  return access_token;
 }

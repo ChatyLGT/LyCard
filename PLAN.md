@@ -3420,3 +3420,68 @@ con quien lleve la parte cuantitativa de NashMesh a fondo.
   y cargar `ASSEMBLYAI_API_KEY` en Vercel para que la transcripción
   real se active — hasta entonces la grabación y el guardado ya
   funcionan de punta a punta, solo falta ese último cable.
+
+### 2026-09-19 (cont.) — QA de Notas de Voz/Fathom + Fase F: Google real (Calendar+Tasks+Drive)
+
+- Gunnar creó `ASSEMBLYAI_API_KEY` en Vercel y pidió probar esa Skill y
+  Fathom Brief en producción. El sandbox de esta sesión tiene bloqueado
+  el acceso directo a dominios `*.vercel.app` (política de red), así
+  que no pude simular un click/micrófono real ahí — sí pude confirmar
+  con un fetch server-side real que **Fathom Brief anda perfecto** (42
+  reuniones reales, `totalCount` correcto) y que el wiring de Notas de
+  Voz (`cardId`/`voiceNotes`) llega bien sin errores; quedó pendiente
+  que Gunnar dispare una grabación real para confirmar el tramo
+  AssemblyAI de punta a punta (revisé `get_runtime_logs` de Vercel:
+  cero errores, cero invocaciones todavía).
+- Gunnar pidió ir más allá de la Agenda simulada: conectar de verdad
+  Notas de Voz (y a futuro Fathom) con Google Calendar/Tasks, y además
+  poder escribir en la carpeta Bridge del N0 en Drive (aterrizaje
+  #Dirac) — aclarando que la idea siempre fue que la persona "se una a
+  su cuenta de Google" y desde ahí pedir los permisos que hagan falta,
+  Drive incluido.
+- Encontré que el login de Miembro con Google ya existe
+  (`lib/googleOAuth.ts`, Fase 1) pero con `access_type=online` — sin
+  refresh_token, solo sirve para identidad, no para que un backend
+  actúe después en nombre de la persona. Se agregó un flujo separado,
+  "Conectar Google" (nunca reemplaza el login): `access_type=offline` +
+  `prompt=consent`, con scope acotado a propósito —
+  `calendar.events` + `tasks` + `drive.file` (no `drive` completo) —
+  para no disparar nunca la revisión de apps sensibles de Google.
+  `drive.file` solo ve lo que esta app crea, así que la carpeta Bridge
+  la crea LyCard la primera vez (`LyCard · Bridge RAW (Protocolo
+  Dirac)`) y Gunnar la reubica dentro de su 99_RAW real si quiere.
+- Schema: `Member.googleRefreshToken/googleScopes/googleConnectedAt/
+  googleBridgeFolderId` (migración `20260918163500_google_connect`).
+  `CalendarEvent.source` nuevo (`"voz-real"` | `"voz-simulado"`) para
+  que la UI nunca mienta sobre cuál es cuál.
+- `lib/googleOAuth.ts`: `buildGoogleConnectUrl`/`exchangeGoogleConnectCode`/
+  `refreshGoogleAccessToken`, sin tocar el login existente.
+  `lib/googleServices.ts` (nuevo): wrappers finitos de Calendar Events,
+  Tasks y Drive (buscar/crear la carpeta Bridge, escribir un archivo
+  `.md` con el estampado `#dirac` — frontmatter + footer exactos que
+  pide `docs/` para Protocolo Dirac).
+  `app/m/auth/google/connect-start` + `connect-callback` (nuevas
+  rutas): arrancan desde una Card puntual (`?cardId=`), resuelven el
+  dueño con el mismo chequeo `isHost` que usa toda la app (Admin,
+  Origin, o Member dueño) — el token termina en `card.memberId`, no en
+  quien haya iniciado el click.
+- `voiceNotes-actions.ts`: cuando una nota queda "ready", si el dueño
+  ya conectó Google se crea una Tarea + un evento reales y se escribe
+  el resumen en la carpeta Bridge; si no, cae al mismo lugar
+  (`Card.calendarEvents`) pero marcado "voz-simulado" — la orquestación
+  nunca bloquea ni rompe lo que el dueño ya ve (transcripción/resumen
+  ya guardados antes de este paso).
+- Nuevo `components/AgendaBlock.tsx`: el tile "Agenda" (antes "sin
+  conectar" a secas) ahora muestra el botón "Conectar Google" o el
+  estado ya conectado, y la lista real de lo que fue llegando, cada
+  entrada con su etiqueta Real/Simulado.
+- `.env.example` documenta el segundo redirect URI
+  (`/m/auth/google/connect-callback`) y el paso único de Google Cloud
+  Console (habilitar Calendar/Tasks/Drive API, agregar los 3 scopes al
+  consent screen, agregar cuentas de prueba mientras el proyecto siga
+  en estado "Testing" — no hace falta la revisión completa de Google
+  para esto, solo para escalar a cientos de usuarios).
+- `npx prisma generate`, `tsc --noEmit` y `pnpm build` limpios (las 2
+  rutas nuevas aparecen compiladas). Shippeado como v1.25.0. Pendiente
+  de Gunnar: el paso de Google Cloud Console de arriba, y probar el
+  botón "Conectar Google" una vez hecho.

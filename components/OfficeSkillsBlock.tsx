@@ -6,6 +6,8 @@ import type { OfficeSkill } from "@/lib/officeSkills";
 import type { FathomBrief } from "@/lib/fathom";
 import FathomBriefBlock from "@/components/FathomBriefBlock";
 import VoiceNotesBlock, { type VoiceNoteSummary } from "@/components/VoiceNotesBlock";
+import AgendaBlock from "@/components/AgendaBlock";
+import type { CalendarEvent } from "@/lib/oficinaExtras";
 
 const kickerStyle: CSSProperties = {
   font: "600 8.5px 'Plus Jakarta Sans',sans-serif",
@@ -44,6 +46,9 @@ export default function OfficeSkillsBlock({
   companyNetworkHref,
   cardId,
   voiceNotes,
+  calendarEvents,
+  googleConnected,
+  connectUrl,
 }: {
   skills: OfficeSkill[];
   kicker: string;
@@ -52,6 +57,9 @@ export default function OfficeSkillsBlock({
   companyNetworkHref: string | null;
   cardId: string;
   voiceNotes: VoiceNoteSummary[];
+  calendarEvents: CalendarEvent[];
+  googleConnected: boolean;
+  connectUrl: string;
 }) {
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [tab, setTab] = useState<"app" | "info">("app");
@@ -161,7 +169,16 @@ export default function OfficeSkillsBlock({
             )}
 
             {isHost && tab === "app" && (
-              <AppFace skill={active} fathomBrief={fathomBrief} companyNetworkHref={companyNetworkHref} cardId={cardId} voiceNotes={voiceNotes} />
+              <AppFace
+                skill={active}
+                fathomBrief={fathomBrief}
+                companyNetworkHref={companyNetworkHref}
+                cardId={cardId}
+                voiceNotes={voiceNotes}
+                calendarEvents={calendarEvents}
+                googleConnected={googleConnected}
+                connectUrl={connectUrl}
+              />
             )}
           </div>
         </div>
@@ -180,15 +197,24 @@ function AppFace({
   companyNetworkHref,
   cardId,
   voiceNotes,
+  calendarEvents,
+  googleConnected,
+  connectUrl,
 }: {
   skill: OfficeSkill;
   fathomBrief: FathomBrief;
   companyNetworkHref: string | null;
   cardId: string;
   voiceNotes: VoiceNoteSummary[];
+  calendarEvents: CalendarEvent[];
+  googleConnected: boolean;
+  connectUrl: string;
 }) {
   if (skill.appType === "fathom-brief") return <FathomBriefBlock brief={fathomBrief} />;
   if (skill.appType === "notas-voz") return <VoiceNotesBlock cardId={cardId} initialNotes={voiceNotes} />;
+  if (skill.appType === "agenda") {
+    return <AgendaBlock cardId={cardId} events={calendarEvents} googleConnected={googleConnected} connectUrl={connectUrl} />;
+  }
   if (skill.appType === "malla" && companyNetworkHref) {
     return (
       <Link

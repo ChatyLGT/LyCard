@@ -23,6 +23,7 @@ export type CalendarEvent = {
   title: string;
   date: string; // ISO
   time?: string;
+  source?: string; // "voz-real" | "voz-simulado" | "" (manual) — de dónde salió
 };
 
 export function parseRealityCheckKpis(value: unknown): RealityCheckKpi[] {
