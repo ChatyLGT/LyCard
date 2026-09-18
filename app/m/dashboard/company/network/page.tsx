@@ -4,7 +4,7 @@ import { currentMemberId } from "@/lib/memberAuth";
 import { prisma } from "@/lib/prisma";
 import CardNotUnlocked from "@/components/CardNotUnlocked";
 import MallaGraph from "@/components/MallaGraph";
-import { TEAM_MALLA_NODES, TEAM_MALLA_EDGES } from "@/lib/mallaData";
+import { TEAM_MALLA_NODES, TEAM_MALLA_EDGES, TEAM_MALLA_GHOSTS } from "@/lib/mallaData";
 import { activateNetworkMembershipAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -72,7 +72,7 @@ export default async function CompanyNetworkPage({ searchParams }: { searchParam
             <span style={{ font: "600 9px 'Plus Jakarta Sans',sans-serif", color: "#6FCF7A" }}>4 de 6 activos</span>
           </div>
           <div style={{ borderRadius: 14, overflow: "hidden", border: "1px solid rgba(200,161,90,.18)", background: "#0B0B0A" }}>
-            <MallaGraph nodes={TEAM_MALLA_NODES} edges={TEAM_MALLA_EDGES} height={230} camRadius={130} maxRadius={320} repel={140} linkRest={40} fog={0.012} />
+            <MallaGraph nodes={TEAM_MALLA_NODES} edges={TEAM_MALLA_EDGES} ghosts={TEAM_MALLA_GHOSTS} height={230} camRadius={130} maxRadius={320} repel={140} linkRest={40} fog={0.012} />
           </div>
           <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap" }}>
             <span style={{ display: "flex", alignItems: "center", gap: 5, font: "400 8.5px 'Plus Jakarta Sans',sans-serif", color: "#A79E8E" }}>

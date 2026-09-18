@@ -90,19 +90,28 @@ export const PUBLIC_MALLA_KPIS = {
  *  IA). Sphere color = identidad (marfil humano / dorado agente), halo =
  *  estado (verde activo / naranja necesita revisión). */
 export const TEAM_MALLA_NODES: MallaNode[] = [
-  { id: "oficina", color: GOLD, haloColor: GOLD, size: 7 },
-  { id: "marta", color: IVORY, haloColor: GREEN, size: 3.4, dim: true },
-  { id: "ag-whatsapp", color: GOLD, haloColor: GREEN, size: 3.2 },
-  { id: "diego", color: IVORY, haloColor: GREEN, size: 3.4, dim: true },
-  { id: "ag-licitaciones", color: GOLD, haloColor: GREEN, size: 3.2 },
-  { id: "lu", color: IVORY, haloColor: AMBER, size: 3.4, dim: true },
-  { id: "ag-contenido", color: GOLD, haloColor: AMBER, size: 3.2 },
+  { id: "oficina", color: GOLD, haloColor: GOLD, size: 7, ghost: "core-oficina" },
+  { id: "marta", color: IVORY, haloColor: GREEN, size: 3.4, dim: true, ghost: "core-oficina" },
+  { id: "ag-whatsapp", color: GOLD, haloColor: GREEN, size: 3.2, ghost: "core-oficina" },
+  { id: "diego", color: IVORY, haloColor: GREEN, size: 3.4, dim: true, ghost: "core-oficina" },
+  { id: "ag-licitaciones", color: GOLD, haloColor: GREEN, size: 3.2, ghost: "core-oficina" },
+  { id: "lu", color: IVORY, haloColor: AMBER, size: 3.4, dim: true, ghost: "core-oficina" },
+  { id: "ag-contenido", color: GOLD, haloColor: AMBER, size: 3.2, ghost: "core-oficina" },
 ];
 
 export const TEAM_MALLA_EDGES: MallaEdge[] = [
   ["oficina", "marta"], ["oficina", "ag-whatsapp"], ["oficina", "diego"],
   ["oficina", "ag-licitaciones"], ["oficina", "lu"], ["oficina", "ag-contenido"],
 ];
+
+// Ancla única al centro (2026-09-18) — sin esto los 7 nodos no tenían
+// ningún "ghost" que los mantenga agrupados, así que al alejar la cámara
+// la simulación de fuerzas los dispersaba y la Malla se veía "desarmada"
+// en vez de un organismo contenido. Mismo mecanismo que ya usa
+// PUBLIC_MALLA_GHOSTS, solo que acá alcanza con un solo punto central.
+export const TEAM_MALLA_GHOSTS: Record<string, MallaGhost> = {
+  "core-oficina": { x: 0, y: 0, z: 0 },
+};
 
 export const TEAM_MALLA_LABELS: Record<string, string> = {
   oficina: "Tu Oficina",

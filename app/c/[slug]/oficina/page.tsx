@@ -8,7 +8,7 @@ import { computeBadge } from "@/lib/badge";
 import MallaGraph from "@/components/MallaGraph";
 import {
   PUBLIC_MALLA_NODES, PUBLIC_MALLA_EDGES, PUBLIC_MALLA_GHOSTS, PUBLIC_MALLA_KPIS,
-  TEAM_MALLA_NODES, TEAM_MALLA_EDGES,
+  TEAM_MALLA_NODES, TEAM_MALLA_EDGES, TEAM_MALLA_GHOSTS,
 } from "@/lib/mallaData";
 import { getFathomBrief, type FathomBrief } from "@/lib/fathom";
 import type { Card, OriginMemento, Program, Puesto } from "@/generated/prisma/client";
@@ -48,6 +48,10 @@ const hr: CSSProperties = { height: 1, background: "rgba(200,161,90,.14)" };
 const tileStyle: CSSProperties = { display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center" };
 const tileIcon: CSSProperties = { width: 34, height: 34, borderRadius: 10, background: "rgba(200,161,90,.08)", border: "1px solid rgba(200,161,90,.2)" };
 const headerLinkStyle: CSSProperties = { color: "#C8A15A", font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase" };
+const navIconStyle: CSSProperties = {
+  width: 32, height: 32, borderRadius: 999, display: "flex", alignItems: "center", justifyContent: "center",
+  color: "#C8A15A", background: "rgba(200,161,90,.08)", border: "1px solid rgba(200,161,90,.2)",
+};
 
 type OfficeItem = { id: string; title: string; subtitle?: string; description?: string; imageUrl?: string };
 
@@ -188,7 +192,8 @@ function KpiRow({ data }: { data: OficinaData }) {
 function PortfolioBlock({ data }: { data: OficinaData }) {
   const { card, origin, officeItems, accent } = data;
   if (card.kind === "project") {
-    return origin ? (
+    if (!origin) return null;
+    return (
       <div style={{ ...panelStyle, display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ width: 48, height: 48, flex: "none", borderRadius: 999, overflow: "hidden", background: "#0D0D0D" }}>
           {origin.referrerPortraitUrl && (
@@ -201,13 +206,6 @@ function PortfolioBlock({ data }: { data: OficinaData }) {
           <span style={{ display: "block", font: "700 14px 'Playfair Display',serif" }}>{origin.referrerName}</span>
           {origin.referrerCardTitle && <span style={{ display: "block", font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{origin.referrerCardTitle}</span>}
         </div>
-      </div>
-    ) : (
-      <div style={{ ...panelStyle, textAlign: "center", display: "flex", flexDirection: "column", gap: 6 }}>
-        <span style={{ font: "700 15px 'Playfair Display',serif", color: "#E5C378" }}>✦ Fundador de la Red ✦</span>
-        <p style={{ margin: 0, font: "400 12px/1.5 'Plus Jakarta Sans',sans-serif", color: "rgba(245,242,235,.92)" }}>
-          {card.name} es la raíz de este árbol — no tiene un referente porque fue quien empezó todo.
-        </p>
       </div>
     );
   }
@@ -286,7 +284,7 @@ function TeamMallaBlock({ accent }: { accent: string }) {
         <span style={{ font: "600 9px 'Plus Jakarta Sans',sans-serif", color: "#6FCF7A" }}>4 de 6 activos</span>
       </div>
       <div style={{ borderRadius: 14, overflow: "hidden", border: "1px solid rgba(200,161,90,.18)", background: "#0B0B0A" }}>
-        <MallaGraph nodes={TEAM_MALLA_NODES} edges={TEAM_MALLA_EDGES} height={220} camRadius={130} maxRadius={320} repel={140} linkRest={40} fog={0.012} />
+        <MallaGraph nodes={TEAM_MALLA_NODES} edges={TEAM_MALLA_EDGES} ghosts={TEAM_MALLA_GHOSTS} height={220} camRadius={130} maxRadius={320} repel={140} linkRest={40} fog={0.012} />
       </div>
       <div style={{ display: "flex", justifyContent: "center", gap: 14, flexWrap: "wrap" }}>
         <span style={{ display: "flex", alignItems: "center", gap: 5, font: "400 8.5px 'Plus Jakarta Sans',sans-serif", color: "#A79E8E" }}>
@@ -420,8 +418,12 @@ function VisitorOficina({ data }: { data: OficinaData }) {
 
         <div style={hr} />
         <KpiRow data={data} />
-        <div style={hr} />
-        <PortfolioBlock data={data} />
+        {(card.kind !== "project" || data.origin) && (
+          <>
+            <div style={hr} />
+            <PortfolioBlock data={data} />
+          </>
+        )}
         <div style={hr} />
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -488,11 +490,6 @@ function OwnerOficina({ data }: { data: OficinaData }) {
 
   return (
     <div style={{ minHeight: "100vh", background: "#0B0B0A", color: "#F3F0E9", fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
-      <Header
-        slug={card.slug}
-        right={<Link href={dashboardHref} style={headerLinkStyle}>Editar Oficina →</Link>}
-      />
-
       <div style={{ maxWidth: 460, margin: "0 auto", padding: "24px 20px 40px", display: "flex", flexDirection: "column", gap: 18 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
           <div style={{ width: 40, height: 40, borderRadius: 999, padding: 2, background: `linear-gradient(160deg,#E5C378,${accent})`, flexShrink: 0 }}>
@@ -505,9 +502,17 @@ function OwnerOficina({ data }: { data: OficinaData }) {
               )}
             </div>
           </div>
-          <div style={{ minWidth: 0 }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ font: "700 15px 'Plus Jakarta Sans',sans-serif" }}>Hola, {card.name}</div>
             <span style={{ font: "400 10.5px 'Plus Jakarta Sans',sans-serif", color: "#756c5e" }}>{program?.name || "Legacy"} · {badge}</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+            <Link href={`/c/${card.slug}`} aria-label="Volver a la tarjeta" style={navIconStyle}>
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_back</span>
+            </Link>
+            <Link href={dashboardHref} aria-label="Editar Oficina" style={navIconStyle}>
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>edit</span>
+            </Link>
           </div>
         </div>
 
@@ -515,13 +520,17 @@ function OwnerOficina({ data }: { data: OficinaData }) {
 
         <AgentButton data={data} label="Tu Gemelo Digital" sublabel="Próximamente — todavía no hay backend real" disabled />
 
-        <FirstConnections data={data} />
-
-        <div style={hr} />
-
-        <PortfolioBlock data={data} />
-
-        <div style={hr} />
+        {/* Para la Card raíz (sin referente, ex-"Fundador de la Red") no hay
+            nada real que mostrar acá — se salta el bloque entero en vez de
+            dejar dos separadores pegados sin contenido en el medio. */}
+        {(card.kind !== "project" || data.origin) && (
+          <>
+            <FirstConnections data={data} />
+            <div style={hr} />
+            <PortfolioBlock data={data} />
+            <div style={hr} />
+          </>
+        )}
 
         <TeamMallaBlock accent={accent} />
 

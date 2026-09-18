@@ -3152,3 +3152,45 @@ con quien lleve la parte cuantitativa de NashMesh a fondo.
   dinámico (KPIs, Brief de Fathom, etc.) se sincroniza en segundo plano
   ni hay push notifications — es caché de lectura de la última versión
   vista, no una app offline-first completa.
+
+### 2026-09-18 (cont.) — Workflow de planeación formal + Fases A/B del reorden de Oficina
+
+- A partir de este pedido, Gunnar pidió pasar a un protocolo de trabajo
+  fijo para todo lo nuevo de la Oficina Virtual: plan detallado con EDT
+  (estructura de desglose del trabajo), preguntas de aclaración antes de
+  escribir una línea de código, su aprobación explícita, y ejecución por
+  fases con verificación en cada una — no solo al final. El plan completo
+  de esta ronda (contexto, decisiones, EDT de 4 fases A-D) quedó guardado
+  y aprobado; acá se documentan las fases A y B, ya shippeadas.
+- **Fase A — reorden de `OwnerOficina`**: se saca el header fijo de
+  arriba; "Volver a la tarjeta" y "Editar Oficina" pasan a ser dos
+  íconos (`arrow_back` / `edit`, Material Symbols) a la derecha de
+  "Hola, {nombre}", a su misma altura — una sola fila de remate en vez de
+  dos. Se borra el bloque "✦ Fundador de la Red ✦" (vivía en
+  `PortfolioBlock`, rama para project sin `origin`): ahora no renderiza
+  nada en ese lugar, ni en la vista del dueño ni en la del visitante
+  (ambas usan el mismo componente). Se ajustaron los separadores (`hr`)
+  alrededor para que una Card raíz como `mastern0` (sin referente) no
+  quede con dos líneas divisorias pegadas sin nada en el medio.
+- **Fase B — Malla del equipo, nodos fantasma**: `TEAM_MALLA_NODES` no
+  tenía ningún `ghost` asignado (a diferencia de `PUBLIC_MALLA_NODES`,
+  que sí), y `TeamMallaBlock` no le pasaba la prop `ghosts` al
+  `MallaGraph` — por eso la simulación de fuerzas dispersaba los 7 nodos
+  al alejar la cámara en vez de mantenerlos agrupados. Se agregó
+  `TEAM_MALLA_GHOSTS` (un ancla única al centro) en `lib/mallaData.ts`,
+  se le asignó ese `ghost` a los 7 nodos, y se pasó la prop en los dos
+  lugares donde se usa este dataset: `TeamMallaBlock` (Oficina) y
+  `app/m/dashboard/company/network/page.tsx` (vista operativa de Red).
+  Verificado visualmente con Playwright contra un build de producción
+  real: los nodos quedan contenidos alrededor del nodo "oficina" en vez
+  de dispersos.
+- `tsc --noEmit` y `pnpm build` limpios. Los íconos Material Symbols no
+  se ven en las capturas de este entorno porque Google Fonts está
+  bloqueado por el proxy de egress del sandbox (mismo límite que ya
+  afectó capturas anteriores) — no es un bug de código, el mismo patrón
+  (`material-symbols-outlined` + fuente cargada en `app/layout.tsx`) ya
+  funciona en producción real en el resto de la app.
+- Siguen pendientes, ya planificadas: Fase C (sistema de "Superpoderes" —
+  `Program.officeSkills`, editor en `/admin/programs/[id]`, modal
+  App/Qué es esto, retrofit del Brief de Fathom) y Fase D (Gemelo Digital
+  del dueño conectado a una demo guiada, no al flujo real de alta).
