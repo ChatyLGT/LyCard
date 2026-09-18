@@ -3318,9 +3318,18 @@ con quien lleve la parte cuantitativa de NashMesh a fondo.
 - El `whsec_...` (webhook secret de Fathom) que compartió Gunnar queda
   anotado pero sin usar — no hay todavía un endpoint de webhook
   construido; cuando se arme, va como env var, nunca hardcodeado.
-- Pendiente de confirmar con datos reales (recién cargada la API key):
-  que el Brief de reuniones de la Card de Einar (`mastern0`) muestre las
-  reuniones reales de la cuenta conectada.
+- Confirmado con datos reales contra producción (`mcp__Vercel__
+  web_fetch_vercel_url`): el Brief de reuniones de `mastern0` ya trae 5
+  reuniones reales de la cuenta de Fathom conectada (Daily, Google Meet,
+  con resúmenes reales en español y links reales a fathom.video).
+- Ampliado además `lib/fathom.ts` (pedido explícito: "bajes toda las
+  reuniones de esa cuenta"): antes solo traía los últimos 30 días y
+  cortaba en 5 con un solo fetch. Ahora pagina de verdad con
+  `next_cursor` hasta agotar la cuenta (techo de seguridad de 20 páginas,
+  no un límite de negocio) y `FathomBrief` devuelve `totalCount` real.
+  El modal sigue mostrando como máximo 25 en la lista — no es más
+  honesto vaciar cientos de filas en un bottom-sheet de celular — pero
+  ahora dice "Mostrando 25 de N" cuando hay más de las que entran.
 - Gunnar pidió además una ampliación grande de la Oficina (bloque "Keep
   in Flow" con frase motivacional, "Check de Realidad" con KPIs +
   gráfico inventados y editables por N0, sección de noticias/tareas,

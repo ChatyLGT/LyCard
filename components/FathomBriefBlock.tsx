@@ -33,11 +33,15 @@ export default function FathomBriefBlock({ brief }: { brief: FathomBrief }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <span style={{ font: "400 8px 'Plus Jakarta Sans',sans-serif", color: "#6b6459" }}>vía Fathom</span>
+        <span style={{ font: "400 8px 'Plus Jakarta Sans',sans-serif", color: "#6b6459" }}>
+          {brief.totalCount > brief.meetings.length
+            ? `Mostrando ${brief.meetings.length} de ${brief.totalCount} · vía Fathom`
+            : `${brief.totalCount} reunión${brief.totalCount === 1 ? "" : "es"} · vía Fathom`}
+        </span>
       </div>
       {brief.meetings.length === 0 ? (
         <p style={{ margin: 0, font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
-          Sin reuniones grabadas en los últimos 30 días.
+          Sin reuniones grabadas todavía en esta cuenta de Fathom.
         </p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
