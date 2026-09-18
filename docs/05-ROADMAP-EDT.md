@@ -179,6 +179,27 @@ lead más avanzado y tampoco pagó todavía.
 Un Negocio se convierte en Programa al entrar a cualquiera de estos 3
 planes.
 
+**El mecanismo, a nivel de Cards (precisado por Gunnar, 2026-09-19):**
+hasta ese momento, una persona tiene como mínimo su Card de **proyecto**
+(su camino CON Legacy) y su Card de **company** (su propio Negocio). Al
+convertirse ese Negocio en Programa (porque ya tiene Agentes de verdad
+trabajando adentro, no solo la tarjeta):
+
+- La **Card de company se vuelve la raíz de su propio Programa nuevo** —
+  su empresa pasa a ser, para sus propios clientes, lo mismo que Legacy
+  es hoy para los suyos. Mismo fractal, un nivel más abajo.
+- Su vieja Card de proyecto (la relación con Legacy) no se borra ni se
+  oculta — pasa a ser su **"Programa Legado"**: el registro permanente de
+  origen. Es el principio recursivo "todo nace de Legacy" hecho dato
+  concreto, no solo discurso — nadie tiene contexto/acceso legítimo sin
+  un origen trazable (mismo espíritu que Protocolo Dharma).
+- La **Card de company pasa a ser la Card principal** de esa persona de
+  ahí en adelante; la de proyecto queda como su Programa Legado, visible
+  pero ya no la que se muestra por default.
+
+Sigue siendo roadmap — no hay código de esta promoción todavía; queda
+anotado acá para cuando se implemente el resto de "Negocio→Programa".
+
 **Qué compra tu plata en cada plan — el nivel de acceso, no solo el precio:**
 
 - **Freemium ($0):** tarjeta real + Oficina Virtual en modo vidriera — todo
