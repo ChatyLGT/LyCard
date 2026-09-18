@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { OfficeSkill } from "@/lib/officeSkills";
 import type { FathomBrief } from "@/lib/fathom";
 import FathomBriefBlock from "@/components/FathomBriefBlock";
+import VoiceNotesBlock, { type VoiceNoteSummary } from "@/components/VoiceNotesBlock";
 
 const kickerStyle: CSSProperties = {
   font: "600 8.5px 'Plus Jakarta Sans',sans-serif",
@@ -17,6 +18,7 @@ const tileStyle: CSSProperties = { display: "flex", flexDirection: "column", ali
 const APP_TYPE_ICON: Record<OfficeSkill["appType"], string> = {
   malla: "hub",
   "fathom-brief": "videocam",
+  "notas-voz": "mic",
   agenda: "calendar_month",
   mensajes: "chat",
   cartera: "account_balance_wallet",
@@ -40,12 +42,16 @@ export default function OfficeSkillsBlock({
   isHost,
   fathomBrief,
   companyNetworkHref,
+  cardId,
+  voiceNotes,
 }: {
   skills: OfficeSkill[];
   kicker: string;
   isHost: boolean;
   fathomBrief: FathomBrief;
   companyNetworkHref: string | null;
+  cardId: string;
+  voiceNotes: VoiceNoteSummary[];
 }) {
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [tab, setTab] = useState<"app" | "info">("app");
@@ -154,7 +160,9 @@ export default function OfficeSkillsBlock({
               </p>
             )}
 
-            {isHost && tab === "app" && <AppFace skill={active} fathomBrief={fathomBrief} companyNetworkHref={companyNetworkHref} />}
+            {isHost && tab === "app" && (
+              <AppFace skill={active} fathomBrief={fathomBrief} companyNetworkHref={companyNetworkHref} cardId={cardId} voiceNotes={voiceNotes} />
+            )}
           </div>
         </div>
       )}
@@ -166,8 +174,21 @@ export default function OfficeSkillsBlock({
 // Fathom Brief es el único con backend real; el resto muestra el mismo
 // estado atenuado/"próximamente" que antes vivía como tile suelto,
 // ahora adentro del modal.
-function AppFace({ skill, fathomBrief, companyNetworkHref }: { skill: OfficeSkill; fathomBrief: FathomBrief; companyNetworkHref: string | null }) {
+function AppFace({
+  skill,
+  fathomBrief,
+  companyNetworkHref,
+  cardId,
+  voiceNotes,
+}: {
+  skill: OfficeSkill;
+  fathomBrief: FathomBrief;
+  companyNetworkHref: string | null;
+  cardId: string;
+  voiceNotes: VoiceNoteSummary[];
+}) {
   if (skill.appType === "fathom-brief") return <FathomBriefBlock brief={fathomBrief} />;
+  if (skill.appType === "notas-voz") return <VoiceNotesBlock cardId={cardId} initialNotes={voiceNotes} />;
   if (skill.appType === "malla" && companyNetworkHref) {
     return (
       <Link

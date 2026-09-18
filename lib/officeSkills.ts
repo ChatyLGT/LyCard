@@ -6,6 +6,7 @@
 export type OfficeSkillAppType =
   | "malla"
   | "fathom-brief"
+  | "notas-voz"
   | "agenda"
   | "mensajes"
   | "cartera"
@@ -24,7 +25,7 @@ export type OfficeSkill = {
 
 export function parseOfficeSkills(value: unknown): OfficeSkill[] {
   if (!Array.isArray(value)) return [];
-  const APP_TYPES: OfficeSkillAppType[] = ["malla", "fathom-brief", "agenda", "mensajes", "cartera", "configuracion", "custom"];
+  const APP_TYPES: OfficeSkillAppType[] = ["malla", "fathom-brief", "notas-voz", "agenda", "mensajes", "cartera", "configuracion", "custom"];
   return value
     .filter((v): v is Record<string, unknown> => typeof v === "object" && v !== null)
     .map((v) => ({
@@ -59,6 +60,15 @@ export const DEFAULT_OFFICE_SKILLS: OfficeSkill[] = [
     iconUrl: "",
     color: "#9085e9",
     appType: "fathom-brief",
+    enabled: true,
+  },
+  {
+    key: "notas-voz",
+    nombre: "Notas de Voz",
+    descripcion: "Grabá una nota, la transcribimos y te armamos un resumen — quedan guardadas acá.",
+    iconUrl: "",
+    color: "#E5C378",
+    appType: "notas-voz",
     enabled: true,
   },
   {

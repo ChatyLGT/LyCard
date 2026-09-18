@@ -13,6 +13,7 @@ import {
 import { getFathomBrief, type FathomBrief } from "@/lib/fathom";
 import { parseOfficeSkills, DEFAULT_OFFICE_SKILLS, type OfficeSkill } from "@/lib/officeSkills";
 import OfficeSkillsBlock from "@/components/OfficeSkillsBlock";
+import type { VoiceNoteSummary } from "@/components/VoiceNotesBlock";
 import type { Card, OriginMemento, Program, Puesto } from "@/generated/prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -92,6 +93,7 @@ type OficinaData = {
   fathomBrief: FathomBrief;
   officeSkills: OfficeSkill[];
   officeSkillsKicker: string;
+  voiceNotes: VoiceNoteSummary[];
 };
 
 // ---------------- Piezas compartidas ----------------
@@ -426,6 +428,8 @@ function VisitorOficina({ data }: { data: OficinaData }) {
           isHost={false}
           fathomBrief={{ enabled: false }}
           companyNetworkHref={null}
+          cardId={data.card.id}
+          voiceNotes={[]}
         />
       </div>
     </div>
@@ -494,6 +498,8 @@ function OwnerOficina({ data }: { data: OficinaData }) {
           isHost
           fathomBrief={data.fathomBrief}
           companyNetworkHref={card.kind === "company" ? "/m/dashboard/company/network" : null}
+          cardId={data.card.id}
+          voiceNotes={data.voiceNotes}
         />
       </div>
     </div>
@@ -522,6 +528,24 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
   // Solo el dueño ve el Brief de reuniones — nada de pegarle a la API de
   // Fathom en cada visita de un desconocido a la Oficina.
   const fathomBrief: FathomBrief = isHost ? await getFathomBrief() : { enabled: false };
+
+  // Mismo criterio: las Notas de Voz son privadas del dueño, un
+  // visitante nunca dispara esta query.
+  const voiceNotes: VoiceNoteSummary[] = isHost
+    ? (
+        await prisma.voiceNote.findMany({
+          where: { cardId: card.id },
+          orderBy: { createdAt: "desc" },
+          take: 20,
+        })
+      ).map((n) => ({
+        id: n.id,
+        status: n.status,
+        transcript: n.transcript,
+        summary: n.summary,
+        createdAt: n.createdAt.toISOString(),
+      }))
+    : [];
 
   const parsedSkills = parseOfficeSkills(card.program?.officeSkills);
   const officeSkills = parsedSkills.length > 0 ? parsedSkills : DEFAULT_OFFICE_SKILLS;
@@ -562,6 +586,7 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
     fathomBrief,
     officeSkills,
     officeSkillsKicker: typeof officeSkillsKicker === "string" && officeSkillsKicker.trim() ? officeSkillsKicker : "Superpoderes",
+    voiceNotes,
   };
 
   return isHost ? <OwnerOficina data={data} /> : <VisitorOficina data={data} />;

@@ -3379,3 +3379,44 @@ con quien lleve la parte cuantitativa de NashMesh a fondo.
   IA en vivo). Migración `20260918154834_oficina_extras` aplicada,
   `tsc --noEmit` y `pnpm build` limpios. Shippeado como v1.23.0 — todavía
   sin UI nueva visible, eso es la Fase E2/E3 que sigue.
+
+### 2026-09-19 (cont.) — Skill "Notas de Voz" (fuera del roadmap E, pedido urgente)
+
+- Gunnar pidió una Skill nueva y paga por fuera del orden del roadmap:
+  botón de grabación en la Oficina, guarda el audio de verdad, lo manda
+  a transcribir y resumir en backend, y queda accesible desde ahí mismo.
+  Pidió además que desde el vamos quede pensada para conectarse a
+  NashMesh vía #Dirac (ver `docs/` — Protocolo Dirac, documentado esta
+  misma ronda a partir del doc en Drive que pasó Gunnar): toda nota
+  entra primero a `99_RAW`/Bridge antes de "aparecer" clasificada en
+  cualquier otro lado — hoy la nota vive en `Card` (dueño real de la
+  Skill), no hay todavía un Bridge/RAW real para que NashMesh la lea;
+  eso es el siguiente paso de integración, no parte de esta ronda.
+- Modelo nuevo `VoiceNote` (Card 1—N): `audioUrl`, `status`
+  (`processing`/`ready`/`error`), `providerJobId`, `transcript`,
+  `summary`. Migración `20260918160311_voice_notes`.
+- `lib/storage.ts` generalizado con `kind: "image" | "audio"` (default
+  `"image"`, sin romper nada existente) para poder guardar audio igual
+  que ya guarda fotos (Blob en prod, `public/uploads` en dev).
+- `lib/transcription.ts`: cliente de AssemblyAI (transcripción +
+  resumen en una sola API, evita integrar dos servicios) —
+  `transcriptionEnabled()` chequea `ASSEMBLYAI_API_KEY`; sin la key,
+  cáscara honesta: la nota queda "grabada, esperando transcripción"
+  para siempre, nunca inventa un resumen.
+- `app/c/[slug]/oficina/voiceNotes-actions.ts`: `createVoiceNoteAction`
+  (guarda + dispara transcripción si está habilitada) y
+  `checkVoiceNoteStatusAction` (poll, mismo `isHost` check que el resto
+  del proyecto).
+- `components/VoiceNotesBlock.tsx`: botón de grabar (MediaRecorder del
+  navegador, cero dependencia nueva de npm), sube al soltar, poll cada
+  5s mientras haya notas en "processing".
+- Se sumó como Skill nueva del catálogo (`lib/officeSkills.ts`,
+  `appType: "notas-voz"`) y se conectó al mismo modal de dos caras
+  (App/Qué es esto) que ya usa Fathom Brief
+  (`components/OfficeSkillsBlock.tsx`).
+- `npx prisma generate` (el client no reconocía `VoiceNote` hasta
+  regenerar), `tsc --noEmit` y `pnpm build` limpios. Shippeado como
+  v1.24.0. Pendiente del lado de Gunnar: crear la cuenta de AssemblyAI
+  y cargar `ASSEMBLYAI_API_KEY` en Vercel para que la transcripción
+  real se active — hasta entonces la grabación y el guardado ya
+  funcionan de punta a punta, solo falta ese último cable.

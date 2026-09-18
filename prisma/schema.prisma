@@ -155,6 +155,37 @@ model Card {
   // permite identificarla y borrarla en bloque, nunca mezclada con el
   // roster real.
   isDemo Boolean @default(false)
+
+  voiceNotes VoiceNote[]
+}
+
+// Skill "Notas de Voz" (2026-09-19, pedido urgente de Gunnar — Skill #3
+// del catálogo confirmado). Grabás, se sube el audio, y se transcribe +
+// resume vía un proveedor externo (lib/transcription.ts) — degradado
+// honesto sin `ASSEMBLYAI_API_KEY`: la nota queda en status "processing"
+// para siempre y la UI dice "todavía sin conectar", mismo criterio que
+// Fathom cuando no hay API key.
+model VoiceNote {
+  id     String @id @default(cuid())
+  cardId String
+  card   Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  audioUrl String
+  // "processing" (subida, sin transcribir o esperando el proveedor) |
+  // "ready" (transcript+summary reales) | "error" (el proveedor falló).
+  status String @default("processing")
+
+  transcript String? @db.Text
+  summary    String? @db.Text
+
+  // id del job en el proveedor externo — para hacer polling de estado sin
+  // guardar nada más suyo hasta que esté listo.
+  providerJobId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cardId])
 }
 
 // A brand/project running on the platform (Legacy today; Mlqr, Digital
