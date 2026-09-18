@@ -132,10 +132,22 @@ ver la regla dura en
 reusa `Program.logoUrl` que ya existía) reemplaza el `<title>` "LyCard"
 y el favicon genérico en las tarjetas de ese Programa — editable en
 `/admin/programs/[id]`. Solo aplica a project cards (las únicas con
-Program); sin nada configurado, cae al ícono/nombre de siempre del
+Program); sin nada configurado, cae al ícono/nombre por defecto del
 layout raíz. `app/favicon.ico` (el triángulo del scaffold de
 `create-next-app`, nunca reemplazado) se sacó del repo para que no
 compita con el override.
+
+**El default del layout raíz, a su vez, ya no es un ícono genérico
+fijo** (2026-09-19): `app/layout.tsx#generateMetadata` busca la Card
+marcada `isOrigin` (Legacy, por definición) y usa su
+`program.cardAppName`/`logoUrl` en TODA la app — admin, login,
+cualquier pantalla sin Card de por medio. El override por Card de
+arriba sigue ganando donde exista; esto es solo el piso, no un
+reemplazo. `app/m/login/page.tsx` tuvo que separarse en un Server
+Component (`page.tsx`, con `force-dynamic`) + Client Component
+(`components/MemberLoginForm.tsx`) porque un archivo `"use client"` de
+punta a punta no puede declarar `force-dynamic` — quedaba
+prerenderizado una sola vez en el build y nunca iba a reflejar esto.
 
 ## La Malla del equipo
 

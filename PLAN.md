@@ -3661,3 +3661,39 @@ con quien lleve la parte cuantitativa de NashMesh a fondo.
   el riesgo real es bajo, pero quedó anotado qué sí y qué no se pudo
   confirmar en vivo. `tsc --noEmit` y `pnpm build` limpios. Shippeado
   como v1.29.0.
+
+### 2026-09-19 (cont.) — Favicon del sistema entero = logo de Legacy
+
+- Gunnar pidió ir un paso más allá de la Fase 1.27 (favicon solo por
+  Card/Programa): que el favicon/nombre **por defecto de TODA la app**
+  — admin, login, cualquier pantalla sin una Card puntual de por medio
+  — sea el logo real de Legacy, no el triángulo genérico. Confirmó
+  además, antes de que se lo preguntara, que esto no debe pisar el
+  override existente: cuando un Negocio se vuelve su propio Programa,
+  su logo sigue ganando en sus propias tarjetas.
+- `app/layout.tsx`: `metadata` estático pasa a `generateMetadata()`
+  async — busca la Card marcada `isOrigin` (que es, por definición,
+  Legacy) y usa `program.cardAppName`/`logoUrl` como default de todo
+  el sistema; sin Origin Card configurada, cae a los íconos de
+  siempre. El override por Card de la Fase 1.27
+  (`lib/cardMetadata.ts`) sigue ganando donde exista — Next.js
+  reemplaza los metadatos del layout raíz con los del route segment
+  hijo, no los mezcla.
+- **Bug real encontrado en el camino**: `app/m/login/page.tsx` era
+  `"use client"` de punta a punta — un archivo así NO puede declarar
+  `export const dynamic = "force-dynamic"` (Next.js lo ignora fuera de
+  Server Components), así que quedaba prerenderizada UNA sola vez en
+  el build y servida igual siempre. Nunca iba a recibir este favicon
+  dinámico (ni, sospecho, actualizarse nunca más con nada server-side
+  a futuro). Fix: se extrajo el formulario a
+  `components/MemberLoginForm.tsx` (mismo componente, sin cambios de
+  comportamiento) y `page.tsx` pasa a ser un Server Component fino que
+  sí declara `force-dynamic`.
+- Verificado con curl contra `pnpm build && pnpm start` real, tres
+  casos: (1) `/admin/login` (nada que ver con ninguna Card) trae el
+  logo de Legacy de prueba; (2) `/m/login`, después del fix, también —
+  antes del fix seguía mostrando el ícono viejo; (3) una Card de un
+  Programa distinto ("Sierra") sigue mostrando SU PROPIO logo, no el
+  de Legacy — confirma que el override no se rompió. Datos de prueba
+  borrados después. `tsc --noEmit` y `pnpm build` limpios. Shippeado
+  como v1.30.0.

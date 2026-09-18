@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.29.0";
+export const APP_VERSION = "1.30.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.30.0",
+    date: "2026-09-19",
+    notes:
+      "El favicon/nombre por defecto de TODA la app (admin, login, cualquier tarjeta sin su propio Programa) ahora es el logo real de Legacy — no solo el de sus propias tarjetas. Si un Negocio se vuelve su propio Programa, el suyo pisa este default solo en sus tarjetas, no al revés. Fix: /m/login estaba cacheada como estática y no se actualizaba con nada de esto.",
+  },
   {
     version: "1.29.0",
     date: "2026-09-19",
