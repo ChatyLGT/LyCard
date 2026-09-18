@@ -1,13 +1,21 @@
 # LyCard
 
-Tarjeta de presentación digital del Programa Legacy. Implementación en producción
-del mockup `project/LyCard.dc.html` (bundle de Claude Design en la raíz del repo).
+Tarjeta de presentación digital multi-tenant (Legacy y otros Programas), con
+su propia Oficina Virtual: el panel donde el dueño ve el resumen de sus
+operaciones y accede a su equipo de agentes de IA.
 
-**Alcance de este MVP** (ver `chats/` en la raíz para el resto del contexto):
-solo la pantalla **LyCard** está implementada como producto real. **Oficina
-Virtual** no existe todavía — el medallón dorado de la tarjeta abre un modal de
-"Próximamente" en vez de navegar a un dashboard. El **Editor** sí está completo,
-porque sin él no hay forma de cargar datos en el roster multi-tenant.
+📖 **Documentación completa en [`docs/`](./docs/README.md)** — visión y
+alcance, arquitectura, modelo de datos, cada módulo ya construido, y el
+roadmap detallado de lo que falta. Empezá ahí, no acá — este README es solo
+el setup mecánico del entorno local.
+
+**Estado real hoy** (detalle completo en [`docs/04-MODULOS.md`](./docs/04-MODULOS.md)):
+la tarjeta pública, el Editor/Admin, y la Oficina Virtual con Superpoderes
+(Brief de reuniones vía Fathom, demo del Gemelo Digital) y la Malla del
+equipo están en producción. Lo que sigue —HR/CRM/PM internos, el bot Warren
+completo, el panel NashMesh, el MachineEngine— está documentado como
+roadmap en [`docs/05-ROADMAP-EDT.md`](./docs/05-ROADMAP-EDT.md), no
+construido todavía.
 
 ## Stack
 
@@ -45,28 +53,23 @@ porque sin él no hay forma de cargar datos en el roster multi-tenant.
 
 ## Estructura
 
-- `app/c/[slug]` — pantalla pública de la LyCard (Server Component + `LyCardView`
-  client component con el theme/lang/modales/toast).
-- `app/admin` — roster, editor y cuenta (`/admin/account`), protegidos por
-  `proxy.ts` (el `middleware.ts` de Next 16 se renombró a `proxy.ts`).
-- `lib/auth.ts` — login contra el modelo `Admin` en la base (bcrypt) + sesión
-  JWT firmada. `verifyAdminCredentials`, `createAdminSession`, `currentAdminId`.
-- `lib/i18n.ts`, `lib/data.ts` — diccionario ES/EN y catálogos de medallones/
-  rangos/canales, portados 1:1 desde el `STR`/`MEDALS`/`RANKS` del prototipo.
-- `lib/storage.ts` — abstracción de subida de imágenes (Blob en prod, disco en dev).
-- `prisma/schema.prisma` — modelo `Admin` (Master Admin) + un `Card` por
-  LyCard del roster.
+Mapa completo y actualizado en
+[`docs/02-ARQUITECTURA.md`](./docs/02-ARQUITECTURA.md) y
+[`docs/03-MODELO-DE-DATOS.md`](./docs/03-MODELO-DE-DATOS.md). Resumen
+rápido: `app/c/[slug]` es la tarjeta pública + Oficina Virtual, `app/admin`
+es el panel de Admin/N0, `app/m` es el dashboard del Member logueado,
+`lib/` tiene toda la lógica de auth/parsers/datos fijos, y
+`prisma/schema.prisma` es la fuente de verdad del modelo de datos.
 
-## Sobre el modelo de auth (decisión explícita del MVP — Fase 1)
+## Sobre el modelo de auth
 
-Se pidió multi-tenant (varias LyCards) pero con una sola cuenta de admin en
-vez de cuentas por dueño de tarjeta, porque el modelo de roles real
-(cada dueño edita solo la suya) queda para una fase posterior. Con esa cuenta
-entrás a `/admin` y podés crear/editar **cualquier** card del roster — no hay
-aislamiento entre tarjetas todavía. La credencial ya no vive en una env var:
-está en la tabla `Admin`, así que cambiarla es un formulario (`/admin/account`),
-no un redeploy. No uses este esquema tal cual si el roster va a tener dueños
-que no deben ver las tarjetas de otros — eso es la Fase 2 (roles), no construida.
+Hay dos sistemas de sesión separados a propósito: **Admin**
+(`lib/auth.ts`, cookie firmada, login por email+password) y **Member**
+(`lib/memberAuth.ts`, Google OAuth o WhatsApp OTP). Un `Admin` con
+`programId: null` es MasterN0 (acceso global); con `programId` seteado
+queda limitado a ese Programa (`currentAdminScope()`) — el aislamiento
+entre Programas ya está construido, no es más una fase pendiente. Detalle
+completo en [`docs/02-ARQUITECTURA.md`](./docs/02-ARQUITECTURA.md#autenticación--dos-sistemas-separados-no-se-mezclan).
 
 ## Deploy en Vercel
 
