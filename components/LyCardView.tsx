@@ -1582,6 +1582,31 @@ export default function LyCardView({
                 // solo (maxHeight:88vh/overflowY:auto en el contenedor de
                 // arriba), no hace falta un scroll anidado.
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {/* Qué significa cada número de la versión (2026-09-18,
+                      pedido de Gunnar) — antes de la bitácora, no dentro de
+                      cada entrada, para no repetirlo 10 veces. */}
+                  <div
+                    style={{
+                      display: "flex", flexDirection: "column", gap: 6,
+                      padding: "10px 12px", borderRadius: 10,
+                      background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)",
+                    }}
+                  >
+                    {[
+                      ["1er número", "cambios grandes — algo que ya usabas puede funcionar distinto."],
+                      ["2do número", "funcionalidad nueva — se suma algo, sin romper lo que ya había."],
+                      ["3er número", "arreglos y ajustes chicos."],
+                    ].map(([label, desc]) => (
+                      <div key={label} style={{ display: "flex", gap: 6, alignItems: "baseline" }}>
+                        <span style={{ flex: "none", font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--accentLight,#E5C378)" }}>
+                          {label}
+                        </span>
+                        <span style={{ font: "400 9.5px/1.4 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#8a8378)" }}>
+                          {desc}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                   {CHANGELOG.slice(0, 10).map((entry, i) => (
                     <div
                       key={entry.version}

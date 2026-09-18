@@ -3261,3 +3261,24 @@ con quien lleve la parte cuantitativa de NashMesh a fondo.
   mostrando el botón de vuelta. `tsc --noEmit` y `pnpm build` limpios.
 - Con esto se cierran las 4 fases (A-D) del plan aprobado "Oficina
   Virtual — reorden + Superpoderes".
+
+### 2026-09-18 (cont.) — Al día con el versionado + modal explica el semver
+
+- Gunnar marcó que `lib/version.ts` (la convención de versionado semver
+  de este repo, en pie desde el 2026-09-16: bumpear a mano junto con
+  cada cambio que se shippea) había quedado sin actualizar durante todo
+  este bloque de trabajo (Brief de Fathom, PWA, las 4 fases de la
+  Oficina) — cierto, se shippearon 5 cambios reales sin tocar
+  `APP_VERSION`/`CHANGELOG`. Corregido: 5 entradas nuevas (1.17.0 a
+  1.21.0), una por cada deploy real de esta sesión.
+- `components/LyCardView.tsx`: el modal de bitácora (`versionInfo`)
+  ahora explica, antes de la lista, qué significa un cambio en cada
+  dígito (1ro = cambios grandes, 2do = funcionalidad nueva, 3ro =
+  arreglos chicos) — una sola vez arriba, no repetido en cada entrada.
+  El límite de 10 versiones más recientes ya existía de una ronda
+  anterior (2026-09-17); con 26 entradas en el archivo ahora tiene
+  margen real para importar.
+- Verificado con Playwright contra un build de producción real: la
+  explicación aparece, se listan `v1.21.0` a `v1.12.0` (10 más
+  recientes) y `v1.0.0` queda afuera. `tsc --noEmit` y `pnpm build`
+  limpios.
