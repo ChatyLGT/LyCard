@@ -105,6 +105,19 @@ tabla `Admin`; si no hay match, no entra. Nunca crea una fila de Admin —
 ver la regla dura en
 [02-ARQUITECTURA.md](./02-ARQUITECTURA.md#regla-dura-quién-puede-volverse-adminn0).
 
+## Favicon/nombre de app por Programa
+
+**Archivos:** `lib/cardMetadata.ts` (`buildCardMetadata(slug)`),
+`generateMetadata` en `app/c/[slug]/page.tsx` y
+`app/c/[slug]/oficina/page.tsx`. `Program.cardAppName` (nuevo campo,
+reusa `Program.logoUrl` que ya existía) reemplaza el `<title>` "LyCard"
+y el favicon genérico en las tarjetas de ese Programa — editable en
+`/admin/programs/[id]`. Solo aplica a project cards (las únicas con
+Program); sin nada configurado, cae al ícono/nombre de siempre del
+layout raíz. `app/favicon.ico` (el triángulo del scaffold de
+`create-next-app`, nunca reemplazado) se sacó del repo para que no
+compita con el override.
+
 ## La Malla del equipo
 
 **Archivos:** `components/MallaGraph.tsx` (grafo 3D con three.js, hecho a

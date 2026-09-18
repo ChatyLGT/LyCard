@@ -4,9 +4,15 @@ import { prisma } from "@/lib/prisma";
 import { currentAdminScope } from "@/lib/auth";
 import { currentMemberId } from "@/lib/memberAuth";
 import { computeBadge } from "@/lib/badge";
+import { buildCardMetadata } from "@/lib/cardMetadata";
 import LyCardView from "@/components/LyCardView";
 import CardCarousel, { type CarouselBundle } from "@/components/CardCarousel";
 import type { Card, Program, ProgramSkin, Puesto } from "@/generated/prisma/client";
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  return buildCardMetadata(slug);
+}
 
 // A project card's Program plus only its active skin (0 or 1 rows) — the
 // filter lives in the Prisma query itself (Fase 2 del sistema de skins,

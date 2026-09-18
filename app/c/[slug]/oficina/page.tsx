@@ -15,9 +15,15 @@ import { parseOfficeSkills, DEFAULT_OFFICE_SKILLS, type OfficeSkill } from "@/li
 import OfficeSkillsBlock from "@/components/OfficeSkillsBlock";
 import type { VoiceNoteSummary } from "@/components/VoiceNotesBlock";
 import { parseCalendarEvents, type CalendarEvent } from "@/lib/oficinaExtras";
+import { buildCardMetadata } from "@/lib/cardMetadata";
 import type { Card, OriginMemento, Program, Puesto } from "@/generated/prisma/client";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  return buildCardMetadata(slug);
+}
 
 // La Oficina Virtual completa (PLAN.md Fase 12) — pantalla propia, no un
 // modal: se llega acá desde el emblema circular de cualquier Card

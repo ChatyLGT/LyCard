@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.26.0";
+export const APP_VERSION = "1.27.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.27.0",
+    date: "2026-09-19",
+    notes:
+      "Cada Programa ya puede poner su propio nombre de app y favicon en las tarjetas de sus miembros (editable en el dashboard del Programa) — reemplaza \"LyCard\" y el ícono genérico por, por ejemplo, \"Legacy Card\" con el logo real. Se sacó además el triángulo feo que quedaba pisando el favicon.",
+  },
   {
     version: "1.26.0",
     date: "2026-09-19",

@@ -100,7 +100,7 @@ export async function updateProgramAction(programId: string, formData: FormData)
   if (scope.programId && scope.programId !== programId) redirect("/admin");
 
   const data: Record<string, string> = {};
-  for (const key of ["name", "primaryColor", "wa", "ig", "li", "x", "fb", "tiktok", "yt", "web"]) {
+  for (const key of ["name", "cardAppName", "primaryColor", "wa", "ig", "li", "x", "fb", "tiktok", "yt", "web"]) {
     const v = formData.get(key);
     if (typeof v === "string") data[key] = v;
   }

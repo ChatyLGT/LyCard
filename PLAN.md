@@ -3555,3 +3555,39 @@ con quien lleve la parte cuantitativa de NashMesh a fondo.
   solo el build): el botón redirige, el proxy ya no lo bloquea, y el
   mensaje de "no configurado" se ve bien sin `GOOGLE_CLIENT_ID` local.
   `tsc --noEmit` y `pnpm build` limpios. Shippeado como v1.26.0.
+
+### 2026-09-19 (cont.) — Favicon/nombre de app por Programa
+
+- Gunnar reportó un triángulo dorado feo como favicon en su navegador —
+  resultó ser el ícono genérico de PWA (`public/icons/icon-192.png`,
+  nunca pensado como logo), no el real de Legacy. Pedido: cada Programa
+  debe poder poner su propio nombre de app + favicon en las tarjetas de
+  sus miembros — hoy Legacy/"Legacy Card", mañana cualquier otro
+  Programa (ej. si "Negocio→Programa" convierte el negocio de alguien
+  en su propio Programa, sería "Sierra Card").
+- Schema: `Program.cardAppName String @default("")` (migración
+  `20260918172901_program_card_app_name`) — reusa `Program.logoUrl` que
+  ya existía, no hizo falta un campo de favicon aparte.
+- `lib/cardMetadata.ts` (nuevo): `buildCardMetadata(slug)` — solo
+  project cards (las únicas con Program) devuelven un override; vacío
+  o sin Program cae al `title`/`icons` de siempre del layout raíz, sin
+  romper nada.
+- `generateMetadata` nuevo en `app/c/[slug]/page.tsx` y
+  `app/c/[slug]/oficina/page.tsx`, usando ese helper.
+- Editor: campo "Nombre de la app" nuevo en la sección de Identidad de
+  `/admin/programs/[id]`, al lado del logo que ya se subía ahí.
+- **Se sacó `app/favicon.ico`** (el triángulo de Vercel del scaffold
+  original de `create-next-app`, nunca reemplazado) — confirmado con
+  curl contra un `pnpm build && pnpm start` real que Next lo seguía
+  emitiendo como un segundo `<link rel="icon">` compitiendo con el
+  nuevo, ambiguo según navegador. Sin ese archivo, el override de
+  Programa queda como el único ícono, limpio.
+- Probado localmente con un Program de prueba (`cardAppName: "Legacy
+  Card"`, un logo de prueba) enlazado temporalmente a `mastern0`: el
+  HTML servido trae `<title>Legacy Card</title>` y un solo
+  `<link rel="icon">` apuntando al logo — confirmado con curl, no solo
+  supuesto. Dato de prueba borrado después, no toca producción.
+  `tsc --noEmit` y `pnpm build` limpios. Shippeado como v1.27.0.
+  Pendiente de Gunnar: escribir "Legacy Card" en el campo nuevo del
+  dashboard de Legacy — el logo ya está cargado, ese solo se recoge
+  solo.

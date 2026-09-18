@@ -198,6 +198,13 @@ model Program {
   slug              String   @unique
   name              String
   logoUrl           String?
+  // Nombre de la app y favicon del navegador para las Cards de este
+  // Programa (2026-09-19, pedido de Gunnar) — vacío cae a "LyCard" +
+  // el ícono genérico de siempre; con logoUrl+cardAppName cargados
+  // (ej. "Legacy Card" + el logo real de Legacy) reemplazan ambos en
+  // /c/[slug] y /c/[slug]/oficina. Reusa logoUrl (arriba), no hace
+  // falta un campo de favicon aparte.
+  cardAppName       String   @default("")
   primaryColor      String   @default("#C8A15A")
   videoThumbnailUrl String?
   wa                String   @default("")
