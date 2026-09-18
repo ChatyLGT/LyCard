@@ -148,7 +148,13 @@ prueba, confirmar el promedio con 0/1/5 scores.
 
 **Lo que ya está aprobado (Fase E1–E5, plan pausado):** Keep in Flow, Check
 de Realidad con KPIs+gráfico, Noticias/Tareas, Calendario, ambiente de
-datos demo — sigue siendo la base, esto la extiende.
+datos demo — sigue siendo la base, esto la extiende. Fase E1 (schema:
+`Card.calendarEvents` y el resto de campos de `lib/oficinaExtras.ts`) ya
+se shippeó; E2–E5 (la UI de Keep in Flow/Check de Realidad en sí) siguen
+pausadas. Nota: `Card.calendarEvents` ya no está sin uso — la Skill de
+Notas de Voz (ver [04-MODULOS.md](./04-MODULOS.md#notas-de-voz)) lo llena
+hoy con tareas/eventos reales o simulados; la UI de E2-E5 va a convivir
+con esas entradas, no reemplazarlas.
 
 **Corrección de objetivo:** la Oficina Virtual del dueño es, en el fondo,
 un **resumen ejecutivo de operaciones** — resultados finales + KPIs más
@@ -365,7 +371,7 @@ confirmadas — el plan Normal elige 3 de esta lista:
 | --- | --- | --- | --- |
 | 1 | Carta/Propuesta de Presentación | Nueva | Toma info de un prospecto (empresa, web, quiénes son) y arma carta + presentación para llevar al cliente — sirve para proyectos institucionales grandes (tipo MLQR). |
 | 2 | Brief de reuniones (Fathom) | **Ya construido**, con 3 extensiones pedidas | `lib/fathom.ts`, `components/FathomBriefBlock.tsx`. Faltan: búsqueda específica de Fathom dentro de Gmail, recordatorios/tareas autogenerados del contenido de la reunión, y acceso compartido para gente de tu red que también tiene su tarjeta. |
-| 3 | Notas de voz | **Urgente** — prioridad inmediata | Marcada por Gunnar como "ya mismo". |
+| 3 | Notas de voz | **Ya construido**, incluida la conexión real a Google | `components/VoiceNotesBlock.tsx`, `lib/transcription.ts` (AssemblyAI). Grabación + guardado + transcripción/resumen reales. Al quedar lista, si el dueño conectó Google (`lib/googleServices.ts`), crea Tarea+evento reales y aterriza el resumen estampado `#dirac` en su carpeta Bridge de Drive — si no conectó, cae a una versión simulada del mismo tile "Agenda", nunca rota. |
 | 4 | Speech / guías comerciales de venta | Nueva | Un set para Legacy, reusable en Digital Kingdom y cualquier otro Programa. |
 | 5 | Foto → Avatar | Nueva | Subís una foto, genera un avatar con esas características. |
 | 6 | Community Manager / redes sociales | Nueva, versión simulada primero | El servicio real ya existe en el catálogo de Irpavi ("Publicidad digital / redes sociales"). Para Legacy arranca simulado, como herramienta de venta. |

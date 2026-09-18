@@ -55,6 +55,47 @@ paginación completa hasta agotar la cuenta), `components/FathomBriefBlock.tsx`
 (el render). Sin `FATHOM_API_KEY` configurada, se degrada limpio
 (`enabled:false`) — nunca rompe la Oficina.
 
+## Notas de Voz
+
+**Archivos:** `components/VoiceNotesBlock.tsx` (grabación con
+`MediaRecorder` del navegador, sin dependencia nueva de npm),
+`app/c/[slug]/oficina/voiceNotes-actions.ts` (server actions: guardar,
+consultar estado), `lib/transcription.ts` (cliente de AssemblyAI —
+transcripción + resumen en una sola API), `prisma.VoiceNote` (modelo:
+`audioUrl`, `status`, `transcript`, `summary`). El audio se guarda de
+verdad (`lib/storage.ts`, mismo mecanismo que las fotos). Sin
+`ASSEMBLYAI_API_KEY` configurada, la nota queda honestamente en "grabada
+— esperando transcripción" para siempre, nunca inventa un resumen.
+
+## Conexión real de Google (Calendar + Tasks + Drive)
+
+**Archivos:** `lib/googleOAuth.ts` (extiende el login de Member — Fase
+1 — con un segundo flujo `buildGoogleConnectUrl`/`exchangeGoogleConnectCode`/
+`refreshGoogleAccessToken`, `access_type=offline` + `prompt=consent`, para
+tener refresh_token, algo que el login normal no necesita ni pide),
+`lib/googleServices.ts` (wrappers de Calendar Events, Tasks y Drive:
+`createCalendarEvent`, `createTask`, `ensureBridgeFolder`,
+`writeBridgeFile`, `buildDiracStampedMarkdown`), rutas
+`app/m/auth/google/connect-start` y `connect-callback` (arrancan desde
+una Card puntual vía `?cardId=`, resuelven el dueño con el mismo chequeo
+`isHost` que usa toda la app), `components/AgendaBlock.tsx` (el
+Superpoder "Agenda": botón "Conectar Google" o el estado ya conectado,
+más la lista de tareas/eventos con su etiqueta Real/Simulado).
+
+Scope pedido a propósito acotado — `calendar.events` + `tasks` +
+`drive.file` (nunca `drive` completo) — para no disparar la revisión de
+apps sensibles de Google. `drive.file` solo ve archivos que esta app
+creó, así que la carpeta Bridge (`Member.googleBridgeFolderId`) la crea
+LyCard la primera vez y el N0 la reubica dentro de su 99_RAW real si
+quiere (ver Protocolo Dirac en [01-VISION-Y-ALCANCE.md](./01-VISION-Y-ALCANCE.md)).
+
+Cuando una Nota de Voz queda lista (`voiceNotes-actions.ts#orchestrateReadyNote`):
+si el dueño de la Card ya conectó Google, se crea una Tarea + un evento
+reales y se escribe el resumen estampado `#dirac` en su carpeta Bridge;
+si no, la misma entrada cae en `Card.calendarEvents` marcada
+`"voz-simulado"` — la Agenda nunca queda vacía, y nunca miente sobre
+cuál de las dos cosas está pasando.
+
 ## La Malla del equipo
 
 **Archivos:** `components/MallaGraph.tsx` (grafo 3D con three.js, hecho a
