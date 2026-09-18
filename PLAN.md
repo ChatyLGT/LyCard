@@ -3063,3 +3063,37 @@ con quien lleve la parte cuantitativa de NashMesh a fondo.
 - Referencia técnica de producción (Sección G) y research flag de NashMesh
   (Sección H) siguen en pie, sin tocar código todavía — son para cuando el
   editor real (modelo Prisma + CRUD + `/api/malla`) se construya.
+
+### 2026-09-18 — Primer "superpoder" real: Brief de reuniones (Fathom)
+
+- Gunnar pidió varios "superpoderes" para la Oficina Virtual pero acotó
+  el alcance de este primero, explícitamente: conectar a Fathom, listar
+  reuniones, un resumen chico, link a Fathom — nada de Gmail, recordatorios,
+  tareas ni compartir con la red todavía (eso queda para después).
+- `lib/fathom.ts` nuevo: cliente real de la API pública de Fathom
+  (`https://api.fathom.ai/external/v1`, header `X-Api-Key`). Endpoint y
+  shape de respuesta confirmados contra el código fuente de un MCP server
+  público de Fathom en GitHub (los dominios de docs de Fathom están
+  bloqueados por el proxy de este entorno) — no adivinados.
+  `getFathomBrief()` trae las últimas reuniones grabadas (30 días,
+  `include_summary=true`) y arma un preview de texto plano del resumen.
+  Misma degradación limpia que Resend/Google en este repo: sin
+  `FATHOM_API_KEY`, `{ enabled: false }`; si Fathom falla o responde con
+  error, `{ enabled: true, error: true }` — nunca rompe la Oficina.
+- `app/c/[slug]/oficina/page.tsx`: nuevo bloque `FathomBriefBlock` en la
+  vista del dueño (`OwnerOficina`), reemplazando el placeholder estático
+  de "Agenda de hoy". Tres estados: sin conectar, error, o lista de
+  tarjetas clickeables (título + fecha + preview del resumen + "Ver en
+  Fathom →") que abren la reunión real en Fathom. Solo se llama a la API
+  cuando el visitante es el dueño (`isHost`) — un desconocido viendo la
+  Oficina de otro nunca dispara una llamada a Fathom.
+- `.env.example`: nueva `FATHOM_API_KEY=""` documentada, mismo formato que
+  las demás integraciones opcionales.
+- Verificado con `tsc --noEmit` y `pnpm build` limpios, y con Playwright
+  contra la Oficina real de `mastern0` (login como MasterN0): el bloque
+  "Brief de reuniones" renderiza en su estado "Todavía sin conectar a
+  Fathom — próximamente" sin errores de consola ni de página (no hay
+  `FATHOM_API_KEY` en este entorno de pruebas).
+- Pendiente para que Gunnar lo vea con datos reales: cargar
+  `FATHOM_API_KEY` en las variables de entorno del proyecto en Vercel
+  (y opcionalmente en su `.env` local).
