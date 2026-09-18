@@ -11,10 +11,17 @@ const MEMBER_PUBLIC_PATHS = [
   "/m/onboarding",
 ];
 
+// Same reasoning as MEMBER_PUBLIC_PATHS: the Google login round trip for
+// Admin has to be reachable by someone who doesn't have an Admin session
+// yet — that IS the login. Missing this (2026-09-19 bug, caught before
+// shipping) meant the proxy bounced /admin/auth/google/start straight
+// back to /admin/login before the route's own code ever ran.
+const ADMIN_PUBLIC_PATHS = ["/admin/login", "/admin/auth/google/start", "/admin/auth/google/callback"];
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (pathname === "/admin/login") {
+  if (ADMIN_PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
 

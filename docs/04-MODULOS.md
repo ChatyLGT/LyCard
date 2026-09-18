@@ -96,6 +96,15 @@ si no, la misma entrada cae en `Card.calendarEvents` marcada
 `"voz-simulado"` — la Agenda nunca queda vacía, y nunca miente sobre
 cuál de las dos cosas está pasando.
 
+**Login con Google para Admin** (`app/admin/auth/google/start` +
+`callback`, mismo `lib/googleOAuth.ts`): un tercer flujo, separado tanto
+del login de Member como de "Conectar Google" — es solo un método de
+autenticación alternativo (más seguro que contraseña) para una cuenta de
+Admin que ya existe. El callback busca el email de Google contra la
+tabla `Admin`; si no hay match, no entra. Nunca crea una fila de Admin —
+ver la regla dura en
+[02-ARQUITECTURA.md](./02-ARQUITECTURA.md#regla-dura-quién-puede-volverse-adminn0).
+
 ## La Malla del equipo
 
 **Archivos:** `components/MallaGraph.tsx` (grafo 3D con three.js, hecho a

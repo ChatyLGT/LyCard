@@ -53,7 +53,13 @@ export default async function LoginPage({
 
         {error && (
           <p style={{ margin: 0, color: "#e5928a", font: "500 12px 'Plus Jakarta Sans',sans-serif" }}>
-            Email o password incorrectos.
+            {error === "google_not_admin"
+              ? "Esa cuenta de Google no tiene acceso de Admin — pedile a tu MasterN0 que te dé de alta primero."
+              : error === "google_not_configured"
+                ? "El login con Google no está configurado todavía."
+                : error.startsWith("google_")
+                  ? "No se pudo completar el login con Google — probá de nuevo."
+                  : "Email o password incorrectos."}
           </p>
         )}
 
@@ -131,6 +137,34 @@ export default async function LoginPage({
         >
           Entrar
         </button>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ flex: 1, height: 1, background: "rgba(255,255,255,.1)" }} />
+          <span style={{ font: "500 9.5px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A", textTransform: "uppercase", letterSpacing: ".1em" }}>o</span>
+          <span style={{ flex: 1, height: 1, background: "rgba(255,255,255,.1)" }} />
+        </div>
+
+        {/* Solo un método de login alternativo para una cuenta de Admin que
+            YA existe (dada de alta a mano por MasterN0) — nunca crea una
+            cuenta nueva. Ver docs/02-ARQUITECTURA.md#regla-dura. */}
+        <a
+          href={`/admin/auth/google/start?next=${encodeURIComponent(next || "/admin")}`}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+            padding: 13,
+            borderRadius: 12,
+            border: "1px solid rgba(255,255,255,.14)",
+            background: "rgba(255,255,255,.03)",
+            color: "#F5F2EB",
+            font: "600 12px 'Plus Jakarta Sans',sans-serif",
+            textDecoration: "none",
+          }}
+        >
+          Continuar con Google
+        </a>
       </form>
     </div>
   );

@@ -3517,3 +3517,41 @@ con quien lleve la parte cuantitativa de NashMesh a fondo.
   (`pnpm build && pnpm start`, viewport 390×844): el modal renderiza
   chico, la explicación no se mueve y la lista scrollea sola hasta el
   final. `tsc --noEmit` y `pnpm build` limpios. Shippeado como v1.25.2.
+
+### 2026-09-19 (cont.) — "Continuar con Google" en /admin/login
+
+- Gunnar precisó lo que pedía: no mezclar Admin con Google (eso ya
+  estaba bien separado, Fase F), sino agregar Google como **método de
+  login alternativo** para una cuenta de Admin que YA existe — su
+  propio email (`gunnarpareja@gmail.com`) queda de hecho fijo como
+  MasterN0, y solo él puede dar de alta otro MasterN0/N0. Login con
+  Google en `/admin/login` es más seguro y evita mantener contraseñas,
+  sin cambiar quién decide los permisos.
+- `lib/googleOAuth.ts`: tercer flujo (`buildAdminGoogleAuthUrl`/
+  `exchangeAdminGoogleCode`), mismo scope liviano que el login de
+  Member (`openid email profile`, `access_type=online`) — no hace
+  falta refresh_token acá. Rutas nuevas `app/admin/auth/google/start` y
+  `app/admin/auth/google/callback`. El callback busca el email contra
+  la tabla `Admin` que ya existe; si no hay match, no entra — **nunca**
+  crea una fila de Admin (misma regla dura documentada esta ronda en
+  `02-ARQUITECTURA.md`).
+- **Bug real encontrado y arreglado antes de shippear**: `proxy.ts`
+  protege todo `/admin/*` exigiendo sesión de Admin — mismo patrón que
+  ya existía para `/m/auth/google/*` en `MEMBER_PUBLIC_PATHS`, pero
+  nunca lo repliqué para las rutas nuevas de Admin. El proxy rebotaba
+  `/admin/auth/google/start` de vuelta a `/admin/login` antes de que mi
+  propio código corriera — se veía bien en `tsc`/`build` pero fallaba
+  de verdad en el navegador. Lo encontré probando con Playwright contra
+  un `pnpm start` local real (no solo el build), donde se vio el
+  redirect equivocado. Fix: `ADMIN_PUBLIC_PATHS` nuevo en `proxy.ts`,
+  mismo criterio que `MEMBER_PUBLIC_PATHS`.
+- UI: botón "Continuar con Google" en `/admin/login`, con separador y
+  mensaje de error específico (`google_not_admin`) cuando el Google no
+  coincide con ningún Admin.
+- `.env.example` documenta la tercera redirect URI necesaria
+  (`/admin/auth/google/callback`) — mismo cliente OAuth, sin scopes ni
+  APIs nuevas.
+- Verificado con Playwright contra `pnpm build && pnpm start` real (no
+  solo el build): el botón redirige, el proxy ya no lo bloquea, y el
+  mensaje de "no configurado" se ve bien sin `GOOGLE_CLIENT_ID` local.
+  `tsc --noEmit` y `pnpm build` limpios. Shippeado como v1.26.0.

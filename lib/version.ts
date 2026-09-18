@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.25.2";
+export const APP_VERSION = "1.26.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.26.0",
+    date: "2026-09-19",
+    notes:
+      "El panel de Admin (/admin/login) ya tiene \"Continuar con Google\" — un método de login alternativo, más seguro, para una cuenta de Admin que ya existe. No crea cuentas nuevas: si tu Google no coincide con un Admin ya dado de alta a mano, no entra.",
+  },
   {
     version: "1.25.2",
     date: "2026-09-19",
