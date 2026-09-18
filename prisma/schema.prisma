@@ -130,6 +130,31 @@ model Card {
   // project/personal (project has ProgramMembership instead; personal has
   // no fractal at all, just a contact list).
   networkMemberships CardNetworkMembership[]
+
+  // --- Oficina Virtual: resumen ejecutivo (Fase E1, 2026-09-19) ---
+  // "Keep in Flow" — objetivo corto del dueño en su programa/negocio,
+  // texto libre. Vacío = no escrito todavía, la Oficina cae al fallback
+  // fijo (cáscara honesta, mismo criterio que el resto del proyecto).
+  oficinaObjetivo String @default("")
+
+  // "Check de Realidad" — KPIs del día del negocio/programa. Array de
+  // {key,label,value,unit,trend:[n,...]}, parseado en lib/oficinaExtras.ts.
+  // Vacío cae a DEFAULT_REALITY_CHECK_KPIS (ejemplo real para Legacy:
+  // Gemelos Digitales + Oficinas Virtuales), marcado como ejemplo en la UI.
+  realityCheckKpis Json @default("[]")
+
+  // Sección informativa de la Oficina — noticias/tareas cortas. Array de
+  // {id,title,body,date}.
+  newsItems Json @default("[]")
+
+  // Calendario — próximos eventos/tareas, vista de lista. Array de
+  // {id,title,date,time?}.
+  calendarEvents Json @default("[]")
+
+  // Marca una Card generada por el ambiente de datos demo (Fase E5) —
+  // permite identificarla y borrarla en bloque, nunca mezclada con el
+  // roster real.
+  isDemo Boolean @default(false)
 }
 
 // A brand/project running on the platform (Legacy today; Mlqr, Digital
@@ -184,8 +209,16 @@ model Program {
   // see lib/designExtraction.ts for the one place that changes. Empty
   // object means nothing uploaded yet.
   brandDesign       Json     @default("{}")
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  // Pool de frases motivacionales del "Keep in Flow" (Fase E1,
+  // 2026-09-19) — array de strings, editado a mano por el N0 (mismo
+  // patrón que officeSkills). pickPhraseOfTheDay() en lib/oficinaExtras.ts
+  // elige una distinta por día del año, determinístico — nada de IA en
+  // vivo generándola (decisión explícita del alcance de este MVP).
+  motivationalPhrases Json @default("[]")
+  // Marca un Program generado por el ambiente de datos demo (Fase E5).
+  isDemo              Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   memberships ProgramMembership[]
   cards       Card[]

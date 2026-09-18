@@ -3336,3 +3336,46 @@ con quien lleve la parte cuantitativa de NashMesh a fondo.
   calendario, y un ambiente de datos mock para simular Programas/Cards
   en bulk) — **no se tocó código todavía**, va por el protocolo de plan
   (EDT, preguntas, aprobación) antes de ejecutar.
+
+### 2026-09-19 (cont.) — Documentación completa del repo + fix real + arranca Fase E
+
+- A pedido de Gunnar ("documenta absolutamente todo de forma top1% en el
+  GitHub"), se creó `docs/` en el repo: visión y alcance, arquitectura,
+  modelo de datos, módulos ya construidos, y el EDT detallado de los 6
+  módulos pendientes (HR, CRM, PM, Oficina+Negocio+Bot Warren,
+  NashMesh+MachineEngine, AppStore de Skills) — cada uno con archivos,
+  campos de schema y server actions exactos, no solo intención. También
+  se corrigió `README.md`, que seguía describiendo el estado de Fase 1.
+- Esa documentación se fue afinando en varias rondas de correcciones
+  reales de Gunnar: taxonomía de agentes (Legacy/Silicio/Carbono-
+  referencia, no todo agente ligado a un humano), el Multiuniverso
+  redefinido como el AgentOS Carbono, Karl/Bridge como gatekeeper,
+  modelo de negocio real (4 planes: Freemium/Automatizado/Normal/
+  Enterprise, cada uno con nivel de acceso distinto, no solo precio),
+  el catálogo real de 8 Skills (fuente: HeroSuite/Mercosur Irpavi +
+  conversación con Juancho), el principio recursivo "todo nace de
+  Legacy", y la referencia a Binkio.io (proyecto propio de Gunnar) como
+  precedente de la futura capa blockchain de NashMesh — nunca como
+  infraestructura a reusar, por la disputa de socios en curso ahí.
+- QA profundo de punta a punta (pedido explícito: "desde el login")
+  encontró un bug real: **todos los íconos de la app (Material Symbols)
+  dependían de bajar una fuente de Google en cada visita** — sin esa
+  red (offline, wifi restrictivo, el propio modo offline que la PWA ya
+  promete), cada ícono se veía como texto crudo pisando el layout.
+  Arreglado: la fuente ahora vive en `public/fonts/`, cero dependencia
+  de red en runtime. Verificado con Playwright antes/después en
+  `/c/[slug]` y `/c/[slug]/oficina`, iPhone 11, `tsc`/`build` limpios.
+  Shippeado como v1.22.1.
+- Al revisar `lycardmisocio` (repo hermano, wallet vía thirdweb) para la
+  futura integración de billetera, se encontró una **llave privada
+  (`llave-nexid.pem`) commiteada en un backup `.tar`** — flaggeado a
+  Gunnar para rotar, no se tocó ni se leyó el contenido.
+- Con el roadmap ya versionado (1.23–1.34 para los 6 módulos + la Fase
+  E pausada), Gunnar dio luz verde para arrancar **Fase E1** ahora
+  mismo: schema (`Card.oficinaObjetivo/realityCheckKpis/newsItems/
+  calendarEvents/isDemo`, `Program.motivationalPhrases/isDemo`) +
+  `lib/oficinaExtras.ts` (parsers + `DEFAULT_*` inventados para Legacy +
+  `pickPhraseOfTheDay`, selección determinística por día del año, sin
+  IA en vivo). Migración `20260918154834_oficina_extras` aplicada,
+  `tsc --noEmit` y `pnpm build` limpios. Shippeado como v1.23.0 — todavía
+  sin UI nueva visible, eso es la Fase E2/E3 que sigue.
