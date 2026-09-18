@@ -3282,3 +3282,48 @@ con quien lleve la parte cuantitativa de NashMesh a fondo.
   explicación aparece, se listan `v1.21.0` a `v1.12.0` (10 más
   recientes) y `v1.0.0` queda afuera. `tsc --noEmit` y `pnpm build`
   limpios.
+
+### 2026-09-19 — Fathom conectado de verdad + 2 bugs reales de la Oficina
+
+- Gunnar cargó `FATHOM_API_KEY` real en Vercel y reportó, probando en su
+  celular, dos bugs de la Oficina (no features — se arreglan directo,
+  sin pasar por el protocolo de plan):
+  1. **Safe-area-inset-top faltante**: al sacar el header fijo de
+     `OwnerOficina` en la Fase A, el saludo de arriba quedó con un
+     padding fijo de 24px — insuficiente en iPhones con isla dinámica/
+     notch, tapando los íconos de volver/editar y sin poder tocarlos.
+     Corregido con `calc(env(safe-area-inset-top,0px) + 24px)`, mismo
+     patrón que ya usa el header del `LyCardView` principal. También se
+     le sumó al `Header` compartido (usado por `VisitorOficina`), que
+     tampoco lo tenía.
+  2. **"Editar Oficina" mandaba a un callejón sin salida**: el link
+     apuntaba siempre a `/m/dashboard/...`, que exige
+     `currentMemberId()` y redirige a `/m/login` (alta de Miembro, "poné
+     tu WhatsApp") si no hay uno — un Admin/N0 viendo su propia tarjeta
+     nunca tiene ese id, así que quedaba tirado ahí sin volver. Ahora
+     `dashboardHref` se computa distinto para Admins: si la tarjeta tiene
+     Programa, va a `/admin/programs/[id]?focus=officeSkills` (el editor
+     real de Superpoderes, Fase C — nuevo soporte de `?focus=` en esa
+     página para abrir esa sección de una); si no tiene Programa, cae al
+     editor genérico `/admin/[slug]`. Ningún caso termina en una pantalla
+     que no le corresponde al Admin.
+- Verificado con Playwright contra un build de producción real, con y
+  sin Programa vinculado (datos de prueba borrados después): el link
+  aterriza en una pantalla real y usable en ambos casos, nunca en
+  `/m/login`. `tsc --noEmit` y `pnpm build` limpios.
+- El pedido de "si algo está apagado que diga eso, no inventes
+  conexiones" ya estaba resuelto desde la Fase C: cada `appType` sin
+  backend real muestra "Todavía sin conectar — próximamente" dentro de
+  su propio modal, nunca finge una conexión que no existe.
+- El `whsec_...` (webhook secret de Fathom) que compartió Gunnar queda
+  anotado pero sin usar — no hay todavía un endpoint de webhook
+  construido; cuando se arme, va como env var, nunca hardcodeado.
+- Pendiente de confirmar con datos reales (recién cargada la API key):
+  que el Brief de reuniones de la Card de Einar (`mastern0`) muestre las
+  reuniones reales de la cuenta conectada.
+- Gunnar pidió además una ampliación grande de la Oficina (bloque "Keep
+  in Flow" con frase motivacional, "Check de Realidad" con KPIs +
+  gráfico inventados y editables por N0, sección de noticias/tareas,
+  calendario, y un ambiente de datos mock para simular Programas/Cards
+  en bulk) — **no se tocó código todavía**, va por el protocolo de plan
+  (EDT, preguntas, aprobación) antes de ejecutar.

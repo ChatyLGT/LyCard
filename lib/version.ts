@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.21.0";
+export const APP_VERSION = "1.21.1";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.21.1",
+    date: "2026-09-19",
+    notes:
+      "Fix: en tu Oficina, arriba quedaba tapado por la isla dinámica / notch del celular y no se podía tocar nada. Fix: \"Editar Oficina\" te mandaba a la pantalla de alta de miembro (poné tu WhatsApp) sin salida si entrabas como Admin — ahora va directo al editor real de Superpoderes de tu Programa.",
+  },
   {
     version: "1.21.0",
     date: "2026-09-18",

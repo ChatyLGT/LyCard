@@ -112,6 +112,7 @@ export default async function AdminProgramDetailPage({
     skinError?: string;
     officeSkillsSaved?: string;
     officeSkillsError?: string;
+    focus?: string;
   }>;
 }) {
   const { id } = await params;
@@ -134,6 +135,7 @@ export default async function AdminProgramDetailPage({
     skinError,
     officeSkillsSaved,
     officeSkillsError,
+    focus,
   } = await searchParams;
   const SKIN_ERROR_COPY: Record<string, string> = {
     max: "Ya tenés los 3 skins guardados — borrá uno para subir otro.",
@@ -525,7 +527,7 @@ export default async function AdminProgramDetailPage({
           title="Superpoderes de la Oficina"
           subtitle="Nombre, descripción y color de cada herramienta de trabajo que ve el dueño en su Oficina Virtual. Sin nada acá, se muestran los 6 de siempre."
           meta={<span style={PILL}>{officeSkills.length || "6 fijos"}</span>}
-          defaultOpen={!!officeSkillsSaved || !!officeSkillsError}
+          defaultOpen={!!officeSkillsSaved || !!officeSkillsError || focus === "officeSkills"}
         >
           {officeSkillsSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Guardado.</p>}
           {officeSkillsError === "empty" && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>Elegí un archivo de imagen primero.</p>}

@@ -103,7 +103,7 @@ function Header({ slug, right }: { slug: string; right: ReactNode }) {
         position: "sticky", top: 0, zIndex: 10,
         background: "rgba(11,11,10,.92)", backdropFilter: "blur(8px)",
         borderBottom: "1px solid rgba(200,161,90,.18)",
-        padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+        padding: "calc(env(safe-area-inset-top,0px) + 14px) 20px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
       }}
     >
       <Link href={`/c/${slug}`} style={headerLinkStyle}>← Volver a la tarjeta</Link>
@@ -438,7 +438,11 @@ function OwnerOficina({ data }: { data: OficinaData }) {
 
   return (
     <div style={{ minHeight: "100vh", background: "#0B0B0A", color: "#F3F0E9", fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
-      <div style={{ maxWidth: 460, margin: "0 auto", padding: "24px 20px 40px", display: "flex", flexDirection: "column", gap: 18 }}>
+      {/* Sin Header fijo acá (Fase A) el saludo es lo primero que se
+          renderiza — necesita su propio safe-area-inset-top o queda
+          tapado por la isla dinámica / notch en iPhone, sin poder
+          tocar los íconos de volver/editar (bug reportado 2026-09-19). */}
+      <div style={{ maxWidth: 460, margin: "0 auto", padding: "calc(env(safe-area-inset-top,0px) + 24px) 20px 40px", display: "flex", flexDirection: "column", gap: 18 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
           <div style={{ width: 40, height: 40, borderRadius: 999, padding: 2, background: `linear-gradient(160deg,#E5C378,${accent})`, flexShrink: 0 }}>
             <div style={{ width: "100%", height: "100%", borderRadius: 999, overflow: "hidden", background: "#141414", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -535,11 +539,25 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
     accent: card.program?.primaryColor || "#C8A15A",
     officeItems: parseOfficeItems(card.officeItems),
     origin: originMemento?.snapshot as OriginSnapshot | undefined,
-    // Company/personal: manda directo a la sección "Oficina Virtual" del
-    // editor (defaultOpen + auto-scroll, ver MemberCardEditor.tsx). Project
-    // no tiene esa sección (su Oficina es la historia de origen, no
+    // "Editar Oficina" mandaba siempre a /m/dashboard/... — esas rutas
+    // exigen currentMemberId() y redirigen a /m/login si no hay uno, así
+    // que un Admin (MasterN0/N0) viendo su propia tarjeta (isOrigin, o
+    // simulando) quedaba tirado en la pantalla de "poné tu WhatsApp" del
+    // alta de Miembro, sin salida (bug reportado 2026-09-19). Un Admin va
+    // a un editor real que sí puede usar: el Programa (donde vive el
+    // editor de Superpoderes, Fase C) si la tarjeta tiene uno, si no el
+    // editor genérico de /admin/[slug]. Company/personal: sigue mandando
+    // directo a la sección "Oficina Virtual" del editor de Miembro
+    // (defaultOpen + auto-scroll, ver MemberCardEditor.tsx). Project no
+    // tiene esa sección propia (su Oficina es la historia de origen, no
     // editable a mano) — el editor de "Mi camino" ya es la página entera.
-    dashboardHref: card.kind === "project" ? baseDashboardHref : `${baseDashboardHref}?focus=oficina`,
+    dashboardHref: isAdmin
+      ? card.program
+        ? `/admin/programs/${card.program.id}?focus=officeSkills`
+        : `/admin/${card.slug}`
+      : card.kind === "project"
+        ? baseDashboardHref
+        : `${baseDashboardHref}?focus=oficina`,
     agentLogoUrl: card.kind === "project" ? card.program?.logoUrl ?? null : card.kind === "company" ? card.logoUrl : null,
     fathomBrief,
     officeSkills,
