@@ -3097,3 +3097,58 @@ con quien lleve la parte cuantitativa de NashMesh a fondo.
 - Pendiente para que Gunnar lo vea con datos reales: cargar
   `FATHOM_API_KEY` en las variables de entorno del proyecto en Vercel
   (y opcionalmente en su `.env` local).
+
+### 2026-09-18 (cont.) — PWA real: instalable + caché offline de la tarjeta pública
+
+- Gunnar pidió (vía resumen de Chaty) convertir LyCard en una PWA
+  instalable con caché. La sugerencia original apuntaba a `next-pwa`, pero
+  ese paquete está muerto desde 2024 y solo sabe hablar con webpack — este
+  proyecto usa Turbopack (el bundler por defecto desde Next 16, confirmado
+  en el propio output de `pnpm build`: "▲ Next.js 16.3.5 (Turbopack)").
+  La alternativa moderna, `@serwist/turbopack`, sí soporta Turbopack pero
+  su paquete `serwist` todavía se publica bajo el tag `preview` de npm —
+  demasiado nuevo para apostarle a una app que se despliega varias veces
+  por día. Se optó por un service worker escrito a mano, sin dependencias
+  nuevas: mismo resultado real para el caso de uso que importa, cero
+  riesgo de romper builds con una herramienta inmadura.
+- `app/manifest.ts`: manifest nativo de Next (App Router lo sirve solo en
+  `/manifest.webmanifest`, sin ningún paquete) — nombre, colores de la
+  casa (`#09090b`), `display: "standalone"`.
+- `public/icons/`: primeros íconos reales de la marca (192, 512, 512
+  maskable, apple-touch-icon 180), generados a partir del mismo triángulo
+  del favicon existente pero en la paleta real (`#0B0B0A` fondo /
+  `#C8A15A` dorado) en vez del blanco/negro genérico que traía el
+  favicon.ico.
+- `public/sw.js`: dos estrategias, no una genérica para todo el sitio —
+  **assets estáticos de Next** (`/_next/static/*`, `/icons/*`) van
+  cache-first, seguro porque el nombre de archivo ya lleva el hash del
+  build (un deploy nuevo nunca pisa una URL vieja); **navegación HTML**
+  va network-first con fallback a la última copia guardada, pero
+  **solo para `/` y `/c/[slug]`** (la tarjeta pública). `/admin` y
+  `/m/dashboard` quedan deliberadamente fuera del caché offline: son
+  pantallas autenticadas por cookie, y guardar esa HTML podría terminar
+  mostrando la sesión vieja de otra persona en el mismo teléfono — sin
+  señal, esas simplemente fallan como una web normal en vez de arriesgar
+  eso.
+- `app/offline/page.tsx`: fallback honesto para cuando falla la red y
+  todavía no hay nada guardado de esa URL — no inventa contenido, solo
+  avisa que no hay conexión.
+- `components/ServiceWorkerRegistration.tsx`: registra el SW solo en
+  producción (en dev rompería el hot-reload de Turbopack al cachear
+  chunks que cambian en cada guardado).
+- `app/layout.tsx`: `manifest`, íconos (`icons.icon`/`icons.apple`) — el
+  `appleWebApp.capable` ya estaba puesto de antes, ahora por fin tiene
+  manifest + íconos reales detrás para que "Agregar a pantalla de inicio"
+  funcione de verdad en iOS/Android.
+- Verificado de la forma más honesta posible: no con la emulación
+  `context.setOffline()` de Playwright (se confirmó que no bloquea los
+  `fetch()` internos del service worker en este entorno — un catch
+  parecía andar pero en realidad seguía pegándole a la red real), sino
+  matando el proceso del servidor de producción a mitad de la prueba.
+  Con el servidor realmente muerto: recargar `/c/mastern0` (ya visitada
+  antes) sirve el HTML real desde caché; navegar a un slug nunca visitado
+  muestra `/offline`. `tsc --noEmit` y `pnpm build` limpios.
+- Pendiente, a propósito no incluido en esta entrega: ningún dato
+  dinámico (KPIs, Brief de Fathom, etc.) se sincroniza en segundo plano
+  ni hay push notifications — es caché de lectura de la última versión
+  vista, no una app offline-first completa.
