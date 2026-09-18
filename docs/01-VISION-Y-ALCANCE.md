@@ -36,9 +36,10 @@ agente orquestador — ver abajo), que rutea cada pedido a la **Skill**
 correcta.
 
 Las Skills son apps puntuales que el N0 puede invocar — hoy: un Brief de
-reuniones vía Fathom, y una demo guiada del Gemelo Digital. La meta es un
-catálogo tipo AppStore, alimentado en parte por herramientas externas ya
-construidas (HeroSuite, Irpavi) — ver el detalle y lo que falta en
+reuniones vía Fathom, y una demo guiada del Gemelo Digital. Ya hay un
+catálogo de 8 Skills confirmado (con HeroSuite/Mercosur Irpavi como
+socios/fabricantes) para el AppStore completo — ver el detalle y lo que
+falta en
 [05-ROADMAP-EDT.md](./05-ROADMAP-EDT.md#appstore-de-skills).
 
 ## Cómo un Negocio se convierte en Programa

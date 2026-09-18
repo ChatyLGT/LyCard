@@ -312,39 +312,65 @@ MasterN0.
 
 ## AppStore de Skills
 
-### ⚠️ Insumo pendiente
-
-Hay una referencia a un Excel de HeroSuite/Irpavi con el catálogo real de
-Skills que Gunnar mencionó haber compartido — no se localizó en la revisión
-de Drive hecha al escribir este documento. Antes de cerrar la lista final
-de Skills, confirmar con Gunnar y cargar los datos reales de ese archivo —
-no inventar el catálogo.
-
 ### Qué es
 
 Catálogo de Skills que el N0 de cada Programa invoca puntualmente desde la
 Oficina, vía Warren — mismo concepto que un AppStore: ícono, nombre,
 estado (activo/próximamente) y qué hace.
 
-**Skills ya reales en el código hoy:**
+### Catálogo confirmado
 
-| Skill | Estado | Archivo |
-| --- | --- | --- |
-| Brief de reuniones (Fathom) | Activo | `lib/fathom.ts`, `components/FathomBriefBlock.tsx` |
-| Gemelo Digital — demo guiada | Activo (demo) | `components/OfficeDemoChat.tsx` → pasa a `WarrenChat.tsx` |
+Fuente real: audio/chat de Gunnar con Juancho + el catálogo de servicios de
+HeroSuite/Mercosur Irpavi (socios de Legacy, ellos fabrican). 8 Skills
+confirmadas — el plan Normal elige 3 de esta lista:
 
-**Skills mencionadas y diferidas en rondas anteriores del proyecto (no
-construidas):** Notas de voz, Guías/speech de venta, Foto → avatar.
+| # | Skill | Estado | Notas |
+| --- | --- | --- | --- |
+| 1 | Carta/Propuesta de Presentación | Nueva | Toma info de un prospecto (empresa, web, quiénes son) y arma carta + presentación para llevar al cliente — sirve para proyectos institucionales grandes (tipo MLQR). |
+| 2 | Brief de reuniones (Fathom) | **Ya construido**, con 3 extensiones pedidas | `lib/fathom.ts`, `components/FathomBriefBlock.tsx`. Faltan: búsqueda específica de Fathom dentro de Gmail, recordatorios/tareas autogenerados del contenido de la reunión, y acceso compartido para gente de tu red que también tiene su tarjeta. |
+| 3 | Notas de voz | **Urgente** — prioridad inmediata | Marcada por Gunnar como "ya mismo". |
+| 4 | Speech / guías comerciales de venta | Nueva | Un set para Legacy, reusable en Digital Kingdom y cualquier otro Programa. |
+| 5 | Foto → Avatar | Nueva | Subís una foto, genera un avatar con esas características. |
+| 6 | Community Manager / redes sociales | Nueva, versión simulada primero | El servicio real ya existe en el catálogo de Irpavi ("Publicidad digital / redes sociales"). Para Legacy arranca simulado, como herramienta de venta. |
+| 7 | Agendador de citas | Nueva, casi gratis | Motor ya existe en el código: `lib/interviewSlots.ts` ("Agendar tu Entrevista"). Solo parametrizar horarios/duración. |
+| 8 | Atención al cliente (FAQ) | Nueva, fácil de parametrizar | Lista de preguntas/respuestas del negocio, nada más. |
+
+Además, `components/OfficeDemoChat.tsx` (Gemelo Digital — demo guiada) sigue
+activo y pasa a ser `WarrenChat.tsx` (ver sección de Oficina Virtual).
+
+### Cambio de UI: "Qué es esto" va primero, con video demo
+
+Hoy la tarjeta de un Superpoder muestra la App real de un lado y "Qué es
+esto" del otro, sin orden fijo declarado. **Corrección pedida por Gunnar:**
+"Qué es esto" pasa a ser la cara que se ve PRIMERO, la App después — y esa
+cara de explicación lleva un **video demo** (encargado a Fábrica/
+HeroSuite-Irpavi) mostrando literalmente qué hace la Skill. Objetivo
+explícito: que un N0 potencial, mirando el catálogo, entienda de un
+vistazo qué puede hacer cada Skill — es herramienta de venta, no solo
+documentación. Cambia el orden de las dos caras en
+`components/OfficeSkillsBlock.tsx` + campo nuevo `demoVideoUrl` en cada
+entrada de `officeSkills`.
+
+### Modelo de precio a la carta (nueva capa de monetización)
+
+Además de los 4 planes base (Freemium/Automatizado/Normal/Enterprise),
+**cada Skill puede tener su propio precio por profundidad de uso** —
+ejemplo real de Gunnar: Brief de las últimas 3 reuniones = $1/mes; sumás
+recordatorios + tareas + agenda + calendario integrado = sube el precio.
+Es independiente del plan del Programa — un add-on por Skill, no un
+cambio de plan completo.
 
 **Paso 1** — reusa `Program.officeSkills` (ya existe, `Json`), sumando
-`category` y `status:'activo'|'proximamente'|'beta'` a cada entrada.
+`category`, `status:'activo'|'proximamente'|'beta'`, `demoVideoUrl`, y
+`pricing: {basePriceUsd, addOns: [{key, label, priceUsd}]}`.
 
 **Paso 2** — `components/SkillsAppStore.tsx` (nuevo): grilla de cards por
 categoría, mismo lenguaje visual que `OfficeSkillsBlock.tsx` — se extiende,
-no se reemplaza.
+no se reemplaza. Cada card abre con "Qué es esto" (+ video) primero.
 
-**Paso 3** — una vez confirmado el Excel: cada fila se mapea 1 a 1 a una
-entrada de `officeSkills` con su categoría real.
+**Paso 3** — pedirle a Fábrica (HeroSuite/Irpavi) el video demo de cada
+Skill y, para la Skill 6 (Community Manager), una versión simulada
+navegable.
 
 **Verificación:** `tsc --noEmit`, confirmar que una Skill sin `status`
 definido cae en `'proximamente'` por default — nunca aparece activa sin
