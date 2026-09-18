@@ -21,6 +21,7 @@ export const CARD_LABEL_FIELDS: { key: string; label: string; group: "Botones" |
   { key: "scheduleKicker", label: "Modal Agendar — etiqueta superior", group: "Modales" },
   { key: "scheduleTitle", label: "Modal Agendar — título", group: "Modales" },
   { key: "officeKickerProject", label: "Modal Virtual Office — encabezado", group: "Modales" },
+  { key: "officeSkillsKicker", label: "Nombre de la sección de Superpoderes (Oficina Virtual)", group: "Modales" },
 ];
 
 export function defaultCardLabel(key: string): string {

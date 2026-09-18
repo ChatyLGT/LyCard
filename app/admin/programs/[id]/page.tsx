@@ -13,12 +13,16 @@ import {
   activateProgramSkinAction,
   deleteProgramSkinAction,
   setProgramSkinLightColorsAction,
+  updateOfficeSkillsAction,
+  setOfficeSkillIconAction,
 } from "../actions";
 import { updateMemberAction, deleteMemberAction, messageMemberAction } from "../members-actions";
 import { createPuestoAction, updatePuestoAction, deletePuestoAction } from "../puestos-actions";
 import { CARD_LABEL_FIELDS, defaultCardLabel } from "@/lib/cardLabels";
 import { parseEscala } from "@/lib/escalas";
+import { parseOfficeSkills } from "@/lib/officeSkills";
 import EscalaEditor from "@/components/EscalaEditor";
+import OfficeSkillsEditor from "@/components/OfficeSkillsEditor";
 import ProgramSkinInfo from "@/components/ProgramSkinInfo";
 import { AccordionSection, AccordionRow, AccordionAddRow } from "@/components/Accordion";
 import type { SkinColors } from "@/lib/designMd";
@@ -106,6 +110,8 @@ export default async function AdminProgramDetailPage({
     escalaSaved?: string;
     skinSaved?: string;
     skinError?: string;
+    officeSkillsSaved?: string;
+    officeSkillsError?: string;
   }>;
 }) {
   const { id } = await params;
@@ -126,6 +132,8 @@ export default async function AdminProgramDetailPage({
     escalaSaved,
     skinSaved,
     skinError,
+    officeSkillsSaved,
+    officeSkillsError,
   } = await searchParams;
   const SKIN_ERROR_COPY: Record<string, string> = {
     max: "Ya tenés los 3 skins guardados — borrá uno para subir otro.",
@@ -170,6 +178,7 @@ export default async function AdminProgramDetailPage({
   const medalScale = parseEscala(program.medalScale);
   const rankScale = parseEscala(program.rankScale);
   const contactsScale = parseEscala(program.contactsScale);
+  const officeSkills = parseOfficeSkills(program.officeSkills);
 
   const registrations = await prisma.registration.findMany({
     where: { card: { programId: id } },
@@ -506,6 +515,50 @@ export default async function AdminProgramDetailPage({
         >
           {escalaSaved === "contacts" && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Escala guardada.</p>}
           <EscalaEditor type="contacts" initialItems={contactsScale} action={updateEscalaAction.bind(null, program.id, "contacts")} />
+        </AccordionSection>
+
+        {/* "Superpoderes" de la Oficina Virtual (2026-09-18) — sin nada acá,
+            se usan los 6 de siempre (DEFAULT_OFFICE_SKILLS en
+            lib/officeSkills.ts). El ícono de cada power sube aparte, una
+            vez que ya está guardado (no entra en el JSON del array). */}
+        <AccordionSection
+          title="Superpoderes de la Oficina"
+          subtitle="Nombre, descripción y color de cada herramienta de trabajo que ve el dueño en su Oficina Virtual. Sin nada acá, se muestran los 6 de siempre."
+          meta={<span style={PILL}>{officeSkills.length || "6 fijos"}</span>}
+          defaultOpen={!!officeSkillsSaved || !!officeSkillsError}
+        >
+          {officeSkillsSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Guardado.</p>}
+          {officeSkillsError === "empty" && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>Elegí un archivo de imagen primero.</p>}
+          <OfficeSkillsEditor initialSkills={officeSkills} action={updateOfficeSkillsAction.bind(null, program.id)} />
+          {officeSkills.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 4 }}>
+              <span style={{ font: "600 10px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A", letterSpacing: ".08em", textTransform: "uppercase" }}>
+                Íconos (solo para los superpoderes ya guardados arriba)
+              </span>
+              {officeSkills.map((skill) => (
+                <form
+                  key={skill.key}
+                  action={setOfficeSkillIconAction.bind(null, program.id, skill.key)}
+                  style={{ display: "flex", gap: 6, alignItems: "center" }}
+                >
+                  <span style={{ width: 26, height: 26, borderRadius: 8, flexShrink: 0, background: skill.color || "#353534", overflow: "hidden" }}>
+                    {skill.iconUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={skill.iconUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    )}
+                  </span>
+                  <span style={{ flex: "none", font: "600 10px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5", minWidth: 90 }}>{skill.nombre}</span>
+                  <input type="file" name="icon" accept="image/*" style={{ flex: 1, minWidth: 0, font: "400 10px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }} />
+                  <button
+                    type="submit"
+                    style={{ padding: "7px 10px", borderRadius: 8, border: "1px solid rgba(200,161,90,.3)", background: "none", color: "#C8A15A", font: "700 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", cursor: "pointer", flexShrink: 0 }}
+                  >
+                    Subir
+                  </button>
+                </form>
+              ))}
+            </div>
+          )}
         </AccordionSection>
 
         {/* N0 admins — MasterN0 only, per PLAN.md Fase 6 */}

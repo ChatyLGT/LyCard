@@ -171,6 +171,12 @@ model Program {
   // Same idea for the "gente contactada" dot (2026-09-16) — empty means
   // "use the fixed MEDALS list in lib/data.ts", same as medalScale.
   contactsScale     Json     @default("[]")
+  // "Superpoderes" de la Oficina Virtual (2026-09-18) — array ordenado de
+  // {key,nombre,descripcion,iconUrl,color,appType,enabled}, ver
+  // lib/officeSkills.ts. Mismo patrón que medalScale/rankScale: vacío
+  // (el default) cae a DEFAULT_OFFICE_SKILLS en vez de dejar la sección
+  // vacía el primer día.
+  officeSkills      Json     @default("[]")
   // Uploaded brand-guidelines image + what got "read" from it (2026-09-16)
   // — {imageUrl, palette: string[] hex, font, buttonStyle, extractedAt}.
   // The color palette is real (extracted client-side from the actual

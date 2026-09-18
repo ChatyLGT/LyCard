@@ -3194,3 +3194,47 @@ con quien lleve la parte cuantitativa de NashMesh a fondo.
   `Program.officeSkills`, editor en `/admin/programs/[id]`, modal
   App/Qué es esto, retrofit del Brief de Fathom) y Fase D (Gemelo Digital
   del dueño conectado a una demo guiada, no al flujo real de alta).
+
+### 2026-09-18 (cont.) — Fase C: sistema de "Superpoderes"
+
+- `Program.officeSkills Json @default("[]")` nuevo (migración
+  `20260918035640_office_skills`, aditivo). `lib/officeSkills.ts`:
+  `OfficeSkill` (`key,nombre,descripcion,iconUrl,color,appType,enabled`),
+  `parseOfficeSkills()` y `DEFAULT_OFFICE_SKILLS` — mismo patrón que
+  `medalScale`/`rankScale`/`contactsScale`: Programa sin nada configurado
+  cae a los 6 de siempre (Malla, Brief de reuniones, Agenda, Mensajes,
+  Cartera NashMesh, Configuración) en vez de arrancar vacío.
+- Nueva key en `lib/cardLabels.ts`: `officeSkillsKicker` — el nombre de
+  la sección es editable por N0 (default "Superpoderes", tal cual los
+  viene llamando Gunnar).
+- Admin `/admin/programs/[id]`: `components/OfficeSkillsEditor.tsx`
+  (mismo patrón acordeón que `EscalaEditor.tsx`) + `updateOfficeSkillsAction`
+  (texto/color/appType, array completo) + `setOfficeSkillIconAction`
+  (ícono puntual de un power ya guardado — un `File` no entra en el JSON
+  del array, mismo patrón que `setProgramSkinLightColorsAction`) en
+  `app/admin/programs/actions.ts`.
+- `components/OfficeSkillsBlock.tsx` (client component nuevo) reemplaza
+  el grid suelto de tiles apagados y el render fijo del Brief de Fathom
+  en `app/c/[slug]/oficina/page.tsx` — ahora en **ambas** vistas
+  (dueño y visitante, antes solo vivía en la del dueño). Cada power es
+  un tile con su color/ícono real; al tocarlo abre un bottom-sheet:
+  - **Dueño**: pestañas "App"/"Qué es esto", arranca en "App". Para
+    `appType: "fathom-brief"` la cara App es el `FathomBriefBlock` real
+    (extraído a `components/FathomBriefBlock.tsx` para poder vivir en un
+    client component sin duplicar la lógica de fetch, que sigue pasando
+    server-side). Para `malla` en cards `company`, linkea de verdad a
+    `/m/dashboard/company/network`. El resto muestra el mismo
+    "Todavía sin conectar — próximamente" que antes vivía como tile.
+  - **Visitante**: solo la pestaña "Qué es esto" — la de "App" ni se
+    renderiza, cero acceso a datos del dueño.
+- Verificado end-to-end con Playwright contra un build de producción
+  real, con un Program y una Card de prueba (borrados después): (1)
+  dueño ve tabs App/Qué es esto y el estado real de Fathom Brief; (2)
+  visitante de una Card real (no la raíz — confirmado que `card.isOrigin`
+  fuerza vista de dueño para cualquiera, comportamiento previo del
+  proyecto, no algo nuevo de esta fase) solo ve la explicación, nunca
+  el contenido de "App"; (3) el editor de admin guarda un power nuevo y
+  sube su ícono de verdad (`saveUpload`), y ese ícono real aparece en la
+  Oficina en el siguiente request. `tsc --noEmit` y `pnpm build` limpios.
+- Pendiente, ya planificada: Fase D (Gemelo Digital del dueño conectado
+  a una demo guiada de chat, no al flujo real de alta de miembro).

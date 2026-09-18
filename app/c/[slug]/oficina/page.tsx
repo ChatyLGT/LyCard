@@ -11,6 +11,8 @@ import {
   TEAM_MALLA_NODES, TEAM_MALLA_EDGES, TEAM_MALLA_GHOSTS,
 } from "@/lib/mallaData";
 import { getFathomBrief, type FathomBrief } from "@/lib/fathom";
+import { parseOfficeSkills, DEFAULT_OFFICE_SKILLS, type OfficeSkill } from "@/lib/officeSkills";
+import OfficeSkillsBlock from "@/components/OfficeSkillsBlock";
 import type { Card, OriginMemento, Program, Puesto } from "@/generated/prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -88,6 +90,8 @@ type OficinaData = {
   dashboardHref: string;
   agentLogoUrl: string | null;
   fathomBrief: FathomBrief;
+  officeSkills: OfficeSkill[];
+  officeSkillsKicker: string;
 };
 
 // ---------------- Piezas compartidas ----------------
@@ -307,72 +311,6 @@ function TeamMallaBlock({ accent }: { accent: string }) {
   );
 }
 
-// Brief de reuniones — primer "superpoder" real de la Oficina (2026-09-18,
-// pedido de Gunnar): conecta a Fathom de verdad (lib/fathom.ts, API real,
-// no simulada), lista las últimas reuniones, un resumen corto de cada una
-// y un link directo a Fathom para abrirla. Nada de recordatorios/tareas/
-// Gmail todavía — eso es la fase siguiente, con su propia planificación
-// (por usuario necesita su propia conexión OAuth, esta primera versión
-// usa una sola cuenta de Fathom vía FATHOM_API_KEY).
-function FathomBriefBlock({ brief }: { brief: FathomBrief }) {
-  if (!brief.enabled) {
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <span style={kickerStyle}>Brief de reuniones</span>
-        <p style={{ margin: 0, font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
-          Todavía sin conectar a Fathom — próximamente.
-        </p>
-      </div>
-    );
-  }
-  if (brief.error) {
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <span style={kickerStyle}>Brief de reuniones</span>
-        <p style={{ margin: 0, font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>
-          No se pudo conectar a Fathom ahora mismo. Probá de nuevo en un rato.
-        </p>
-      </div>
-    );
-  }
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-        <span style={kickerStyle}>Brief de reuniones</span>
-        <span style={{ font: "400 8px 'Plus Jakarta Sans',sans-serif", color: "#6b6459" }}>vía Fathom</span>
-      </div>
-      {brief.meetings.length === 0 ? (
-        <p style={{ margin: 0, font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
-          Sin reuniones grabadas en los últimos 30 días.
-        </p>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {brief.meetings.map((m) => (
-            <a
-              key={m.recordingId}
-              href={m.url}
-              target="_blank"
-              rel="noreferrer"
-              style={{ ...panelStyle, display: "flex", flexDirection: "column", gap: 4, textDecoration: "none", color: "inherit" }}
-            >
-              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
-                <span style={{ font: "700 12px 'Plus Jakarta Sans',sans-serif" }}>{m.title}</span>
-                <span style={{ font: "400 9px 'Plus Jakarta Sans',sans-serif", color: "#756c5e", flexShrink: 0 }}>
-                  {new Date(m.createdAt).toLocaleDateString("es-MX", { day: "2-digit", month: "short" })}
-                </span>
-              </div>
-              {m.summaryPreview && (
-                <span style={{ font: "400 11px/1.4 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{m.summaryPreview}</span>
-              )}
-              <span style={{ font: "600 9.5px 'Plus Jakarta Sans',sans-serif", color: "#C8A15A" }}>Ver en Fathom →</span>
-            </a>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ==================== Vista pública — lo único que ve un visitante ====================
 function VisitorOficina({ data }: { data: OficinaData }) {
   const { card, program, accent } = data;
@@ -479,6 +417,16 @@ function VisitorOficina({ data }: { data: OficinaData }) {
             </div>
           </div>
         </div>
+
+        <div style={hr} />
+
+        <OfficeSkillsBlock
+          skills={data.officeSkills}
+          kicker={data.officeSkillsKicker}
+          isHost={false}
+          fathomBrief={{ enabled: false }}
+          companyNetworkHref={null}
+        />
       </div>
     </div>
   );
@@ -536,34 +484,13 @@ function OwnerOficina({ data }: { data: OficinaData }) {
 
         <div style={hr} />
 
-        <FathomBriefBlock brief={data.fathomBrief} />
-
-        <div style={hr} />
-
-        {/* Accesos directos — los que existen de verdad, enlazan; el resto
-            queda atenuado, sin fingir que ya está */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <span style={kickerStyle}>Tu Oficina, herramienta de trabajo</span>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "10px 6px" }}>
-            {card.kind === "company" ? (
-              <Link href="/m/dashboard/company/network" style={tileStyle}>
-                <div style={tileIcon} />
-                <span style={{ font: "400 9px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>Mi Red (Malla)</span>
-              </Link>
-            ) : (
-              <div style={{ ...tileStyle, opacity: 0.5 }}>
-                <div style={tileIcon} />
-                <span style={{ font: "400 9px 'Plus Jakarta Sans',sans-serif", color: "#8f8578" }}>Mi Red (Malla)</span>
-              </div>
-            )}
-            {["Agenda", "Mensajes", "Cartera NashMesh", "Configuración"].map((label) => (
-              <div key={label} style={{ ...tileStyle, opacity: 0.5 }}>
-                <div style={tileIcon} />
-                <span style={{ font: "400 9px 'Plus Jakarta Sans',sans-serif", color: "#8f8578" }}>{label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <OfficeSkillsBlock
+          skills={data.officeSkills}
+          kicker={data.officeSkillsKicker}
+          isHost
+          fathomBrief={data.fathomBrief}
+          companyNetworkHref={card.kind === "company" ? "/m/dashboard/company/network" : null}
+        />
       </div>
     </div>
   );
@@ -592,6 +519,14 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
   // Fathom en cada visita de un desconocido a la Oficina.
   const fathomBrief: FathomBrief = isHost ? await getFathomBrief() : { enabled: false };
 
+  const parsedSkills = parseOfficeSkills(card.program?.officeSkills);
+  const officeSkills = parsedSkills.length > 0 ? parsedSkills : DEFAULT_OFFICE_SKILLS;
+  const officeSkillsKickerOverride = card.program?.cardLabels;
+  const officeSkillsKicker =
+    officeSkillsKickerOverride && typeof officeSkillsKickerOverride === "object" && !Array.isArray(officeSkillsKickerOverride)
+      ? (officeSkillsKickerOverride as Record<string, unknown>).officeSkillsKicker
+      : undefined;
+
   const data: OficinaData = {
     card,
     program: card.program,
@@ -607,6 +542,8 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
     dashboardHref: card.kind === "project" ? baseDashboardHref : `${baseDashboardHref}?focus=oficina`,
     agentLogoUrl: card.kind === "project" ? card.program?.logoUrl ?? null : card.kind === "company" ? card.logoUrl : null,
     fathomBrief,
+    officeSkills,
+    officeSkillsKicker: typeof officeSkillsKicker === "string" && officeSkillsKicker.trim() ? officeSkillsKicker : "Superpoderes",
   };
 
   return isHost ? <OwnerOficina data={data} /> : <VisitorOficina data={data} />;

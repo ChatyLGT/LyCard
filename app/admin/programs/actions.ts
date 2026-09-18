@@ -8,6 +8,7 @@ import { currentAdminScope } from "@/lib/auth";
 import { slugify, uniqueSlug } from "@/lib/slug";
 import { CARD_LABEL_FIELDS } from "@/lib/cardLabels";
 import { parseEscala } from "@/lib/escalas";
+import { parseOfficeSkills } from "@/lib/officeSkills";
 import { saveUpload } from "@/lib/storage";
 import { parseDesignMd } from "@/lib/designMd";
 
@@ -267,4 +268,51 @@ export async function updateEscalaAction(programId: string, type: "medal" | "ran
 
   revalidatePath(`/admin/programs/${programId}`);
   redirect(`/admin/programs/${programId}?escalaSaved=${type}`);
+}
+
+// "Superpoderes" de la Oficina Virtual (2026-09-18) — mismo patrón que
+// updateEscalaAction: el editor client-side manda el array completo como
+// un solo JSON. Vacío = cae a DEFAULT_OFFICE_SKILLS (lib/officeSkills.ts).
+export async function updateOfficeSkillsAction(programId: string, formData: FormData) {
+  const scope = await currentAdminScope();
+  if (!scope) redirect("/admin/login");
+  if (scope.programId && scope.programId !== programId) redirect("/admin");
+
+  const raw = formData.get("skills");
+  let skills: ReturnType<typeof parseOfficeSkills> = [];
+  if (typeof raw === "string") {
+    try {
+      skills = parseOfficeSkills(JSON.parse(raw));
+    } catch {
+      // malformed JSON from the client — ignore rather than fail the save
+    }
+  }
+
+  await prisma.program.update({ where: { id: programId }, data: { officeSkills: skills } });
+
+  revalidatePath(`/admin/programs/${programId}`);
+  redirect(`/admin/programs/${programId}?officeSkillsSaved=1`);
+}
+
+// Sube (o reemplaza) el ícono de un superpoder puntual que ya existe en la
+// lista guardada — un File no entra en el JSON del array, así que va por
+// su propia action, igual que setProgramSkinLightColorsAction.
+export async function setOfficeSkillIconAction(programId: string, skillKey: string, formData: FormData) {
+  const scope = await currentAdminScope();
+  if (!scope) redirect("/admin/login");
+  if (scope.programId && scope.programId !== programId) redirect("/admin");
+
+  const program = await prisma.program.findUnique({ where: { id: programId } });
+  if (!program) redirect("/admin/programs");
+
+  const file = formData.get("icon");
+  if (!(file instanceof File) || file.size === 0) redirect(`/admin/programs/${programId}?officeSkillsError=empty`);
+
+  const iconUrl = await saveUpload(file, `${programId}-skill-${skillKey}`);
+  const skills = parseOfficeSkills(program.officeSkills).map((s) => (s.key === skillKey ? { ...s, iconUrl } : s));
+
+  await prisma.program.update({ where: { id: programId }, data: { officeSkills: skills } });
+
+  revalidatePath(`/admin/programs/${programId}`);
+  redirect(`/admin/programs/${programId}?officeSkillsSaved=1`);
 }
