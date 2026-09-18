@@ -1358,8 +1358,13 @@ export default function LyCardView({
                 position: "relative",
                 width: "100%",
                 maxWidth: 406,
-                maxHeight: "88vh",
-                overflowY: "auto",
+                // La bitácora de versiones (2026-09-19, pedido de Gunnar) es
+                // la única que necesita el modal entero más chico — un 50%
+                // menos de alto (44vh en vez de 88vh) — porque de acá en
+                // más solo su propia lista de versiones scrollea adentro
+                // (overflowY:hidden acá afuera), no todo el modal.
+                maxHeight: modal === "versionInfo" ? "44vh" : "88vh",
+                overflowY: modal === "versionInfo" ? "hidden" : "auto",
                 background: "linear-gradient(180deg,var(--surfHi,#1C1C1C),var(--deepBg,#0D0D0D))",
                 border: "1px solid rgba(var(--accentRgb,200,161,90),.4)",
                 borderBottom: "none",
@@ -1594,12 +1599,14 @@ export default function LyCardView({
                 // hasta 10 atrás, letra más chica. El modal ya scrollea
                 // solo (maxHeight:88vh/overflowY:auto en el contenedor de
                 // arriba), no hace falta un scroll anidado.
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, flex: 1, minHeight: 0 }}>
                   {/* Qué significa cada número de la versión (2026-09-18,
                       pedido de Gunnar) — antes de la bitácora, no dentro de
-                      cada entrada, para no repetirlo 10 veces. */}
+                      cada entrada, para no repetirlo 10 veces. Queda fija
+                      arriba; de acá para abajo scrollea solo la lista. */}
                   <div
                     style={{
+                      flex: "none",
                       display: "flex", flexDirection: "column", gap: 6,
                       padding: "10px 12px", borderRadius: 10,
                       background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)",
@@ -1620,28 +1627,33 @@ export default function LyCardView({
                       </div>
                     ))}
                   </div>
-                  {CHANGELOG.slice(0, 10).map((entry, i) => (
-                    <div
-                      key={entry.version}
-                      style={{
-                        paddingTop: i === 0 ? 0 : 10,
-                        borderTop: i === 0 ? "none" : "1px solid rgba(255,255,255,.08)",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 3,
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                        <span style={{ font: "700 11.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--accentLight,#E5C378)" }}>
-                          v{entry.version}
-                        </span>
-                        <span style={{ font: "400 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#8a8378)" }}>{entry.date}</span>
+                  {/* La bitácora en sí — 2026-09-19: pasa a ser su propio
+                      scroll interno (flex:1/minHeight:0/overflowY:auto) en
+                      vez de arrastrar todo el modal para abajo. */}
+                  <div style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
+                    {CHANGELOG.slice(0, 10).map((entry, i) => (
+                      <div
+                        key={entry.version}
+                        style={{
+                          paddingTop: i === 0 ? 0 : 10,
+                          borderTop: i === 0 ? "none" : "1px solid rgba(255,255,255,.08)",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 3,
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                          <span style={{ font: "700 11.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--accentLight,#E5C378)" }}>
+                            v{entry.version}
+                          </span>
+                          <span style={{ font: "400 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#8a8378)" }}>{entry.date}</span>
+                        </div>
+                        <p style={{ margin: 0, font: "400 11px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "rgba(245,242,235,.85)" }}>
+                          {entry.notes}
+                        </p>
                       </div>
-                      <p style={{ margin: 0, font: "400 11px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "rgba(245,242,235,.85)" }}>
-                        {entry.notes}
-                      </p>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <>

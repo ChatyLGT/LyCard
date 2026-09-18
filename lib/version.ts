@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.25.1";
+export const APP_VERSION = "1.25.2";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.25.2",
+    date: "2026-09-19",
+    notes:
+      "El modal de bitácora de versiones (el que se abre tocando la islita de versión) baja un 50% de alto — la explicación de qué significa cada número queda fija arriba, y la lista de versiones anteriores scrollea sola debajo, en vez de arrastrar todo el modal hacia abajo.",
+  },
   {
     version: "1.25.1",
     date: "2026-09-19",

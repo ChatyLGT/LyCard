@@ -3505,3 +3505,15 @@ con quien lleve la parte cuantitativa de NashMesh a fondo.
   alguien con relación de verdad a esa Card) sigue siendo el ícono de
   personalizar de siempre. Nueva key de i18n `loginIcon` (ES/EN).
   `tsc --noEmit` y `pnpm build` limpios. Shippeado como v1.25.1.
+- Fix chico pedido por Gunnar: el modal de bitácora de versiones crecía
+  con todo el historial adentro (hasta 88vh) — ahora, solo para ese
+  modal (`modal === "versionInfo"`), el contenedor baja a `44vh` (50%
+  menos) y deja de scrollear él mismo (`overflowY:"hidden"` en vez de
+  `"auto"`); la explicación de qué significa cada número queda fija
+  arriba (`flex:"none"`) y la lista de versiones pasa a su propio
+  scroll interno (`flex:1, minHeight:0, overflowY:"auto"`). El resto de
+  los modales de la tarjeta (info, contacto, agendar) no se tocaron —
+  siguen igual que siempre. Verificado con Playwright local
+  (`pnpm build && pnpm start`, viewport 390×844): el modal renderiza
+  chico, la explicación no se mueve y la lista scrollea sola hasta el
+  final. `tsc --noEmit` y `pnpm build` limpios. Shippeado como v1.25.2.
