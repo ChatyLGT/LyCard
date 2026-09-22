@@ -65,7 +65,7 @@ export default function EscalaEditor({
 
       {items.length === 0 && (
         <p style={{ margin: 0, font: "400 12px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
-          Sin niveles propios todavía — tocá "Agregar nivel" para armar tu escala.
+          Sin niveles propios todavía — tocá &quot;Agregar nivel&quot; para armar tu escala.
         </p>
       )}
 

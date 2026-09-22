@@ -54,7 +54,7 @@ export default async function AdminProgramsPage({
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px", display: "flex", flexDirection: "column", gap: 24 }}>
         {reset === "1" && (
           <p style={{ margin: 0, font: "600 12px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>
-            ✓ Plataforma reiniciada. La Card "MasterN0" está lista en /admin — creá tu primer Programa acá abajo.
+            ✓ Plataforma reiniciada. La Card &quot;MasterN0&quot; está lista en /admin — creá tu primer Programa acá abajo.
           </p>
         )}
         <section style={{ background: "#201f1f", borderRadius: 14, padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>

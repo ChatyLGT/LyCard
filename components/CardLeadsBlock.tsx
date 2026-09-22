@@ -55,9 +55,10 @@ export default function CardLeadsBlock({ cardId, initialLeads }: { cardId: strin
 
   const openLead = openLeadId ? leads.find((l) => l.id === openLeadId) ?? null : null;
 
-  useEffect(() => {
-    setNotesDraft(openLead?.notes ?? "");
-  }, [openLead?.id, openLead?.notes]);
+  function openLeadDetail(lead: CardLeadSummary) {
+    setOpenLeadId(lead.id);
+    setNotesDraft(lead.notes ?? "");
+  }
 
   async function handleStageChange(leadId: string, stage: LeadStage) {
     setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, stage } : l)));
@@ -111,7 +112,7 @@ export default function CardLeadsBlock({ cardId, initialLeads }: { cardId: strin
             <button
               key={l.id}
               type="button"
-              onClick={() => setOpenLeadId(l.id)}
+              onClick={() => openLeadDetail(l)}
               style={{
                 textAlign: "left", border: "1px solid rgba(200,161,90,.16)", background: "rgba(255,255,255,.02)",
                 borderRadius: 12, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer",

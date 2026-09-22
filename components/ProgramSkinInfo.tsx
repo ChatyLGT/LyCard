@@ -37,7 +37,7 @@ export default function ProgramSkinInfo() {
               <li>Subilo acá abajo, en cualquiera de los 3 espacios de skin.</li>
             </ol>
             <span style={{ font: "400 10.5px/1.5 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
-              Ojo: la interfaz de Stitch puede haber cambiado el nombre exacto de estos pasos — si no encontrás algo así, buscá la opción de "exportar" o "descargar" el archivo de diseño de tu proyecto.
+              Ojo: la interfaz de Stitch puede haber cambiado el nombre exacto de estos pasos — si no encontrás algo así, buscá la opción de &quot;exportar&quot; o &quot;descargar&quot; el archivo de diseño de tu proyecto.
             </span>
             <button
               type="button"

@@ -58,7 +58,7 @@ export default async function AdminResetPage({
             <li>Todos los N0 acotados (Admin de Programa) — tu login MasterN0 no se toca</li>
           </ul>
           <p style={{ margin: 0, font: "600 12.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>
-            Lo único que queda es una Card nueva, "MasterN0" — desde ahí arrancás de nuevo creando Programas en /admin/programs.
+            Lo único que queda es una Card nueva, &quot;MasterN0&quot; — desde ahí arrancás de nuevo creando Programas en /admin/programs.
           </p>
           {error === "confirm" && (
             <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>

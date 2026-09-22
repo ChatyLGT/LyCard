@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.35.0";
+export const APP_VERSION = "1.35.1";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.35.1",
+    date: "2026-09-22",
+    notes:
+      "Nada visible tampoco — esta cierra lo que dejó a medio armar la anterior. Los tests de la Fase E1 de Oficina Virtual (tu objetivo del día, KPIs, noticias, calendario) ya tienen su cobertura real. En el camino, correr el pipeline de verdad por primera vez encontró que el lint venía roto desde antes (comillas sin escapar en varias pantallas, un bug real de re-render en \"Seguimiento\") — nadie lo había notado porque nunca se había corrido como bloqueo antes de hoy. Todo corregido.",
+  },
   {
     version: "1.35.0",
     date: "2026-09-22",

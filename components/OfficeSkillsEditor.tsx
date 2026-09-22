@@ -74,7 +74,7 @@ export default function OfficeSkillsEditor({
 
       {skills.length === 0 && (
         <p style={{ margin: 0, font: "400 12px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
-          Sin superpoderes propios todavía — tocá "Agregar superpoder" para armar los tuyos (mientras tanto se
+          Sin superpoderes propios todavía — tocá &quot;Agregar superpoder&quot; para armar los tuyos (mientras tanto se
           muestran los 6 de siempre).
         </p>
       )}

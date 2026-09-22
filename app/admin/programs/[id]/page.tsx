@@ -267,9 +267,9 @@ export default async function AdminProgramDetailPage({
                 style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "10px 14px", color: "#F5F2EB", font: "400 13px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
               />
               <span style={{ font: "400 10.5px/1.5 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
-                Reemplaza "LyCard" y el favicon genérico en las tarjetas de
-                este Programa (ej. "Legacy Card" + el logo de arriba). Vacío
-                = queda "LyCard" con el ícono de siempre.
+                Reemplaza &quot;LyCard&quot; y el favicon genérico en las tarjetas de
+                este Programa (ej. &quot;Legacy Card&quot; + el logo de arriba). Vacío
+                = queda &quot;LyCard&quot; con el ícono de siempre.
               </span>
             </label>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 }}>

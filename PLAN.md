@@ -4204,3 +4204,56 @@ compartido entre los dos specs no se puede reconectar una vez cerrado
 
 Sin cambios visibles en ninguna tarjeta — 100% infraestructura interna.
 Shippeado como v1.35.0.
+
+## Oficina Virtual — Fase E1, tests reales + el patovica encuentra deuda propia (2026-09-22)
+
+Gunnar pidió retomar el roadmap de Oficina Virtual (`plan de sesión:
+Keep in Flow / Check de Realidad / Noticias / Calendario`) arrancando
+por la Fase E1 — que, al revisar el código, ya estaba construida de una
+sesión anterior (schema de `Card`/`Program` + `lib/oficinaExtras.ts`
+con los parsers y `pickPhraseOfTheDay`), solo le faltaba lo que pedía
+el nuevo proceso CQE: tests reales, y confirmación de que el pipeline
+completo pasa antes de shippear.
+
+**Tests nuevos:** `lib/__tests__/oficinaExtras.test.ts` — foco en
+`pickPhraseOfTheDay` (la única lógica real: rotación determinística por
+día del año, nunca aleatoria) y en los 4 parsers de JSON no confiable,
+con un caso explícito por cada campo que puede llegar con el tipo
+equivocado (JSON viejo/corrupto) para no crashear. Sumado
+`lib/oficinaExtras.ts` al `coverage.include` del ratchet — **100%
+también en statements, branches, functions y lines**, no solo el
+número fácil.
+
+**El patovica hizo su trabajo la primera vez que se lo corrió de
+verdad:** al ejecutar `pnpm lint` como parte del pipeline (antes solo
+se corría `tsc`/`build`, nunca lint como gate real), salieron **19
+errores preexistentes**, ninguno de esta sesión — comillas sin escapar
+(`react/no-unescaped-entities`) en 6 archivos, y un bug real de React
+en `CardLeadsBlock.tsx` (Seguimiento, v1.34.0): `setNotesDraft` se
+llamaba de forma síncrona dentro de un `useEffect` en vez de al abrir
+el detalle del lead, lo que puede disparar renders en cascada. Se
+corrigieron los 19 y se movió el `setNotesDraft` al handler de click
+que abre el lead — mismo resultado, sin el efecto innecesario. También
+se agregó `coverage/`, `playwright-report/` y `test-results/` a los
+`globalIgnores` de eslint (generados, nunca código fuente — antes
+`pnpm lint` local podía ensuciarse con ruido de una corrida previa de
+tests).
+
+**Verificado real, pipeline completo corrido a mano antes de shippear:**
+`tsc --noEmit` limpio, `pnpm lint` limpio (0 errores, solo warnings
+preexistentes de variables sin usar), `pnpm test:unit:coverage` con
+100% en los 3 archivos gateados (36 tests), `pnpm build` limpio, y los
+4 E2E de Playwright pasando contra el build real. En el medio, otro
+reset de sandbox (mismo patrón que la vez anterior: Postgres y el
+server de dev abajo, datos intactos en el volumen persistente) —
+recuperado sin perder nada, mismo procedimiento ya documentado.
+
+**Acuerdo de flujo con Gunnar de acá en adelante:** cada cosa nueva que
+se construya corre su pipeline completo local (tsc + lint + unit tests
++ build + E2E) y, si todo pasa, se pushea a `main` sola — sin esperar
+una confirmación aparte para el push, mientras el pipeline haya dado
+verde de verdad.
+
+Shippeado como v1.35.1. Próximo paso: Fase E2 (editor compartido
+`OficinaExtrasEditor.tsx` + botón "Generar con IA (simulado)" para los
+KPIs + frases motivacionales en `/admin/programs/[id]`).
