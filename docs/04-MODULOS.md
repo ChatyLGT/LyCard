@@ -156,6 +156,33 @@ Component (`page.tsx`, con `force-dynamic`) + Client Component
 punta a punta no puede declarar `force-dynamic` — quedaba
 prerenderizado una sola vez en el build y nunca iba a reflejar esto.
 
+## Equipo interno — Módulo HR + PM
+
+**Archivos:** `app/admin/equipo/page.tsx` (server, MasterN0-only — un N0
+de Programa nunca ve esto, ni existe versión suya), `app/admin/equipo/actions.ts`
+(las 6 actions: crear/editar Nodo, crear/editar Proyecto, crear/editar
+Tarea), `lib/hr.ts` (`groupByRung`, tipos/labels de `NodeType`/`TaskStatus`),
+`lib/pm.ts` (`groupProjectsByDomain`/`groupProjectsByOwner`, `isBlocked`),
+`components/EquipoProjectsBlock.tsx` y `components/EquipoTasksBlock.tsx`
+(los dos únicos bloques con interactividad cliente — toggle Dominio/Owner
+y filtro por escalón/tipo de nodo, respectivamente).
+
+Tres modelos Prisma reales (`Node`, `ProjectNode`, `Task`, ver
+`docs/05-ROADMAP-EDT.md#módulo-hr` para el porqué de cada campo) — HR y
+PM son la MISMA data (`Node`/`ProjectNode`), dos cortes distintos:
+Headcount agrupa por `rung` (con `N1.1` como único sub-escalón, ver
+"Escalera Fractal"), Proyectos agrupa por `domain` o por Nodo dueño.
+
+**Bug real encontrado y corregido en el camino:** un campo de formulario
+llamado `nodeType` rompía la hidratación de React en cualquier `<form>`
+que lo contuviera — colisiona con `Node.nodeType`, la propiedad nativa
+del DOM que hereda todo elemento (incluido el propio `<form>`). El campo
+del formulario se llama `kind` en el HTML (`name="kind"`); el modelo
+Prisma y la columna de la DB siguen llamándose `nodeType` sin cambios,
+solo el `name` del `<input>`/`<select>` cambió. Diagnosticado con
+Playwright contra dev y prod, aislando línea por línea hasta encontrar
+que renombrar ese único atributo resolvía el mismatch por completo.
+
 ## La Malla del equipo
 
 **Archivos:** `components/MallaGraph.tsx` (grafo 3D con three.js, hecho a

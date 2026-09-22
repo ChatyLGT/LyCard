@@ -6,9 +6,10 @@ que sí existe, ver [04-MODULOS.md](./04-MODULOS.md)). Sigue el mismo patrón
 ya probado 5 veces en el repo (ver
 [02-ARQUITECTURA.md](./02-ARQUITECTURA.md#el-patrón-que-se-repite-en-todo-el-repo)).
 
-Orden de prioridad si el tiempo aprieta: **HR → PM → CRM → Oficina/Negocio →
-NashMesh → MachineEngine → AppStore de Skills** (los dos primeros son lo que
-el equipo necesita para saber quién hace qué; el resto es negocio/producto).
+Orden de prioridad si el tiempo aprieta: ~~HR → PM~~ (shippeado, ver abajo) **→
+CRM → Oficina/Negocio → NashMesh → MachineEngine → AppStore de Skills** (los
+dos primeros eran lo que el equipo necesitaba para saber quién hace qué; el
+resto es negocio/producto).
 
 ## Escalera Fractal y taxonomía de agentes (contexto para HR)
 
@@ -30,7 +31,13 @@ caso del MasterN0, ese N1.1 es **Einar**, quien planea y arma el EDT;
 es el gatekeeper que traduce Carbono privado a Silicio público vía
 protocolo M2M — nada personal se filtra nunca.
 
-## Módulo HR
+## Módulo HR — ✅ shippeado (2026-09-22, v1.31.0)
+
+Ver [04-MODULOS.md](./04-MODULOS.md#equipo-interno--módulo-hr--pm) para
+los archivos reales. El plan de abajo queda como referencia histórica de
+diseño — el schema final es prácticamente idéntico a lo planeado acá,
+salvo que el campo de formulario `nodeType` se expone como `kind` en el
+HTML (bug de hidratación de React, ver el módulo en 04-MODULOS.md).
 
 **Alcance:** panel interno `/admin/equipo` (acceso exclusivo MasterN0),
 separado de las Oficinas de cliente. Headcount por escalón, tipo de nodo,
@@ -92,7 +99,7 @@ Silicio), Chaty (N1, Silicio), Warren (N1, Silicio), Mamen/Claude
 **Verificación:** `npx tsc --noEmit`, `pnpm build`, probar las 6 actions,
 confirmar 403 para un Admin no-MasterN0 en `/admin/equipo`.
 
-## Módulo PM
+## Módulo PM — ✅ shippeado junto con HR (2026-09-22, v1.31.0)
 
 Vista de `ProjectNode` (del Módulo HR) enfocada en avance/responsables —
 mismo dato, otro acordeón, no una tabla nueva.

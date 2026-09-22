@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.30.1";
+export const APP_VERSION = "1.31.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.31.0",
+    date: "2026-09-22",
+    notes:
+      "Nuevo panel interno /admin/equipo (Módulo HR + PM, solo MasterN0): headcount del Escalón Fractal N0-N12 (quién es Agente Legacy, Silicio o Carbono-referencia), proyectos con avance/nivel ψ/bloqueos, y tareas corrientes filtrables por escalón y tipo de nodo.",
+  },
   {
     version: "1.30.1",
     date: "2026-09-22",

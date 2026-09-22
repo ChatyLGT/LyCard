@@ -479,3 +479,64 @@ model Registration {
   @@index([membershipId])
   @@index([networkMembershipId])
 }
+
+// --- Módulo HR/PM (docs/05-ROADMAP-EDT.md) ---
+// Panel interno /admin/equipo, MasterN0-only — separado de las Oficinas
+// de cliente. Un Node NO es siempre "humano + agente": puede ser un
+// Agente Legacy (humano+Agente fusionados), un Agente Silicio (agente
+// puro, sin humano, creado directo por el N0), o una referencia Carbono
+// (persona real mapeada, sin ser agente todavía) — ver la sección
+// "Escalera Fractal" del roadmap para la taxonomía completa.
+model Node {
+  id             String   @id @default(cuid())
+  name           String
+  rung           String // "N0".."N12", con "N1.1" como único sub-escalón (Einar)
+  nodeType       String // "legacy" | "silicio" | "carbono_ref"
+  reportsToN11Id String? // el N1.1 al que reporta — todo el resto del fractal habla solo con su propio N1.1, nunca directo con MasterN0
+  role           String   @default("")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tasks Task[]
+
+  @@index([rung])
+}
+
+// Vista PM (mismo dato que Node, otro corte): un proyecto/iniciativa real
+// del equipo — LyCard, el MVP del partido MLQR, esta documentación,
+// Panel NashMesh, etc. — con su nivel de autonomía delegada (ψ) y avance.
+model ProjectNode {
+  id                 String    @id @default(cuid())
+  name               String
+  ownerNodeId        String // quién lo dueño/lleva
+  level              Int       @default(1) // 1=Autónomo ψ15% 2=Override ψ35% 3=Directo ψ100%
+  domain             String    @default("")
+  progressPct        Int       @default(0)
+  nextMilestoneTitle String    @default("")
+  nextMilestoneDate  DateTime?
+  blockers           Json      @default("[]") // string[]
+  responsibleNodeId  String // quién responde por el resultado — puede ser distinto del owner
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  tasks Task[]
+
+  @@index([ownerNodeId])
+  @@index([responsibleNodeId])
+}
+
+model Task {
+  id        String   @id @default(cuid())
+  projectId String
+  project   ProjectNode @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  nodeId    String
+  node      Node     @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  title     String
+  status    String   @default("pendiente") // pendiente | en_curso | hecho | bloqueado
+  due       DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([nodeId])
+}

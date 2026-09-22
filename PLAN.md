@@ -3732,3 +3732,66 @@ pero no puedo acceder a nada ni escuchar la nota que guardo."
 - Pendiente en paralelo, pedido en el mismo mensaje: el diagnóstico
   completo de estatus vs. roadmap — se arma a continuación, por
   separado.
+
+## Módulo HR + PM — panel interno /admin/equipo (2026-09-22)
+
+Gunnar, después del diagnóstico completo: "arranca" — eligiendo HR+PM
+como primera fase del roadmap grande, siguiendo mi propia recomendación
+(mismo modelo de datos, una sola fase en vez de dos).
+
+- Schema nuevo: `Node` (headcount — `rung`, `nodeType` "legacy"|"silicio"|
+  "carbono_ref", `reportsToN11Id`, `role`), `ProjectNode` (avance — `level`
+  ψ 1/2/3, `domain`, `progressPct`, `nextMilestoneTitle/Date`, `blockers`,
+  `ownerNodeId`/`responsibleNodeId`), `Task` (`projectId`, `nodeId`,
+  `title`, `status`, `due`). Migración `20260922020039_hr_pm_module`.
+- `lib/hr.ts`/`lib/pm.ts`: `groupByRung` (con `N1.1` como único
+  sub-escalón, ordena por valor numérico real, no alfabético — así "N2"
+  no queda antes que "N12"), `groupProjectsByDomain`/`groupProjectsByOwner`
+  (interpretación documentada en el propio archivo: "Programa" del pedido
+  original no tiene campo propio en `ProjectNode`, se usa el Nodo dueño —
+  ajustable si Gunnar quiso decir otra cosa), `isBlocked`.
+- `app/admin/equipo/actions.ts`: las 6 actions del plan original
+  (create/update × Node/Project/Task), todas detrás de `requireMasterN0()`
+  — mismo patrón que `/admin/programs`, invisible para un N0 de Programa.
+- `app/admin/equipo/page.tsx` + `components/EquipoProjectsBlock.tsx` +
+  `components/EquipoTasksBlock.tsx`: acordeón de 3 secciones (Headcount,
+  Proyectos, Tareas), toggle Dominio/Owner y filtro por escalón/tipo de
+  nodo — mismo lenguaje visual que el resto del panel (`Accordion.tsx`,
+  `AccordionAddRow` para crear, `AccordionRow` para editar cada fila).
+- Link "Equipo" agregado al nav del roster (`/admin`).
+
+**Bug real encontrado y diagnosticado a fondo durante la verificación**:
+el `<select>`/`<input>` con `name="nodeType"` rompía la hidratación de
+React en CUALQUIER `<form>` que lo contuviera — mismatch reproducible
+tanto en dev como en un build de producción limpio (`pnpm build && pnpm
+start`), sin relación con `disabled`, `required`, bind/unbind de la
+Server Action, ni con la cantidad de campos del form (hipótesis
+descartadas una por una, con re-verificación contra contenido servido
+fresco vía curl en cada paso para no confundir una lectura vieja de HMR
+con un resultado real). Causa real: `nodeType` colisiona con
+`Node.nodeType`, la propiedad nativa del DOM que hereda TODO elemento —
+incluido el propio `<form>` — y React 19 se confunde reflexionando sobre
+los controles nombrados del form cuando ese nombre existe. Fix: el campo
+del formulario HTML se renombró a `kind` (coincide además con la
+convención ya usada en `Card.kind`); el modelo Prisma y la columna de la
+DB siguen siendo `nodeType`, sin ningún cambio — solo el atributo `name`
+del input/select cambió, y las actions leen `formData.get("kind")` en
+vez de `"nodeType"`. Se revisaron además los otros nombres de campo
+nuevos (`title` en Tareas, candidato sospechoso por colisionar con
+`HTMLElement.title`) — verificado explícitamente que NO rompe nada, se
+dejó como está.
+- Verificado con Playwright, flujo completo real (no solo carga): crear
+  un Nodo → crear un Proyecto con ese Nodo como dueño → crear una Tarea
+  con ambos → confirmado sin ningún `pageerror` en todo el flujo, los 3
+  redirects (`nodeSaved=1`/`projectSaved=1`/`taskSaved=1`) correctos, y
+  los 3 registros verificados directo en Postgres con los datos
+  correctos (incluido el mapeo `kind` de formulario → `nodeType` de DB).
+  Confirmado también que un Admin scope (no-MasterN0) recibe 307 a
+  `/admin` al pedir `/admin/equipo` directo (con curl + una cookie de
+  sesión firmada a mano para ese Admin de prueba). Datos de prueba
+  borrados después (Nodes/Projects/Tasks/Admin scope/Program de prueba).
+  `tsc --noEmit` y `pnpm build` limpios. Shippeado como v1.31.0.
+- `docs/04-MODULOS.md` y `docs/05-ROADMAP-EDT.md` actualizados — HR/PM
+  pasa de "plan" a "construido", con el bug de `nodeType` documentado en
+  ambos lugares para que no se repita en un módulo futuro (CRM, PM
+  extendido, NashMesh) que use nombres de campo parecidos.
