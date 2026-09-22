@@ -79,6 +79,11 @@ mismo patrón "día → lista → popup" en las tres, pedido explícito de
 Gunnar (2026-09-22, investigación de patrones top-1% — Fantastical, Cron,
 Sunsama — antes de tocar código, ver PLAN.md).
 
+**Fix (2026-09-23)**: toda hora mostrada en las tres Skills usa
+`hour12: false` — con `es-MX` y formato de 12 horas, una hora como
+"12:09 p. m." es más ancha que la insignia circular de 42px del Brief y
+se salía del círculo. Formato 24hrs de punta a punta, no solo en Brief.
+
 ## Brief de reuniones (Fathom) — el primer Superpoder real
 
 **Archivos:** `lib/fathom.ts` (cliente de la API pública de Fathom, con
@@ -116,6 +121,24 @@ Content-Type que sube `lib/storage.ts` (que ahora también acepta
 red, el blob storage o la DB fallando), la nota se perdía en silencio,
 sin error visible. Ahora cualquier falla real muestra un mensaje
 explícito.
+
+**Segunda ronda (2026-09-23, después de probar en producción)**: (1)
+`lib/transcription.ts` fijó `language_code: "es"` en vez de
+`language_detection: true` — para audios cortos, AssemblyAI a veces
+adivinaba mal el idioma y transcribía en inglés lo que se grabó en
+español; LyCard es 100% español, así que fijarlo saca la ambigüedad.
+(2) "cuando sales de la app, la nota de voz se borra": no era un
+borrado real — `VoiceNotesBlock` vive detrás de `{active && ...}` en
+`OfficeSkillsBlock`, que lo DESMONTA por completo al cerrar el
+Superpoder; al reabrir, React arrancaba de nuevo desde `initialNotes`
+(el prop del primer render de la página, nunca vuelto a pedir), así que
+una nota grabada en una apertura anterior quedaba invisible aunque
+siguiera guardada. `listVoiceNotesAction` (nuevo) + un `useEffect` al
+montar el componente ahora siempre traen el estado real de la DB.
+(3) Rediseño: la vista por default pasa a ser un botón rojo grande de
+grabar (antes era directo el calendario) — "Ver notas guardadas (n) →"
+lleva al calendario/lista de siempre, que grabar con éxito abre solo
+como confirmación.
 
 ## Conexión real de Google (Calendar + Tasks + Drive)
 

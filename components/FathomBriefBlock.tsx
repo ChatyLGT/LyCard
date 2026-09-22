@@ -80,7 +80,7 @@ function FathomCalendar({ meetings, totalCount }: { meetings: import("@/lib/fath
                     display: "flex", alignItems: "center", justifyContent: "center", font: "700 10px 'Plus Jakarta Sans',sans-serif", padding: "8px 0",
                   }}
                 >
-                  {new Date(m.createdAt).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
+                  {new Date(m.createdAt).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: false })}
                 </span>
                 <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}>
                   <span style={{ font: "700 12px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -121,7 +121,7 @@ function FathomCalendar({ meetings, totalCount }: { meetings: import("@/lib/fath
               </button>
             </div>
             <span style={{ font: "500 11px 'Plus Jakarta Sans',sans-serif", color: "#756c5e" }}>
-              {new Date(openMeeting.createdAt).toLocaleString("es-MX", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+              {new Date(openMeeting.createdAt).toLocaleString("es-MX", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false })}
             </span>
             {openMeeting.summaryPreview ? (
               <p style={{ margin: 0, font: "400 12.5px/1.7 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{openMeeting.summaryPreview}</p>

@@ -114,7 +114,7 @@ export default function AgendaBlock({
                     <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
                       <span style={{ font: "700 12px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>{e.title}</span>
                       <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", color: EVENT_COLOR, flex: "none" }}>
-                        {new Date(e.start).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
+                        {new Date(e.start).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: false })}
                       </span>
                     </div>
                     <span style={{ font: "500 9.5px 'Plus Jakarta Sans',sans-serif", color: e.source === "google-real" ? "#6FCF7A" : "#E0954B" }}>

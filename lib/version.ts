@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.32.0";
+export const APP_VERSION = "1.32.1";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.32.1",
+    date: "2026-09-23",
+    notes:
+      "Ajustes tras probar en producción el rediseño anterior. Brief: la hora ya no se sale del círculo (formato 24hrs en vez de AM/PM) — mismo fix en Agenda y Notas de Voz. Notas de Voz: grabar/escuchar ya funcionaba, pero al salir y volver a entrar una nota grabada podía verse como si hubiera desaparecido — no se perdía, la Oficina no la volvía a pedir; ahora siempre trae el estado real. La transcripción quedó fija en español (antes a veces detectaba mal el idioma). Y la pantalla cambia de raíz: entra directo a un botón grande de Grabar, con \"Ver notas guardadas\" como acceso aparte al calendario de antes.",
+  },
   {
     version: "1.32.0",
     date: "2026-09-22",

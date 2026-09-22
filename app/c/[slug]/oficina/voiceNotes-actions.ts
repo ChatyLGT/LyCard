@@ -19,6 +19,34 @@ async function assertOwner(cardId: string) {
   if (!isOwner) throw new Error("forbidden");
 }
 
+// Trae el estado real de las notas desde la DB (2026-09-23, bug
+// reportado por Gunnar: "cuando sales de la app, la nota de voz se
+// borra"). No era un borrado real — VoiceNotesBlock vive detrás de un
+// render condicional en OfficeSkillsBlock (`{active && <AppFace .../>}`)
+// que lo DESMONTA por completo al cerrar el superpoder o abrir otro; al
+// reabrir, React lo vuelve a montar desde cero con el prop `initialNotes`
+// del primer render de la página — nunca vuelto a pedir — así que una
+// nota grabada después de esa carga inicial desaparecía de la vista
+// aunque siguiera perfectamente guardada en la DB. Este action se llama
+// al montar el componente para que siempre muestre la verdad actual, sin
+// importar cuántas veces se cierre y reabra el superpoder.
+export async function listVoiceNotesAction(cardId: string) {
+  await assertOwner(cardId);
+  const notes = await prisma.voiceNote.findMany({
+    where: { cardId },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+  });
+  return notes.map((n) => ({
+    id: n.id,
+    status: n.status,
+    audioUrl: n.audioUrl,
+    transcript: n.transcript,
+    summary: n.summary,
+    createdAt: n.createdAt.toISOString(),
+  }));
+}
+
 export async function createVoiceNoteAction(cardId: string, formData: FormData) {
   await assertOwner(cardId);
 

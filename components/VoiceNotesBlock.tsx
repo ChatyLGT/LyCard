@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { createVoiceNoteAction, checkVoiceNoteStatusAction } from "@/app/c/[slug]/oficina/voiceNotes-actions";
+import { createVoiceNoteAction, checkVoiceNoteStatusAction, listVoiceNotesAction } from "@/app/c/[slug]/oficina/voiceNotes-actions";
 import MiniCalendar, { sameDay } from "@/components/MiniCalendar";
 
 export type VoiceNoteSummary = {
@@ -50,14 +50,15 @@ function extForMimeType(mime: string): string {
   return "webm";
 }
 
-// Skill "Notas de Voz" (Fase Skill #3, urgente — 2026-09-19; rediseño de
-// calendario + fix de grabación 2026-09-22): grabás con el micrófono del
-// navegador (MediaRecorder, sin dependencia nueva), se sube y guarda de
-// verdad; la transcripción/resumen dependen de ASSEMBLYAI_API_KEY — sin
-// ella la nota queda honestamente en "grabada, esperando transcripción"
-// para siempre, nunca inventa un resumen.
+// Skill "Notas de Voz" — rediseño 2026-09-23 (pedido de Gunnar: "debería
+// ser un botón de grabar notas de voz directo, grande rojo, que se vea,
+// y otro botón más discreto de Ver Notas"). Dos vistas: "record" (la de
+// entrada, siempre) y "list" (el calendario + lista + popup de detalle
+// que ya existía). Grabar con éxito manda directo a "list" en el día de
+// hoy, como confirmación de que se guardó.
 export default function VoiceNotesBlock({ cardId, initialNotes }: { cardId: string; initialNotes: VoiceNoteSummary[] }) {
   const [notes, setNotes] = useState(initialNotes);
+  const [view, setView] = useState<"record" | "list">("record");
   const [recording, setRecording] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +67,23 @@ export default function VoiceNotesBlock({ cardId, initialNotes }: { cardId: stri
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mimeTypeRef = useRef<string>("");
   const chunksRef = useRef<Blob[]>([]);
+
+  // Bug real (2026-09-23, "cuando sales de la app, la nota de voz se
+  // borra"): este componente se DESMONTA por completo cada vez que se
+  // cierra el superpoder (OfficeSkillsBlock lo condiciona con
+  // `{active && ...}`), así que al reabrirlo React arrancaba de nuevo
+  // con el prop `initialNotes` del primer render de la página — nunca
+  // vuelto a pedir. Una nota grabada en una apertura anterior quedaba
+  // perfectamente guardada en la DB pero invisible en la siguiente. Al
+  // montar, siempre se pide la lista real.
+  useEffect(() => {
+    listVoiceNotesAction(cardId)
+      .then((fresh) => setNotes(fresh))
+      .catch(() => {
+        // sin conexión momentánea — se queda con initialNotes, no rompe nada
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Polling liviano para cualquier nota que siga "processing" — cada 5s,
   // se corta solo cuando ya no queda ninguna en ese estado.
@@ -140,6 +158,7 @@ export default function VoiceNotesBlock({ cardId, initialNotes }: { cardId: stri
       const created: VoiceNoteSummary = { id: result.id, status: "processing", audioUrl: result.audioUrl, transcript: null, summary: null, createdAt: new Date().toISOString() };
       setNotes((prev) => [created, ...prev]);
       setSelectedDate(new Date(created.createdAt));
+      setView("list"); // confirmación visual de que se guardó — la ves aparecer ahí mismo
     } catch {
       setError("No se pudo guardar la nota — revisá tu conexión y probá de nuevo.");
     } finally {
@@ -150,25 +169,61 @@ export default function VoiceNotesBlock({ cardId, initialNotes }: { cardId: stri
   const dayNotes = notes.filter((n) => sameDay(new Date(n.createdAt), selectedDate));
   const openNote = openNoteId ? notes.find((n) => n.id === openNoteId) ?? null : null;
 
+  if (view === "record") {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, padding: "18px 0 6px" }}>
+        <button
+          type="button"
+          onClick={recording ? stopRecording : startRecording}
+          disabled={uploading}
+          aria-label={recording ? "Detener grabación" : "Grabar nota de voz"}
+          style={{
+            width: 92, height: 92, borderRadius: 999, border: "none",
+            background: "linear-gradient(135deg,#ff6b5b,#d92c1f)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: recording ? "0 0 0 9px rgba(217,44,31,.16)" : "0 8px 26px rgba(217,44,31,.4)",
+            cursor: uploading ? "default" : "pointer",
+            transition: "box-shadow 220ms ease",
+            flex: "none",
+          }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: 38, color: "#fff" }}>
+            {recording ? "stop" : "mic"}
+          </span>
+        </button>
+        <span style={{ font: "700 12.5px 'Plus Jakarta Sans',sans-serif", color: recording ? "#e5928a" : "#F5F2EB" }}>
+          {uploading ? "Guardando…" : recording ? "Detener grabación" : "Grabar nota de voz"}
+        </span>
+
+        {error && <p style={{ margin: 0, font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a", textAlign: "center" }}>{error}</p>}
+
+        <button
+          type="button"
+          onClick={() => setView("list")}
+          style={{
+            marginTop: 8, background: "none", border: "none", padding: 0, cursor: "pointer",
+            font: "600 10.5px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".03em", color: "#8a8378",
+          }}
+        >
+          Ver notas guardadas{notes.length > 0 ? ` (${notes.length})` : ""} →
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <button
         type="button"
-        onClick={recording ? stopRecording : startRecording}
-        disabled={uploading}
+        onClick={() => setView("record")}
         style={{
-          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-          padding: "12px 0", borderRadius: 12, border: "1px solid rgba(200,161,90,.35)",
-          background: recording ? "rgba(224,60,60,.15)" : "rgba(200,161,90,.1)",
-          color: recording ? "#e5928a" : "#E5C378", cursor: uploading ? "default" : "pointer",
-          font: "700 12px 'Plus Jakarta Sans',sans-serif",
+          alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", padding: 0, cursor: "pointer",
+          font: "700 10.5px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".04em", textTransform: "uppercase", color: "#C8A15A",
         }}
       >
-        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{recording ? "stop_circle" : "mic"}</span>
-        {uploading ? "Guardando…" : recording ? "Detener grabación" : "Grabar una nota"}
+        <span className="material-symbols-outlined" style={{ fontSize: 15 }}>arrow_back</span>
+        Grabar
       </button>
-
-      {error && <p style={{ margin: 0, font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>{error}</p>}
 
       {notes.length === 0 ? (
         <p style={{ margin: 0, font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
@@ -203,7 +258,7 @@ export default function VoiceNotesBlock({ cardId, initialNotes }: { cardId: stri
                     <span style={{ width: 8, height: 8, borderRadius: 999, background: STATUS_COLOR[n.status] ?? STATUS_COLOR.processing, flex: "none" }} />
                     <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}>
                       <span style={{ font: "700 12px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>
-                        {new Date(n.createdAt).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
+                        {new Date(n.createdAt).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: false })}
                       </span>
                       <span style={{ font: "400 10.5px 'Plus Jakarta Sans',sans-serif", color: STATUS_COLOR[n.status] ?? STATUS_COLOR.processing }}>
                         {STATUS_LABEL[n.status] ?? "Procesando"}
@@ -234,7 +289,7 @@ export default function VoiceNotesBlock({ cardId, initialNotes }: { cardId: stri
                   Nota de voz
                 </span>
                 <span style={{ font: "600 16px 'Playfair Display',serif", color: "#F5F2EB" }}>
-                  {new Date(openNote.createdAt).toLocaleString("es-MX", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                  {new Date(openNote.createdAt).toLocaleString("es-MX", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false })}
                 </span>
               </div>
               <button

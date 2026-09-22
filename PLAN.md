@@ -3888,3 +3888,67 @@ nunca mezclado en silencio.
   local) — mismo patrón que `AgendaBlock`/`VoiceNotesBlock`, ya probados
   con datos reales.
 - `tsc --noEmit` y `pnpm build` limpios. Shippeado como v1.32.0.
+
+## Segunda ronda tras producción: 24hrs, idioma fijo, remount fix, rediseño de Notas de Voz (2026-09-23)
+
+Gunnar probó v1.32.0 en producción real y confirmó que 2 de los 3 fixes
+del round anterior funcionaron ("te quedo excelente", "Perfecto, ya se
+graban y escuchan") — reportó 4 cosas nuevas, ya con el producto en uso
+real:
+
+1. **Brief: la hora se sale del círculo.** `es-MX` con formato de 12
+   horas ("12:09 p. m.") es más ancho que la insignia circular de 42px
+   del Brief. Fix: `hour12: false` en las tres Skills (Brief, Notas de
+   Voz, Agenda) — no solo donde se reportó, mismo patrón, mismo riesgo.
+2. **Transcripción en inglés de un audio en español.** `lib/transcription.ts`
+   usaba `language_detection: true` — para audios cortos, AssemblyAI a
+   veces adivinaba mal. Fix: `language_code: "es"` fijo (confirmado por
+   WebSearch que AssemblyAI soporta español tanto para transcripción
+   como para el resumen — no es una limitación de "solo inglés"). No se
+   pudo probar en vivo en este entorno (sin `ASSEMBLYAI_API_KEY` local,
+   mismo límite que rondas anteriores) — pendiente de confirmación real
+   de Gunnar.
+3. **"Cuando sales de la app, la nota de voz se borra"** (un reporte
+   DISTINTO del bug #2 de la ronda anterior, ya solucionado — este es un
+   root cause nuevo): `VoiceNotesBlock` vive detrás de `{active && ...}`
+   en `OfficeSkillsBlock`, que lo DESMONTA por completo al cerrar el
+   Superpoder. Al reabrir, React arrancaba de cero desde el prop
+   `initialNotes` — el server render original de la página, nunca vuelto
+   a pedir — así que una nota grabada en una apertura anterior quedaba
+   invisible aunque siguiera perfectamente guardada en la DB. Fix:
+   `listVoiceNotesAction` (nuevo, en `voiceNotes-actions.ts`) + un
+   `useEffect` al montar `VoiceNotesBlock` que siempre trae el estado
+   real.
+4. **Rediseño pedido de Notas de Voz**: "debería ser un botón de grabar
+   notas de voz directo, grande rojo, que se vea, y otro botón más
+   discreto de Ver Notas". El componente ahora tiene dos vistas —
+   `"record"` (default: botón circular rojo de 92px, gradiente
+   `#ff6b5b → #d92c1f`) y `"list"` (el calendario/lista/popup que ya
+   existía) — con "Ver notas guardadas (n) →" como link discreto entre
+   ambas. Grabar con éxito manda a `"list"` automáticamente como
+   confirmación visual de que se guardó.
+
+**Verificado real, no solo compilado** (`tsc --noEmit` + `pnpm build`
+limpios primero, después Playwright contra `pnpm dev` con mic falso):
+- Vista `"record"` por default con el botón rojo — confirmado visible y
+  con el diseño pedido (screenshot).
+- Grabación real de punta a punta (mismo mecanismo de mic falso que la
+  ronda anterior): graba, sube, auto-cambia a `"list"` como
+  confirmación, sin error de guardado.
+- **El fix del bug #3 (remount) se probó simulando el escenario real**:
+  se abrió el superpoder (conteo de notas en el server render inicial),
+  se cerró el modal (desmontando `VoiceNotesBlock` de verdad), se
+  insertó una nota nueva directo en la DB vía `psql` (simulando "algo se
+  guardó mientras no estabas mirando" — el mismo tipo de gap temporal
+  que producía el bug), se reabrió el superpoder: el conteo pasó de
+  correctamente reflejar la nota vieja a incluir también la insertada
+  directo en DB — confirma que ya no depende del render inicial stale.
+- Reproducción de audio (`readyState:4`, sin `errorCode`) y formato 24hrs
+  (sin ningún "a. m."/"p. m." detectado en el DOM) confirmados en la
+  misma corrida.
+- El fix de `hour12:false` en Brief no se pudo probar visualmente en
+  este entorno (sin `FATHOM_API_KEY` local, mismo límite de siempre) —
+  es el mismo cambio mecánico ya confirmado funcionando en Notas de
+  Voz/Agenda con idéntico locale (`es-MX`) y misma llamada
+  (`toLocaleTimeString`/`toLocaleString`).
+- Shippeado como v1.32.1.

@@ -28,7 +28,14 @@ export async function startTranscriptionJob(audioUrl: string): Promise<string> {
       summarization: true,
       summary_model: "informative",
       summary_type: "bullets",
-      language_detection: true,
+      // Fijo en español, no auto-detección (2026-09-23, bug reportado por
+      // Gunnar: transcribía en inglés lo que se grabó en español). LyCard
+      // es un producto en español de punta a punta — para audios cortos
+      // "language_detection" adivinaba mal más de una vez; AssemblyAI
+      // soporta español tanto para transcripción como para resumen, así
+      // que fijarlo saca la ambigüedad en vez de confiar en que detecte
+      // bien.
+      language_code: "es",
     }),
   });
   if (!res.ok) throw new Error(`AssemblyAI ${res.status}`);
