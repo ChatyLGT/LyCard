@@ -4257,3 +4257,65 @@ verde de verdad.
 Shippeado como v1.35.1. Próximo paso: Fase E2 (editor compartido
 `OficinaExtrasEditor.tsx` + botón "Generar con IA (simulado)" para los
 KPIs + frases motivacionales en `/admin/programs/[id]`).
+
+## Oficina Virtual — Fase E2: editor compartido + frases motivacionales (2026-09-22)
+
+Construido el editor de contenido de la Oficina (todavía sin efecto en
+la tarjeta pública — eso es Fase E3, el paso siguiente).
+
+**`components/OficinaExtrasEditor.tsx`** — deliberadamente **sin su
+propio `<form>`**: se monta adentro del form grande de
+`EditorForm.tsx`/`MemberCardEditor.tsx` (mismo patrón que `officeItems`
+ya usa en el segundo), porque HTML no permite `<form>` anidado y el
+plan original pedía que se guardara "todo como antes" con un solo
+"Guardar Tarjeta". 4 `AccordionSection`: Objetivo (Keep in Flow, input
+simple), Check de Realidad (KPIs: label/valor/unidad editables + botón
+"Generar con IA (simulado)"), Noticias, Calendario.
+
+**Desvío consciente del borrador de plan**: "Generar con IA (simulado)"
+NO es una server action (`simulateRealityCheckAction` como decía el
+plan original) — es 100% client-side, `lib/oficinaExtras.ts#generateSimulatedKpis()`
+rellenando el estado local con los ejemplos fijos + un jitter chico
+(nunca negativo). Motivo: una action de servidor hubiera necesitado su
+propio `<form>`, y ya quedó descartado por la razón de arriba. El N0
+igual tiene que tocar "Guardar Tarjeta" para que quede — nada se
+escribe en la DB sin ese click explícito.
+
+**Server actions extendidas** (no nuevas, mismo criterio que
+`officeItems`): `updateCardAction` (`app/admin/actions.ts`) y
+`updateMemberCardAction` (`app/m/dashboard/actions.ts`) ahora también
+leen y guardan los 4 campos, vía un helper nuevo compartido
+`lib/oficinaExtras.ts#parseOficinaExtrasFormData(formData)` — evita
+duplicar el mismo `JSON.parse` + try/catch en los dos archivos.
+
+**`components/PhraseListEditor.tsx`** (nuevo, más simple que
+`EscalaEditor`/`OfficeSkillsEditor` porque cada ítem es un string
+plano, no un objeto con campos internos) — pool de frases
+motivacionales por Programa, nueva sección en
+`/admin/programs/[id]` justo debajo de Superpoderes. Server action
+`updateMotivationalPhrasesAction` en `app/admin/programs/actions.ts`,
+mismo patrón que `updateOfficeSkillsAction`.
+
+**Tests nuevos** (`lib/__tests__/oficinaExtras.test.ts`, siguiendo la
+misma disciplina de Fase E1): `generateSimulatedKpis` — el trend nunca
+baja de 0 pase lo que pase el dado (200 corridas para cubrir las 3
+salidas de `Math.random()`), y no muta los ejemplos fijos que usa como
+base; `parseOficinaExtrasFormData` — happy path, `FormData` vacío,
+JSON roto en cualquiera de los 3 campos. `lib/oficinaExtras.ts` sigue
+al 100% de cobertura real (branches incluidas) con las funciones
+nuevas sumadas.
+
+**E2E nuevo**: `e2e/oficina-extras-editor.spec.ts` — abre el editor de
+una Card de prueba en un navegador real, expande la sección "Keep in
+Flow" (arranca colapsada), escribe el objetivo, guarda, y confirma por
+SQL directo que quedó en la DB. No alcanza con que el parser esté
+testeado si el botón de guardar nunca se probó de verdad.
+
+**Verificado, pipeline completo antes de shippear**: `tsc --noEmit`
+limpio, `pnpm lint` limpio, `pnpm test:unit:coverage` 100% (42→ahora
+más tests, todos pasando), `pnpm build` limpio, los 5 E2E de Playwright
+pasando (los 4 de antes + el nuevo).
+
+Shippeado como v1.36.0. Próximo paso: Fase E3 — mostrar todo esto de
+verdad en la Oficina Virtual pública (`KeepInFlowBlock.tsx`,
+`CheckDeRealidadBlock.tsx`, banner de la frase del día).

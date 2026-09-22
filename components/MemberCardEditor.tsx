@@ -7,6 +7,7 @@ import { updateMemberCardAction } from "@/app/m/dashboard/actions";
 import { MEDALS, RANKS, CHANNELS } from "@/lib/data";
 import { AccordionSection, AccordionRow } from "@/components/Accordion";
 import { CARD_KINDS, CARD_KIND_LABEL, parseShareScope } from "@/lib/shareScope";
+import OficinaExtrasEditor from "@/components/OficinaExtrasEditor";
 
 const FIELD_WRAP: CSSProperties = {
   display: "flex",
@@ -562,6 +563,8 @@ export default function MemberCardEditor({
           </button>
         </AccordionSection>
         </div>
+
+        <OficinaExtrasEditor card={card} />
 
         <AccordionSection title="Canales de Contacto">
           {CHANNELS.map((c) => (

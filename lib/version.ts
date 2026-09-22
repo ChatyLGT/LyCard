@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.35.1";
+export const APP_VERSION = "1.36.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.36.0",
+    date: "2026-09-22",
+    notes:
+      "Empieza a armarse el contenido de tu Oficina Virtual (Fase E2, todavía no se ve en la tarjeta pública — eso es el próximo paso). En el editor de cada tarjeta (Legacy, Business, Personal) hay 4 secciones nuevas: tu objetivo del día (\"Keep in Flow\"), tus KPIs (\"Check de Realidad\", con un botón para que se llenen solos de ejemplo y los ajustás), noticias cortas, y calendario — todo inventado por vos, editable, por tarjeta. Y en el dashboard de cada Programa, un pool de frases motivacionales a mano tuya que van a rotar solas, una por día.",
+  },
   {
     version: "1.35.1",
     date: "2026-09-22",

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { currentMemberId } from "@/lib/memberAuth";
 import { saveUpload } from "@/lib/storage";
 import { parseShareScope } from "@/lib/shareScope";
+import { parseOficinaExtrasFormData } from "@/lib/oficinaExtras";
 
 // Member-scoped twin of app/admin/actions.ts's updateCardAction — same
 // field set, but gated by ownership (card.memberId must match the caller's
@@ -87,11 +88,16 @@ export async function updateMemberCardAction(slug: string, formData: FormData) {
 
   const shareScope = parseShareScope(formData.getAll("shareScope"));
 
+  // Contenido de la Oficina Virtual por Card (Fase E2): objetivo del día
+  // + KPIs + noticias + calendario, todo inventado/editable por el dueño.
+  const oficinaExtras = parseOficinaExtrasFormData(formData);
+
   await prisma.card.update({
     where: { slug },
     data: {
       ...data,
       shareScope,
+      ...oficinaExtras,
       ...(portraitUrl ? { portraitUrl } : {}),
       ...(logoUrl ? { logoUrl } : {}),
       ...(officeItems ? { officeItems } : {}),

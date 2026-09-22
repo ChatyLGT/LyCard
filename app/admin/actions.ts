@@ -14,6 +14,7 @@ import { saveUpload } from "@/lib/storage";
 import { MEDALS, RANKS } from "@/lib/data";
 import { slugify } from "@/lib/slug";
 import { parseShareScope } from "@/lib/shareScope";
+import { parseOficinaExtrasFormData } from "@/lib/oficinaExtras";
 
 export async function loginAction(formData: FormData) {
   const email = String(formData.get("email") || "");
@@ -175,11 +176,16 @@ export async function updateCardAction(slug: string, formData: FormData) {
   // todas, no "no se tocó el campo".
   const shareScope = parseShareScope(formData.getAll("shareScope"));
 
+  // Contenido de la Oficina Virtual por Card (Fase E2): objetivo del día
+  // + KPIs + noticias + calendario, todo inventado/editable por el N0.
+  const oficinaExtras = parseOficinaExtrasFormData(formData);
+
   await prisma.card.update({
     where: { slug },
     data: {
       ...data,
       shareScope,
+      ...oficinaExtras,
       ...(portraitUrl ? { portraitUrl } : {}),
       ...(videoThumbnailUrl ? { videoThumbnailUrl } : {}),
       ...(puestoId !== undefined ? { puestoId } : {}),

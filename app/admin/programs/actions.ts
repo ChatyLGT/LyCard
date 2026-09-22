@@ -9,6 +9,7 @@ import { slugify, uniqueSlug } from "@/lib/slug";
 import { CARD_LABEL_FIELDS } from "@/lib/cardLabels";
 import { parseEscala } from "@/lib/escalas";
 import { parseOfficeSkills } from "@/lib/officeSkills";
+import { parseMotivationalPhrases } from "@/lib/oficinaExtras";
 import { saveUpload } from "@/lib/storage";
 import { parseDesignMd } from "@/lib/designMd";
 
@@ -292,6 +293,31 @@ export async function updateOfficeSkillsAction(programId: string, formData: Form
 
   revalidatePath(`/admin/programs/${programId}`);
   redirect(`/admin/programs/${programId}?officeSkillsSaved=1`);
+}
+
+// Pool de frases motivacionales para "Keep in Flow" (Fase E2) — mismo
+// patrón que updateOfficeSkillsAction: el editor client-side manda el
+// array completo como un solo JSON. Vacío = cae a
+// DEFAULT_MOTIVATIONAL_PHRASES (lib/oficinaExtras.ts).
+export async function updateMotivationalPhrasesAction(programId: string, formData: FormData) {
+  const scope = await currentAdminScope();
+  if (!scope) redirect("/admin/login");
+  if (!canAccessProgram(scope, programId)) redirect("/admin");
+
+  const raw = formData.get("phrases");
+  let phrases: string[] = [];
+  if (typeof raw === "string") {
+    try {
+      phrases = parseMotivationalPhrases(JSON.parse(raw));
+    } catch {
+      // malformed JSON from the client — ignore rather than fail the save
+    }
+  }
+
+  await prisma.program.update({ where: { id: programId }, data: { motivationalPhrases: phrases } });
+
+  revalidatePath(`/admin/programs/${programId}`);
+  redirect(`/admin/programs/${programId}?motivationalPhrasesSaved=1`);
 }
 
 // Sube (o reemplaza) el ícono de un superpoder puntual que ya existe en la

@@ -15,14 +15,17 @@ import {
   setProgramSkinLightColorsAction,
   updateOfficeSkillsAction,
   setOfficeSkillIconAction,
+  updateMotivationalPhrasesAction,
 } from "../actions";
 import { updateMemberAction, deleteMemberAction, messageMemberAction } from "../members-actions";
 import { createPuestoAction, updatePuestoAction, deletePuestoAction } from "../puestos-actions";
 import { CARD_LABEL_FIELDS, defaultCardLabel } from "@/lib/cardLabels";
 import { parseEscala } from "@/lib/escalas";
 import { parseOfficeSkills } from "@/lib/officeSkills";
+import { parseMotivationalPhrases } from "@/lib/oficinaExtras";
 import EscalaEditor from "@/components/EscalaEditor";
 import OfficeSkillsEditor from "@/components/OfficeSkillsEditor";
+import PhraseListEditor from "@/components/PhraseListEditor";
 import ProgramSkinInfo from "@/components/ProgramSkinInfo";
 import { AccordionSection, AccordionRow, AccordionAddRow } from "@/components/Accordion";
 import type { SkinColors } from "@/lib/designMd";
@@ -112,6 +115,7 @@ export default async function AdminProgramDetailPage({
     skinError?: string;
     officeSkillsSaved?: string;
     officeSkillsError?: string;
+    motivationalPhrasesSaved?: string;
     focus?: string;
   }>;
 }) {
@@ -135,6 +139,7 @@ export default async function AdminProgramDetailPage({
     skinError,
     officeSkillsSaved,
     officeSkillsError,
+    motivationalPhrasesSaved,
     focus,
   } = await searchParams;
   const SKIN_ERROR_COPY: Record<string, string> = {
@@ -181,6 +186,7 @@ export default async function AdminProgramDetailPage({
   const rankScale = parseEscala(program.rankScale);
   const contactsScale = parseEscala(program.contactsScale);
   const officeSkills = parseOfficeSkills(program.officeSkills);
+  const motivationalPhrases = parseMotivationalPhrases(program.motivationalPhrases);
 
   const registrations = await prisma.registration.findMany({
     where: { card: { programId: id } },
@@ -577,6 +583,20 @@ export default async function AdminProgramDetailPage({
               ))}
             </div>
           )}
+        </AccordionSection>
+
+        {/* Pool de frases para "Keep in Flow" (Fase E2) — el N0 las escribe
+            a mano, lib/oficinaExtras.ts#pickPhraseOfTheDay rota una
+            distinta por día en la Oficina de cada Card. Sin nada acá, se
+            usan las 3 de ejemplo de DEFAULT_MOTIVATIONAL_PHRASES. */}
+        <AccordionSection
+          title="Frases motivacionales (Keep in Flow)"
+          subtitle="Una distinta rota sola cada día en la Oficina Virtual de tus Cards. Sin nada acá, se muestran 3 de ejemplo."
+          meta={<span style={PILL}>{motivationalPhrases.length || "3 de ejemplo"}</span>}
+          defaultOpen={!!motivationalPhrasesSaved || focus === "motivationalPhrases"}
+        >
+          {motivationalPhrasesSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Guardado.</p>}
+          <PhraseListEditor initialPhrases={motivationalPhrases} action={updateMotivationalPhrasesAction.bind(null, program.id)} />
         </AccordionSection>
 
         {/* N0 admins — MasterN0 only, per PLAN.md Fase 6 */}

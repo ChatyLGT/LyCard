@@ -9,6 +9,7 @@ import { MEDALS, RANKS, CHANNELS } from "@/lib/data";
 import type { EscalaItem } from "@/lib/escalas";
 import { AccordionSection } from "@/components/Accordion";
 import { CARD_KINDS, CARD_KIND_LABEL, parseShareScope } from "@/lib/shareScope";
+import OficinaExtrasEditor from "@/components/OficinaExtrasEditor";
 
 const FIELD_WRAP: CSSProperties = {
   display: "flex",
@@ -447,6 +448,8 @@ export default function EditorForm({
             })}
           </div>
         </AccordionSection>
+
+        <OficinaExtrasEditor card={card} />
 
         <AccordionSection title="Canales de Contacto">
           {isProject ? (

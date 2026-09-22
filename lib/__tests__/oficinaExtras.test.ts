@@ -5,6 +5,9 @@ import {
   parseNewsItems,
   parseCalendarEvents,
   parseMotivationalPhrases,
+  generateSimulatedKpis,
+  parseOficinaExtrasFormData,
+  DEFAULT_REALITY_CHECK_KPIS,
 } from "@/lib/oficinaExtras";
 
 // Fase E1 de Oficina Virtual (docs del plan: "banner animado con una frase
@@ -151,5 +154,70 @@ describe("parseMotivationalPhrases", () => {
 
   it("caso de error: input no-array devuelve lista vacía", () => {
     expect(parseMotivationalPhrases({ not: "an array" })).toEqual([]);
+  });
+});
+
+describe("generateSimulatedKpis", () => {
+  it("happy path: devuelve un KPI por cada ejemplo fijo, con key/label/unit intactos", () => {
+    const generated = generateSimulatedKpis();
+    expect(generated).toHaveLength(DEFAULT_REALITY_CHECK_KPIS.length);
+    generated.forEach((kpi, i) => {
+      expect(kpi.key).toBe(DEFAULT_REALITY_CHECK_KPIS[i].key);
+      expect(kpi.label).toBe(DEFAULT_REALITY_CHECK_KPIS[i].label);
+      expect(kpi.unit).toBe(DEFAULT_REALITY_CHECK_KPIS[i].unit);
+    });
+  });
+
+  it("edge case: el jitter nunca lleva el trend a negativo, sin importar la tirada de dados", () => {
+    // 200 corridas cubre las 3 salidas posibles de Math.random() (-1/0/+1)
+    // muchas veces cada una — si el clamp a 0 tuviera un bug, esto lo agarra.
+    for (let i = 0; i < 200; i++) {
+      const generated = generateSimulatedKpis();
+      for (const kpi of generated) {
+        expect(kpi.trend.every((n) => n >= 0)).toBe(true);
+        expect(kpi.value).toBe(String(kpi.trend[kpi.trend.length - 1]));
+      }
+    }
+  });
+
+  it("caso de error: no muta los ejemplos fijos (DEFAULT_REALITY_CHECK_KPIS sigue igual después de generar)", () => {
+    const before = JSON.stringify(DEFAULT_REALITY_CHECK_KPIS);
+    generateSimulatedKpis();
+    expect(JSON.stringify(DEFAULT_REALITY_CHECK_KPIS)).toBe(before);
+  });
+});
+
+describe("parseOficinaExtrasFormData", () => {
+  it("happy path: lee objetivo + los 3 campos Json del FormData que manda OficinaExtrasEditor", () => {
+    const fd = new FormData();
+    fd.set("oficinaObjetivo", "Cerrar 3 Legacys");
+    fd.set("realityCheckKpis", JSON.stringify([{ key: "k", label: "L", value: "1", unit: "", trend: [1, 2] }]));
+    fd.set("newsItems", JSON.stringify([{ id: "n1", title: "Novedad", body: "", date: "2026-01-01" }]));
+    fd.set("calendarEvents", JSON.stringify([{ id: "e1", title: "Sesión", date: "2026-01-02" }]));
+
+    const result = parseOficinaExtrasFormData(fd);
+    expect(result.oficinaObjetivo).toBe("Cerrar 3 Legacys");
+    expect(result.realityCheckKpis).toEqual([{ key: "k", label: "L", value: "1", unit: "", trend: [1, 2] }]);
+    expect(result.newsItems).toHaveLength(1);
+    expect(result.calendarEvents).toHaveLength(1);
+  });
+
+  it("edge case: FormData vacío (campos nunca enviados) devuelve objetivo vacío y las 3 listas vacías", () => {
+    const result = parseOficinaExtrasFormData(new FormData());
+    expect(result).toEqual({ oficinaObjetivo: "", realityCheckKpis: [], newsItems: [], calendarEvents: [] });
+  });
+
+  it("caso de error: JSON roto en cualquiera de los 3 campos no crashea, cae a lista vacía", () => {
+    const fd = new FormData();
+    fd.set("realityCheckKpis", "{esto no es json válido");
+    fd.set("newsItems", "{esto no es json válido");
+    fd.set("calendarEvents", "{esto no es json válido");
+
+    expect(parseOficinaExtrasFormData(fd)).toEqual({
+      oficinaObjetivo: "",
+      realityCheckKpis: [],
+      newsItems: [],
+      calendarEvents: [],
+    });
   });
 });

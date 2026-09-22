@@ -109,6 +109,54 @@ export const DEFAULT_CALENDAR_EVENTS: CalendarEvent[] = [
   },
 ];
 
+// "Generar con IA (simulado)" en el editor de la Oficina (Fase E2) — NO
+// llama a ningún modelo real, mismo alcance que pickPhraseOfTheDay. Parte
+// de los ejemplos fijos de arriba y les da un jitter chico al último punto
+// de cada trend, para que tocar el botón dos veces no dé exactamente lo
+// mismo (se siente "generado", no un fixture estático) sin inventar un
+// número negativo o absurdo.
+export function generateSimulatedKpis(): RealityCheckKpi[] {
+  return DEFAULT_REALITY_CHECK_KPIS.map((kpi) => {
+    const jitter = Math.floor(Math.random() * 3) - 1; // -1, 0 o 1
+    const trend = kpi.trend.map((n, i) => (i === kpi.trend.length - 1 ? Math.max(0, n + jitter) : n));
+    return { ...kpi, value: String(trend[trend.length - 1]), trend };
+  });
+}
+
+// Glue compartida entre app/admin/actions.ts#updateCardAction y
+// app/m/dashboard/actions.ts#updateMemberCardAction (Fase E2) — las dos
+// reciben el mismo shape desde OficinaExtrasEditor.tsx (3 campos Json como
+// string + un campo de texto plano) y necesitan el mismo saneo antes de
+// pisar la DB. JSON.parse puede tirar con un string roto (bug de cliente,
+// nunca debería pasar pero no cuesta nada blindarlo) — se ignora en vez de
+// tumbar el guardado entero de la tarjeta, mismo criterio que
+// updateMemberCardAction ya usa para officeItems.
+export function parseOficinaExtrasFormData(formData: FormData): {
+  oficinaObjetivo: string;
+  realityCheckKpis: RealityCheckKpi[];
+  newsItems: NewsItem[];
+  calendarEvents: CalendarEvent[];
+} {
+  const oficinaObjetivo = String(formData.get("oficinaObjetivo") || "");
+
+  function parseJsonField<T>(fieldName: string, parser: (value: unknown) => T[]): T[] {
+    const raw = formData.get(fieldName);
+    if (typeof raw !== "string") return [];
+    try {
+      return parser(JSON.parse(raw));
+    } catch {
+      return [];
+    }
+  }
+
+  return {
+    oficinaObjetivo,
+    realityCheckKpis: parseJsonField("realityCheckKpis", parseRealityCheckKpis),
+    newsItems: parseJsonField("newsItems", parseNewsItems),
+    calendarEvents: parseJsonField("calendarEvents", parseCalendarEvents),
+  };
+}
+
 export const DEFAULT_MOTIVATIONAL_PHRASES: string[] = [
   "Tu legado no espera a que estés listo — empieza hoy, con lo que tenés.",
   "Cada Oficina Virtual que activás es una vida que no se pierde en el olvido.",
