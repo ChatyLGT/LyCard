@@ -4319,3 +4319,54 @@ pasando (los 4 de antes + el nuevo).
 Shippeado como v1.36.0. Próximo paso: Fase E3 — mostrar todo esto de
 verdad en la Oficina Virtual pública (`KeepInFlowBlock.tsx`,
 `CheckDeRealidadBlock.tsx`, banner de la frase del día).
+
+## Oficina Virtual — Fase E3: Keep in Flow + Check de Realidad, ahora visibles (2026-09-22)
+
+Lo que E1/E2 armaron (schema + editor) por fin se ve en la Oficina real
+del dueño — `OwnerOficina` en `app/c/[slug]/oficina/page.tsx`, justo
+debajo del saludo, antes de todo lo demás ("lo más importante del día
+arriba", como pedía el plan). Privado: un visitante nunca ve estos dos
+bloques, mismo criterio que Seguimiento/Notas de Voz.
+
+**`components/KeepInFlowBlock.tsx`** — el objetivo del día (texto libre
+del dueño, **sin fallback inventado**: vacío queda vacío, cáscara
+honesta) + la frase motivacional del día
+(`lib/oficinaExtras.ts#pickPhraseOfTheDay`, la misma todo el día,
+nunca un modelo en vivo). El "banner animado" que pedía Gunnar reusa el
+gleam (`sweepGleam`, `app/globals.css`) que ya usa `LyCardView.tsx` —
+una franja de luz cruzando el panel cada 4s — en vez de inventar una
+coreografía nueva o un marquee de texto (no hay nada que desplazar
+mostrando UNA frase por día).
+
+**`components/CheckDeRealidadBlock.tsx`** + **`components/Sparkline.tsx`**
+— grid de hasta 3 KPIs (valor grande serif + label + sparkline), cada
+uno con su gráfico de tendencia a mano en SVG. Usé la skill de dataviz
+de esta sesión para los mark specs del sparkline: línea 2px en gris de
+"de-énfasis" (nunca el acento — el acento se reserva para "hoy"),
+marcador del último punto r>=4 en el color de acento con un anillo de
+2px en el color de superficie para que no se pierda si cruza la línea.
+La geometría (`lib/sparkline.ts#sparklinePoints`/`sparklineLastPoint`)
+quedó separada del componente — función pura, testeada, sin JSX — mismo
+criterio shift-left del resto de la sesión: trend vacío, un solo punto,
+o todos los valores iguales (división por cero evitada) tienen su test
+de caso borde.
+
+**Ambos con la etiqueta de "ejemplo" cuando corresponde** — si nadie
+cargó KPIs o frases propias, se usan `DEFAULT_REALITY_CHECK_KPIS` /
+`DEFAULT_MOTIVATIONAL_PHRASES` (ya existían desde E1) pero marcados
+como ejemplo, nunca confundidos con datos reales del N0.
+
+**Verificado real, no solo compilado**: además del pipeline de siempre
+(tsc + lint + unit 100% + build), un script descartable con Playwright
+abrió la Oficina en un navegador real con datos de prueba y sacó
+screenshot — confirmó visualmente que el layout, el sparkline y el
+banner se ven bien antes de escribir el E2E permanente. Ese E2E
+(`e2e/oficina-fase-e3.spec.ts`) quedó en el repo con 2 tests: el dueño
+ve su objetivo/frase/KPIs con al menos un `<svg polyline>` real
+renderizado, y un visitante sin sesión NO ve ninguno de los dos
+bloques. Los 7 E2E de la suite (los 5 de antes + estos 2) pasando.
+
+Shippeado como v1.37.0. Próximo paso, Fase E4: Noticias/Tareas +
+Calendario, después de Superpoderes y Cerebro Malla en el orden pedido
+por Gunnar. Fase E5 (ambiente de datos mock en bulk) queda para el
+final, como estaba planeado.

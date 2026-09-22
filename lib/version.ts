@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.36.0";
+export const APP_VERSION = "1.37.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.37.0",
+    date: "2026-09-22",
+    notes:
+      "Ahora sí se ve: tu Oficina Virtual arranca con \"Keep in Flow\" (tu objetivo del día + una frase motivacional que rota sola, con un banner animado) y \"Check de Realidad\" (tus KPIs del día, cada uno con su propio gráfico de tendencia). Todo lo que cargaste en el editor desde la versión anterior. Privado — solo lo ves vos, nunca un visitante.",
+  },
   {
     version: "1.36.0",
     date: "2026-09-22",

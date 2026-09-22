@@ -15,7 +15,17 @@ import { parseOfficeSkills, DEFAULT_OFFICE_SKILLS, type OfficeSkill } from "@/li
 import OfficeSkillsBlock from "@/components/OfficeSkillsBlock";
 import type { VoiceNoteSummary } from "@/components/VoiceNotesBlock";
 import CardLeadsBlock, { type CardLeadSummary } from "@/components/CardLeadsBlock";
-import { parseCalendarEvents } from "@/lib/oficinaExtras";
+import {
+  parseCalendarEvents,
+  parseRealityCheckKpis,
+  parseMotivationalPhrases,
+  pickPhraseOfTheDay,
+  DEFAULT_REALITY_CHECK_KPIS,
+  DEFAULT_MOTIVATIONAL_PHRASES,
+  type RealityCheckKpi,
+} from "@/lib/oficinaExtras";
+import KeepInFlowBlock from "@/components/KeepInFlowBlock";
+import CheckDeRealidadBlock from "@/components/CheckDeRealidadBlock";
 import { fetchLiveAgenda, defaultAgendaWindow, type AgendaEventItem, type AgendaTaskItem } from "@/lib/agenda";
 import { refreshGoogleAccessToken } from "@/lib/googleOAuth";
 import { buildCardMetadata } from "@/lib/cardMetadata";
@@ -109,6 +119,11 @@ type OficinaData = {
   googleConnected: boolean;
   connectUrl: string;
   leads: CardLeadSummary[];
+  oficinaObjetivo: string;
+  realityCheckKpis: RealityCheckKpi[];
+  kpisAreDefault: boolean;
+  motivationalPhrase: string | null;
+  phraseIsDefault: boolean;
 };
 
 // ---------------- Piezas compartidas ----------------
@@ -491,6 +506,19 @@ function OwnerOficina({ data }: { data: OficinaData }) {
           </div>
         </div>
 
+        <KeepInFlowBlock
+          objetivo={data.oficinaObjetivo}
+          phrase={data.motivationalPhrase}
+          isDefaultPhrase={data.phraseIsDefault}
+          accent={accent}
+        />
+
+        <div style={hr} />
+
+        <CheckDeRealidadBlock kpis={data.realityCheckKpis} isDefault={data.kpisAreDefault} accent={accent} />
+
+        <div style={hr} />
+
         <KpiRow data={data} />
 
         <div style={hr} />
@@ -629,6 +657,20 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
     }));
   }
 
+  // Fase E3 — Keep in Flow / Check de Realidad, solo para el dueño (mismo
+  // criterio que Notas de Voz/Seguimiento arriba: nada de esto es público).
+  // El objetivo (texto libre) no tiene fallback inventado — vacío es
+  // vacío. Los KPIs y la frase del día sí caen a un ejemplo fijo cuando
+  // nadie cargó los propios, marcados como tal en el bloque.
+  const realityCheckKpisParsed = isHost ? parseRealityCheckKpis(card.realityCheckKpis) : [];
+  const realityCheckKpis = realityCheckKpisParsed.length > 0 ? realityCheckKpisParsed : DEFAULT_REALITY_CHECK_KPIS;
+  const kpisAreDefault = realityCheckKpisParsed.length === 0;
+
+  const motivationalPhrasesParsed = parseMotivationalPhrases(card.program?.motivationalPhrases);
+  const motivationalPhrases = motivationalPhrasesParsed.length > 0 ? motivationalPhrasesParsed : DEFAULT_MOTIVATIONAL_PHRASES;
+  const motivationalPhrase = isHost ? pickPhraseOfTheDay(motivationalPhrases) : null;
+  const phraseIsDefault = motivationalPhrasesParsed.length === 0;
+
   const parsedSkills = parseOfficeSkills(card.program?.officeSkills);
   const officeSkills = parsedSkills.length > 0 ? parsedSkills : DEFAULT_OFFICE_SKILLS;
   const officeSkillsKickerOverride = card.program?.cardLabels;
@@ -674,6 +716,11 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
     googleConnected,
     connectUrl,
     leads,
+    oficinaObjetivo: card.oficinaObjetivo,
+    realityCheckKpis,
+    kpisAreDefault,
+    motivationalPhrase,
+    phraseIsDefault,
   };
 
   return isHost ? <OwnerOficina data={data} /> : <VisitorOficina data={data} />;
