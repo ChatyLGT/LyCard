@@ -14,7 +14,9 @@ import { getFathomBrief, type FathomBrief } from "@/lib/fathom";
 import { parseOfficeSkills, DEFAULT_OFFICE_SKILLS, type OfficeSkill } from "@/lib/officeSkills";
 import OfficeSkillsBlock from "@/components/OfficeSkillsBlock";
 import type { VoiceNoteSummary } from "@/components/VoiceNotesBlock";
-import { parseCalendarEvents, type CalendarEvent } from "@/lib/oficinaExtras";
+import { parseCalendarEvents } from "@/lib/oficinaExtras";
+import { fetchLiveAgenda, defaultAgendaWindow, type AgendaEventItem, type AgendaTaskItem } from "@/lib/agenda";
+import { refreshGoogleAccessToken } from "@/lib/googleOAuth";
 import { buildCardMetadata } from "@/lib/cardMetadata";
 import type { Card, OriginMemento, Program, Puesto } from "@/generated/prisma/client";
 
@@ -101,7 +103,8 @@ type OficinaData = {
   officeSkills: OfficeSkill[];
   officeSkillsKicker: string;
   voiceNotes: VoiceNoteSummary[];
-  calendarEvents: CalendarEvent[];
+  agendaEvents: AgendaEventItem[];
+  agendaTasks: AgendaTaskItem[];
   googleConnected: boolean;
   connectUrl: string;
 };
@@ -440,7 +443,8 @@ function VisitorOficina({ data }: { data: OficinaData }) {
           companyNetworkHref={null}
           cardId={data.card.id}
           voiceNotes={[]}
-          calendarEvents={[]}
+          agendaEvents={[]}
+          agendaTasks={[]}
           googleConnected={false}
           connectUrl={data.connectUrl}
         />
@@ -513,7 +517,8 @@ function OwnerOficina({ data }: { data: OficinaData }) {
           companyNetworkHref={card.kind === "company" ? "/m/dashboard/company/network" : null}
           cardId={data.card.id}
           voiceNotes={data.voiceNotes}
-          calendarEvents={data.calendarEvents}
+          agendaEvents={data.agendaEvents}
+          agendaTasks={data.agendaTasks}
           googleConnected={data.googleConnected}
           connectUrl={data.connectUrl}
         />
@@ -569,7 +574,30 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
   const ownerMember = isHost && card.memberId ? await prisma.member.findUnique({ where: { id: card.memberId } }) : null;
   const googleConnected = Boolean(ownerMember?.googleRefreshToken);
   const connectUrl = `/m/auth/google/connect-start?cardId=${card.id}&returnTo=${encodeURIComponent(`/c/${slug}/oficina`)}`;
-  const calendarEvents = isHost ? parseCalendarEvents(card.calendarEvents) : [];
+
+  // Agenda real (2026-09-22, ver lib/agenda.ts): conectado, se leen
+  // Calendar+Tasks de verdad; sin conectar, cae al cache local
+  // simulado de siempre (Card.calendarEvents), marcado como tal — nunca
+  // mezclado como si fuera la agenda real del dueño.
+  let agendaEvents: AgendaEventItem[] = [];
+  let agendaTasks: AgendaTaskItem[] = [];
+  if (isHost && ownerMember?.googleRefreshToken) {
+    try {
+      const accessToken = await refreshGoogleAccessToken(ownerMember.googleRefreshToken);
+      const live = await fetchLiveAgenda(accessToken, defaultAgendaWindow());
+      agendaEvents = live.events;
+      agendaTasks = live.tasks;
+    } catch (err) {
+      console.error("No se pudo traer la Agenda real de Google para la Card", card.id, err);
+    }
+  } else if (isHost) {
+    agendaEvents = parseCalendarEvents(card.calendarEvents).map((e) => ({
+      id: e.id,
+      title: e.title,
+      start: e.date,
+      source: "simulado" as const,
+    }));
+  }
 
   const parsedSkills = parseOfficeSkills(card.program?.officeSkills);
   const officeSkills = parsedSkills.length > 0 ? parsedSkills : DEFAULT_OFFICE_SKILLS;
@@ -611,7 +639,8 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
     officeSkills,
     officeSkillsKicker: typeof officeSkillsKicker === "string" && officeSkillsKicker.trim() ? officeSkillsKicker : "Superpoderes",
     voiceNotes,
-    calendarEvents,
+    agendaEvents,
+    agendaTasks,
     googleConnected,
     connectUrl,
   };

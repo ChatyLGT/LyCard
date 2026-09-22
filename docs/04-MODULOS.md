@@ -67,17 +67,33 @@ color, appType, enabled}`, guardado en `Program.officeSkills`. Tocar un
 ícono abre una tarjeta con dos caras: la app real de un lado (hoy: el Brief
 de Fathom), la explicación del otro — el visitante solo ve la explicación.
 
+## Calendario compartido de los Superpoderes
+
+**Archivo:** `components/MiniCalendar.tsx` — un calendario mensual
+"dumb" (sin saber nada de notas, reuniones ni eventos) que reciben Brief,
+Notas de Voz y Agenda: un punto por día con contenido (el color lo
+decide quien lo usa vía `dotsForDay`), click en un día selecciona esa
+fecha (`selectedDate`/`onSelectDate`, controlado por el padre). Cada
+Skill arma su propia lista del día y su propio popup de detalle debajo —
+mismo patrón "día → lista → popup" en las tres, pedido explícito de
+Gunnar (2026-09-22, investigación de patrones top-1% — Fantastical, Cron,
+Sunsama — antes de tocar código, ver PLAN.md).
+
 ## Brief de reuniones (Fathom) — el primer Superpoder real
 
 **Archivos:** `lib/fathom.ts` (cliente de la API pública de Fathom, con
 paginación completa hasta agotar la cuenta), `components/FathomBriefBlock.tsx`
-(el render). Sin `FATHOM_API_KEY` configurada, se degrada limpio
-(`enabled:false`) — nunca rompe la Oficina.
+(agrupa las reuniones por día sobre `MiniCalendar`, el resumen corto abre
+en un popup propio al tocar una reunión). Sin `FATHOM_API_KEY`
+configurada, se degrada limpio (`enabled:false`) — nunca rompe la
+Oficina.
 
 ## Notas de Voz
 
 **Archivos:** `components/VoiceNotesBlock.tsx` (grabación con
-`MediaRecorder` del navegador, sin dependencia nueva de npm),
+`MediaRecorder` del navegador, sin dependencia nueva de npm; calendario
+por día de grabación sobre `MiniCalendar`, el reproductor y la
+transcripción viven en el popup de detalle de cada nota),
 `app/c/[slug]/oficina/voiceNotes-actions.ts` (server actions: guardar,
 consultar estado), `lib/transcription.ts` (cliente de AssemblyAI —
 transcripción + resumen en una sola API), `prisma.VoiceNote` (modelo:
@@ -86,12 +102,20 @@ verdad (`lib/storage.ts`, mismo mecanismo que las fotos). Sin
 `ASSEMBLYAI_API_KEY` configurada, la nota queda honestamente en "grabada
 — esperando transcripción" para siempre, nunca inventa un resumen.
 
-Cada nota tiene su propio reproductor `<audio>` (el `audioUrl` real,
-guardado desde el primer momento — no hace falta esperar a que
-transcriba para poder escucharla) y, una vez lista, un botón para
-desplegar la transcripción completa además del resumen corto que ya se
-veía (2026-09-22 — bug reportado por Gunnar: la nota se guardaba pero no
-había forma de acceder a ella desde la Oficina).
+**Dos bugs reales corregidos (2026-09-22, reportados por Gunnar — "sale
+error" al reproducir, "grabé otra nota y desapareció, no se grabó")**:
+(1) el código siempre etiquetaba el audio grabado como `audio/webm` sin
+importar qué codec usó `MediaRecorder` de verdad — en navegadores que no
+graban webm nativo, el archivo quedaba subido con un Content-Type que no
+correspondía a sus bytes reales, y el navegador no podía decodificarlo al
+reproducir. Ahora se pregunta el mimeType real (`MediaRecorder.isTypeSupported`)
+y se usa ese mismo tipo en el Blob, el nombre de archivo y el
+Content-Type que sube `lib/storage.ts` (que ahora también acepta
+`.mp4`/`.aac`, no solo `.webm`). (2) la función de subida no tenía
+`catch` — si `createVoiceNoteAction` tiraba una excepción real (blip de
+red, el blob storage o la DB fallando), la nota se perdía en silencio,
+sin error visible. Ahora cualquier falla real muestra un mensaje
+explícito.
 
 ## Conexión real de Google (Calendar + Tasks + Drive)
 
@@ -100,13 +124,31 @@ había forma de acceder a ella desde la Oficina).
 `refreshGoogleAccessToken`, `access_type=offline` + `prompt=consent`, para
 tener refresh_token, algo que el login normal no necesita ni pide),
 `lib/googleServices.ts` (wrappers de Calendar Events, Tasks y Drive:
-`createCalendarEvent`, `createTask`, `ensureBridgeFolder`,
-`writeBridgeFile`, `buildDiracStampedMarkdown`), rutas
-`app/m/auth/google/connect-start` y `connect-callback` (arrancan desde
-una Card puntual vía `?cardId=`, resuelven el dueño con el mismo chequeo
-`isHost` que usa toda la app), `components/AgendaBlock.tsx` (el
-Superpoder "Agenda": botón "Conectar Google" o el estado ya conectado,
-más la lista de tareas/eventos con su etiqueta Real/Simulado).
+`createCalendarEvent`, `createTask`, `listCalendarEvents`, `listTasks`,
+`ensureBridgeFolder`, `writeBridgeFile`, `buildDiracStampedMarkdown`),
+`lib/agenda.ts` (`fetchLiveAgenda` — orquesta las dos listas reales y las
+mapea al shape que consume la UI), rutas `app/m/auth/google/connect-start`
+y `connect-callback` (arrancan desde una Card puntual vía `?cardId=`,
+resuelven el dueño con el mismo chequeo `isHost` que usa toda la app),
+`components/AgendaBlock.tsx` (el Superpoder "Agenda": calendario mensual
+con dos puntos por día — dorado evento, violeta tarea — sobre
+`MiniCalendar`, dueño conectado ve su Calendar/Tasks real, sin conectar
+ve el cache local simulado bajo un aviso explícito, nunca mezclado como
+si fuera real).
+
+**Bug real corregido (2026-09-22, reportado por Gunnar — "me saca un
+evento que no tengo en mi agenda real" y "creé eventos en mi agenda
+real, no los muestra")**: la Agenda solo ESCRIBÍA en Google Calendar
+(`createCalendarEvent`) pero nunca LEÍA — mostraba nada más el cache
+local de escritura (`Card.calendarEvents`), así que cualquier evento
+cargado directo en Google Calendar era invisible, y cualquier entrada
+simulada local (nunca tocó Google de verdad) se mostraba como si fuera
+agenda real. `listCalendarEvents`/`listTasks` (nuevo, en
+`lib/googleServices.ts`) + `lib/agenda.ts#fetchLiveAgenda` leen
+Calendar/Tasks de verdad para una ventana de ±14/+45 días alrededor de
+hoy cuando el dueño está conectado — la Agenda deja de leer
+`Card.calendarEvents` en ese caso (evita duplicados) y solo cae al cache
+local simulado, marcado como tal, cuando no hay conexión.
 
 Scope pedido a propósito acotado — `calendar.events` + `tasks` +
 `drive.file` (nunca `drive` completo) — para no disparar la revisión de

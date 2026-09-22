@@ -3795,3 +3795,96 @@ dejó como está.
   pasa de "plan" a "construido", con el bug de `nodeType` documentado en
   ambos lugares para que no se repita en un módulo futuro (CRM, PM
   extendido, NashMesh) que use nombres de campo parecidos.
+
+## Rediseño de calendario (Brief, Notas de Voz, Agenda) + 3 bugs reales (2026-09-22)
+
+Gunnar probó los 3 Superpoderes con backend real y reportó, los tres con
+problemas de fondo — pidió explícitamente investigar diseño top-1% de
+UI/UX **antes de tocar código**: "necesito primero hagas una búsqueda de
+top1% en UIUX y me expliques o muestres un ejemplo... antes de hacer
+nada."
+
+**Investigación (WebSearch, sin código todavía):** Fantastical, Cron/Notion
+Calendar, Sunsama y TickTick coinciden en el mismo patrón — mini
+calendario con un punto por día (nunca números apilados), click en el
+día abre una LISTA (no el detalle directo), click en un ítem de la lista
+abre el detalle en un POPUP separado; color = tipo de contenido, nunca
+texto que haya que leer para distinguir tarea de evento (franja de color
++ ícono, patrón de Sunsama). Mockup real armado con el Artifact de tipo
+Design (3 pantallas, en la estética real de LyCard, clickeables de
+verdad) antes de escribir una línea de la app — Gunnar lo vio y confirmó
+("me gusta. dale") antes de arrancar.
+
+**Construido:**
+- `components/MiniCalendar.tsx` (nuevo, compartido): calendario mensual
+  "dumb" — un punto por día vía `dotsForDay(date)`, selección controlada
+  por el padre. Los 3 Superpoderes lo usan igual, cada uno arma su
+  propia lista/popup de detalle alrededor.
+- `components/FathomBriefBlock.tsx`: reuniones agrupadas por día,
+  detalle (resumen + link a Fathom) en popup.
+- `components/VoiceNotesBlock.tsx`: notas agrupadas por día de
+  grabación, reproductor + transcripción completa movidos al popup de
+  detalle (antes vivían inline por fila, fáciles de pasar por alto).
+- `components/AgendaBlock.tsx`: dos puntos por día (dorado evento,
+  violeta tarea), al elegir el día se ven Eventos y Tareas en secciones
+  separadas por color, cada tarea con su checkbox visual.
+
+**Bug real #1 — Notas de Voz no reproducía ("sale error")**: el código
+siempre etiquetaba el Blob grabado como `audio/webm` sin importar qué
+codec usó `MediaRecorder` de verdad. En navegadores que no graban webm
+nativo el archivo se subía con un Content-Type que no correspondía a sus
+bytes reales — el navegador no podía decodificarlo. Fix:
+`MediaRecorder.isTypeSupported` elige el mejor formato real disponible,
+y ESE mismo tipo se usa en el Blob, el nombre del archivo (extensión
+real) y el Content-Type que sube `lib/storage.ts` (ahora acepta
+`.mp4`/`.aac` además de `.webm`).
+
+**Bug real #2 — nota "desaparecida" ("grabé otra nota y desapareció, no
+se grabó")**: la función de subida no tenía `catch` — solo `try/finally`.
+Si `createVoiceNoteAction` tiraba una excepción real (blip de red, el
+blob storage o la DB fallando), la promesa quedaba rechazada sin que
+nadie la atajara: el spinner se apagaba solo pero no aparecía ningún
+error ni se agregaba la nota. Fix: `catch` explícito con mensaje visible.
+
+**Bug real #3 — Agenda mostraba un evento inventado y no los reales**:
+la Agenda solo ESCRIBÍA en Google Calendar (`createCalendarEvent`, ya
+existía) pero nunca LEÍA nada — mostraba el cache local de escritura
+(`Card.calendarEvents`) como si fuera la agenda real. Un evento cargado
+directo en Google Calendar era invisible; una entrada simulada local (sin
+tocar Google nunca) se mostraba sin distinguirse lo suficiente. Fix:
+`listCalendarEvents`/`listTasks` (nuevo, en `lib/googleServices.ts`) +
+`lib/agenda.ts#fetchLiveAgenda` — cuando el dueño está conectado, la
+Agenda lee Calendar/Tasks de verdad (ventana fija de -14/+45 días
+alrededor de hoy) y deja de usar el cache local; sin conectar, sigue
+cayendo al cache simulado pero ahora bajo un aviso explícito ("Sin
+conectar — lo de abajo es simulado, todavía no es tu agenda real"),
+nunca mezclado en silencio.
+
+**Verificado real, no solo compilado:**
+- Notas de Voz: grabación real de punta a punta con Playwright +
+  Chromium en modo `--use-fake-device-for-media-stream` (mic falso, WAV
+  real generado) contra `pnpm dev` — el archivo grabado se inspeccionó
+  byte a byte (`1a 45 df a3` + `webm` en el DocType, EBML/WebM válido de
+  verdad), se guardó, se escuchó: `readyState:4`, `duration:1.92`,
+  `errorCode:null` — reproducción real confirmada, no solo "no tira
+  error". (Nota aparte: bajo `pnpm start`/producción LOCAL con el
+  fallback a disco, Next.js 16 no sirve archivos escritos en
+  `public/uploads` DESPUÉS del build — 404 — pero esto es irrelevante
+  para Vercel real, que siempre usa Vercel Blob vía
+  `BLOB_READ_WRITE_TOKEN`, nunca ese fallback.)
+- Agenda: estado sin conectar probado sembrando un evento simulado real
+  en `Card.calendarEvents` — confirmado que aparece bajo el aviso
+  explícito de "Simulado", en el día correcto, con la hora correcta.
+  Estado conectado (lectura real de Google) no se pudo probar en vivo
+  sin una cuenta de Google conectada de verdad en este entorno — el
+  código de `listCalendarEvents`/`listTasks` sigue el mismo patrón
+  fetch+Bearer-token ya probado y en producción para
+  `createCalendarEvent`/`createTask`, revisado a mano con cuidado. Pide
+  confirmación real de Gunnar una vez conectado.
+- Fathom Brief: confirmado que el estado sin `FATHOM_API_KEY` sigue
+  degradando limpio ("Todavía sin conectar a Fathom"), sin crashear con
+  el nuevo calendario. El calendario agrupado por día no se pudo probar
+  con datos reales de Fathom en este entorno (sin `FATHOM_API_KEY`
+  local) — mismo patrón que `AgendaBlock`/`VoiceNotesBlock`, ya probados
+  con datos reales.
+- `tsc --noEmit` y `pnpm build` limpios. Shippeado como v1.32.0.

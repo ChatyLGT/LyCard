@@ -5,7 +5,7 @@ import crypto from "crypto";
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
 
 const IMAGE_EXTS = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
-const AUDIO_EXTS = [".webm", ".ogg", ".mp3", ".m4a", ".wav"];
+const AUDIO_EXTS = [".webm", ".ogg", ".mp3", ".m4a", ".wav", ".mp4", ".aac"];
 
 function safeExt(name: string, kind: "image" | "audio") {
   const ext = path.extname(name).toLowerCase();

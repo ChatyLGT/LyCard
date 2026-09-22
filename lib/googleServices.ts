@@ -32,6 +32,48 @@ export async function createCalendarEvent(
   return (await res.json()) as { id: string; htmlLink: string };
 }
 
+// Trae eventos reales de Google Calendar en una ventana de fechas — la
+// Agenda (2026-09-22, bug reportado por Gunnar: "cree eventos en mi
+// agenda real, no los muestra") necesitaba esto y no lo tenía: antes solo
+// se ESCRIBÍA en Calendar (createCalendarEvent), nunca se LEÍA, así que
+// cualquier evento cargado directo en Google Calendar era invisible acá.
+export async function listCalendarEvents(
+  accessToken: string,
+  { timeMinISO, timeMaxISO }: { timeMinISO: string; timeMaxISO: string }
+) {
+  const params = new URLSearchParams({
+    timeMin: timeMinISO,
+    timeMax: timeMaxISO,
+    singleEvents: "true",
+    orderBy: "startTime",
+    maxResults: "100",
+  });
+  const res = await fetch(`${CALENDAR_EVENTS_URL}?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`Google Calendar list events failed: ${res.status} ${await res.text()}`);
+  const data = (await res.json()) as {
+    items?: Array<{ id: string; summary?: string; start?: { dateTime?: string; date?: string }; htmlLink?: string }>;
+  };
+  return data.items ?? [];
+}
+
+// Trae las tareas reales de Google Tasks — mismo motivo que
+// listCalendarEvents: la Agenda solo escribía (createTask), nunca leía.
+export async function listTasks(accessToken: string) {
+  const params = new URLSearchParams({ showCompleted: "true", maxResults: "100" });
+  const res = await fetch(`${TASKS_URL}?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`Google Tasks list failed: ${res.status} ${await res.text()}`);
+  const data = (await res.json()) as {
+    items?: Array<{ id: string; title?: string; due?: string; status?: string }>;
+  };
+  return data.items ?? [];
+}
+
 export async function createTask(accessToken: string, { title, notes }: { title: string; notes: string }) {
   const res = await fetch(TASKS_URL, {
     method: "POST",

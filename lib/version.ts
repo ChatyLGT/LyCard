@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.31.0";
+export const APP_VERSION = "1.32.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.32.0",
+    date: "2026-09-22",
+    notes:
+      "Rediseño de calendario para Brief, Notas de Voz y Agenda: calendario mensual con puntos por día → lista del día → popup con el detalle. Agenda ahora lee tu Google Calendar/Tasks de verdad (antes solo mostraba un cache local simulado). Fix real: Notas de Voz no reproducía el audio grabado (el archivo se guardaba con el formato equivocado) y a veces una nota se perdía sin avisar — los dos quedaron resueltos.",
+  },
   {
     version: "1.31.0",
     date: "2026-09-22",
