@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { slotById } from "@/lib/interviewSlots";
 import { currentMemberId } from "@/lib/memberAuth";
+import { upsertLead } from "@/lib/leadsUpsert";
 
 export async function registerInterviewAction(input: {
   cardSlug: string;
@@ -57,7 +58,7 @@ export async function registerInterviewAction(input: {
     networkMembershipId = membership.id;
   }
 
-  await prisma.registration.create({
+  const registration = await prisma.registration.create({
     data: {
       cardId: card.id,
       slotId: slot.id,
@@ -68,6 +69,17 @@ export async function registerInterviewAction(input: {
       membershipId,
       networkMembershipId,
     },
+  });
+
+  // Seguimiento (2026-09-23): agendar una entrevista es la señal más
+  // fuerte de las 4 que alimentan CardLead — la persona ya dio un paso
+  // real, no solo recibió algo.
+  await upsertLead(card.id, {
+    name,
+    contacts: [whatsapp, email],
+    source: "entrevista",
+    proposedStage: "en_seguimiento",
+    registrationId: registration.id,
   });
 
   return { ok: true as const, slotLabel: `${slot.label} — ${slot.time}` };
@@ -132,6 +144,15 @@ export async function sendInvitationAction(input: { cardSlug: string; inviteeEma
     return { ok: false as const, error: "send_failed" };
   }
 
+  // Seguimiento (2026-09-23): solo se registra si el mail realmente
+  // salió — cáscara honesta, nunca un lead fantasma de un envío que
+  // falló.
+  await upsertLead(card.id, {
+    contacts: [inviteeEmail],
+    source: "invitacion",
+    proposedStage: "compartido",
+  });
+
   return { ok: true as const };
 }
 
@@ -154,6 +175,18 @@ export async function sendContactMessageAction(input: {
     include: { member: true },
   });
   if (!card) return { ok: false as const, error: "card" };
+
+  // Seguimiento (2026-09-23): a diferencia de la invitación (que solo
+  // cuenta si el mail salió), acá el evento real es que alguien escribió
+  // — eso pasó de verdad aunque la notificación al dueño falle después.
+  // Entra directo como "contactado", un paso más adelante que solo
+  // "compartido" — ya dio la cara.
+  await upsertLead(card.id, {
+    name: senderName,
+    contacts: [senderEmail],
+    source: "mensaje",
+    proposedStage: "contactado",
+  });
 
   const toEmail = card.member?.email;
   const apiKey = process.env.RESEND_API_KEY;
@@ -203,6 +236,13 @@ export async function sendQrByWhatsappAction(input: { cardSlug: string; whatsapp
   if (!card) return { ok: false as const, error: "card" };
 
   console.log(`sendQrByWhatsappAction (simulado): QR de ${card.slug} "enviado" a ${whatsapp}`);
+
+  await upsertLead(card.id, {
+    contacts: [whatsapp],
+    source: "qr_whatsapp",
+    proposedStage: "compartido",
+  });
+
   return { ok: true as const };
 }
 

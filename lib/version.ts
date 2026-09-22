@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.33.0";
+export const APP_VERSION = "1.34.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.34.0",
+    date: "2026-09-23",
+    notes:
+      "Nueva sección \"Seguimiento\" en tu Oficina Virtual: quién recibió o interactuó con ESA tarjeta puntual (invitación por mail, QR por WhatsApp, mensaje de contacto, agendó entrevista) y en qué etapa quedó — se llena sola desde esos 4 puntos reales, vos podés mover el estado, dejar notas, o agregar a mano a alguien que conociste offline. Estrictamente por tarjeta, nunca mezclado entre tus 3.",
+  },
   {
     version: "1.33.0",
     date: "2026-09-23",

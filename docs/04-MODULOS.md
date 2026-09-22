@@ -50,12 +50,57 @@ de onboarding de clientes.
 `OwnerOficina` (el dueño logueado) y `VisitorOficina` (cualquier otro) —
 el visitante ve una versión de solo-explicación, nunca datos reales
 (cáscara honesta). El dueño ve, de arriba a abajo hoy: saludo,
-Superpoderes, la Malla del equipo, el botón del Gemelo Digital.
+Seguimiento, Superpoderes, la Malla del equipo, el botón del Gemelo
+Digital.
 
 `dashboardHref` decide a dónde manda "Editar Oficina": si es un Admin, va
 directo al dashboard del Programa (`/admin/programs/[id]?focus=officeSkills`)
 o al roster (`/admin/[slug]`) — nunca a la pantalla de alta de Member
 (`/m/login`), que es solo para Members reales.
+
+## Seguimiento (CardLead)
+
+**Pedido explícito de Gunnar (2026-09-23)**: a propósito más chico que el
+Módulo CRM del roadmap ([05-ROADMAP-EDT.md](./05-ROADMAP-EDT.md)) — nada
+de puntaje de calidad ni Sherpa, solo "a quién le compartí ESTA tarjeta
+puntual y qué pasó después". Estrictamente por Card, nunca mezclado
+entre las 3 de un mismo dueño.
+
+**Archivos:** `prisma.CardLead` (modelo: `name`, `contact`, `source`,
+`stage`, `notes`, `registrationId?`), `lib/leads.ts` (client-safe: tipos
+`LeadStage`/`LeadSource`, labels, colores, `bumpStage`),
+`lib/leadsUpsert.ts` (server-only, `upsertLead` — importa `lib/prisma`,
+separado a propósito de `lib/leads.ts` para que Next.js nunca intente
+meter el driver de Postgres en el bundle del navegador — bug real
+encontrado esta sesión, ver PLAN.md),
+`app/c/[slug]/oficina/leads-actions.ts` (`listLeadsAction`,
+`createLeadManualAction`, `setLeadStageAction`, `updateLeadNotesAction`),
+`components/CardLeadsBlock.tsx`.
+
+**Se llena solo desde 4 puntos reales** de `app/c/actions.ts` — nunca
+inventado, solo cuando la acción realmente tuvo éxito:
+- `sendInvitationAction` → `source:"invitacion"`, `stage:"compartido"`
+  (solo si el mail realmente salió — antes de esto, ninguna de las 3
+  acciones de abajo dejaba rastro en ningún lado).
+- `sendQrByWhatsappAction` → `source:"qr_whatsapp"`, `stage:"compartido"`.
+- `sendContactMessageAction` → `source:"mensaje"`, `stage:"contactado"`
+  directo (la persona ya escribió, señal más fuerte que solo compartir)
+  — se registra aunque la notificación por mail al dueño falle después,
+  el evento real es que alguien escribió.
+- `registerInterviewAction` → `source:"entrevista"`,
+  `stage:"en_seguimiento"`, con `registrationId` linkeado a la
+  `Registration` real (no duplica esos datos).
+
+**Avance de etapa automático vs. manual** (`lib/leads.ts#bumpStage`):
+`compartido → contactado → en_seguimiento` se mueve solo, y solo hacia
+adelante — nunca retrocede, nunca lo mueve un evento automático a
+`convertido`/`perdido` (terminales, solo el dueño los setea a mano desde
+el popup de detalle). Busca coincidencia por cualquiera de los contactos
+dados (email y/o WhatsApp) **dentro de la misma Card únicamente**.
+
+El dueño puede además agregar un lead a mano (`source:"manual"` — alguien
+que conoció offline), mover la etapa con un toque, y dejar notas de
+seguimiento en texto libre.
 
 ## Superpoderes
 

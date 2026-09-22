@@ -4038,3 +4038,90 @@ nuevo en el cliente, después Playwright contra `pnpm dev`):
   confirmación real de Gunnar en la próxima grabación real.
 - Shippeado como v1.33.0. La base de Notas de Voz en producción queda
   vacía apenas corra este deploy.
+
+## Seguimiento (CardLead) — CRM-lite por Card, primer paso antes del CRM grande (2026-09-23)
+
+Gunnar confirmó que la próxima tarea del roadmap era el Módulo CRM, pero
+al pedirle que explicara su plan antes de tocar código, aclaró el
+alcance real que quería: "que funcione para el seguimiento de lo
+compartido con la lycard solamente" — no el CRM grande de Sherpa/5
+dimensiones de calidad del roadmap (`docs/05-ROADMAP-EDT.md`), sino algo
+más chico y honesto: a quién le compartió cada Card puntual y qué pasó
+después.
+
+**Investigación antes de codear:** revisando `app/c/actions.ts` se
+confirmó que hoy `sendInvitationAction`, `sendQrByWhatsappAction` y
+`sendContactMessageAction` son 100% fire-and-forget — mandan el mail (o
+loguean el WhatsApp simulado) y no guardan NADA en la base. Solo
+`registerInterviewAction` persistía algo (`Registration`). O sea: no
+existía ningún rastro de a quién se le compartió una LyCard. Presenté
+este hallazgo + un plan concreto a Gunnar antes de escribir código;
+confirmó dos decisiones de scope: (1) estrictamente por Card, nunca
+mezclado entre las 3 de un mismo dueño ("cada card debe ser
+independiente"); (2) tanto lo que el dueño manda (invitación, QR) como
+lo que le llega (mensaje, entrevista agendada) entran a la misma lista.
+
+**Construido:**
+- `prisma.CardLead` (nuevo modelo): `cardId`, `name`, `contact`,
+  `source` (invitacion|qr_whatsapp|mensaje|entrevista|manual), `stage`
+  (compartido|contactado|en_seguimiento|convertido|perdido), `notes`,
+  `registrationId?` (link opcional, sin duplicar `Registration`).
+- `lib/leads.ts` (client-safe: tipos, labels, colores, `bumpStage`) +
+  `lib/leadsUpsert.ts` (server-only: `upsertLead`, matchea por cualquier
+  contacto dado — email y/o WhatsApp — DENTRO de la misma Card
+  únicamente).
+- Los 4 puntos reales de `app/c/actions.ts` ahora llaman `upsertLead`:
+  invitación y QR solo si la acción realmente tuvo éxito (cáscara
+  honesta — nunca un lead fantasma de un envío que falló); mensaje de
+  contacto se registra aunque la notificación al dueño falle después
+  (el evento real es que alguien escribió); entrevista linkea la
+  `Registration` real.
+- `bumpStage`: los primeros 3 estados avanzan solos y solo hacia
+  adelante; "convertido"/"perdido" son terminales, solo el dueño los
+  setea a mano.
+- `app/c/[slug]/oficina/leads-actions.ts` + `components/CardLeadsBlock.tsx`
+  (nuevo, mismo lenguaje visual que Notas de Voz/Agenda): lista
+  ordenada por actividad reciente, popup de detalle con selector de
+  etapa + notas editables, "+ Agregar a mano" para alguien conocido
+  offline. Insertado en `OwnerOficina` justo después del saludo/KPIs,
+  antes del Gemelo Digital — dato operativo de alta prioridad, no
+  escondido al final.
+
+**Bug real encontrado y corregido en el camino:** el primer intento puso
+`upsertLead` (que importa `lib/prisma`) directo en `lib/leads.ts`, y
+como `CardLeadsBlock.tsx` (Client Component) importa tipos de ese mismo
+archivo para los labels/colores, el build de producción (`pnpm build`,
+Turbopack) fallaba con 7 errores "Module not found: dns/fs/net/tls/
+util:types" — Next.js intentaba meter el driver de `pg` completo en el
+bundle del navegador. Fix: separar `upsertLead` a `lib/leadsUpsert.ts`
+(server-only, nunca importado por un componente cliente), dejando
+`lib/leads.ts` con solo tipos/constantes puras. `tsc --noEmit` no lo
+había detectado — hace falta `pnpm build` real para atrapar este tipo
+de bug, no alcanza con el type-check.
+
+**Verificado real, no solo compilado** (`tsc --noEmit` + `pnpm build`
+limpios, después Playwright contra `pnpm dev`): la Card `mastern0` es
+`isOrigin` (se ve en modo host a cualquiera, sin importar sesión), así
+que no servía para probar el flujo de VISITANTE — se creó una Card de
+prueba temporal (`qa-leads-test`, kind `personal`, borrada al final) para
+poder probar los 4 canales de punta a punta:
+- Mensaje de contacto (visitante anónimo) → lead con `stage:"contactado"`.
+- Agendar una entrevista (visitante anónimo) → lead con
+  `stage:"en_seguimiento"`, `registrationId` linkeado.
+- Envío del QR por WhatsApp (dueño) → lead con `stage:"compartido"`.
+- Los 3 aparecieron en el bloque "Seguimiento" de la Oficina con el
+  conteo correcto (3), colores de etapa correctos, y el estado
+  "Compartido" solo en el del QR (los otros 2 avanzaron solos como
+  corresponde).
+- Abrí el lead de la entrevista, lo cambié a "Convertido" a mano, guardé
+  una nota, **recargué la página** y ambos cambios seguían ahí — confirma
+  que persiste de verdad en la DB, no es solo estado local de React.
+- Agregué un lead a mano ("+ Agregar a mano") y confirmé que también
+  sobrevive el reload.
+- Confirmado con screenshots: la burbuja/popup de detalle, la lista
+  principal, y el estado tras recargar.
+- Shippeado como v1.34.0.
+
+**Pendiente, próxima tarea confirmada por Gunnar:** el AppStore de
+Skills completo (`docs/05-ROADMAP-EDT.md#appstore-de-skills`) — Gunnar
+va a mandar una lista en Excel con los Superpoderes a incluir.

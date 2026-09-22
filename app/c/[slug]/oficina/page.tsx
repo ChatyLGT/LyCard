@@ -14,6 +14,7 @@ import { getFathomBrief, type FathomBrief } from "@/lib/fathom";
 import { parseOfficeSkills, DEFAULT_OFFICE_SKILLS, type OfficeSkill } from "@/lib/officeSkills";
 import OfficeSkillsBlock from "@/components/OfficeSkillsBlock";
 import type { VoiceNoteSummary } from "@/components/VoiceNotesBlock";
+import CardLeadsBlock, { type CardLeadSummary } from "@/components/CardLeadsBlock";
 import { parseCalendarEvents } from "@/lib/oficinaExtras";
 import { fetchLiveAgenda, defaultAgendaWindow, type AgendaEventItem, type AgendaTaskItem } from "@/lib/agenda";
 import { refreshGoogleAccessToken } from "@/lib/googleOAuth";
@@ -107,6 +108,7 @@ type OficinaData = {
   agendaTasks: AgendaTaskItem[];
   googleConnected: boolean;
   connectUrl: string;
+  leads: CardLeadSummary[];
 };
 
 // ---------------- Piezas compartidas ----------------
@@ -491,6 +493,12 @@ function OwnerOficina({ data }: { data: OficinaData }) {
 
         <KpiRow data={data} />
 
+        <div style={hr} />
+
+        <CardLeadsBlock cardId={data.card.id} initialLeads={data.leads} />
+
+        <div style={hr} />
+
         <AgentButton data={data} href={`/c/${card.slug}/oficina/demo`} label="Tu Gemelo Digital" sublabel="Demo del flujo — todavía no hay backend real" />
 
         {/* Para la Card raíz (sin referente, ex-"Fundador de la Red") no hay
@@ -569,6 +577,28 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
       }))
     : [];
 
+  // Seguimiento (2026-09-23): igual de privado que Notas de Voz — un
+  // visitante nunca dispara esta query ni ve a quién le compartió su
+  // Card el dueño.
+  const leads: CardLeadSummary[] = isHost
+    ? (
+        await prisma.cardLead.findMany({
+          where: { cardId: card.id },
+          orderBy: { updatedAt: "desc" },
+          take: 100,
+        })
+      ).map((l) => ({
+        id: l.id,
+        name: l.name,
+        contact: l.contact,
+        source: l.source,
+        stage: l.stage,
+        notes: l.notes,
+        createdAt: l.createdAt.toISOString(),
+        updatedAt: l.updatedAt.toISOString(),
+      }))
+    : [];
+
   // Fase F (2026-09-19): si el dueño ya conectó Google (Calendar+Tasks+
   // Drive real), la Agenda lo dice y el botón de conectar desaparece.
   const ownerMember = isHost && card.memberId ? await prisma.member.findUnique({ where: { id: card.memberId } }) : null;
@@ -643,6 +673,7 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
     agendaTasks,
     googleConnected,
     connectUrl,
+    leads,
   };
 
   return isHost ? <OwnerOficina data={data} /> : <VisitorOficina data={data} />;

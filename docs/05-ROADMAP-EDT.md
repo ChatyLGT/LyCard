@@ -114,6 +114,15 @@ partido MLQR, esta documentación, Panel NashMesh, MachineEngine.
 
 ## Módulo CRM
 
+**Nota (2026-09-23):** antes de este módulo grande se shippeó una
+versión mucho más chica y ya en producción — "Seguimiento" (modelo
+`CardLead`, ver [04-MODULOS.md](./04-MODULOS.md#seguimiento-cardlead)):
+por Card, sin puntaje de calidad ni Sherpa, solo "a quién le compartí
+esta tarjeta y qué pasó después" (invitación, QR, mensaje, entrevista).
+Pedido explícito de Gunnar como paso previo — el CRM de abajo (pipeline
+de Sherpa, 5 dimensiones de calidad) sigue siendo roadmap, no se toca
+todavía.
+
 Formaliza el pipeline que **ya corre a mano** (manuales de Sherpa, SLA de
 calidad de 5 dimensiones documentados en las operaciones de Legacy). No es
 un sistema paralelo — extiende `Program`/`Member`/`Registration`, que ya

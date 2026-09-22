@@ -177,6 +177,7 @@ model Card {
   isDemo Boolean @default(false)
 
   voiceNotes VoiceNote[]
+  leads      CardLead[]
 }
 
 // Skill "Notas de Voz" (2026-09-19, pedido urgente de Gunnar — Skill #3
@@ -206,6 +207,49 @@ model VoiceNote {
   // silencio (2026-09-23, "dio error en la transcripción" sin poder ver
   // por qué). Nunca se le muestra en crudo a un visitante, solo al dueño.
   errorDetail String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cardId])
+}
+
+// Seguimiento de a quién le compartiste tu LyCard y qué pasó después —
+// pedido explícito de Gunnar (2026-09-23), a propósito más chico que el
+// CRM de Sherpa/5-sesiones del roadmap (docs/05-ROADMAP-EDT.md): acá no
+// hay puntaje de calidad ni asignación de Sherpa, es solo "quién recibió
+// o interactuó con esta Card puntual, en qué estado quedó, y notas a
+// mano del dueño". Estrictamente por Card — cada una de tus 3 Cards
+// (project/company/personal) tiene su propio seguimiento, nunca
+// mezclado entre ellas (ver `assertOwner` en leads-actions.ts).
+//
+// Se llena solo (upsertLead, en lib/leads.ts) desde 4 puntos reales de
+// la app: invitación por mail, QR por WhatsApp, mensaje de contacto
+// entrante, y "Agendar tu Entrevista" — nunca por conteo falso, solo
+// cuando esa acción realmente tuvo éxito. El dueño puede además agregar
+// uno a mano (alguien que conoció offline) y mover el estado/notas.
+model CardLead {
+  id     String @id @default(cuid())
+  cardId String
+  card   Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  name    String @default("")
+  contact String // email o whatsapp, lo que haya dado esa persona
+
+  // "invitacion" | "qr_whatsapp" | "mensaje" | "entrevista" | "manual"
+  source String
+
+  // "compartido" | "contactado" | "en_seguimiento" | "convertido" | "perdido"
+  // Los primeros 3 los mueve el sistema solo (nunca hacia atrás, nunca
+  // hacia "convertido"/"perdido" — esos dos son terminales, solo el
+  // dueño los setea a mano). Ver bumpStage() en lib/leads.ts.
+  stage String @default("compartido")
+
+  notes String? @db.Text
+
+  // Link opcional a la Registration real si source="entrevista" — no
+  // duplica esos datos, solo referencia.
+  registrationId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
