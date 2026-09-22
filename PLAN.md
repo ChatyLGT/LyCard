@@ -4456,3 +4456,90 @@ completa pasando, unit tests 100% en los 5 archivos gateados
 
 Shippeado como v1.39.0. **Con esto, toda la ronda de "Oficina Virtual
 ampliada" que arrancó esta sesión (Fases E1 a E5) queda completa.**
+
+## La Malla real — click-to-info + drill-down fractal (2026-09-22)
+
+Después de probar generar 15 Programas de prueba (Fase E5), Gunnar miró
+el "Cerebro Malla" de la Oficina y preguntó si cada punto podía tener
+info real adentro — no solo puntitos con rayitas — y si se podía meter
+Obsidian directo. Obsidian no: es una app de vault local, y Obsidian
+Publish es un grafo público desconectado, no una forma de hacer que los
+nodos de LyCard respondan a un click. Se le propuso construir el
+click-to-info directo en el motor de Malla que ya existe. Confirmado:
+"las dos" Mallas (la pública del organismo completo y la del Cerebro del
+dueño).
+
+Investigación: `/admin/equipo` (el roster `Node` de EinarOS — Gunnar/
+Chaty/Agentes) resultó ser la fuente equivocada para el Cerebro Malla —
+es global, no por Programa/Card. Se lo planteé a Gunnar en vez de
+construir sobre una base falsa, y su respuesta fue la clave real: la
+Malla es la representación gráfica de las conexiones entre los agentes
+de cada N (N1, N2, N3, N4...), y cada Card de esta plataforma ES un
+Programa del Legacy principal — es decir, cada Programa real es un N3.
+Repasé `docs/01-VISION-Y-ALCANCE.md` y `WHITEPAPER.md` §4.4 para anclar
+el diseño en la jerarquía fractal ya establecida del proyecto: N0 (dueño)
+→ N1 (triada fija Einar=estrategia/Chaty=coordinación/Warren=ejecución)
+→ N2 (Guardianas, sin datos reales todavía) → N3 (Expertos/Programas) →
+N4 (Especialistas). Plan confirmado por Gunnar, con un agregado crítico:
+"el modelo es fractal... si elijo Digital Kingdom, que es N3 de Legacy,
+él también tiene sus Ns" — o sea, el drill-down tiene que ser
+recursivo: entrar a un Programa muestra su propia cadena de referidos
+con la misma forma que el organismo completo, no una vista distinta.
+
+Al investigar `components/MallaGraph.tsx` encontramos que el motor de
+click ya estaba armado y sin usar desde que se construyó el componente:
+`THREE.Raycaster` + prop `onSelect`, con lógica de distinguir un click
+real de un arrastre de cámara (`dragging && !moved`). Esto redujo el
+alcance real del trabajo a datos + wiring, no a construir interacción
+nueva.
+
+**`lib/mallaReal.ts`** (nuevo): reemplaza los datasets hardcodeados de
+`lib/mallaData.ts` por un grafo derivado de datos reales.
+`buildRootMallaGraph(programs)` arma Legacy (N0) + la triada N1 fija +
+cada Programa real como su propio N3. `buildMemberFractalGraph(rootId,
+rootLabel, members)` es genérica — arma el sub-grafo fractal de un nivel
+a partir de una cadena de referidos (`referredByMembershipId`), pensada
+para servir tanto a `ProgramMembership` como, más adelante con la misma
+forma, a `CardNetworkMembership`. 9 tests, 100% de cobertura
+(`lib/mallaReal.ts` sumado al ratchet de `vitest.config.mts`), incluyendo
+los bordes reales: referido colgando de otro referido (no del root),
+`referredByMembershipId` apuntando afuera de la lista (cae al root en
+vez de crashear), status corrupto, nombre vacío.
+
+**`components/MallaExplorer.tsx`** (nuevo): envuelve `MallaGraph`,
+maneja el estado de vista raíz/drill-down, el panel de info del nodo
+seleccionado y la navegación "Entrar a este Programa →" / "← Volver a
+Legacy". Los sub-grafos de cada Programa se precalculan todos en el
+loader (no hay fetch por click — la cantidad real de Programas es
+modesta).
+
+**Wiring en `app/c/[slug]/oficina/page.tsx`**: la Malla pública
+(`VisitorOficina`) ahora usa `PublicMallaReal` cuando hay al menos un
+Programa real con membership (si no, cae al dataset estático de
+siempre, sin romper la demo). El Cerebro Malla del dueño (`TeamMallaBlock`)
+usa la Malla real del Programa de esa Card cuando existe
+(`card.kind === "project"` con `programId`), mostrando "Malla viva · tu
+equipo real" y el conteo real de miembros — sigue cayendo al dataset
+`TEAM_MALLA_*` de demo para Cards de company/personal o Programas sin
+membership real todavía.
+
+**Verificado real, dos capas**: un script descartable de Playwright
+sembró una cadena de referidos real de 3 niveles y confirmó visualmente
+(capturas) el click público → info real, click → drill-down → sub-grafo,
+y el Cerebro Malla del dueño. El E2E permanente (`e2e/malla-real.spec.ts`)
+automatiza lo mismo — clickear un canvas three.js sin selector de
+Playwright se resolvió con una búsqueda en espiral desde el centro
+(aprovechando que todos los nodos gravitan a un único punto fantasma en
+el origen) y down/up explícitos en vez de `.click()` para no disparar el
+chequeo de "se movió" del propio motor. El bug real de esta ronda: con
+el viewport default el canvas quedaba debajo del fold y
+`document.elementFromPoint` devolvía `null` — se arregló con
+`scrollIntoViewIfNeeded()` antes de medir el `boundingBox()`.
+
+**Fuera de alcance esta ronda**: `CardNetworkMembership` (la red de
+clientes propia de una Card de tipo company) es estructuralmente
+idéntica a `ProgramMembership` y reutilizaría `buildMemberFractalGraph`
+tal cual — pero cablearla en `app/m/dashboard/company/network/page.tsx`
+queda para una ronda futura, no se tocó acá.
+
+Shippeado como v1.40.0.

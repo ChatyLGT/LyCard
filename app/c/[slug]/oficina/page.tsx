@@ -10,6 +10,8 @@ import {
   PUBLIC_MALLA_NODES, PUBLIC_MALLA_EDGES, PUBLIC_MALLA_GHOSTS, PUBLIC_MALLA_KPIS,
   TEAM_MALLA_NODES, TEAM_MALLA_EDGES, TEAM_MALLA_GHOSTS,
 } from "@/lib/mallaData";
+import { buildRootMallaGraph, buildMemberFractalGraph, type MallaGraphData } from "@/lib/mallaReal";
+import MallaExplorer from "@/components/MallaExplorer";
 import { getFathomBrief, type FathomBrief } from "@/lib/fathom";
 import { parseOfficeSkills, DEFAULT_OFFICE_SKILLS, type OfficeSkill } from "@/lib/officeSkills";
 import OfficeSkillsBlock from "@/components/OfficeSkillsBlock";
@@ -135,6 +137,11 @@ type OficinaData = {
   newsAreDefault: boolean;
   calendarEventsForBlock: CalendarEvent[];
   calendarAreDefault: boolean;
+  // Malla real (2026-09-22) — null cuando no hay data real todavía
+  // (Programas sin memberships), en cuyo caso los bloques caen al
+  // dataset de ejemplo de siempre en vez de mostrar un grafo vacío.
+  mallaRoot: { root: MallaGraphData; subGraphs: Record<string, MallaGraphData> } | null;
+  teamMalla: MallaGraphData | null;
 };
 
 // ---------------- Piezas compartidas ----------------
@@ -323,7 +330,29 @@ function FirstConnections({ data }: { data: OficinaData }) {
   );
 }
 
-function TeamMallaBlock({ accent }: { accent: string }) {
+// Real cuando el Programa de esta Card tiene ProgramMembership de verdad
+// (teamMalla !== null) — cada punto es un miembro real, tocalo y ves
+// quién es. Sin eso todavía, cae al dataset de ejemplo de siempre,
+// marcado como tal (cáscara honesta, mismo criterio del resto de la
+// Oficina).
+function TeamMallaBlock({ accent, teamMalla, memberCount }: { accent: string; teamMalla: MallaGraphData | null; memberCount: number }) {
+  if (teamMalla) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+          <span style={kickerStyle}>Malla viva · tu equipo real</span>
+          <span style={{ font: "600 9px 'Plus Jakarta Sans',sans-serif", color: "#6FCF7A" }}>
+            {memberCount} miembro{memberCount === 1 ? "" : "s"}
+          </span>
+        </div>
+        <MallaExplorer root={teamMalla} subGraphs={{}} height={220} camRadius={130} maxRadius={320} haloScale={8} accent={accent} />
+        <p style={{ margin: 0, font: "400 9.5px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A", textAlign: "center" }}>
+          Tocá un punto para ver quién es.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
@@ -351,6 +380,42 @@ function TeamMallaBlock({ accent }: { accent: string }) {
         Vista general de demo — todavía sin conectar a tu equipo real.
       </p>
     </div>
+  );
+}
+
+// La Malla pública real: Legacy → su triada N1 fija → cada Programa real
+// (N3), y tocando uno se "entra" a su propio fractal de miembros —
+// ver components/MallaExplorer.tsx. Los 3 números de abajo son reales
+// (edges/Programas/miembros activos), no la vitrina fija de
+// PUBLIC_MALLA_KPIS.
+function PublicMallaReal({ mallaRoot, accent }: { mallaRoot: NonNullable<OficinaData["mallaRoot"]>; accent: string }) {
+  const { root, subGraphs } = mallaRoot;
+  const subGraphList = Object.values(subGraphs);
+  const totalEdges = root.edges.length + subGraphList.reduce((sum, g) => sum + g.edges.length, 0);
+  const activeMembers = subGraphList.reduce(
+    (sum, g) => sum + Object.entries(g.info).filter(([id, info]) => id.startsWith("member-") && info.subtitle === "Activo").length,
+    0
+  );
+  const programCount = subGraphList.length;
+
+  return (
+    <>
+      <MallaExplorer root={root} subGraphs={subGraphs} height={210} camRadius={165} haloScale={9} accent={accent} />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, textAlign: "center" }}>
+          <span style={{ font: "700 14px 'Playfair Display',serif", color: accent }}>{totalEdges}</span>
+          <span style={{ ...kickerStyle, fontSize: 6.5 }}>Enlaces reales</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, textAlign: "center" }}>
+          <span style={{ font: "700 14px 'Playfair Display',serif" }}>{programCount}</span>
+          <span style={{ ...kickerStyle, fontSize: 6.5 }}>Programas con red</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, textAlign: "center" }}>
+          <span style={{ font: "700 14px 'Playfair Display',serif" }}>{activeMembers}</span>
+          <span style={{ ...kickerStyle, fontSize: 6.5 }}>Miembros activos</span>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -442,23 +507,29 @@ function VisitorOficina({ data }: { data: OficinaData }) {
             <span style={kickerStyle}>La Malla · organismo completo</span>
             <span style={{ font: "400 8px 'Plus Jakarta Sans',sans-serif", color: "#6b6459" }}>arrastrá para rotar</span>
           </div>
-          <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid rgba(200,161,90,.18)", background: "#0B0B0A" }}>
-            <MallaGraph nodes={PUBLIC_MALLA_NODES} edges={PUBLIC_MALLA_EDGES} ghosts={PUBLIC_MALLA_GHOSTS} height={210} camRadius={165} haloScale={9} />
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6 }}>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, textAlign: "center" }}>
-              <span style={{ font: "700 14px 'Playfair Display',serif", color: accent }}>{PUBLIC_MALLA_EDGES.length}</span>
-              <span style={{ ...kickerStyle, fontSize: 6.5 }}>Enlaces creados</span>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, textAlign: "center" }}>
-              <span style={{ font: "700 14px 'Playfair Display',serif" }}>{PUBLIC_MALLA_KPIS.brechasCerradas}</span>
-              <span style={{ ...kickerStyle, fontSize: 6.5 }}>Brechas cerradas</span>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, textAlign: "center" }}>
-              <span style={{ font: "700 14px 'Playfair Display',serif" }}>{PUBLIC_MALLA_KPIS.serviciosOfrecidos}</span>
-              <span style={{ ...kickerStyle, fontSize: 6.5 }}>Servicios ofrecidos</span>
-            </div>
-          </div>
+          {data.mallaRoot ? (
+            <PublicMallaReal mallaRoot={data.mallaRoot} accent={accent} />
+          ) : (
+            <>
+              <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid rgba(200,161,90,.18)", background: "#0B0B0A" }}>
+                <MallaGraph nodes={PUBLIC_MALLA_NODES} edges={PUBLIC_MALLA_EDGES} ghosts={PUBLIC_MALLA_GHOSTS} height={210} camRadius={165} haloScale={9} />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6 }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, textAlign: "center" }}>
+                  <span style={{ font: "700 14px 'Playfair Display',serif", color: accent }}>{PUBLIC_MALLA_EDGES.length}</span>
+                  <span style={{ ...kickerStyle, fontSize: 6.5 }}>Enlaces creados</span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, textAlign: "center" }}>
+                  <span style={{ font: "700 14px 'Playfair Display',serif" }}>{PUBLIC_MALLA_KPIS.brechasCerradas}</span>
+                  <span style={{ ...kickerStyle, fontSize: 6.5 }}>Brechas cerradas</span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, textAlign: "center" }}>
+                  <span style={{ font: "700 14px 'Playfair Display',serif" }}>{PUBLIC_MALLA_KPIS.serviciosOfrecidos}</span>
+                  <span style={{ ...kickerStyle, fontSize: 6.5 }}>Servicios ofrecidos</span>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         <div style={hr} />
@@ -552,7 +623,7 @@ function OwnerOficina({ data }: { data: OficinaData }) {
           </>
         )}
 
-        <TeamMallaBlock accent={accent} />
+        <TeamMallaBlock accent={accent} teamMalla={data.teamMalla} memberCount={data.teamMalla ? Object.keys(data.teamMalla.info).length - 1 : 0} />
 
         <div style={hr} />
 
@@ -705,6 +776,53 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
   const calendarEventsForBlock = calendarEventsParsed.length > 0 ? calendarEventsParsed : DEFAULT_CALENDAR_EVENTS;
   const calendarAreDefault = calendarEventsParsed.length === 0;
 
+  // Malla real (2026-09-22, pedido de Gunnar) — reemplaza los datasets
+  // hardcodeados de lib/mallaData.ts por un grafo derivado de
+  // ProgramMembership de verdad. La pública (Legacy → triada N1 → cada
+  // Programa real como N3) solo hace falta calcularla para un visitante
+  // (es lo único que VisitorOficina muestra); el Cerebro Malla del dueño
+  // solo si esta Card es de tipo project y tiene un Programa propio con
+  // miembros reales — company/personal siguen sin un equipo real modelado
+  // todavía (ver CardNetworkMembership, próximo paso), caen al dataset de
+  // ejemplo de siempre.
+  let mallaRoot: OficinaData["mallaRoot"] = null;
+  if (!isHost) {
+    const realPrograms = await prisma.program.findMany({
+      where: { isDemo: false },
+      select: {
+        id: true,
+        name: true,
+        memberships: { select: { id: true, status: true, referredByMembershipId: true, member: { select: { name: true } } } },
+      },
+    });
+    const subGraphs: Record<string, MallaGraphData> = {};
+    for (const p of realPrograms) {
+      if (p.memberships.length > 0) {
+        subGraphs[p.id] = buildMemberFractalGraph(
+          `program-${p.id}`,
+          p.name,
+          p.memberships.map((m) => ({ membershipId: m.id, name: m.member.name, status: m.status, referredByMembershipId: m.referredByMembershipId }))
+        );
+      }
+    }
+    mallaRoot = { root: buildRootMallaGraph(realPrograms.map((p) => ({ id: p.id, name: p.name }))), subGraphs };
+  }
+
+  let teamMalla: MallaGraphData | null = null;
+  if (isHost && card.kind === "project" && card.programId) {
+    const teamMemberships = await prisma.programMembership.findMany({
+      where: { programId: card.programId },
+      select: { id: true, status: true, referredByMembershipId: true, member: { select: { name: true } } },
+    });
+    if (teamMemberships.length > 0) {
+      teamMalla = buildMemberFractalGraph(
+        "team-root",
+        card.program?.name || "Tu Programa",
+        teamMemberships.map((m) => ({ membershipId: m.id, name: m.member.name, status: m.status, referredByMembershipId: m.referredByMembershipId }))
+      );
+    }
+  }
+
   const parsedSkills = parseOfficeSkills(card.program?.officeSkills);
   const officeSkills = parsedSkills.length > 0 ? parsedSkills : DEFAULT_OFFICE_SKILLS;
   const officeSkillsKickerOverride = card.program?.cardLabels;
@@ -759,6 +877,8 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
     newsAreDefault,
     calendarEventsForBlock,
     calendarAreDefault,
+    mallaRoot,
+    teamMalla,
   };
 
   return isHost ? <OwnerOficina data={data} /> : <VisitorOficina data={data} />;

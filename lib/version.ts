@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.39.0";
+export const APP_VERSION = "1.40.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.40.0",
+    date: "2026-09-22",
+    notes:
+      "La Malla ya no es un dibujo de ejemplo — cada punto es real. Tocá cualquier nodo y te dice quién es de verdad (Legacy, cada Programa, cada miembro con su estado). Tocá un Programa y \"entrás\" a ver su propia red por dentro — el mismo mecanismo se repite, nivel por nivel. Tu Oficina también suma \"Malla viva · tu equipo real\" con la gente real de tu Programa.",
+  },
   {
     version: "1.39.0",
     date: "2026-09-22",
