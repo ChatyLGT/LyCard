@@ -6,6 +6,7 @@ import { createVoiceNoteAction, checkVoiceNoteStatusAction } from "@/app/c/[slug
 export type VoiceNoteSummary = {
   id: string;
   status: string;
+  audioUrl: string;
   transcript: string | null;
   summary: string | null;
   createdAt: string; // ISO — serializado desde el Server Component
@@ -90,7 +91,10 @@ export default function VoiceNotesBlock({ cardId, initialNotes }: { cardId: stri
       if (!result.ok) {
         setError("No se pudo guardar la nota — probá de nuevo.");
       } else {
-        setNotes((prev) => [{ id: result.id, status: "processing", transcript: null, summary: null, createdAt: new Date().toISOString() }, ...prev]);
+        setNotes((prev) => [
+          { id: result.id, status: "processing", audioUrl: result.audioUrl, transcript: null, summary: null, createdAt: new Date().toISOString() },
+          ...prev,
+        ]);
       }
     } finally {
       setUploading(false);
@@ -126,29 +130,59 @@ export default function VoiceNotesBlock({ cardId, initialNotes }: { cardId: stri
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {notes.map((n) => (
-            <div key={n.id} style={panelStyle}>
-              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
-                <span style={{ font: "700 11px 'Plus Jakarta Sans',sans-serif" }}>
-                  {new Date(n.createdAt).toLocaleString("es-MX", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                </span>
-                <StatusPill status={n.status} />
-              </div>
-              {n.status === "ready" && n.summary && (
-                <p style={{ margin: "8px 0 0", font: "400 11px/1.5 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{n.summary}</p>
-              )}
-              {n.status === "processing" && (
-                <p style={{ margin: "8px 0 0", font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
-                  Grabada — esperando transcripción.
-                </p>
-              )}
-              {n.status === "error" && (
-                <p style={{ margin: "8px 0 0", font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>
-                  No se pudo transcribir esta nota.
-                </p>
-              )}
-            </div>
+            <VoiceNoteRow key={n.id} note={n} />
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+function VoiceNoteRow({ note: n }: { note: VoiceNoteSummary }) {
+  const [showTranscript, setShowTranscript] = useState(false);
+
+  return (
+    <div style={panelStyle}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
+        <span style={{ font: "700 11px 'Plus Jakarta Sans',sans-serif" }}>
+          {new Date(n.createdAt).toLocaleString("es-MX", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+        </span>
+        <StatusPill status={n.status} />
+      </div>
+
+      <audio controls src={n.audioUrl} style={{ width: "100%", height: 32, marginTop: 8 }} />
+
+      {n.status === "ready" && n.summary && (
+        <p style={{ margin: "8px 0 0", font: "400 11px/1.5 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{n.summary}</p>
+      )}
+      {n.status === "ready" && n.transcript && (
+        <>
+          <button
+            type="button"
+            onClick={() => setShowTranscript((v) => !v)}
+            style={{
+              marginTop: 6, background: "none", border: "none", padding: 0, cursor: "pointer",
+              font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".04em", color: "#C8A15A",
+            }}
+          >
+            {showTranscript ? "Ocultar transcripción" : "Ver transcripción completa"}
+          </button>
+          {showTranscript && (
+            <p style={{ margin: "6px 0 0", font: "400 11px/1.5 'Plus Jakarta Sans',sans-serif", color: "#9a8f80", whiteSpace: "pre-wrap" }}>
+              {n.transcript}
+            </p>
+          )}
+        </>
+      )}
+      {n.status === "processing" && (
+        <p style={{ margin: "8px 0 0", font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
+          Grabada — esperando transcripción.
+        </p>
+      )}
+      {n.status === "error" && (
+        <p style={{ margin: "8px 0 0", font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>
+          No se pudo transcribir esta nota.
+        </p>
       )}
     </div>
   );

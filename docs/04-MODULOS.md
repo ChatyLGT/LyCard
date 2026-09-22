@@ -86,6 +86,13 @@ verdad (`lib/storage.ts`, mismo mecanismo que las fotos). Sin
 `ASSEMBLYAI_API_KEY` configurada, la nota queda honestamente en "grabada
 — esperando transcripción" para siempre, nunca inventa un resumen.
 
+Cada nota tiene su propio reproductor `<audio>` (el `audioUrl` real,
+guardado desde el primer momento — no hace falta esperar a que
+transcriba para poder escucharla) y, una vez lista, un botón para
+desplegar la transcripción completa además del resumen corto que ya se
+veía (2026-09-22 — bug reportado por Gunnar: la nota se guardaba pero no
+había forma de acceder a ella desde la Oficina).
+
 ## Conexión real de Google (Calendar + Tasks + Drive)
 
 **Archivos:** `lib/googleOAuth.ts` (extiende el login de Member — Fase

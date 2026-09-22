@@ -557,6 +557,7 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
       ).map((n) => ({
         id: n.id,
         status: n.status,
+        audioUrl: n.audioUrl,
         transcript: n.transcript,
         summary: n.summary,
         createdAt: n.createdAt.toISOString(),

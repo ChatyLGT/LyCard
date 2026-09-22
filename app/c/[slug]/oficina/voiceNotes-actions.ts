@@ -40,7 +40,7 @@ export async function createVoiceNoteAction(cardId: string, formData: FormData) 
     }
   }
 
-  return { ok: true as const, id: note.id };
+  return { ok: true as const, id: note.id, audioUrl: note.audioUrl };
 }
 
 // Polling desde el cliente mientras una nota sigue "processing" — nunca

@@ -3697,3 +3697,38 @@ con quien lleve la parte cuantitativa de NashMesh a fondo.
   de Legacy — confirma que el override no se rompió. Datos de prueba
   borrados después. `tsc --noEmit` y `pnpm build` limpios. Shippeado
   como v1.30.0.
+
+## Fix — Notas de Voz: la nota se guardaba pero no se podía escuchar/leer (2026-09-22)
+
+Gunnar, apenas confirmado que el login de Admin con Google ya funciona en
+prod: "lo que vi por ejemplo es que el notas de voz.. dice que lo guarda
+pero no puedo acceder a nada ni escuchar la nota que guardo."
+
+- Causa confirmada leyendo el código: `VoiceNoteSummary` (el tipo que
+  cruza de `app/c/[slug]/oficina/page.tsx` al componente cliente) nunca
+  incluía `audioUrl` — ni el `select`/`map` del lado servidor, ni el tipo
+  del lado cliente. `components/VoiceNotesBlock.tsx` nunca renderizaba
+  un `<audio>`, y para una nota ya lista (`status: "ready"`) solo
+  mostraba el resumen corto (`n.summary`), nunca la transcripción
+  completa (`n.transcript`) ni forma de reproducir el audio real.
+- Fix: `audioUrl` se agregó al tipo `VoiceNoteSummary`, al `select`/`map`
+  de `app/c/[slug]/oficina/page.tsx`, y al retorno de
+  `createVoiceNoteAction` (para que el audio sea reproducible desde el
+  instante en que se graba, sin esperar a la transcripción). Cada nota
+  en `VoiceNotesBlock.tsx` ahora tiene su reproductor `<audio controls>`
+  siempre, y una vez lista, un botón "Ver transcripción completa" que
+  despliega `n.transcript` entero (el resumen corto se sigue mostrando
+  arriba, sin cambios).
+- Verificado con Playwright contra un build de producción real
+  (`pnpm build && pnpm start`, Postgres local levantado a mano para el
+  build): se insertó una VoiceNote de prueba `status: "ready"` con audio,
+  transcript y summary sobre la Card `isOrigin` (`mastern0`), se abrió
+  `/c/mastern0/oficina`, se clickeó el tile "Notas de Voz" de
+  Superpoderes, y se confirmó: (1) el `<audio>` trae el `src` correcto,
+  (2) el resumen se ve, (3) el botón de transcripción existe y al
+  clickearlo despliega el texto completo. Dato de prueba borrado después
+  (DB + archivo dummy en `public/uploads`). `tsc --noEmit` y `pnpm build`
+  limpios. Shippeado como v1.30.1.
+- Pendiente en paralelo, pedido en el mismo mensaje: el diagnóstico
+  completo de estatus vs. roadmap — se arma a continuación, por
+  separado.

@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.30.0";
+export const APP_VERSION = "1.30.1";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.30.1",
+    date: "2026-09-22",
+    notes:
+      "Fix: en Notas de Voz no se podía escuchar ni leer la transcripción de una nota ya grabada — el audio se guardaba bien pero la Oficina nunca lo mostraba. Ahora cada nota tiene su reproductor de audio y, cuando ya está lista, un botón para ver la transcripción completa (antes solo se veía el resumen corto).",
+  },
   {
     version: "1.30.0",
     date: "2026-09-19",
