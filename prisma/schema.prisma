@@ -202,6 +202,11 @@ model VoiceNote {
   // guardar nada más suyo hasta que esté listo.
   providerJobId String?
 
+  // El motivo real cuando status="error" — antes se descartaba en
+  // silencio (2026-09-23, "dio error en la transcripción" sin poder ver
+  // por qué). Nunca se le muestra en crudo a un visitante, solo al dueño.
+  errorDetail String? @db.Text
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

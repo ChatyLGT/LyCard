@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { createVoiceNoteAction, checkVoiceNoteStatusAction, listVoiceNotesAction } from "@/app/c/[slug]/oficina/voiceNotes-actions";
+import { createVoiceNoteAction, checkVoiceNoteStatusAction, listVoiceNotesAction, deleteVoiceNoteAction } from "@/app/c/[slug]/oficina/voiceNotes-actions";
 import MiniCalendar, { sameDay } from "@/components/MiniCalendar";
 
 export type VoiceNoteSummary = {
@@ -10,6 +10,7 @@ export type VoiceNoteSummary = {
   audioUrl: string;
   transcript: string | null;
   summary: string | null;
+  errorDetail?: string | null;
   createdAt: string; // ISO — serializado desde el Server Component
 };
 
@@ -64,6 +65,8 @@ export default function VoiceNotesBlock({ cardId, initialNotes }: { cardId: stri
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(() => (initialNotes[0] ? new Date(initialNotes[0].createdAt) : new Date()));
   const [openNoteId, setOpenNoteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mimeTypeRef = useRef<string>("");
   const chunksRef = useRef<Blob[]>([]);
@@ -95,11 +98,7 @@ export default function VoiceNotesBlock({ cardId, initialNotes }: { cardId: stri
         const result = await checkVoiceNoteStatusAction(n.id);
         if (result.status !== "processing") {
           setNotes((prev) =>
-            prev.map((p) =>
-              p.id === n.id
-                ? { ...p, status: result.status, transcript: "transcript" in result ? result.transcript ?? null : null, summary: "summary" in result ? result.summary ?? null : null }
-                : p
-            )
+            prev.map((p) => (p.id === n.id ? { ...p, status: result.status, transcript: result.transcript, summary: result.summary, errorDetail: result.errorDetail } : p))
           );
         }
       }
@@ -164,6 +163,23 @@ export default function VoiceNotesBlock({ cardId, initialNotes }: { cardId: stri
     } finally {
       setUploading(false);
     }
+  }
+
+  async function handleDelete(noteId: string) {
+    setDeleting(true);
+    try {
+      await deleteVoiceNoteAction(cardId, noteId);
+      setNotes((prev) => prev.filter((n) => n.id !== noteId));
+      setOpenNoteId(null);
+      setConfirmingDelete(false);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  function closeNoteDetail() {
+    setOpenNoteId(null);
+    setConfirmingDelete(false);
   }
 
   const dayNotes = notes.filter((n) => sameDay(new Date(n.createdAt), selectedDate));
@@ -275,7 +291,7 @@ export default function VoiceNotesBlock({ cardId, initialNotes }: { cardId: stri
 
       {openNote && (
         <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 26 }}>
-          <div onClick={() => setOpenNoteId(null)} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.72)" }} />
+          <div onClick={closeNoteDetail} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.72)" }} />
           <div
             style={{
               position: "relative", width: "100%", maxWidth: 380, background: "#1c1b1b", border: "1px solid rgba(200,161,90,.35)",
@@ -292,14 +308,44 @@ export default function VoiceNotesBlock({ cardId, initialNotes }: { cardId: stri
                   {new Date(openNote.createdAt).toLocaleString("es-MX", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false })}
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={() => setOpenNoteId(null)}
-                aria-label="Cerrar"
-                style={{ flex: "none", width: 26, height: 26, border: "none", borderRadius: 8, background: "rgba(255,255,255,.06)", color: "#C2BEB5", cursor: "pointer" }}
-              >
-                ✕
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flex: "none" }}>
+                <button
+                  type="button"
+                  onClick={() => (confirmingDelete ? handleDelete(openNote.id) : setConfirmingDelete(true))}
+                  disabled={deleting}
+                  aria-label={confirmingDelete ? "Confirmar borrado" : "Eliminar nota"}
+                  style={{
+                    width: confirmingDelete ? "auto" : 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                    border: "none", borderRadius: 8, padding: confirmingDelete ? "0 10px" : 0,
+                    background: confirmingDelete ? "#d92c1f" : "rgba(255,255,255,.06)",
+                    color: confirmingDelete ? "#fff" : "#C2BEB5", cursor: deleting ? "default" : "pointer",
+                    font: "700 9.5px 'Plus Jakarta Sans',sans-serif",
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 14 }}>delete</span>
+                  {confirmingDelete && (deleting ? "Borrando…" : "¿Seguro?")}
+                </button>
+                {confirmingDelete && (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingDelete(false)}
+                    aria-label="Cancelar borrado"
+                    style={{ width: 26, height: 26, border: "none", borderRadius: 8, background: "rgba(255,255,255,.06)", color: "#C2BEB5", cursor: "pointer" }}
+                  >
+                    ✕
+                  </button>
+                )}
+                {!confirmingDelete && (
+                  <button
+                    type="button"
+                    onClick={closeNoteDetail}
+                    aria-label="Cerrar"
+                    style={{ width: 26, height: 26, border: "none", borderRadius: 8, background: "rgba(255,255,255,.06)", color: "#C2BEB5", cursor: "pointer" }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
             </div>
 
             <audio controls src={openNote.audioUrl} style={{ width: "100%", height: 34 }} />
@@ -321,9 +367,14 @@ export default function VoiceNotesBlock({ cardId, initialNotes }: { cardId: stri
               </p>
             )}
             {openNote.status === "error" && (
-              <p style={{ margin: 0, font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>
-                No se pudo transcribir esta nota — el audio se puede escuchar igual arriba.
-              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                <p style={{ margin: 0, font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>
+                  No se pudo transcribir esta nota — el audio se puede escuchar igual arriba.
+                </p>
+                {openNote.errorDetail && (
+                  <p style={{ margin: 0, font: "400 10px/1.5 monospace", color: "#8a8378", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{openNote.errorDetail}</p>
+                )}
+              </div>
             )}
           </div>
         </div>

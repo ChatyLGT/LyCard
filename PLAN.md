@@ -3952,3 +3952,89 @@ limpios primero, después Playwright contra `pnpm dev` con mic falso):
   Voz/Agenda con idéntico locale (`es-MX`) y misma llamada
   (`toLocaleTimeString`/`toLocaleString`).
 - Shippeado como v1.32.1.
+
+## Tercera ronda: error de transcripción visible, burbuja de info, borrar notas + limpieza total (2026-09-23)
+
+Gunnar probó v1.32.1 y reportó tres cosas más en el mismo mensaje: la
+nota de prueba dio error de transcripción, no le gusta el selector
+"APP / Qué es esto" de los Superpoderes (pide una burbuja flotante en
+vez de tapar la app), y pide poder borrar Notas de Voz — con un pedido
+explícito de limpiar TODAS las existentes ahora mismo para arrancar de
+cero.
+
+**Por qué el error de transcripción era invisible**: revisando
+`voiceNotes-actions.ts`, tanto el `catch` de `startTranscriptionJob`
+como el branch de error de `pollTranscriptionJob` descartaban el motivo
+real — no había logs ni nada guardado, solo `status:"error"` a secas.
+Sin acceso a `ASSEMBLYAI_API_KEY` en este entorno (nunca lo tuvo, mismo
+límite de rondas anteriores) y sin permiso para listar/decrypt variables
+de entorno de Vercel (`filter_project_envs` devolvió 403 Forbidden), no
+había forma de leer la nota real que falló en producción — así que en
+vez de intentar adivinar la causa exacta, se blindó el flujo entero para
+la próxima vez:
+
+- **Schema**: `VoiceNote.errorDetail` (nuevo, `String? @db.Text`) guarda
+  el mensaje real del proveedor.
+- **`lib/transcription.ts`**: `startTranscriptionJob` ahora reintenta
+  SIN `summarization` si AssemblyAI devuelve 400 al pedirlo con
+  `language_code:"es"` — una búsqueda (WebSearch) encontró indicios de
+  que el soporte de summarization por idioma puede variar en la API de
+  AssemblyAI; en vez de apostar a que sí funciona (como la ronda
+  anterior) o rendirse del todo, ahora la transcripción real (que sí
+  está soportada) no se pierde aunque el resumen automático falle.
+- **`voiceNotes-actions.ts`**: ambos puntos de fallo ahora hacen
+  `console.error` con el detalle completo (queda en los logs de Vercel
+  para la próxima vez) y guardan `errorDetail` en la fila.
+- **`VoiceNotesBlock.tsx`**: el popup de detalle de una nota en error
+  muestra el mensaje real debajo del texto amigable, en monoespaciada —
+  visible solo para el dueño, nunca para un visitante (esta Skill nunca
+  es visible para visitantes de todos modos).
+
+**Borrar Notas de Voz**: `deleteVoiceNoteAction` (nuevo) borra la fila y,
+best-effort, el audio subido — `lib/storage.ts#deleteUpload` (nuevo,
+`del` de `@vercel/blob` en producción, `unlink` en disco local, nunca
+bloquea el borrado real de la fila si el archivo ya no está). En el
+popup de detalle: ícono de basura → un segundo toque para confirmar
+("¿Seguro?") → borra y cierra el popup, sin `window.confirm` del
+navegador (consistente con el resto de la UI, que es 100% custom).
+
+**Limpieza total pedida ("si puedes eliminalas todas para arrancar base
+limpia")**: sin credenciales para conectarse directo a la DB de
+producción (mismo límite de permisos de arriba), la vía elegida fue una
+migración de datos — `prisma/migrations/20260922124809_clear_voice_notes/migration.sql`
+con un `DELETE FROM "VoiceNote";` — que corre sola en el próximo deploy
+vía el mismo `prisma migrate deploy` que ya usa el pipeline de build,
+sin necesitar ningún acceso nuevo. Aplicada también en local para
+mantener sincronía. Borra las de TODAS las Cards — hoy no hay tráfico
+real, todo lo que había era de prueba.
+
+**Rediseño del ícono "Qué es esto"** (`OfficeSkillsBlock.tsx`): el
+selector de pestañas "APP" / "Qué es esto" — que TAPABA la app real con
+la explicación — se reemplaza por un ícono (i) en el header que abre la
+explicación en una burbuja flotante propia (con flechita apuntando al
+ícono, estilo popover/tooltip), superpuesta ENCIMA de la app real sin
+ocultarla. Tocar afuera de la burbuja la cierra (capa transparente
+`position:fixed inset:0` detrás de la burbuja, z-index más alto que el
+resto del bottom-sheet). Para el visitante no cambia nada — ya veía
+solo la explicación, nunca tuvo el ícono ni lo necesita.
+
+**Verificado real, no solo compilado** (`tsc --noEmit` + `pnpm build`
+limpios, `npx prisma generate` para levantar el campo `errorDetail`
+nuevo en el cliente, después Playwright contra `pnpm dev`):
+- Burbuja de info: se sembraron datos reales de prueba (`psql` directo)
+  para confirmar visualmente — el botón (i) abre la burbuja con su
+  flechita, la app real (el botón rojo de grabar) queda visible detrás
+  sin taparse, un click afuera la cierra. Confirmado con screenshot.
+- Error visible: se insertó una nota con `status:"error"` +
+  `errorDetail` de prueba directo en la DB — el popup de detalle
+  muestra el mensaje real en monoespaciada debajo del texto amigable.
+  Confirmado con screenshot.
+- Borrado: tap en basura → aparece "¿Seguro?" → tap de nuevo → la nota
+  desaparece de la lista y el popup se cierra — probado de punta a
+  punta con Playwright contra la nota de error sembrada.
+- El fix de reintento-sin-resumen en `lib/transcription.ts` no se pudo
+  probar contra la API real de AssemblyAI en este entorno (sin
+  `ASSEMBLYAI_API_KEY` local, mismo límite de siempre) — pendiente de
+  confirmación real de Gunnar en la próxima grabación real.
+- Shippeado como v1.33.0. La base de Notas de Voz en producción queda
+  vacía apenas corra este deploy.

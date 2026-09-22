@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { currentAdminScope } from "@/lib/auth";
 import { currentMemberId } from "@/lib/memberAuth";
-import { saveUpload } from "@/lib/storage";
+import { saveUpload, deleteUpload } from "@/lib/storage";
 import { transcriptionEnabled, startTranscriptionJob, pollTranscriptionJob } from "@/lib/transcription";
 import { refreshGoogleAccessToken } from "@/lib/googleOAuth";
 import { createCalendarEvent, createTask, ensureBridgeFolder, writeBridgeFile, buildDiracStampedMarkdown } from "@/lib/googleServices";
@@ -43,8 +43,21 @@ export async function listVoiceNotesAction(cardId: string) {
     audioUrl: n.audioUrl,
     transcript: n.transcript,
     summary: n.summary,
+    errorDetail: n.errorDetail,
     createdAt: n.createdAt.toISOString(),
   }));
+}
+
+// Borrar una nota — pedido explícito de Gunnar (2026-09-23). Borra la
+// fila y, best-effort, el audio subido (nunca bloquea el borrado real si
+// el archivo ya no está o falla el storage).
+export async function deleteVoiceNoteAction(cardId: string, noteId: string) {
+  await assertOwner(cardId);
+  const note = await prisma.voiceNote.findFirst({ where: { id: noteId, cardId } });
+  if (!note) return { ok: false as const };
+  await prisma.voiceNote.delete({ where: { id: noteId } });
+  await deleteUpload(note.audioUrl);
+  return { ok: true as const };
 }
 
 export async function createVoiceNoteAction(cardId: string, formData: FormData) {
@@ -63,8 +76,14 @@ export async function createVoiceNoteAction(cardId: string, formData: FormData) 
     try {
       const jobId = await startTranscriptionJob(audioUrl);
       await prisma.voiceNote.update({ where: { id: note.id }, data: { providerJobId: jobId } });
-    } catch {
-      await prisma.voiceNote.update({ where: { id: note.id }, data: { status: "error" } });
+    } catch (err) {
+      // Antes se tragaba el motivo real en silencio (2026-09-23, "dio
+      // error en la transcripción" sin poder ver por qué) — ahora queda
+      // en los logs de Vercel y guardado en la nota, visible para el
+      // dueño en el popup de detalle.
+      const detail = err instanceof Error ? err.message : String(err);
+      console.error("Error arrancando el job de transcripción para la nota", note.id, detail);
+      await prisma.voiceNote.update({ where: { id: note.id }, data: { status: "error", errorDetail: detail.slice(0, 500) } });
     }
   }
 
@@ -76,9 +95,9 @@ export async function createVoiceNoteAction(cardId: string, formData: FormData) 
 // lo necesite; por ahora es un solo GET por nota cada pocos segundos).
 export async function checkVoiceNoteStatusAction(noteId: string) {
   const note = await prisma.voiceNote.findUnique({ where: { id: noteId } });
-  if (!note) return { status: "error" as const, error: "not-found" };
+  if (!note) return { status: "error" as const, transcript: null, summary: null, errorDetail: "not-found" };
   if (note.status !== "processing" || !note.providerJobId) {
-    return { status: note.status as "processing" | "ready" | "error", transcript: note.transcript, summary: note.summary };
+    return { status: note.status as "processing" | "ready" | "error", transcript: note.transcript, summary: note.summary, errorDetail: note.errorDetail };
   }
 
   const result = await pollTranscriptionJob(note.providerJobId);
@@ -88,13 +107,14 @@ export async function checkVoiceNoteStatusAction(noteId: string) {
       data: { status: "ready", transcript: result.transcript, summary: result.summary },
     });
     await orchestrateReadyNote(note.cardId, noteId, result.summary, result.transcript);
-    return { status: "ready" as const, transcript: result.transcript, summary: result.summary };
+    return { status: "ready" as const, transcript: result.transcript, summary: result.summary, errorDetail: null };
   }
   if (result.status === "error") {
-    await prisma.voiceNote.update({ where: { id: noteId }, data: { status: "error" } });
-    return { status: "error" as const, error: result.error };
+    console.error("AssemblyAI devolvió error para la nota", noteId, result.error);
+    await prisma.voiceNote.update({ where: { id: noteId }, data: { status: "error", errorDetail: result.error.slice(0, 500) } });
+    return { status: "error" as const, transcript: null, summary: null, errorDetail: result.error };
   }
-  return { status: "processing" as const, transcript: null, summary: null };
+  return { status: "processing" as const, transcript: null, summary: null, errorDetail: null };
 }
 
 // Lo que pasa apenas una nota queda lista (Fase F, 2026-09-19): si el

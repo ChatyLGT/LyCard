@@ -1,4 +1,4 @@
-import { writeFile, mkdir } from "fs/promises";
+import { writeFile, mkdir, unlink } from "fs/promises";
 import path from "path";
 import crypto from "crypto";
 
@@ -35,4 +35,22 @@ export async function saveUpload(file: File, keyPrefix: string, kind: "image" | 
   const buffer = Buffer.from(await file.arrayBuffer());
   await writeFile(path.join(UPLOAD_DIR, filename), buffer);
   return `/uploads/${filename}`;
+}
+
+/**
+ * Borra un archivo subido con saveUpload — usado por "eliminar nota de
+ * voz" (2026-09-23) para no dejar audios huérfanos en el storage cada
+ * vez que se borra la fila de la DB. Nunca tira si el archivo ya no
+ * existe o falla el borrado — borrar la fila de la DB es lo que importa,
+ * esto es housekeeping.
+ */
+export async function deleteUpload(url: string): Promise<void> {
+  if (url.startsWith("/uploads/")) {
+    await unlink(path.join(process.cwd(), "public", url)).catch(() => {});
+    return;
+  }
+  if (process.env.BLOB_READ_WRITE_TOKEN && url.startsWith("http")) {
+    const { del } = await import("@vercel/blob");
+    await del(url).catch(() => {});
+  }
 }

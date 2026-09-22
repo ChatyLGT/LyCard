@@ -32,12 +32,17 @@ const APP_TYPE_ICON: Record<OfficeSkill["appType"], string> = {
 // tiles apagados que había antes (2026-09-18, pedido de Gunnar). Cada
 // power es un tile cuadrado con su color/ícono (subido por el N0, o un
 // ícono genérico de fallback tintado con el color) que abre un
-// bottom-sheet tipo tarjeta con dos caras:
+// bottom-sheet tipo tarjeta:
 //
-// - Dueño: pestañas "App" (lo real, si existe — hoy solo Fathom Brief) y
-//   "Qué es esto" (la explicación), arranca en "App".
-// - Visitante: solo ve "Qué es esto" — nunca la pestaña "App", no tiene
-//   acceso a los datos del dueño.
+// - Dueño: ve la app real directo (hoy: Fathom Brief, Notas de Voz,
+//   Agenda) — el ícono (i) del header abre "Qué es esto" en una burbuja
+//   flotante aparte, ENCIMA de la app, no reemplazándola (rediseño
+//   2026-09-23, pedido de Gunnar: "no me gusta eso de APP y Qué es
+//   eso... que sea una burbuja flotante encima del anterior" — antes
+//   era un selector de pestañas que tapaba la app).
+// - Visitante: solo ve la explicación, nunca la app real — no tiene
+//   acceso a los datos del dueño, así que ni el ícono (i) ni la burbuja
+//   le hacen falta.
 export default function OfficeSkillsBlock({
   skills,
   kicker,
@@ -64,16 +69,17 @@ export default function OfficeSkillsBlock({
   connectUrl: string;
 }) {
   const [openKey, setOpenKey] = useState<string | null>(null);
-  const [tab, setTab] = useState<"app" | "info">("app");
+  const [infoOpen, setInfoOpen] = useState(false);
   const visible = skills.filter((s) => s.enabled);
   const active = visible.find((s) => s.key === openKey) || null;
 
   function openSkill(skill: OfficeSkill) {
     setOpenKey(skill.key);
-    setTab(isHost ? "app" : "info");
+    setInfoOpen(false);
   }
   function close() {
     setOpenKey(null);
+    setInfoOpen(false);
   }
 
   return (
@@ -134,43 +140,36 @@ export default function OfficeSkillsBlock({
                 )}
               </div>
               <span style={{ flex: 1, font: "700 15px 'Playfair Display',serif" }}>{active.nombre}</span>
+              {isHost && (
+                <button
+                  type="button"
+                  onClick={() => setInfoOpen((v) => !v)}
+                  aria-label="Qué es esto"
+                  style={{
+                    flex: "none", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", border: "none", borderRadius: 8,
+                    background: infoOpen ? "rgba(200,161,90,.22)" : "rgba(255,255,255,.06)", color: infoOpen ? "#E5C378" : "#C2BEB5", cursor: "pointer",
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>info</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={close}
                 aria-label="Cerrar"
-                style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", border: "none", borderRadius: 8, background: "rgba(255,255,255,.06)", color: "#C2BEB5", cursor: "pointer" }}
+                style={{ flex: "none", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", border: "none", borderRadius: 8, background: "rgba(255,255,255,.06)", color: "#C2BEB5", cursor: "pointer" }}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: 16 }}>close</span>
               </button>
             </div>
 
-            {isHost && (
-              <div style={{ display: "flex", gap: 6, padding: 3, borderRadius: 999, background: "rgba(255,255,255,.04)" }}>
-                {(["app", "info"] as const).map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setTab(t)}
-                    style={{
-                      flex: 1, padding: "8px 0", borderRadius: 999, border: "none", cursor: "pointer",
-                      background: tab === t ? "rgba(200,161,90,.18)" : "none",
-                      color: tab === t ? "#E5C378" : "#756c5e",
-                      font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase",
-                    }}
-                  >
-                    {t === "app" ? "App" : "Qué es esto"}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {(!isHost || tab === "info") && (
+            {!isHost && (
               <p style={{ margin: 0, font: "400 13px/1.7 'Plus Jakarta Sans',sans-serif", color: "rgba(245,242,235,.92)" }}>
                 {active.descripcion || "Todavía sin descripción."}
               </p>
             )}
 
-            {isHost && tab === "app" && (
+            {isHost && (
               <AppFace
                 skill={active}
                 fathomBrief={fathomBrief}
@@ -182,6 +181,34 @@ export default function OfficeSkillsBlock({
                 googleConnected={googleConnected}
                 connectUrl={connectUrl}
               />
+            )}
+
+            {infoOpen && (
+              <>
+                <div onClick={() => setInfoOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 65 }} />
+                <div
+                  style={{
+                    position: "absolute", top: 62, right: 56, zIndex: 70, width: "calc(100% - 76px)", maxWidth: 300,
+                    background: "#1f1e1e", border: "1px solid rgba(200,161,90,.4)", borderRadius: 14,
+                    padding: "13px 15px", boxShadow: "0 18px 48px rgba(0,0,0,.6)",
+                    display: "flex", flexDirection: "column", gap: 6,
+                  }}
+                >
+                  <div
+                    style={{
+                      position: "absolute", top: -6, right: 22, width: 12, height: 12, background: "#1f1e1e",
+                      border: "1px solid rgba(200,161,90,.4)", borderBottom: "none", borderRight: "none",
+                      transform: "rotate(45deg)",
+                    }}
+                  />
+                  <span style={{ font: "700 8.5px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".14em", textTransform: "uppercase", color: "#E5C378" }}>
+                    Qué es esto
+                  </span>
+                  <p style={{ margin: 0, font: "400 12px/1.6 'Plus Jakarta Sans',sans-serif", color: "rgba(245,242,235,.92)" }}>
+                    {active.descripcion || "Todavía sin descripción."}
+                  </p>
+                </div>
+              </>
             )}
           </div>
         </div>

@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.32.1";
+export const APP_VERSION = "1.33.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.33.0",
+    date: "2026-09-23",
+    notes:
+      "Notas de Voz: ya se puede eliminar una nota (ícono de basura en el detalle, con confirmación) — y se vació la base para arrancar limpio tras la nota de prueba que dio error. El error de transcripción ahora se ve de verdad (antes se perdía en silencio) y, si el resumen automático no está disponible para español, la transcripción real igual se guarda en vez de perderse. Superpoderes: el selector \"APP / Qué es esto\" se reemplaza por un ícono (i) que abre la explicación en una burbuja flotante encima de la app real, en vez de taparla.",
+  },
   {
     version: "1.32.1",
     date: "2026-09-23",

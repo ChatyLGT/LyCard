@@ -64,8 +64,18 @@ o al roster (`/admin/[slug]`) — nunca a la pantalla de alta de Member
 `components/OfficeSkillsEditor.tsx` (acordeón de edición, en el dashboard
 del Programa). Cada Superpoder es `{key, nombre, descripcion, iconUrl,
 color, appType, enabled}`, guardado en `Program.officeSkills`. Tocar un
-ícono abre una tarjeta con dos caras: la app real de un lado (hoy: el Brief
-de Fathom), la explicación del otro — el visitante solo ve la explicación.
+ícono abre una tarjeta con la app real (hoy: Brief de Fathom, Notas de
+Voz, Agenda); el visitante solo ve la explicación, nunca la app.
+
+**Explicación ("Qué es esto"), rediseño 2026-09-23**: antes era un
+selector de pestañas ("APP" / "Qué es esto") que reemplazaba la app real
+por el texto explicativo — pedido de Gunnar: "no me gusta eso de APP y
+Qué es eso... que sea una burbuja flotante encima del anterior". Ahora
+es un ícono (i) en el header que abre la explicación en una burbuja
+flotante propia (con flechita, estilo popover), superpuesta ENCIMA de la
+app real sin taparla — tocar afuera de la burbuja la cierra, la app
+sigue ahí debajo. Solo el dueño ve el ícono (i); el visitante ya venía
+viendo solo la explicación, sin necesidad de ningún selector.
 
 ## Calendario compartido de los Superpoderes
 
@@ -100,12 +110,13 @@ Oficina.
 por día de grabación sobre `MiniCalendar`, el reproductor y la
 transcripción viven en el popup de detalle de cada nota),
 `app/c/[slug]/oficina/voiceNotes-actions.ts` (server actions: guardar,
-consultar estado), `lib/transcription.ts` (cliente de AssemblyAI —
-transcripción + resumen en una sola API), `prisma.VoiceNote` (modelo:
-`audioUrl`, `status`, `transcript`, `summary`). El audio se guarda de
-verdad (`lib/storage.ts`, mismo mecanismo que las fotos). Sin
-`ASSEMBLYAI_API_KEY` configurada, la nota queda honestamente en "grabada
-— esperando transcripción" para siempre, nunca inventa un resumen.
+consultar estado, listar, borrar), `lib/transcription.ts` (cliente de
+AssemblyAI — transcripción + resumen en una sola API), `prisma.VoiceNote`
+(modelo: `audioUrl`, `status`, `transcript`, `summary`, `errorDetail`).
+El audio se guarda de verdad (`lib/storage.ts`, mismo mecanismo que las
+fotos). Sin `ASSEMBLYAI_API_KEY` configurada, la nota queda honestamente
+en "grabada — esperando transcripción" para siempre, nunca inventa un
+resumen.
 
 **Dos bugs reales corregidos (2026-09-22, reportados por Gunnar — "sale
 error" al reproducir, "grabé otra nota y desapareció, no se grabó")**:
@@ -139,6 +150,22 @@ montar el componente ahora siempre traen el estado real de la DB.
 grabar (antes era directo el calendario) — "Ver notas guardadas (n) →"
 lleva al calendario/lista de siempre, que grabar con éxito abre solo
 como confirmación.
+
+**Tercera ronda (2026-09-23, la nota de prueba dio error de
+transcripción)**: hasta acá el motivo real de un `status:"error"` se
+descartaba en silencio — ni logs, ni nada guardado — así que era
+imposible saber por qué sin adivinar. Ahora: (1) `errorDetail` (nuevo
+campo en `VoiceNote`) guarda el mensaje real del proveedor y se loguea
+con `console.error` en el momento que pasa; el popup de detalle de una
+nota en error lo muestra debajo del mensaje amigable, en monoespaciada,
+solo visible para el dueño. (2) `lib/transcription.ts` reintenta SIN
+`summarization` si AssemblyAI devuelve 400 al pedir resumen — así, si el
+resumen automático no está disponible para un idioma en un momento dado
+de su API, la transcripción real (que sí está soportada) no se pierde
+por eso. (3) Nueva `deleteVoiceNoteAction` — ícono de basura en el popup
+de detalle, con confirmación de un toque ("¿Seguro?"); borra la fila y,
+best-effort, el audio subido (`lib/storage.ts#deleteUpload`, nuevo —
+`del` de Vercel Blob en producción, `unlink` en disco local).
 
 ## Conexión real de Google (Calendar + Tasks + Drive)
 
