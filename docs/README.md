@@ -17,6 +17,19 @@ Este índice es el punto de entrada para cualquiera que se sume al proyecto
    a nivel de archivo y campo de schema, para que se pueda ejecutar sin dudas.
 6. **[06-CONTRIBUIR.md](./06-CONTRIBUIR.md)** — convenciones para agregar o
    cambiar algo sin romper el resto.
+7. **[07-AUDITORIA-MODULOS-QA-2026-09.md](./07-AUDITORIA-MODULOS-QA-2026-09.md)**
+   — mapa completo de los 18 módulos del sistema (incluido lo que todavía
+   NO está construido), con documentación por módulo y una matriz de QA
+   lista para marcar Sí/No/Parcial — el punto de partida para cualquier
+   ronda de QA nueva.
+
+## Otros documentos de auditoría (hallazgos puntuales, no mapa completo)
+
+- **[AUDITORIA-TECNICA-2026-09.md](./AUDITORIA-TECNICA-2026-09.md)** —
+  backlog priorizado de riesgos de seguridad/infraestructura.
+- **[QA-COMPLETO-2026-09.md](./QA-COMPLETO-2026-09.md)** — hallazgos de
+  funcionalidad/diseño/arquitectura/seguridad, con una sección viva (F)
+  de reportes de usuario real en dispositivo.
 
 ## Otros documentos en la raíz del repo
 
