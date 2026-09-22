@@ -1,0 +1,126 @@
+name: CI QA
+
+# El Patovica: nadie entra a main sin pasar lint + unit tests (con gate de
+# cobertura) + E2E en vivo. Ver docs/AUDITORIA-TECNICA-2026-09.md §3.3 y
+# lib/authScope.ts para el porqué del test crítico que esto corre.
+on:
+  pull_request:
+    branches: [main]
+
+env:
+  # Pin único de versiones — evita que un runner resuelva algo distinto
+  # a lo que corre localmente (Node 22 / pnpm 10, confirmados en la sesión
+  # que armó este pipeline).
+  NODE_VERSION: "22"
+  PNPM_VERSION: "10"
+
+jobs:
+  lint-and-unit:
+    name: Lint + Unit tests (cobertura)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Unit tests + gate de cobertura
+        run: pnpm test:unit:coverage
+
+  e2e:
+    name: E2E (Playwright, headless)
+    needs: lint-and-unit
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: lycard
+          POSTGRES_PASSWORD: lycard
+          POSTGRES_DB: lycard
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # Únicas dos vars que lib/*.ts y prisma/schema.prisma exigen de verdad
+      # (confirmado leyendo .env.example) — el resto (RESEND_API_KEY,
+      # GOOGLE_CLIENT_ID/SECRET, FATHOM_API_KEY, BLOB_READ_WRITE_TOKEN)
+      # degrada con gracia cuando falta, por diseño de la app ("cáscara
+      # honesta"), así que no hace falta setearlas acá.
+      DATABASE_URL: "postgresql://lycard:lycard@localhost:5432/lycard?schema=public"
+      SESSION_SECRET: "ci-only-dummy-secret-nunca-usar-en-produccion"
+      NEXT_PUBLIC_BASE_URL: "http://localhost:3000"
+      PLAYWRIGHT_BASE_URL: "http://localhost:3000"
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Instalar Chromium para Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Build (incluye prisma migrate deploy)
+        run: pnpm build
+
+      - name: Levantar server en background
+        run: nohup pnpm start > server.log 2>&1 &
+
+      - name: Esperar a que el server responda
+        run: |
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000 || echo "000")
+            if [ "$code" != "000" ]; then
+              echo "Server arriba (HTTP $code) después de ${i}s"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Server nunca respondió — mostrando logs:"
+          cat server.log || true
+          exit 1
+
+      - name: E2E (Playwright)
+        run: pnpm test:e2e
+
+      - name: Subir reporte de Playwright si falla
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Subir logs del server si falla
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-log
+          path: server.log
+          retention-days: 7

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { currentAdminScope } from "@/lib/auth";
+import { currentAdminScope, isMasterN0Scope, canAccessProgram } from "@/lib/auth";
 import { logoutAction } from "@/app/admin/actions";
 import { completeInterviewAction } from "@/app/admin/interviews/actions";
 import {
@@ -155,8 +155,8 @@ export default async function AdminProgramDetailPage({
 
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
-  const isMasterN0 = scope.programId === null;
-  if (!isMasterN0 && scope.programId !== id) redirect(`/admin/programs/${scope.programId}`);
+  const isMasterN0 = isMasterN0Scope(scope);
+  if (!canAccessProgram(scope, id)) redirect(`/admin/programs/${scope.programId}`);
 
   const program = await prisma.program.findUnique({
     where: { id },

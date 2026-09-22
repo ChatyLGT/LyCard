@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { currentAdminScope } from "@/lib/auth";
+import { currentAdminScope, canAccessProgram } from "@/lib/auth";
 
 // MasterN0 can manage any Program's members; a scoped N0 only their own —
 // and only members who actually belong to that Program (checked at the
@@ -11,7 +11,7 @@ import { currentAdminScope } from "@/lib/auth";
 async function requireProgramAccess(programId: string) {
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
-  if (scope.programId && scope.programId !== programId) redirect(`/admin/programs/${scope.programId}`);
+  if (!canAccessProgram(scope, programId)) redirect(`/admin/programs/${scope.programId}`);
   return scope;
 }
 

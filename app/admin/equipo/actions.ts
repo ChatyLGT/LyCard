@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { currentAdminScope } from "@/lib/auth";
+import { currentAdminScope, isMasterN0Scope } from "@/lib/auth";
 import { isNodeType } from "@/lib/hr";
 import { isProjectLevel } from "@/lib/pm";
 
@@ -13,7 +13,7 @@ import { isProjectLevel } from "@/lib/pm";
 async function requireMasterN0() {
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
-  if (scope.programId) redirect("/admin");
+  if (!isMasterN0Scope(scope)) redirect("/admin");
   return scope;
 }
 

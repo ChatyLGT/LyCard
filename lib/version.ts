@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.34.0";
+export const APP_VERSION = "1.35.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.35.0",
+    date: "2026-09-22",
+    notes:
+      "Nada visible en la tarjeta — esta es para adentro. Se armó el primer piso de testeo automático del proyecto: tests que corren solos en cada Pull Request y bloquean el merge si algo se rompe (lint, tests unitarios con 100% de cobertura en el código ya cubierto, y 4 pruebas E2E contra un server real). El primer blanco: la regla de \"un N0 de un Programa nunca ve el de otro\" — estaba repetida a mano en 12 lugares distintos del código (riesgo real de fuga entre Programas por un typo), ahora es una sola función, tested y reusada en los 12.",
+  },
   {
     version: "1.34.0",
     date: "2026-09-23",

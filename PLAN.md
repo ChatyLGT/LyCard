@@ -4125,3 +4125,82 @@ poder probar los 4 canales de punta a punta:
 **Pendiente, próxima tarea confirmada por Gunnar:** el AppStore de
 Skills completo (`docs/05-ROADMAP-EDT.md#appstore-de-skills`) — Gunnar
 va a mandar una lista en Excel con los Superpoderes a incluir.
+
+## CQE — Pipeline de testeo continuo + El Patovica en CI (2026-09-22)
+
+Gunnar pasó un prompt armado con Gemini pidiendo un "Continuous Quality
+Engineering pipeline" con enfoque Shift-Left: infraestructura de tests
+(backend Python + frontend), 3 tests unitarios TDD sobre la función más
+crítica del código, y un workflow de GitHub Actions que actúe de
+"patovica" bloqueando cualquier PR a `main` que rompa algo — con gate
+de cobertura mínima. El prompt pedía explícitamente no frenar a
+preguntar por cada archivo chico y adaptar las herramientas al stack
+real.
+
+**Adaptación real del prompt genérico a este repo:** LyCard es 100%
+TypeScript/Next.js, sin una sola línea de Python — se descartó
+pytest/pytest-cov/pytest-mock por completo. Se armó con **Vitest**
+(unit) + **Playwright** (E2E), nada nuevo del lado del framework.
+
+**La función más crítica, elegida con criterio, no al azar:** en vez de
+inventar un ejemplo de juguete, se usó el propio hallazgo #1 de
+`docs/AUDITORIA-TECNICA-2026-09.md §3.3` — el chequeo de "un Admin
+escopeado a un Programa nunca puede tocar datos de otro Programa"
+estaba reimplementado a mano, inline, en **12 lugares distintos** del
+código (`scope.programId && scope.programId !== programId`) — un solo
+typo (`||` en vez de `&&`) en cualquiera de los 12 hubiera sido una
+fuga real entre Programas.
+
+**Lo que se construyó, no solo tests sueltos:**
+- `lib/authScope.ts` (nuevo): `isMasterN0Scope` / `canAccessProgram`,
+  funciones puras, cero imports de `next/headers`/Prisma/`jose` — se
+  pueden testear sin mockear nada. `lib/auth.ts` las re-exporta, así
+  los ~14 archivos que ya importaban de ahí no se tocan.
+- Los 12 sitios reales (`app/admin/**`) migrados a usar las funciones
+  compartidas — cerrando el riesgo de verdad, no solo poniéndole tests
+  alrededor de código que nadie usa. En el camino, el refactor de
+  `app/admin/siblings-actions.ts` reveló un bug real por descuido
+  propio (`if (card.programId && !canAccessProgram(...))` se saltaba
+  el chequeo entero cuando `card.programId` era `null`, ej. una Card
+  personal/company) — detectado con tabla de verdad antes de shippear,
+  corregido, y convertido en test de regresión permanente.
+- `lib/__tests__/authScope.test.ts` (6 tests, 100% cobertura) +
+  `lib/__tests__/leads.test.ts` (6 tests sobre `bumpStage` de la
+  feature de Seguimiento).
+- `e2e/admin-scope-isolation.spec.ts` — cierra el círculo probando en
+  HTTP real (cookie firmada + server de verdad) que el comportamiento
+  es el mismo que dicen las funciones puras. `e2e/public-card.spec.ts`
+  — smoke test de la tarjeta pública. Los dos crean y borran su propia
+  data de prueba (`beforeAll`/`afterAll`), cero dependencia de datos
+  pre-sembrados — corren igual de bien en una DB de CI recién migrada
+  que en cualquier DB de desarrollo.
+- `.github/workflows/ci-qa.yml`: en cada PR a `main`, un job
+  `lint-and-unit` (lint + `vitest run --coverage`) y, si pasa, un job
+  `e2e` con Postgres 16 de servicio, build de producción real
+  (`prisma migrate deploy && next build`), server levantado y
+  Playwright headless contra él.
+
+**Desvío consciente de lo pedido, documentado en el propio código**
+(`vitest.config.mts`): el prompt pedía "cobertura mínima 90%" a secas.
+Aplicado tal cual, sobre un repo que hoy arranca de 0% de cobertura,
+hubiera reventado el próximo PR de cualquiera y terminado
+deshabilitado/ignorado en una semana. En cambio: el gate del 90% aplica
+**solo** a los archivos que ya tienen tests reales
+(`lib/authScope.ts`, `lib/leads.ts`) — un "ratchet" que solo crece a
+medida que se van sumando más módulos testeados, nunca retrocede.
+
+**Verificado real:** `tsc --noEmit` limpio, `pnpm build` limpio, 13
+tests unitarios pasando con 100% de cobertura en los archivos gateados,
+4 tests E2E pasando contra un build de producción real — y confirmado
+por `psql` que ambos specs de E2E no dejan ningún dato de prueba atrás.
+
+Tres problemas de tooling no obvios resueltos en el camino (no afectan
+producción, solo el entorno de test): el cliente de Prisma 7 generado
+usa `import.meta.url` a nivel de módulo, lo que rompe bajo el transform
+a CommonJS que usa Playwright para specs — resuelto usando `pg` crudo
+en el fixture de E2E en vez del cliente de Prisma; un `pg.Client`
+compartido entre los dos specs no se puede reconectar una vez cerrado
+— resuelto con una factory (`createE2eDb()`) en vez de un singleton.
+
+Sin cambios visibles en ninguna tarjeta — 100% infraestructura interna.
+Shippeado como v1.35.0.

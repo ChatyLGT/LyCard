@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { currentAdminScope } from "@/lib/auth";
+import { currentAdminScope, isMasterN0Scope } from "@/lib/auth";
 import { MEDALS, RANKS } from "@/lib/data";
 
 const CONFIRM_PHRASE = "BORRAR TODO";
@@ -19,7 +19,7 @@ const CONFIRM_PHRASE = "BORRAR TODO";
 export async function resetPlatformAction(formData: FormData) {
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
-  if (scope.programId) redirect("/admin");
+  if (!isMasterN0Scope(scope)) redirect("/admin");
 
   const confirm = String(formData.get("confirm") || "").trim();
   if (confirm !== CONFIRM_PHRASE) {

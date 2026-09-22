@@ -9,7 +9,10 @@
     "lint": "eslint",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "test:unit": "vitest run",
+    "test:unit:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
@@ -28,6 +31,7 @@
     "three": "^0.186.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/pg": "^8.23.1",
@@ -35,10 +39,12 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/three": "^0.186.0",
+    "@vitest/coverage-v8": "^5.0.1",
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
     "tsx": "^4.23.13",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.0.1"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

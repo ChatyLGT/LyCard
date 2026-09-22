@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { currentAdminScope } from "@/lib/auth";
+import { currentAdminScope, isMasterN0Scope } from "@/lib/auth";
 import { AccordionSection, AccordionRow, AccordionAddRow } from "@/components/Accordion";
 import { groupByRung, NODE_TYPES, NODE_TYPE_LABEL, NODE_TYPE_COLOR } from "@/lib/hr";
 import EquipoProjectsBlock, { type SerializedProject } from "@/components/EquipoProjectsBlock";
@@ -55,7 +55,7 @@ export default async function EquipoPage({
 }) {
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
-  if (scope.programId) redirect("/admin");
+  if (!isMasterN0Scope(scope)) redirect("/admin");
 
   const { nodeSaved, nodeError, projectSaved, projectError, taskSaved, taskError } = await searchParams;
 

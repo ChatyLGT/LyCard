@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { currentAdminScope } from "@/lib/auth";
+import { currentAdminScope, isMasterN0Scope, canAccessProgram } from "@/lib/auth";
 import { slugify, uniqueSlug } from "@/lib/slug";
 import { CARD_LABEL_FIELDS } from "@/lib/cardLabels";
 import { parseEscala } from "@/lib/escalas";
@@ -18,7 +18,7 @@ import { parseDesignMd } from "@/lib/designMd";
 async function requireMasterN0() {
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
-  if (scope.programId) redirect(`/admin/programs/${scope.programId}`);
+  if (!isMasterN0Scope(scope)) redirect(`/admin/programs/${scope.programId}`);
   return scope;
 }
 
@@ -97,7 +97,7 @@ export async function updateProgramAction(programId: string, formData: FormData)
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
   // MasterN0 can edit any Program; a scoped N0 only their own.
-  if (scope.programId && scope.programId !== programId) redirect("/admin");
+  if (!canAccessProgram(scope, programId)) redirect("/admin");
 
   const data: Record<string, string> = {};
   for (const key of ["name", "cardAppName", "primaryColor", "wa", "ig", "li", "x", "fb", "tiktok", "yt", "web"]) {
@@ -130,7 +130,7 @@ const MAX_SKINS_PER_PROGRAM = 3;
 export async function createProgramSkinAction(programId: string, formData: FormData) {
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
-  if (scope.programId && scope.programId !== programId) redirect("/admin");
+  if (!canAccessProgram(scope, programId)) redirect("/admin");
 
   const count = await prisma.programSkin.count({ where: { programId } });
   if (count >= MAX_SKINS_PER_PROGRAM) redirect(`/admin/programs/${programId}?skinError=max`);
@@ -170,7 +170,7 @@ export async function createProgramSkinAction(programId: string, formData: FormD
 export async function setProgramSkinLightColorsAction(programId: string, skinId: string, formData: FormData) {
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
-  if (scope.programId && scope.programId !== programId) redirect("/admin");
+  if (!canAccessProgram(scope, programId)) redirect("/admin");
 
   const skin = await prisma.programSkin.findUnique({ where: { id: skinId } });
   if (!skin || skin.programId !== programId) redirect(`/admin/programs/${programId}`);
@@ -191,7 +191,7 @@ export async function setProgramSkinLightColorsAction(programId: string, skinId:
 export async function activateProgramSkinAction(programId: string, skinId: string) {
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
-  if (scope.programId && scope.programId !== programId) redirect("/admin");
+  if (!canAccessProgram(scope, programId)) redirect("/admin");
 
   const skin = await prisma.programSkin.findUnique({ where: { id: skinId } });
   if (!skin || skin.programId !== programId) redirect(`/admin/programs/${programId}`);
@@ -209,7 +209,7 @@ export async function activateProgramSkinAction(programId: string, skinId: strin
 export async function deleteProgramSkinAction(programId: string, skinId: string) {
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
-  if (scope.programId && scope.programId !== programId) redirect("/admin");
+  if (!canAccessProgram(scope, programId)) redirect("/admin");
 
   const skin = await prisma.programSkin.findUnique({ where: { id: skinId } });
   if (!skin || skin.programId !== programId) redirect(`/admin/programs/${programId}`);
@@ -227,7 +227,7 @@ export async function deleteProgramSkinAction(programId: string, skinId: string)
 export async function updateCardLabelsAction(programId: string, formData: FormData) {
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
-  if (scope.programId && scope.programId !== programId) redirect("/admin");
+  if (!canAccessProgram(scope, programId)) redirect("/admin");
 
   const labels: Record<string, string> = {};
   for (const { key } of CARD_LABEL_FIELDS) {
@@ -248,7 +248,7 @@ export async function updateCardLabelsAction(programId: string, formData: FormDa
 export async function updateEscalaAction(programId: string, type: "medal" | "rank" | "contacts", formData: FormData) {
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
-  if (scope.programId && scope.programId !== programId) redirect("/admin");
+  if (!canAccessProgram(scope, programId)) redirect("/admin");
 
   const raw = formData.get("items");
   let items: ReturnType<typeof parseEscala> = [];
@@ -276,7 +276,7 @@ export async function updateEscalaAction(programId: string, type: "medal" | "ran
 export async function updateOfficeSkillsAction(programId: string, formData: FormData) {
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
-  if (scope.programId && scope.programId !== programId) redirect("/admin");
+  if (!canAccessProgram(scope, programId)) redirect("/admin");
 
   const raw = formData.get("skills");
   let skills: ReturnType<typeof parseOfficeSkills> = [];
@@ -300,7 +300,7 @@ export async function updateOfficeSkillsAction(programId: string, formData: Form
 export async function setOfficeSkillIconAction(programId: string, skillKey: string, formData: FormData) {
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
-  if (scope.programId && scope.programId !== programId) redirect("/admin");
+  if (!canAccessProgram(scope, programId)) redirect("/admin");
 
   const program = await prisma.program.findUnique({ where: { id: programId } });
   if (!program) redirect("/admin/programs");

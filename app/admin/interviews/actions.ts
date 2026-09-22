@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { currentAdminScope } from "@/lib/auth";
+import { currentAdminScope, canAccessProgram } from "@/lib/auth";
 import { MEDALS, RANKS } from "@/lib/data";
 import { slugify, uniqueSlug } from "@/lib/slug";
 
@@ -49,7 +49,7 @@ export async function completeInterviewAction(registrationId: string, returnTo: 
   const membership = registration.membership;
   // A scoped Program N0 can only activate memberships inside their own
   // Program — MasterN0 (scope.programId === null) can activate any of them.
-  if (scope.programId && scope.programId !== membership.programId) redirect(returnTo);
+  if (!canAccessProgram(scope, membership.programId)) redirect(returnTo);
   if (membership.status === "active") redirect(returnTo); // already activated — idempotent no-op
 
   const member = membership.member;

@@ -70,6 +70,13 @@ export async function currentAdminScope(): Promise<{ id: string; programId: stri
 
 export const ADMIN_COOKIE_NAME = COOKIE_NAME;
 
+// isMasterN0Scope/canAccessProgram viven en lib/authScope.ts — un
+// módulo puro, sin tocar cookies/DB, para poder cubrirlo al 100% con
+// unit tests reales (ver vitest.config.ts + lib/__tests__/authScope.test.ts).
+// Re-exportado acá para no tener que tocar los ~14 archivos que ya las
+// importan de "@/lib/auth".
+export { isMasterN0Scope, canAccessProgram, type AdminScope } from "@/lib/authScope";
+
 export async function isRequestAuthed(token: string | undefined) {
   if (!token) return false;
   try {

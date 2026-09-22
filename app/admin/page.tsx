@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { currentAdminScope } from "@/lib/auth";
+import { currentAdminScope, isMasterN0Scope } from "@/lib/auth";
 import { createCardAction, logoutAction } from "@/app/admin/actions";
 import type { Card } from "@/generated/prisma/client";
 
@@ -50,7 +50,7 @@ function groupByProgram(cards: CardWithProgramName[]) {
 export default async function AdminRosterPage() {
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
-  if (scope.programId) redirect(`/admin/programs/${scope.programId}`);
+  if (!isMasterN0Scope(scope)) redirect(`/admin/programs/${scope.programId}`);
 
   const [cards, programs] = await Promise.all([
     prisma.card.findMany({ orderBy: { createdAt: "desc" } }),

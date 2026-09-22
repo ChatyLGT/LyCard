@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { currentAdminScope } from "@/lib/auth";
+import { currentAdminScope, canAccessProgram } from "@/lib/auth";
 import { slugify, uniqueSlug } from "@/lib/slug";
 
 const slugTaken = (slug: string) =>
@@ -25,7 +25,7 @@ export async function createSiblingCardsAction(slug: string) {
   const card = await prisma.card.findUnique({ where: { slug } });
   if (!card) redirect("/admin");
   if (card.kind !== "project") redirect(`/admin/${slug}`);
-  if (scope.programId && scope.programId !== card.programId) redirect("/admin");
+  if (!canAccessProgram(scope, card.programId)) redirect("/admin");
 
   let memberId = card.memberId;
   if (!memberId) {

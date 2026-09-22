@@ -41,11 +41,48 @@ al día con la realidad del código.
 3. Probado en el navegador (o Playwright contra un build real) — golden
    path + al menos un caso borde (dato vacío, usuario sin permiso, feature
    apagada).
-4. `lib/version.ts` bumpeado con su entrada de changelog.
-5. `PLAN.md` con una entrada nueva describiendo la fase (bitácora
+4. Si tocaste código con tests unitarios existentes, `pnpm test:unit`
+   sigue pasando. Si escribiste lógica pura nueva y crítica para
+   seguridad/datos (el criterio real: "si esto falla mal, hay una fuga o
+   se pierde plata/data"), sumale tests — ver sección de abajo.
+5. `lib/version.ts` bumpeado con su entrada de changelog.
+6. `PLAN.md` con una entrada nueva describiendo la fase (bitácora
    cronológica — no reemplaza estos docs, los complementa).
-6. Commit + push. El deploy a Vercel es automático; confirmar `READY` antes
+7. Commit + push. El deploy a Vercel es automático; confirmar `READY` antes
    de avisar que está listo.
+
+## Testing automático (Vitest + Playwright + CI)
+
+Desde v1.35.0 existe un piso de testeo continuo, shift-left: no
+reemplaza el checklist manual de arriba, lo respalda para que un
+regresión real no dependa solo de que alguien se acuerde de probarla a
+mano.
+
+- **`pnpm test:unit`** (Vitest) — tests unitarios rápidos, sin DB ni
+  red, para lógica **pura** en `lib/`. Patrón: si una función de
+  seguridad/scope/cálculo se repite a mano en varios call sites (como
+  pasaba con el chequeo de scope de Admin antes de `lib/authScope.ts`),
+  extraela a una función pura, exportala, y testeala ahí — un solo
+  lugar, un solo test, se usa en todos lados.
+- **`pnpm test:unit:coverage`** — igual, con gate de cobertura. El gate
+  es un **ratchet**, no un piso global: `vitest.config.mts` solo exige
+  90% en los archivos que ya están en `coverage.include` (hoy
+  `lib/authScope.ts`, `lib/leads.ts`). Si escribís tests nuevos y
+  querés que el gate los proteja, agregá el archivo a esa lista — nunca
+  al revés (nunca bajes el número para que pase).
+- **`pnpm test:e2e`** (Playwright) — contra un server real
+  (`pnpm dev` local, o un build de producción en CI). Cada spec crea y
+  borra su propia data de prueba (`beforeAll`/`afterAll`) — nunca
+  depende de que exista tal o cual Card/Program pre-sembrado, para que
+  corra igual en cualquier DB.
+- **`.github/workflows/ci-qa.yml`** — corre lint + `test:unit:coverage`
+  en cada PR a `main`; si pasa, levanta Postgres + build de producción
+  real y corre `test:e2e` headless. Un PR que rompe cualquiera de los
+  dos no debería mergearse.
+
+No todo necesita un test. La foto no es "100% de cobertura en todo
+LyCard" — es "la lógica que, si se rompe en silencio, cuesta caro
+(seguridad, plata, datos de un usuario) tiene un test que lo impide".
 
 ## Cómo agregar un módulo nuevo del roadmap
 
