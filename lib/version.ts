@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.38.0";
+export const APP_VERSION = "1.39.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.39.0",
+    date: "2026-09-22",
+    notes:
+      "Nuevo /admin/demo-data (solo MasterN0): generá N Programas de prueba de un saque (cada uno con su Legacy, Business y Personal) para probar la plataforma llena sin crear todo a mano — y borrá todo lo demo con un solo botón cuando termines, sin tocar nunca tu roster real. Todo lo demo se ve marcado con una etiqueta DEMO en el roster y en Programas para que nunca se confunda con datos reales.",
+  },
   {
     version: "1.38.0",
     date: "2026-09-22",

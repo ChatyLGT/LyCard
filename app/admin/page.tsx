@@ -280,6 +280,11 @@ export default async function AdminRosterPage() {
               >
                 <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                   <span style={{ font: "600 15px 'Playfair Display',serif", color: "#F5F2EB" }}>{program.name}</span>
+                  {program.isDemo && (
+                    <span style={{ font: "700 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#0D0D0D", background: "#C8A15A", borderRadius: 4, padding: "1px 5px" }}>
+                      DEMO
+                    </span>
+                  )}
                   {!program.active && (
                     <span style={{ font: "700 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#5A5A5A" }}>
                       Pausado
@@ -356,6 +361,11 @@ function CardRow({ card }: { card: Card }) {
           <span style={{ font: "600 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#5A5A5A" }}>
             {KIND_LABEL[card.kind] ?? card.kind}
           </span>
+          {card.isDemo && (
+            <span style={{ font: "700 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#0D0D0D", background: "#C8A15A", borderRadius: 4, padding: "1px 5px" }}>
+              DEMO
+            </span>
+          )}
         </p>
         <p style={{ margin: 0, font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#C8A15A" }}>
           /c/{card.slug}

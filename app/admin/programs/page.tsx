@@ -108,7 +108,13 @@ export default async function AdminProgramsPage({
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                 <Link href={`/admin/programs/${p.id}`} style={{ minWidth: 0, textDecoration: "none", color: "inherit" }}>
                   <p style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>
-                    {p.name} {!p.active && <span style={{ font: "700 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#9a8f80" }}>· Inactivo</span>}
+                    {p.name}{" "}
+                    {p.isDemo && (
+                      <span style={{ font: "700 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#0D0D0D", background: "#C8A15A", borderRadius: 4, padding: "1px 5px" }}>
+                        DEMO
+                      </span>
+                    )}{" "}
+                    {!p.active && <span style={{ font: "700 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#9a8f80" }}>· Inactivo</span>}
                   </p>
                   <p style={{ margin: 0, font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#C8A15A" }}>
                     {p.slug} · {p._count.memberships} miembros · {p._count.admins} N0
@@ -147,12 +153,20 @@ export default async function AdminProgramsPage({
           ))}
         </section>
 
-        <Link
-          href="/admin/reset"
-          style={{ alignSelf: "flex-start", color: "#8a6b68", font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase" }}
-        >
-          Zona de Riesgo →
-        </Link>
+        <div style={{ display: "flex", gap: 16 }}>
+          <Link
+            href="/admin/demo-data"
+            style={{ alignSelf: "flex-start", color: "#8a8378", font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase" }}
+          >
+            Datos de Demo →
+          </Link>
+          <Link
+            href="/admin/reset"
+            style={{ alignSelf: "flex-start", color: "#8a6b68", font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase" }}
+          >
+            Zona de Riesgo →
+          </Link>
+        </div>
       </div>
     </div>
   );

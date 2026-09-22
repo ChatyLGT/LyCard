@@ -22,7 +22,7 @@ export default defineConfig({
       // En cambio: 90% es la puerta real, pero SOLO sobre los archivos
       // que ya tienen tests (`include` abajo) — sube de a uno a medida
       // que se van cubriendo más módulos, nunca baja.
-      include: ["lib/authScope.ts", "lib/leads.ts", "lib/oficinaExtras.ts", "lib/sparkline.ts"],
+      include: ["lib/authScope.ts", "lib/leads.ts", "lib/oficinaExtras.ts", "lib/sparkline.ts", "lib/demoData.ts"],
       thresholds: {
         lines: 90,
         functions: 90,

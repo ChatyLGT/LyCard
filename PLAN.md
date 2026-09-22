@@ -4411,3 +4411,48 @@ Shippeado como v1.38.0. **Fase E (Oficina ampliada) queda completa
 salvo la E5** (ambiente de datos mock en bulk — Programas/Cards de
 prueba marcadas `isDemo`, generar/borrar en un tirón), que según el plan
 original se deja para el final.
+
+## Oficina Virtual — Fase E5: ambiente de datos demo, cierra toda la ronda (2026-09-22)
+
+Gunnar pidió específicamente el entorno completo: poder elegir CUÁNTOS
+Programas generar, y un solo botón para borrar toda la base de datos
+falsa después. `isDemo` ya estaba en el schema desde Fase E1 — esta fase
+era 100% construir el "generador" y el "borrador".
+
+**Nueva página `/admin/demo-data`** (MasterN0-only, mismo criterio de
+acceso que `/admin/reset`):
+- **Generar**: un `<input type="number">` con la cantidad (clampeada
+  server-side entre 1 y 20 — `lib/demoData.ts#clampDemoCount`, función
+  pura testeada, porque un `<input type="number">` del navegador nunca es
+  suficiente por sí solo: nada impide que alguien mande un negativo, un
+  decimal, o 999999 a mano). Por cada uno: un Program (`isDemo:true`) +
+  sus 3 Cards (Legacy ligada al Program, Business y Personal
+  independientes — sin Member falso: `memberId` nulo, mismo patrón que
+  ya usa la Card `mastern0`), también `isDemo:true`. Los campos de
+  Oficina Virtual (KPIs/noticias/calendario/frases) se dejan vacíos a
+  propósito — ya caen solos a los `DEFAULT_*` con la etiqueta de
+  "ejemplo" desde Fases E1-E4, no hacía falta duplicar ese contenido acá.
+- **Borrar todo lo demo**: mismo patrón exacto que
+  `resetPlatformAction` (`app/admin/reset-actions.ts`) — hay que escribir
+  a mano "BORRAR DEMO" para confirmar, chequeado en el servidor, nunca
+  solo en el cliente. Borra Cards demo primero (tienen `programId`
+  apuntando a un Program demo, hay que sacarlas antes o la FK lo impide),
+  Programs demo después.
+
+**Cáscara honesta, visible**: `/admin` (roster) y `/admin/programs`
+ahora muestran una etiqueta **DEMO** en cada Program/Card marcado como
+tal — nunca hay que adivinar si algo es de prueba o real con solo
+mirarlo.
+
+**Verificado real, dos capas otra vez**: un script descartable de
+Playwright corrió el ciclo completo en el navegador (generar 2 →
+confirmar en el roster con la etiqueta DEMO → borrar todo → confirmar
+0/0 en la DB) con 5 capturas de pantalla en el camino. El E2E permanente
+(`e2e/demo-data.spec.ts`) automatiza ese mismo ciclo, más el caso de
+seguridad real: escribir la frase de confirmación mal **no** borra nada
+(se verifica contra la DB, no solo contra la UI). 10 E2E de la suite
+completa pasando, unit tests 100% en los 5 archivos gateados
+(`lib/demoData.ts` sumado al ratchet).
+
+Shippeado como v1.39.0. **Con esto, toda la ronda de "Oficina Virtual
+ampliada" que arrancó esta sesión (Fases E1 a E5) queda completa.**
