@@ -66,6 +66,17 @@ export function parseCalendarEvents(value: unknown): CalendarEvent[] {
     .filter((item) => item.id && item.title && item.date);
 }
 
+// Fase E4 — el "Calendario" de la Oficina es una lista, no una grilla
+// mensual (alcance recortado a propósito, ver PLAN.md), así que el único
+// trabajo real es ordenarla por fecha. Fecha inválida (dato viejo/manual
+// mal tipeado) cae al final en vez de romper el sort — Date inválida da
+// NaN, y NaN siempre compara false, así que Array.prototype.sort ya la
+// deja quieta; el `|| 0` de abajo solo evita que dos NaN "empujen" el
+// orden entre ellas de forma no determinística según el motor de JS.
+export function sortCalendarEventsByDate(events: CalendarEvent[]): CalendarEvent[] {
+  return [...events].sort((a, b) => (new Date(a.date).getTime() - new Date(b.date).getTime()) || 0);
+}
+
 export function parseMotivationalPhrases(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter((v): v is string => typeof v === "string" && v.trim().length > 0);

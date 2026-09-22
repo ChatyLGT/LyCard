@@ -4370,3 +4370,44 @@ Shippeado como v1.37.0. Próximo paso, Fase E4: Noticias/Tareas +
 Calendario, después de Superpoderes y Cerebro Malla en el orden pedido
 por Gunnar. Fase E5 (ambiente de datos mock en bulk) queda para el
 final, como estaba planeado.
+
+## Oficina Virtual — Fase E4: Noticias + Calendario, cierra el orden pedido (2026-09-22)
+
+Últimos dos bloques del orden que pidió Gunnar al arrancar esta ronda:
+Saludo → Keep in Flow → Check de Realidad → Superpoderes → Cerebro
+Malla → **Noticias** → **Calendario**. Con esto, los 7 puntos del pedido
+original ya están todos construidos.
+
+**`components/NewsTasksBlock.tsx`** — lista de noticias cortas
+(`Card.newsItems`), fecha + título + cuerpo opcional. **`components/CalendarBlock.tsx`**
+— lista de próximos eventos (`Card.calendarEvents`), a propósito **no**
+una grilla mensual completa (alcance recortado desde el plan original,
+igual que Gunnar aceptó para todo lo demás de esta fase). Los dos
+privados del dueño, al final de `OwnerOficina`, con la misma etiqueta de
+"ejemplo" que el resto de la Fase E cuando nadie cargó contenido propio.
+
+**Detalle real, no cosmético:** `Card.calendarEvents` ya se leía en otro
+lado (el fallback simulado del Superpoder "Agenda" cuando Google no está
+conectado) — se parsea una sola vez ahora y se reusa en los dos lugares,
+en vez de repetir el `JSON.parse`.
+
+**`lib/oficinaExtras.ts#sortCalendarEventsByDate`** — única lógica real
+de esta fase: el Calendario es una lista, así que lo único que hace
+falta es que las fechas queden en orden, sin importar en qué orden se
+cargaron. Función pura, testeada (fecha inválida no rompe el sort, no
+muta el array original).
+
+**Verificado real, dos capas:** un script descartable con Playwright
+abrió la Oficina con noticias y eventos cargados **a propósito
+desordenados** y sacó screenshot — confirmó visualmente que Calendario
+los muestra en orden de fecha, no de carga. Después, el E2E permanente
+(`e2e/oficina-fase-e4.spec.ts`) automatiza exactamente esa verificación
+comparando la posición en pantalla (`boundingBox().y`) del evento más
+próximo contra el más lejano, más el caso de que un visitante nunca ve
+ninguno de los dos bloques. Los 9 E2E de la suite completa pasando (7
+de antes + estos 2), unit tests 100% en los 4 archivos gateados.
+
+Shippeado como v1.38.0. **Fase E (Oficina ampliada) queda completa
+salvo la E5** (ambiente de datos mock en bulk — Programas/Cards de
+prueba marcadas `isDemo`, generar/borrar en un tirón), que según el plan
+original se deja para el final.

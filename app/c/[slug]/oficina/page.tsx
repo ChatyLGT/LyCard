@@ -19,13 +19,20 @@ import {
   parseCalendarEvents,
   parseRealityCheckKpis,
   parseMotivationalPhrases,
+  parseNewsItems,
   pickPhraseOfTheDay,
   DEFAULT_REALITY_CHECK_KPIS,
   DEFAULT_MOTIVATIONAL_PHRASES,
+  DEFAULT_NEWS_ITEMS,
+  DEFAULT_CALENDAR_EVENTS,
   type RealityCheckKpi,
+  type NewsItem,
+  type CalendarEvent,
 } from "@/lib/oficinaExtras";
 import KeepInFlowBlock from "@/components/KeepInFlowBlock";
 import CheckDeRealidadBlock from "@/components/CheckDeRealidadBlock";
+import NewsTasksBlock from "@/components/NewsTasksBlock";
+import CalendarBlock from "@/components/CalendarBlock";
 import { fetchLiveAgenda, defaultAgendaWindow, type AgendaEventItem, type AgendaTaskItem } from "@/lib/agenda";
 import { refreshGoogleAccessToken } from "@/lib/googleOAuth";
 import { buildCardMetadata } from "@/lib/cardMetadata";
@@ -124,6 +131,10 @@ type OficinaData = {
   kpisAreDefault: boolean;
   motivationalPhrase: string | null;
   phraseIsDefault: boolean;
+  newsItems: NewsItem[];
+  newsAreDefault: boolean;
+  calendarEventsForBlock: CalendarEvent[];
+  calendarAreDefault: boolean;
 };
 
 // ---------------- Piezas compartidas ----------------
@@ -558,6 +569,14 @@ function OwnerOficina({ data }: { data: OficinaData }) {
           googleConnected={data.googleConnected}
           connectUrl={data.connectUrl}
         />
+
+        <div style={hr} />
+
+        <NewsTasksBlock items={data.newsItems} isDefault={data.newsAreDefault} />
+
+        <div style={hr} />
+
+        <CalendarBlock events={data.calendarEventsForBlock} isDefault={data.calendarAreDefault} accent={accent} />
       </div>
     </div>
   );
@@ -633,6 +652,13 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
   const googleConnected = Boolean(ownerMember?.googleRefreshToken);
   const connectUrl = `/m/auth/google/connect-start?cardId=${card.id}&returnTo=${encodeURIComponent(`/c/${slug}/oficina`)}`;
 
+  // Se parsea una sola vez acá — lo usan tanto el fallback simulado de la
+  // Agenda (Superpoder, abajo) como el bloque "Calendario" de Fase E4 más
+  // abajo. Mismo campo (Card.calendarEvents), dos lugares donde se
+  // muestra: la Agenda es una herramienta que se abre a propósito, el
+  // Calendario es la vista rápida en la Oficina misma.
+  const calendarEventsParsed = isHost ? parseCalendarEvents(card.calendarEvents) : [];
+
   // Agenda real (2026-09-22, ver lib/agenda.ts): conectado, se leen
   // Calendar+Tasks de verdad; sin conectar, cae al cache local
   // simulado de siempre (Card.calendarEvents), marcado como tal — nunca
@@ -649,7 +675,7 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
       console.error("No se pudo traer la Agenda real de Google para la Card", card.id, err);
     }
   } else if (isHost) {
-    agendaEvents = parseCalendarEvents(card.calendarEvents).map((e) => ({
+    agendaEvents = calendarEventsParsed.map((e) => ({
       id: e.id,
       title: e.title,
       start: e.date,
@@ -670,6 +696,14 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
   const motivationalPhrases = motivationalPhrasesParsed.length > 0 ? motivationalPhrasesParsed : DEFAULT_MOTIVATIONAL_PHRASES;
   const motivationalPhrase = isHost ? pickPhraseOfTheDay(motivationalPhrases) : null;
   const phraseIsDefault = motivationalPhrasesParsed.length === 0;
+
+  // Fase E4 — Noticias + Calendario, mismo criterio host-only que arriba.
+  const newsItemsParsed = isHost ? parseNewsItems(card.newsItems) : [];
+  const newsItems = newsItemsParsed.length > 0 ? newsItemsParsed : DEFAULT_NEWS_ITEMS;
+  const newsAreDefault = newsItemsParsed.length === 0;
+
+  const calendarEventsForBlock = calendarEventsParsed.length > 0 ? calendarEventsParsed : DEFAULT_CALENDAR_EVENTS;
+  const calendarAreDefault = calendarEventsParsed.length === 0;
 
   const parsedSkills = parseOfficeSkills(card.program?.officeSkills);
   const officeSkills = parsedSkills.length > 0 ? parsedSkills : DEFAULT_OFFICE_SKILLS;
@@ -721,6 +755,10 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
     kpisAreDefault,
     motivationalPhrase,
     phraseIsDefault,
+    newsItems,
+    newsAreDefault,
+    calendarEventsForBlock,
+    calendarAreDefault,
   };
 
   return isHost ? <OwnerOficina data={data} /> : <VisitorOficina data={data} />;

@@ -7,7 +7,9 @@ import {
   parseMotivationalPhrases,
   generateSimulatedKpis,
   parseOficinaExtrasFormData,
+  sortCalendarEventsByDate,
   DEFAULT_REALITY_CHECK_KPIS,
+  type CalendarEvent,
 } from "@/lib/oficinaExtras";
 
 // Fase E1 de Oficina Virtual (docs del plan: "banner animado con una frase
@@ -219,5 +221,28 @@ describe("parseOficinaExtrasFormData", () => {
       newsItems: [],
       calendarEvents: [],
     });
+  });
+});
+
+describe("sortCalendarEventsByDate", () => {
+  const ev = (id: string, date: string): CalendarEvent => ({ id, title: id, date });
+
+  it("happy path: ordena de más próximo a más lejano", () => {
+    const events = [ev("later", "2026-03-01"), ev("sooner", "2026-01-01"), ev("middle", "2026-02-01")];
+    expect(sortCalendarEventsByDate(events).map((e) => e.id)).toEqual(["sooner", "middle", "later"]);
+  });
+
+  it("edge case: no muta el array original", () => {
+    const events = [ev("b", "2026-02-01"), ev("a", "2026-01-01")];
+    const original = [...events];
+    sortCalendarEventsByDate(events);
+    expect(events).toEqual(original);
+  });
+
+  it("caso de error: una fecha inválida (dato corrupto) no crashea el sort ni descoloca el resto", () => {
+    const events = [ev("valida-2", "2026-02-01"), ev("corrupta", "fecha-que-no-existe"), ev("valida-1", "2026-01-01")];
+    const sorted = sortCalendarEventsByDate(events);
+    expect(sorted).toHaveLength(3);
+    expect(sorted.map((e) => e.id)).toContain("corrupta");
   });
 });
