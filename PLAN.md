@@ -5351,3 +5351,60 @@ comparten exactamente el mismo helper de activación, la única gate real
 que existe hoy es `markInterviewed`.
 
 Shippeado como v1.49.0.
+
+## Modo Foco suma música real (2026-09-23)
+
+Gunnar probó Modo Foco y notó que solo sonaba tono/ruido — comparó con
+Brain.fm, donde sí hay música de fondo, y preguntó si era por diseño y si
+se podía sumar música, incluso conectando algún servicio de streaming
+(house/electrónica/lounge). Respuesta corta: sí, era 100% a propósito
+(ver comentario original en `lib/focusAudio.ts` — evitar de raíz el
+problema de licencias) pero se podía sumar sin romper esa decisión.
+
+Se evaluaron 2 caminos: (1) bundlear loops royalty-free reales y
+mezclarlos con Web Audio, (2) embeber un reproductor de Spotify/YouTube
+aparte. Gunnar eligió el 1. En la práctica, sin embargo, este sandbox no
+tiene forma real de conseguir/verificar pistas con licencia limpia (sin
+ffmpeg/sox/numpy para siquiera procesar un archivo bajado, y bajar algo
+de una librería CC0 sin poder confirmar su licencia real sería
+irresponsable) — así que la implementación real terminó siendo música
+también generada en vivo con Web Audio, mismo criterio que el resto de
+Modo Foco, en vez de archivos bundleados. Se avisó el cambio de rumbo
+antes de escribir código.
+
+**Qué se construyó**: `lib/focusAudio.ts` suma `FOCUS_MUSIC`, un patrón
+rítmico por modo (16 steps, BPM, kick/hats/bajo/acordes cortos) y
+`stepDurationSeconds(bpm)`. Foco profundo es house minimal (124 BPM,
+kick + bajo en los 4 tiempos, hats en el contratiempo); Creativo y
+Relajación son lounge (92/100 BPM, sin kick o con kick a media
+velocidad, acordes cortos usando el mismo `padHz` que ya tenía cada
+modo). **Sueño se queda con `FOCUS_MUSIC.sueno = null`, sin ritmo, a
+propósito** — ni Brain.fm pone house en sus pistas de dormir, un ritmo
+va en contra de lo que ese modo tiene que lograr.
+
+`components/FocusModeBlock.tsx` suma el motor real: un step-sequencer
+con lookahead (patrón estándar de Web Audio — programa cada golpe con su
+propio `AudioContext.currentTime` en vez de `setTimeout`, así no se
+desincroniza) que dispara kick (oscilador con pitch-sweep + envolvente),
+hat (ruido blanco corto pasado por un filtro pasa-altos), bajo (triangle
++ filtro pasa-bajos) y acordes cortos (mismas frecuencias del pad),
+todo mezclado en el mismo `GainNode` maestro que ya modulaba el pulso —
+la música respira con la misma onda, literalmente "acompaña las ondas"
+como pidió Gunnar. Se corta junto con el motor entero al pausar/terminar
+(el `setInterval` del scheduler se limpia en `stopEngine`, no solo los
+osciladores).
+
+**Verificado real**: `lib/__tests__/focusAudio.test.ts` — sueño sin
+patrón a propósito, los otros 3 modos con al menos un step disparando
+algo, todos los steps dentro del compás de 16. `e2e/focus-mode.spec.ts`
+suma un test que parchea `AudioContext.createOscillator`/
+`createBufferSource` para contar nodos reales creados con el tiempo:
+en Foco el conteo sigue subiendo mientras corre la sesión (prueba de que
+el scheduler dispara de verdad, no quedó un pad estático) — Playwright
+no puede "escuchar" el resultado, pero sí contar los nodos reales que
+arma. Script descartable de Playwright confirmó visualmente que el
+setup y la pantalla de sesión se ven bien con el copy nuevo, capturas
+revisadas y borradas. 28/28 E2E de la suite completa, 100% coverage en
+`lib/focusAudio.ts`, tsc/lint/build limpios.
+
+Shippeado como v1.49.1.

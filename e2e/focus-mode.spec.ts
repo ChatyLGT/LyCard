@@ -74,4 +74,55 @@ test.describe("Modo Foco — Superpoder de audio funcional", () => {
 
     await context.close();
   });
+
+  // La base musical (house/lounge, pedido de Gunnar 2026-09-23: "que
+  // acompañe las ondas") es un step-sequencer real -- Playwright no
+  // puede "escuchar" el resultado, pero sí puede contar cuántos nodos de
+  // Web Audio se crean de verdad con el tiempo. En Foco (tiene patrón:
+  // kick+hats+bajo) el conteo tiene que seguir subiendo mientras corre
+  // la sesión; en Sueño (sin patrón, a propósito -- ver FOCUS_MUSIC) el
+  // conteo arranca y se queda fijo, prueba real de que ahí sigue sin
+  // ritmo como se diseñó.
+  test("Foco sigue creando nodos de audio con el tiempo (kick/hat/bajo reales) -- Sueño se queda fijo, sin ritmo", async ({ browser }) => {
+    const context = await browser.newContext();
+    const cookie = await mintAdminCookie(adminId);
+    await context.addCookies([{ ...cookie, url: BASE_URL }]);
+    const page = await context.newPage();
+
+    await page.addInitScript(() => {
+      (window as unknown as { __audioNodeCount: number }).__audioNodeCount = 0;
+      const bump = () => {
+        (window as unknown as { __audioNodeCount: number }).__audioNodeCount++;
+      };
+      const origOsc = AudioContext.prototype.createOscillator;
+      AudioContext.prototype.createOscillator = function (...args) {
+        bump();
+        return origOsc.apply(this, args);
+      };
+      const origBuf = AudioContext.prototype.createBufferSource;
+      AudioContext.prototype.createBufferSource = function (...args) {
+        bump();
+        return origBuf.apply(this, args);
+      };
+    });
+
+    await page.goto(`${BASE_URL}/c/${cardSlug}/oficina`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Modo Foco" }).click();
+    // "Foco profundo" ya viene seleccionado por default
+    await page.getByRole("button", { name: "10 min", exact: true }).click();
+    await page.getByRole("button", { name: "Empezar sesión", exact: true }).click();
+    await expect(page.getByText("10:00", { exact: true })).toBeVisible();
+
+    const afterStart = await page.evaluate(() => (window as unknown as { __audioNodeCount: number }).__audioNodeCount);
+    await page.waitForTimeout(1500);
+    const afterWait = await page.evaluate(() => (window as unknown as { __audioNodeCount: number }).__audioNodeCount);
+
+    // Foco (house: kick en 4 steps, hats en 4, bajo en 4, ~124bpm) tiene
+    // que seguir generando nodos mientras corre -- si esto no sube, el
+    // scheduler no está de verdad corriendo, solo quedó el pad estático.
+    expect(afterWait).toBeGreaterThan(afterStart + 5);
+
+    await page.getByRole("button", { name: "Terminar", exact: true }).click();
+    await context.close();
+  });
 });

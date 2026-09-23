@@ -4,11 +4,14 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
   FOCUS_MODES,
   FOCUS_MODE_ORDER,
+  FOCUS_MUSIC,
   DURATION_OPTIONS_SECONDS,
   formatDurationLabel,
   formatCountdown,
+  stepDurationSeconds,
   type FocusModeKey,
   type NoiseColor,
+  type MusicPattern,
 } from "@/lib/focusAudio";
 import { createVoiceNoteAction } from "@/app/c/[slug]/oficina/voiceNotes-actions";
 
@@ -51,12 +54,125 @@ function buildNoiseBuffer(ctx: AudioContext, color: NoiseColor): AudioBuffer {
 type Engine = {
   ctx: AudioContext;
   nodes: AudioScheduledSourceNode[];
+  schedulerId?: ReturnType<typeof setInterval>;
 };
 
+// Base musical en vivo (lib/focusAudio.ts#FOCUS_MUSIC) -- ni MP3 ni
+// streaming, un step-sequencer real con lookahead (patrón estándar de
+// Web Audio: programar cada golpe con su propio AudioContext.currentTime
+// en vez de setTimeout, así no se desincroniza aunque el hilo principal
+// se trabe un instante). Cada golpe es un nodo one-shot que se limpia
+// solo (start+stop programado) -- no hace falta trackearlo para pararlo
+// a mano, alcanza con cortar el scheduler.
+const SCHEDULER_TICK_MS = 25;
+const SCHEDULE_AHEAD_SEC = 0.15;
+const PATTERN_STEPS = 16;
+
+function buildHatBuffer(ctx: AudioContext): AudioBuffer {
+  const length = Math.floor(ctx.sampleRate * 0.06);
+  const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1;
+  return buffer;
+}
+
+function scheduleKick(ctx: AudioContext, dest: AudioNode, time: number) {
+  const osc = ctx.createOscillator();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(150, time);
+  osc.frequency.exponentialRampToValueAtTime(42, time + 0.11);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.9, time);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.14);
+  osc.connect(gain);
+  gain.connect(dest);
+  osc.start(time);
+  osc.stop(time + 0.16);
+}
+
+function scheduleHat(ctx: AudioContext, dest: AudioNode, hatBuffer: AudioBuffer, time: number) {
+  const src = ctx.createBufferSource();
+  src.buffer = hatBuffer;
+  const filter = ctx.createBiquadFilter();
+  filter.type = "highpass";
+  filter.frequency.value = 7000;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.16, time);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+  src.connect(filter);
+  filter.connect(gain);
+  gain.connect(dest);
+  src.start(time);
+  src.stop(time + 0.06);
+}
+
+function scheduleBass(ctx: AudioContext, dest: AudioNode, freq: number, time: number, dur: number) {
+  const osc = ctx.createOscillator();
+  osc.type = "triangle";
+  osc.frequency.value = freq;
+  const filter = ctx.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.value = 380;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0, time);
+  gain.gain.linearRampToValueAtTime(0.45, time + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + dur);
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(dest);
+  osc.start(time);
+  osc.stop(time + dur + 0.02);
+}
+
+function scheduleStab(ctx: AudioContext, dest: AudioNode, freqs: number[], time: number, dur: number) {
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0, time);
+  gain.gain.linearRampToValueAtTime(0.18, time + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + dur);
+  gain.connect(dest);
+  for (const freq of freqs) {
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    osc.connect(gain);
+    osc.start(time);
+    osc.stop(time + dur + 0.02);
+  }
+}
+
+// Arranca el step-sequencer para un modo con patrón musical (sueño no
+// tiene -- ver FOCUS_MUSIC). `dest` es el master gain: la música queda
+// mezclada bajo la misma modulación del pulso que el resto del motor.
+function startMusicScheduler(
+  ctx: AudioContext,
+  dest: AudioNode,
+  pattern: MusicPattern,
+  stabChord: number[]
+): ReturnType<typeof setInterval> {
+  const hatBuffer = buildHatBuffer(ctx);
+  const stepDur = stepDurationSeconds(pattern.bpm);
+  let nextStepTime = ctx.currentTime + 0.05;
+  let stepIndex = 0;
+
+  return setInterval(() => {
+    while (nextStepTime < ctx.currentTime + SCHEDULE_AHEAD_SEC) {
+      const step = stepIndex % PATTERN_STEPS;
+      if (pattern.kickSteps.includes(step)) scheduleKick(ctx, dest, nextStepTime);
+      if (pattern.hatSteps.includes(step)) scheduleHat(ctx, dest, hatBuffer, nextStepTime);
+      if (pattern.bassSteps.includes(step)) scheduleBass(ctx, dest, pattern.bassHz, nextStepTime, stepDur * 3.5);
+      if (pattern.stabSteps.includes(step)) scheduleStab(ctx, dest, stabChord, nextStepTime, stepDur * 6);
+      nextStepTime += stepDur;
+      stepIndex++;
+    }
+  }, SCHEDULER_TICK_MS);
+}
+
 // Arma el grafo completo: pulso (LFO modulando el gain principal) +
-// ruido de fondo + un pad armónico sostenido, mezclados en un solo
-// GainNode maestro. Cáscara honesta: esto es modulación de amplitud
-// real, no "sincroniza tus neuronas" -- ver lib/focusAudio.ts.
+// ruido de fondo + un pad armónico sostenido + (salvo en sueño) una
+// base house/lounge real via startMusicScheduler, todo mezclado en un
+// solo GainNode maestro -- así la música respira con el mismo pulso.
+// Cáscara honesta: esto es modulación de amplitud real, no "sincroniza
+// tus neuronas" -- ver lib/focusAudio.ts.
 function startEngine(mode: (typeof FOCUS_MODES)[FocusModeKey]): Engine {
   const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
   const ctx = new AudioCtx();
@@ -99,10 +215,14 @@ function startEngine(mode: (typeof FOCUS_MODES)[FocusModeKey]): Engine {
     nodes.push(osc);
   }
 
-  return { ctx, nodes };
+  const musicPattern = FOCUS_MUSIC[mode.key];
+  const schedulerId = musicPattern ? startMusicScheduler(ctx, master, musicPattern, mode.padHz) : undefined;
+
+  return { ctx, nodes, schedulerId };
 }
 
 function stopEngine(engine: Engine) {
+  if (engine.schedulerId !== undefined) clearInterval(engine.schedulerId);
   for (const node of engine.nodes) {
     try {
       node.stop();
@@ -256,7 +376,7 @@ export default function FocusModeBlock({ cardId }: { cardId: string }) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <p style={MUTED}>
-          Audio generado en vivo en tu navegador — un pulso de volumen, ruido de fondo y un pad sostenido, pensado para sostener la atención.
+          Audio generado en vivo en tu navegador — pulso de volumen, ruido de fondo y, en Foco/Creativo/Relajación, una base house/lounge real (kick, bajo, hats). Sueño se queda sin ritmo a propósito.
           Sin pistas externas, sin promesas de neurociencia que no podamos probar.
         </p>
 

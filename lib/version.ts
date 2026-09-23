@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.49.0";
+export const APP_VERSION = "1.49.1";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.49.1",
+    date: "2026-09-23",
+    notes:
+      "Modo Foco suma música de verdad: Foco profundo (house minimal), Creativo y Relajación (lounge) ahora tienen kick, bajo, hats y acordes cortos generados en vivo debajo del pulso de siempre — ya no es solo tono + ruido. Sueño se queda sin ritmo a propósito, como cualquier pista pensada para dormir. Sigue siendo 100% sintetizado en tu navegador, cero pistas externas, cero streaming de terceros.",
+  },
   {
     version: "1.49.0",
     date: "2026-09-23",

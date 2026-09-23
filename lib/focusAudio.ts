@@ -37,7 +37,7 @@ export const FOCUS_MODES: Record<FocusModeKey, FocusModeConfig> = {
   foco: {
     key: "foco",
     label: "Foco profundo",
-    descripcion: "Pulso rápido (rango Beta) + ruido marrón de fondo — para sostener atención en una tarea, sin distracciones.",
+    descripcion: "Pulso rápido (rango Beta) + base de house minimal (kick, bajo, hats), 100% generada en vivo — para sostener atención en una tarea, sin distracciones.",
     pulseHz: 15,
     pulseDepth: 0.35,
     noiseColor: "brown",
@@ -48,7 +48,7 @@ export const FOCUS_MODES: Record<FocusModeKey, FocusModeConfig> = {
   creativo: {
     key: "creativo",
     label: "Creativo",
-    descripcion: "Pulso más lento (rango Theta) + ruido rosa — para divergir, no para concentrarte en un solo punto.",
+    descripcion: "Pulso más lento (rango Theta) + groove lounge suave (acordes cortos, bajo, sin kick) — para divergir, no para concentrarte en un solo punto.",
     pulseHz: 6,
     pulseDepth: 0.3,
     noiseColor: "pink",
@@ -59,7 +59,7 @@ export const FOCUS_MODES: Record<FocusModeKey, FocusModeConfig> = {
   relajacion: {
     key: "relajacion",
     label: "Relajación",
-    descripcion: "Pulso suave (rango Alpha) + ruido rosa — para bajar revoluciones sin quedarte dormido.",
+    descripcion: "Pulso suave (rango Alpha) + lounge suave con kick a media velocidad — para bajar revoluciones sin quedarte dormido.",
     pulseHz: 10,
     pulseDepth: 0.25,
     noiseColor: "pink",
@@ -70,7 +70,7 @@ export const FOCUS_MODES: Record<FocusModeKey, FocusModeConfig> = {
   sueno: {
     key: "sueno",
     label: "Sueño",
-    descripcion: "Pulso muy lento (rango Delta) + ruido marrón grave — pensado para escuchar mientras te vas quedando dormido.",
+    descripcion: "Pulso muy lento (rango Delta) + ruido marrón grave, sin ritmo — pensado para escuchar mientras te vas quedando dormido.",
     pulseHz: 2.5,
     pulseDepth: 0.2,
     noiseColor: "brown",
@@ -81,6 +81,66 @@ export const FOCUS_MODES: Record<FocusModeKey, FocusModeConfig> = {
 };
 
 export const FOCUS_MODE_ORDER: FocusModeKey[] = ["foco", "creativo", "relajacion", "sueno"];
+
+// Base musical por modo (pedido de Gunnar, 2026-09-23: "conectarse a
+// algún servicio de música house/electrónica/lounge que acompañe las
+// ondas"). No hay forma de licenciar/curar pistas reales desde acá, así
+// que se genera también en vivo con Web Audio (mismo criterio que el
+// resto de Modo Foco) — un kick + bajo + hats + acordes cortos, en vez
+// de un pad estático. `null` = sin secuencia: sueño se queda como drone
+// puro A PROPÓSITO, no por falta de tiempo — un ritmo, por suave que
+// sea, va en contra de lo que se supone que tiene que hacer un modo
+// pensado para quedarte dormido (ni Brain.fm pone house en sus pistas de
+// sueño). El armado real de los osciladores vive en
+// components/FocusModeBlock.tsx, igual que el resto del motor.
+export type MusicStyle = "house" | "lounge";
+
+export type MusicPattern = {
+  style: MusicStyle;
+  bpm: number;
+  bassHz: number; // raíz del bajo, una octava abajo de la raíz del pad del modo
+  kickSteps: number[]; // steps 0-15 (corcheas de 16, 1 compás de 4/4) donde suena el kick
+  hatSteps: number[]; // steps donde suena el hi-hat
+  bassSteps: number[]; // steps donde suena el bajo
+  stabSteps: number[]; // steps donde suena un acorde corto (usa el padHz del modo)
+};
+
+export const FOCUS_MUSIC: Record<FocusModeKey, MusicPattern | null> = {
+  foco: {
+    style: "house",
+    bpm: 124,
+    bassHz: 65.41, // C2
+    kickSteps: [0, 4, 8, 12],
+    hatSteps: [2, 6, 10, 14],
+    bassSteps: [0, 4, 8, 12],
+    stabSteps: [],
+  },
+  creativo: {
+    style: "lounge",
+    bpm: 92,
+    bassHz: 73.42, // D2
+    kickSteps: [],
+    hatSteps: [4, 12],
+    bassSteps: [0, 6, 8, 14],
+    stabSteps: [0, 8],
+  },
+  relajacion: {
+    style: "lounge",
+    bpm: 100,
+    bassHz: 87.31, // F2
+    kickSteps: [0, 8],
+    hatSteps: [],
+    bassSteps: [0, 8],
+    stabSteps: [0, 8],
+  },
+  sueno: null,
+};
+
+// Duración real de un step (corchea de 16, 1/4 de negra) en segundos,
+// para el scheduler de lookahead de Web Audio.
+export function stepDurationSeconds(bpm: number): number {
+  return 60 / bpm / 4;
+}
 
 function isFocusModeKey(v: string): v is FocusModeKey {
   return (FOCUS_MODE_ORDER as string[]).includes(v);
