@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.43.0";
+export const APP_VERSION = "1.44.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.44.0",
+    date: "2026-09-23",
+    notes:
+      "Nuevo: NashMesh, el simulador de reparto (Payment = φ × ψ × (1-ε)). Desde cualquier cruce real de Janus, un click arma la simulación con los dos participantes ya cargados — sumás el valor total, quién más participó, y ves cómo se repartiría. 100% simulación, cero movimiento de dinero real.",
+  },
   {
     version: "1.43.0",
     date: "2026-09-23",

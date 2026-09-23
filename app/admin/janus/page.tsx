@@ -101,6 +101,12 @@ export default async function JanusPage() {
                   <Link href={`/c/${slugByCardId.get(m.toCardId)}/oficina`} style={{ font: "600 10px 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>
                     Ver {m.toCardName} →
                   </Link>
+                  <Link
+                    href={`/admin/nashmesh?fromCardId=${m.fromCardId}&fromName=${encodeURIComponent(m.fromCardName)}&toCardId=${m.toCardId}&toName=${encodeURIComponent(m.toCardName)}`}
+                    style={{ font: "600 10px 'Plus Jakarta Sans',sans-serif", color: "#C8A15A" }}
+                  >
+                    Simular reparto →
+                  </Link>
                 </div>
                 {i === 0 && matches.length > 1 && <span style={{ font: "600 8.5px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".14em", textTransform: "uppercase", color: "#6FCF7A" }}>Mejor cruce</span>}
               </div>

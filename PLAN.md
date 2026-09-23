@@ -4804,3 +4804,65 @@ match) sigue diseñado pero no construido — próximo paso natural una vez
 que haya matches reales corriendo.
 
 Shippeado como v1.43.0.
+
+## NashMesh — simulador de reparto real, disparado desde Janus (2026-09-23)
+
+Cierre del ciclo diseñado esta sesión: Tags → Janus → match confirmado →
+reparto. Se construyó exactamente el alcance ya aprobado con Gunnar
+antes de tocar el documento B4W: el simulador de UN cruce/proyecto
+(no el generador de escenarios masivos, que sigue frenado hasta
+definirlo con Fabricio), `v(S)` declarado a mano en cada simulación, sin
+esperar a Fabricio para arrancar.
+
+**`NashMeshRun`** (modelo nuevo, migración `20260923162954_nashmesh_run`):
+`label`, `totalValueUsd` (el valor declarado a repartir), `epsilon`
+(comisión, default 5%), `isSimulation` (siempre `true` en esta versión),
+`participants`/`outputs` en Json — snapshot histórico, no FK a Card
+(una simulación vieja sigue siendo válida aunque esa Card se borre
+después), `cardId` opcional a propósito por si un participante no está
+en el sistema todavía (ej. "El Estado" como financiador, caso B4W).
+
+**`lib/nashMesh.ts`**: `computePayment(totalValueUsd, phi, psi, epsilon)
+= totalValueUsd × phi × psi × (1-epsilon)`. φ acá es "contribución
+declarada a mano" normalizada entre participantes (no necesitan sumar
+100, se normalizan solos; si todos declaran 0, reparte parejo en vez de
+dividir por cero) — mismo criterio honesto que el resto del proyecto:
+nunca fingir el cálculo combinatorio real de Shapley que documenté como
+investigación futura. ψ son los tres niveles fijos ya definidos en el
+WHITEPAPER (0.15/0.35/1.0). 17 tests, 100% de cobertura.
+
+**`components/NashMeshSimulator.tsx`**: mismo patrón que
+`EscalaEditor.tsx` — estado local + un campo JSON oculto + una sola
+action de guardado. Cada participante: Card real (select) o nombre
+libre para uno externo, % de contribución declarado, nivel ψ. Si llega
+con `?fromCardId=&fromName=&toCardId=&toName=` (el link real que manda
+`/admin/janus` en cada match), esos dos participantes ya vienen
+cargados — no hace falta tipearlos de nuevo.
+
+**`/admin/nashmesh`** (MasterN0-only, mismo patrón de acceso que
+`/admin/janus`/`/admin/demo-data`): formulario de nueva simulación +
+historial de las últimas 20, cada una con el badge "SIMULACIÓN" siempre
+visible. Cada match de `/admin/janus` ganó un link "Simular reparto →"
+que arma la URL de prefill directo.
+
+**Verificado real, dos capas**: E2E nuevo (`e2e/nashmesh.spec.ts`) llega
+con el prefill real que manda Janus, simula con $1000/ε=0 (matemática
+fácil de verificar a mano), y confirma el número exacto ($500 cada uno)
+— no solo que la pantalla carga. Encontrado y arreglado durante la
+escritura del test: `getByText` sin `exact` matcheaba el placeholder del
+select ("...ej. 'El Estado'") en vez del título real de la fila — se
+resolvió filtrando por el botón que togglea cada fila, no por texto
+suelto. 18/18 E2E de la suite completa pasando. Script descartable de
+Playwright contra el cruce real de `mastern0`/Panadería Doña Rosa
+(sembrado y limpiado en el mismo script) confirmó visualmente el cálculo
+exacto: $100 × 50% × ψ1.0 × 95% = $47.50 para cada participante.
+
+**Fuera de alcance esta ronda**: el generador de escenarios masivos
+("12 programas × 12 empresas × 12 legacys") sigue sin construirse —
+necesita definir parámetros con Gunnar y sumar a Fabricio, como quedó
+anotado desde la explicación inicial de NashMesh. El cálculo de φ sigue
+siendo la versión simplificada (contribución declarada), no el Shapley
+combinatorio real sobre el grafo de la Malla — esa sigue siendo la
+investigación de la Sección H de Fase 12, sin tocar todavía.
+
+Shippeado como v1.44.0.
