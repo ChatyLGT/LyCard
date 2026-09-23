@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.44.0";
+export const APP_VERSION = "1.45.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.45.0",
+    date: "2026-09-23",
+    notes:
+      "Nuevo \"Embudo de Conversión\" en el dashboard de cada Programa: cuánta gente recibió el QR de una tarjeta, cuántos se registraron, fueron entrevistados, activaron su Oficina Virtual y — marcado a mano por ahora, todavía no hay pasarela de pago real — cuántos pagaron su membresía. Une 3 cosas que ya existían sueltas (Seguimiento por tarjeta, inscripciones a entrevistas, y el estado de cada miembro) en una sola vista con el embudo y el % de conversión de cada paso.",
+  },
   {
     version: "1.44.0",
     date: "2026-09-23",

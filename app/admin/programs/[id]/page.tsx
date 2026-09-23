@@ -17,7 +17,8 @@ import {
   setOfficeSkillIconAction,
   updateMotivationalPhrasesAction,
 } from "../actions";
-import { updateMemberAction, deleteMemberAction, messageMemberAction } from "../members-actions";
+import { updateMemberAction, deleteMemberAction, messageMemberAction, markMembershipPaidAction } from "../members-actions";
+import { buildFunnelStages } from "@/lib/funnel";
 import { createPuestoAction, updatePuestoAction, deletePuestoAction } from "../puestos-actions";
 import { CARD_LABEL_FIELDS, defaultCardLabel } from "@/lib/cardLabels";
 import { parseEscala } from "@/lib/escalas";
@@ -105,6 +106,7 @@ export default async function AdminProgramDetailPage({
     memberDeleted?: string;
     memberMessaged?: string;
     memberError?: string;
+    memberPaidToggled?: string;
     labelsSaved?: string;
     puestoCreated?: string;
     puestoSaved?: string;
@@ -129,6 +131,7 @@ export default async function AdminProgramDetailPage({
     memberDeleted,
     memberMessaged,
     memberError,
+    memberPaidToggled,
     labelsSaved,
     puestoCreated,
     puestoSaved,
@@ -156,6 +159,7 @@ export default async function AdminProgramDetailPage({
     messageEmpty: "Completá asunto y mensaje.",
     messageNotConfigured: "Este miembro no tiene email cargado, o el envío de correos no está activado.",
     messageFailed: "No se pudo enviar el mensaje, probá de nuevo.",
+    paidRequiresActive: "Solo se puede marcar como pagada una membresía ya activa.",
   };
 
   const scope = await currentAdminScope();
@@ -194,6 +198,24 @@ export default async function AdminProgramDetailPage({
     include: { card: { select: { name: true, slug: true } }, membership: true },
   });
   const returnTo = `/admin/programs/${id}`;
+
+  // Embudo de Conversión (pedido de Gunnar, 2026-09-23) -- une 3 modelos
+  // que ya existían sueltos: CardLead (compartida del QR), Registration
+  // (se registró para la entrevista) y ProgramMembership (entrevistado /
+  // activó su Oficina Virtual / pagó -- este último marcado a mano, no
+  // hay pasarela de pago real).
+  const leadCount = await prisma.cardLead.count({ where: { card: { programId: id } } });
+  const interviewedCount = program.memberships.filter((m) => m.interviewedAt !== null).length;
+  const activeCount = program.memberships.filter((m) => m.status === "active").length;
+  const paidCount = program.memberships.filter((m) => m.membershipPaidAt !== null).length;
+  const funnelStages = buildFunnelStages({
+    shared: leadCount,
+    registered: registrations.length,
+    interviewed: interviewedCount,
+    active: activeCount,
+    paid: paidCount,
+  });
+  const funnelMax = Math.max(1, ...funnelStages.map((s) => s.count));
 
   return (
     <div style={{ minHeight: "100vh", background: "#131313", color: "#e5e2e1", fontFamily: "'Plus Jakarta Sans',sans-serif", padding: "0 0 60px" }}>
@@ -633,6 +655,37 @@ export default async function AdminProgramDetailPage({
           </AccordionSection>
         )}
 
+        {/* Embudo de Conversión */}
+        <AccordionSection title="Embudo de Conversión" meta={<span style={PILL}>{funnelStages[0].count}</span>} defaultOpen={Boolean(memberPaidToggled)}>
+          {memberPaidToggled && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Membership actualizada.</p>}
+          <p style={{ margin: 0, font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
+            Cuánta gente recibió el QR de una tarjeta de este Programa, y cuántos llegaron hasta pagar su membresía.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {funnelStages.map((stage) => {
+              const widthPct = Math.round((stage.count / funnelMax) * 100);
+              return (
+                <div key={stage.key} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
+                    <span style={{ font: "600 11.5px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{stage.label}</span>
+                    <span style={{ font: "700 13px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>
+                      {stage.count}
+                      {stage.conversionFromPrevious !== null && (
+                        <span style={{ font: "600 10px 'Plus Jakarta Sans',sans-serif", color: "#8a8378", marginLeft: 6 }}>
+                          ({Math.round(stage.conversionFromPrevious * 100)}%)
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  <div style={{ background: "rgba(255,255,255,.06)", borderRadius: 6, height: 8, overflow: "hidden" }}>
+                    <div style={{ width: `${widthPct}%`, height: "100%", borderRadius: 6, background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)" }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </AccordionSection>
+
         {/* Members */}
         <AccordionSection
           title="Miembros"
@@ -686,6 +739,28 @@ export default async function AdminProgramDetailPage({
                   <Link href={`/c/${projectCard.slug}`} style={{ font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#C8A15A" }}>
                     /c/{projectCard.slug}
                   </Link>
+                )}
+
+                {m.status === "active" && (
+                  <form action={markMembershipPaidAction.bind(null, m.member.id, program.id)}>
+                    <button
+                      type="submit"
+                      style={{
+                        background: m.membershipPaidAt ? "rgba(123,201,142,.12)" : "none",
+                        border: `1px solid ${m.membershipPaidAt ? "rgba(123,201,142,.4)" : "rgba(200,161,90,.3)"}`,
+                        borderRadius: 999,
+                        padding: "6px 12px",
+                        color: m.membershipPaidAt ? "#7BC98E" : "#C2BEB5",
+                        font: "700 10px 'Plus Jakarta Sans',sans-serif",
+                        letterSpacing: ".06em",
+                        textTransform: "uppercase",
+                        cursor: "pointer",
+                        width: "fit-content",
+                      }}
+                    >
+                      {m.membershipPaidAt ? "✓ Pagada -- marcar como no pagada" : "Marcar como pagada"}
+                    </button>
+                  </form>
                 )}
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>

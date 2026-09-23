@@ -482,6 +482,7 @@ model ProgramMembership {
   referred               ProgramMembership[] @relation("Referrals")
   status                 String    @default("invited") // invited | interviewed | active
   interviewedAt          DateTime?
+  membershipPaidAt       DateTime? // marcado a mano por el admin -- no hay pasarela de pago real todavía
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 

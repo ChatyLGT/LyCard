@@ -4866,3 +4866,64 @@ combinatorio real sobre el grafo de la Malla — esa sigue siendo la
 investigación de la Sección H de Fase 12, sin tocar todavía.
 
 Shippeado como v1.44.0.
+
+## Embudo de Conversión — el "CRM" redefinido (2026-09-23)
+
+Gunnar redefinió qué significa "CRM" en LyCard a mitad de esta sesión:
+no el pipeline de calidad Sherpa/5-sesiones que ya estaba documentado en
+el roadmap (eso sigue sin construir, sin luz verde), sino seguimiento de
+conversión — "poder dar seguimiento a la compartida de tarjetas..
+cuántas personas le mandé el QR, cuántos se registraron.. el objetivo es
+lograr que el miembro invitado pague alguna membresía y tenga su oficina
+virtual". Un embudo de 5 etapas: QR compartido → se registró →
+entrevistado → Oficina activa → membresía pagada.
+
+No hizo falta un modelo nuevo para las primeras 4 etapas — ya existían
+3 piezas sueltas construidas en sesiones anteriores, nunca antes unidas
+en una sola vista: `CardLead` (Seguimiento por tarjeta, de cuándo se
+compartió el QR), `Registration` (se anotó para la entrevista) y
+`ProgramMembership` (`interviewedAt` = entrevistado, `status: "active"`
+= Oficina activa). La etapa 5 sí necesitó campo nuevo: `membershipPaidAt
+DateTime?` en `ProgramMembership` (migración
+`20260923170419_membership_paid_at`) — marcado a mano por el admin
+desde el dashboard del Programa, **no hay pasarela de pago real
+todavía** (cáscara honesta: es un flag de honestidad, no una
+confirmación de cobro).
+
+**`lib/funnel.ts`**: `buildFunnelStages(counts)`, función pura — arma
+las 5 etapas en orden con su conteo y el % de conversión respecto a la
+etapa anterior (`null` en la primera etapa y cuando el previo es 0, para
+nunca dividir por cero; sin techo en 100%, una conversión real puede
+superar el 100% del paso anterior si por ejemplo alguien reactivó a
+mano sin pasar por todos los pasos). 100% de cobertura, 5 tests.
+
+**`/admin/programs/[id]`**: nueva sección "Embudo de Conversión" arriba
+de "Miembros" — barra por etapa (ancho proporcional al máximo, mismo
+lenguaje visual dorado del resto del panel), conteo y % al lado. Los
+conteos de `CardLead`/`interviewedAt`/`status`/`membershipPaidAt` se
+calculan sobre datos ya cargados por el loader existente, más una sola
+query nueva (`CardLead.count` scoped por `card.programId`). Cada
+Miembro ya activo suma un botón "Marcar como pagada" (togglea
+`membershipPaidAt`, gateado a `status: "active"` — no tiene sentido
+marcar pagada una membresía que ni activó su Oficina) usando
+exactamente el mismo patrón `requireProgramAccess`/`requireMembership`
+que ya usaban `updateMemberAction`/`deleteMemberAction`.
+
+**Verificado real**: E2E nuevo (`e2e/funnel.spec.ts`) siembra 8 leads, 3
+registrations y 4 memberships (una invitada, una activa sin pagar, dos
+activas pagadas) sobre un Programa real, confirma que cada etapa cuenta
+bien (incluido el 38% de conversión de compartido→registrado) y que
+tocar "Marcar como pagada" persiste de verdad en la fila de
+`ProgramMembership` — no solo que el botón está ahí. 19/19 E2E de la
+suite completa pasando. Script descartable de Playwright contra un
+Programa sembrado a mano confirmó visualmente el embudo completo y el
+toggle end-to-end (2 pagadas → 3 pagadas al togglear una tercera),
+capturas revisadas y borradas.
+
+**Fuera de alcance esta ronda**: pasarela de pago real (Stripe u otro) —
+seguimos sin ninguna, el campo es 100% manual. El "CRM del panel admin"
+(auditoría de acciones) que Gunnar mencionó como idea suelta y marcó
+él mismo como no definida todavía ("no sé si es lo mismo siendo fractal
+para ser honesto") sigue sin construirse, a propósito.
+
+Shippeado como v1.45.0.

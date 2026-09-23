@@ -86,6 +86,27 @@ export async function messageMemberAction(memberId: string, programId: string, f
   redirect(`/admin/programs/${programId}?memberMessaged=1`);
 }
 
+// Marcado a mano por el admin -- no hay pasarela de pago real todavía
+// (cáscara honesta: esto es un flag, no una confirmación de cobro).
+// Solo tiene sentido sobre una membresía ya activa (Oficina Virtual
+// creada); togglea entre pagado/no-pagado.
+export async function markMembershipPaidAction(memberId: string, programId: string) {
+  await requireProgramAccess(programId);
+  const membership = await requireMembership(memberId, programId);
+
+  if (membership.status !== "active") {
+    redirect(`/admin/programs/${programId}?memberError=paidRequiresActive`);
+  }
+
+  await prisma.programMembership.update({
+    where: { id: membership.id },
+    data: { membershipPaidAt: membership.membershipPaidAt ? null : new Date() },
+  });
+
+  revalidatePath(`/admin/programs/${programId}`);
+  redirect(`/admin/programs/${programId}?memberPaidToggled=1`);
+}
+
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, "&amp;")
