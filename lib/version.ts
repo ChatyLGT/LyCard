@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.49.2";
+export const APP_VERSION = "1.49.3";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.49.3",
+    date: "2026-09-23",
+    notes:
+      "Fix real de Modo Foco: en algunos navegadores mobile (Safari/iOS sobre todo) el audio podía quedar completamente mudo — el AudioContext se creaba \"suspendido\" y nada avisaba del problema. Ahora se destraba explícitamente al arrancar la sesión. Si seguís sin escuchar nada, revisá que el celular no esté en modo silencio (el switch físico de iPhone corta el audio web igual que el de cualquier app).",
+  },
   {
     version: "1.49.2",
     date: "2026-09-23",

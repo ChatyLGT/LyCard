@@ -5443,3 +5443,39 @@ que el resultado fue convincente, capturas revisadas y borradas. 28/28
 E2E de la suite completa, tsc/lint/build/100% coverage limpios.
 
 Shippeado como v1.49.2.
+
+## Fix: Modo Foco podía quedar completamente mudo (2026-09-23)
+
+Gunnar reportó "no escucho nada" en Modo Foco (justo después de la
+música nueva de v1.49.1 — antes había dicho que sí escuchaba tono/ruido,
+solo faltaba música). Causa real encontrada en `startEngine`
+(`components/FocusModeBlock.tsx`): el `AudioContext` se creaba pero
+nunca se llamaba `.resume()`. Varios navegadores mobile (Safari/iOS en
+particular) crean el contexto en estado `"suspended"` incluso disparado
+desde un click real — sin el resume explícito, todo el grafo de audio se
+arma y arranca sin tirar ningún error (por eso Gunnar no veía ningún
+mensaje de fallo), pero no sale sonido. Este bug es anterior a la música
+nueva — pudo estar ahí desde v1.46.0 y no notarse antes en el navegador
+donde Gunnar probó primero.
+
+**Fix**: una sola línea, `ctx.resume().catch(() => {})` justo después de
+crear el `AudioContext`, sin esperar la promesa (los nodos se conectan
+igual, resume() solo destraba la salida real). **Límite honesto de este
+fix**: no hay forma de probarlo contra Safari/iOS real desde este
+sandbox (Playwright acá solo corre contra Chromium, donde el contexto ya
+arrancaba "running" incluso sin el fix, así que el bug nunca se
+reprodujo en el propio E2E) — el fix aplica la solución estándar
+documentada para este problema conocido de Web Audio en mobile, pero
+queda pendiente que Gunnar confirme en su iPhone real. Se le avisó
+también de una causa alternativa que el código no puede arreglar: el
+switch físico de silencio del iPhone corta el audio de Web Audio igual
+que cualquier app, es una limitación de la plataforma, no un bug.
+
+**Verificado real**: `e2e/focus-mode.spec.ts` suma una aserción de
+`AudioContext.state === "running"` tras arrancar la sesión (además del
+conteo de nodos que ya existía) — protege contra que alguien borre el
+`resume()` sin darse cuenta en el futuro, aunque no reproduce el bug
+original en sí (ver límite arriba). 28/28 E2E de la suite completa,
+tsc/lint/build/100% coverage limpios.
+
+Shippeado como v1.49.3.

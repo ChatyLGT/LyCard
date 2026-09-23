@@ -104,6 +104,18 @@ test.describe("Modo Foco — Superpoder de audio funcional", () => {
         bump();
         return origBuf.apply(this, args);
       };
+      // Guarda el último AudioContext creado -- para chequear que
+      // resume() de verdad lo saca de "suspended" (bug real reportado
+      // por Gunnar 2026-09-23: "no escucho nada", causa raíz confirmada
+      // acá: varios navegadores mobile crean el contexto suspendido
+      // aunque el click ya haya pasado).
+      const OrigCtx = window.AudioContext;
+      (window as unknown as { AudioContext: typeof AudioContext }).AudioContext = class extends OrigCtx {
+        constructor(...args: ConstructorParameters<typeof OrigCtx>) {
+          super(...args);
+          (window as unknown as { __lastAudioCtx: AudioContext }).__lastAudioCtx = this;
+        }
+      };
     });
 
     await page.goto(`${BASE_URL}/c/${cardSlug}/oficina`, { waitUntil: "networkidle" });
@@ -112,6 +124,13 @@ test.describe("Modo Foco — Superpoder de audio funcional", () => {
     await page.getByRole("button", { name: "10 min", exact: true }).click();
     await page.getByRole("button", { name: "Empezar sesión", exact: true }).click();
     await expect(page.getByText("10:00", { exact: true })).toBeVisible();
+
+    // El fix real del bug "no escucho nada": el AudioContext tiene que
+    // quedar "running", no "suspended" -- sin el resume() explícito en
+    // startEngine, esto se queda suspendido en silencio y nada de lo de
+    // abajo (nodos creados o no) importa, porque no sale sonido.
+    const ctxState = await page.evaluate(() => (window as unknown as { __lastAudioCtx: AudioContext }).__lastAudioCtx?.state);
+    expect(ctxState).toBe("running");
 
     const afterStart = await page.evaluate(() => (window as unknown as { __audioNodeCount: number }).__audioNodeCount);
     await page.waitForTimeout(1500);

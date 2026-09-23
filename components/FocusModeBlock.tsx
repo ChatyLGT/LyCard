@@ -176,6 +176,14 @@ function startMusicScheduler(
 function startEngine(mode: (typeof FOCUS_MODES)[FocusModeKey]): Engine {
   const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
   const ctx = new AudioCtx();
+  // Bug real (Gunnar, 2026-09-23: "no escucho nada"): varios navegadores
+  // mobile (Safari/iOS en particular) crean el AudioContext en estado
+  // "suspended" aunque el gesto del click ya haya ocurrido -- sin este
+  // resume() explícito, todo el grafo de abajo se arma y arranca sin
+  // tirar ningún error, pero no suena nada. No hace falta esperar la
+  // promesa: los nodos se conectan igual, resume() solo destraba la
+  // salida real.
+  ctx.resume().catch(() => {});
   const nodes: AudioScheduledSourceNode[] = [];
 
   const master = ctx.createGain();
