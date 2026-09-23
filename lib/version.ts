@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.46.1";
+export const APP_VERSION = "1.47.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.47.0",
+    date: "2026-09-23",
+    notes:
+      "Cupo real de entrevistas: cada Programa ya puede cargar sus propios horarios (fecha, hora y cupo) desde su dashboard, en vez de los 4 fijos de ejemplo. Cuando un horario se llena, deja de ofrecerse — ya no se puede anotar más gente de la que entra. Un Programa que todavía no cargó los suyos sigue viendo los 4 de siempre, nada cambia para nadie hasta que el N0 los configure.",
+  },
   {
     version: "1.46.1",
     date: "2026-09-23",

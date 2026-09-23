@@ -5058,13 +5058,13 @@ completa pasando.
 
 Shippeado como v1.46.1.
 
-### Preparado, sin pushear: cupo real de entrevistas por slot
+### Cupo real de entrevistas por slot (2026-09-23)
 
-Rama `feature/cupo-entrevistas-real` (creada desde el commit de los 3
-fixes chicos, `9257b7c`) — **implementado y verificado en local, no
-mergeado ni pusheado**. Pendiente de que Gunnar decida si esto entra
-ahora o se queda a la espera. Esta es la resolución real del punto 1.4
-del audit original — lo que el fix rápido de 2.1 resolvió fue "no
+Preparado en la rama `feature/cupo-entrevistas-real` mientras Gunnar
+hacía su ronda de pruebas manuales; al terminar ("termine.. sigue..")
+confirmó que se implemente, así que se mergeó a `main` (fast-forward,
+sin conflictos) y se shippeó. Esta es la resolución real del punto 1.4
+del audit original — lo que el fix rápido de 2.1 había resuelto fue "no
 ofrecer lo vencido", no "no permitir más gente de la que entra".
 
 **Modelo nuevo `InterviewSlot`** (migración `20260923184125_interview_slot_real`):
@@ -5116,8 +5116,11 @@ confirmó visualmente las 4 pantallas (picker con el horario real, éxito
 de la primera reserva, error "Ese horario ya se llenó" de la segunda, y
 la sección de admin con "cupo 1"), capturas revisadas y borradas.
 
-**Pipeline corrido completo salvo el último paso, a propósito**: tsc,
-lint, tests unitarios (100%, sin cambios — toda la lógica nueva es
-DB-backed, cubierta por E2E en vez del ratchet de `lib/`), build de
-producción, 22/22 E2E. **No se corrió `git push` ni se pusheó a
-`origin`** — eso es lo que significa "preparado, no decidido".
+**Pipeline completo, corrido dos veces** — una vez al prepararlo en la
+rama, y otra vez de nuevo sobre `main` recién mergeado, por las dudas de
+que algo hubiera cambiado en el entorno mientras tanto: tsc, lint, tests
+unitarios (100%, sin cambios — toda la lógica nueva es DB-backed,
+cubierta por E2E en vez del ratchet de `lib/`), build de producción,
+22/22 E2E ambas veces.
+
+Shippeado como v1.47.0.
