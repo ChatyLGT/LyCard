@@ -22,7 +22,7 @@ import { buildFunnelStages } from "@/lib/funnel";
 import { createPuestoAction, updatePuestoAction, deletePuestoAction } from "../puestos-actions";
 import { CARD_LABEL_FIELDS, defaultCardLabel } from "@/lib/cardLabels";
 import { parseEscala } from "@/lib/escalas";
-import { parseOfficeSkills } from "@/lib/officeSkills";
+import { parseOfficeSkills, DEFAULT_OFFICE_SKILLS } from "@/lib/officeSkills";
 import { parseMotivationalPhrases } from "@/lib/oficinaExtras";
 import EscalaEditor from "@/components/EscalaEditor";
 import OfficeSkillsEditor from "@/components/OfficeSkillsEditor";
@@ -564,13 +564,15 @@ export default async function AdminProgramDetailPage({
         </AccordionSection>
 
         {/* "Superpoderes" de la Oficina Virtual (2026-09-18) — sin nada acá,
-            se usan los 6 de siempre (DEFAULT_OFFICE_SKILLS en
-            lib/officeSkills.ts). El ícono de cada power sube aparte, una
+            se usan los de siempre (DEFAULT_OFFICE_SKILLS en
+            lib/officeSkills.ts, hoy 8 -- crece cada vez que se suma un
+            Superpoder nuevo, por eso el badge de abajo lee su .length en
+            vez de un número a mano). El ícono de cada power sube aparte, una
             vez que ya está guardado (no entra en el JSON del array). */}
         <AccordionSection
           title="Superpoderes de la Oficina"
-          subtitle="Nombre, descripción y color de cada herramienta de trabajo que ve el dueño en su Oficina Virtual. Sin nada acá, se muestran los 6 de siempre."
-          meta={<span style={PILL}>{officeSkills.length || "6 fijos"}</span>}
+          subtitle={`Nombre, descripción y color de cada herramienta de trabajo que ve el dueño en su Oficina Virtual. Sin nada acá, se muestran los ${DEFAULT_OFFICE_SKILLS.length} de siempre.`}
+          meta={<span style={PILL}>{officeSkills.length || `${DEFAULT_OFFICE_SKILLS.length} fijos`}</span>}
           defaultOpen={!!officeSkillsSaved || !!officeSkillsError || focus === "officeSkills"}
         >
           {officeSkillsSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Guardado.</p>}

@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.46.0";
+export const APP_VERSION = "1.46.1";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.46.1",
+    date: "2026-09-23",
+    notes:
+      "3 fixes de la auditoría técnica del día: \"Agendar tu Entrevista\" ya no ofrece horarios que ya pasaron (un bug real -- un slot vencido seguía siendo reservable), valida el formato del email cuando das uno, y ya no crea una reserva duplicada si volvés a agendar con el mismo WhatsApp (actualiza la que ya tenías). Además, el contador de Superpoderes en el dashboard de cada Programa ya no dice un número fijo desactualizado.",
+  },
   {
     version: "1.46.0",
     date: "2026-09-23",

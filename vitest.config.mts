@@ -22,7 +22,7 @@ export default defineConfig({
       // En cambio: 90% es la puerta real, pero SOLO sobre los archivos
       // que ya tienen tests (`include` abajo) — sube de a uno a medida
       // que se van cubriendo más módulos, nunca baja.
-      include: ["lib/authScope.ts", "lib/leads.ts", "lib/oficinaExtras.ts", "lib/sparkline.ts", "lib/demoData.ts", "lib/mallaReal.ts", "lib/gemeloDigitalScript.ts", "lib/tags.ts", "lib/janus.ts", "lib/nashMesh.ts", "lib/funnel.ts", "lib/focusAudio.ts"],
+      include: ["lib/authScope.ts", "lib/leads.ts", "lib/oficinaExtras.ts", "lib/sparkline.ts", "lib/demoData.ts", "lib/mallaReal.ts", "lib/gemeloDigitalScript.ts", "lib/tags.ts", "lib/janus.ts", "lib/nashMesh.ts", "lib/funnel.ts", "lib/focusAudio.ts", "lib/interviewSlots.ts"],
       thresholds: {
         lines: 90,
         functions: 90,

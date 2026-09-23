@@ -1,9 +1,11 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { slotById } from "@/lib/interviewSlots";
+import { slotById, isSlotUpcoming } from "@/lib/interviewSlots";
 import { currentMemberId } from "@/lib/memberAuth";
 import { upsertLead } from "@/lib/leadsUpsert";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function registerInterviewAction(input: {
   cardSlug: string;
@@ -18,8 +20,15 @@ export async function registerInterviewAction(input: {
   const slot = slotById(input.slotId);
 
   if (!slot) return { ok: false as const, error: "slot" };
+  // Auditoría 2026-09-23, hallazgo 2.1: el cliente ya filtra los slots
+  // vencidos (upcomingSlots), pero un tab viejo sin refrescar podía
+  // seguir mandando uno pasado -- el servidor es quien de verdad decide.
+  if (!isSlotUpcoming(slot)) return { ok: false as const, error: "slot" };
   if (!name) return { ok: false as const, error: "name" };
   if (!whatsapp) return { ok: false as const, error: "whatsapp" };
+  // El email es opcional en este formulario (a diferencia de
+  // sendInvitationAction) -- solo se valida el formato cuando viene algo.
+  if (email && !EMAIL_RE.test(email)) return { ok: false as const, error: "email" };
 
   const card = await prisma.card.findUnique({ where: { slug: input.cardSlug } });
   if (!card) return { ok: false as const, error: "card" };
@@ -58,18 +67,34 @@ export async function registerInterviewAction(input: {
     networkMembershipId = membership.id;
   }
 
-  const registration = await prisma.registration.create({
-    data: {
-      cardId: card.id,
-      slotId: slot.id,
-      slotLabel: `${slot.label} — ${slot.time}`,
-      name,
-      whatsapp,
-      email,
-      membershipId,
-      networkMembershipId,
-    },
+  // Auditoría 2026-09-23, hallazgo 1.3: sin esto, la misma persona
+  // reenviando el formulario (doble click, o volvió a agendar) generaba
+  // una fila de Registration nueva por cada intento. No hay una
+  // constraint única en el schema todavía (eso es la arreglada "de
+  // verdad" pendiente) -- acá alcanza con buscar antes de crear: si esa
+  // Card ya tiene una Registration de ese mismo whatsapp, se actualiza en
+  // vez de duplicar (cubre tanto el reenvío accidental como "me
+  // arrepentí, quiero otro horario").
+  const existing = await prisma.registration.findFirst({
+    where: { cardId: card.id, whatsapp },
   });
+  const registration = existing
+    ? await prisma.registration.update({
+        where: { id: existing.id },
+        data: { slotId: slot.id, slotLabel: `${slot.label} — ${slot.time}`, name, email, membershipId, networkMembershipId },
+      })
+    : await prisma.registration.create({
+        data: {
+          cardId: card.id,
+          slotId: slot.id,
+          slotLabel: `${slot.label} — ${slot.time}`,
+          name,
+          whatsapp,
+          email,
+          membershipId,
+          networkMembershipId,
+        },
+      });
 
   // Seguimiento (2026-09-23): agendar una entrevista es la señal más
   // fuerte de las 4 que alimentan CardLead — la persona ya dio un paso

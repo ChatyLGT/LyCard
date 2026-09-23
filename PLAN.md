@@ -5003,3 +5003,68 @@ que esto se use como argumento de venta, no bloquea el build porque la
 modulación de amplitud en sí es de dominio público.
 
 Shippeado como v1.46.0.
+
+## 3 fixes rápidos de la auditoría + prep de la solución real de cupos (2026-09-23)
+
+Gunnar pidió atacar `docs/08-AUDITORIA-2026-09-23.md` mientras corría sus
+pruebas manuales: "dale al 3" — los arreglos chicos ya, más uno grande
+preparado sin pushear para decidir después. Los 4 candidatos "chicos" del
+audit eran: badge desactualizado, slot vencido reservable, sin validar/
+dedupear registros, y un doc duplicado. Se shippearon 3 — el cuarto
+(`WHITEPAPER-ADENDA-2026-09 (1).md` vs `.md`) resultó **no ser un
+duplicado accidental** al diffearlos: son dos borradores legales reales
+con conclusiones distintas sobre el criterio anti-MLM #4 (uno lo da por
+cerrado con una regla formal de ψ, el otro lo deja pendiente de dictamen
+legal) — decisión de Gunnar, no mía, se deja sin tocar.
+
+**Hallazgo 2.2 (badge "6 fijos")**: `app/admin/programs/[id]/page.tsx` —
+el badge y el subtítulo de "Superpoderes de la Oficina" tenían el número
+`6` a mano en 3 lugares. Ahora los tres leen
+`DEFAULT_OFFICE_SKILLS.length` (hoy 8) — nunca más se desactualiza solo
+porque se sume un Superpoder nuevo.
+
+**Hallazgo 2.1 (slot vencido reservable)**: `lib/interviewSlots.ts` — cada
+slot ahora tiene un campo `date` (ISO) real, y dos funciones nuevas:
+`isSlotUpcoming(slot, now)` y `upcomingSlots(now)`, con `now` inyectable
+para poder testear sin mockear el reloj. `slotById` sigue resolviendo
+slots vencidos a propósito (una Registration vieja necesita poder seguir
+mostrando el nombre de su slot). `components/LyCardView.tsx` ahora
+renderiza `upcomingSlots()` en vez del array crudo — el slot "Martes 22"
+ya no aparece como opción. El servidor (`registerInterviewAction`)
+también rechaza un `slotId` vencido aunque llegue igual (cliente viejo
+sin refrescar), con el mismo error genérico que un slot inexistente.
+
+**Hallazgos 1.2/1.3 (sin validar email, sin dedupe)**:
+`app/c/actions.ts#registerInterviewAction` — el email (campo opcional en
+este formulario) ahora se valida con el mismo regex que ya usaba
+`sendInvitationAction` cuando viene algo, nunca cuando viene vacío.
+Dedupe: antes de crear una `Registration`, se busca si esa Card ya tiene
+una fila con ese mismo `whatsapp` — si existe, se **actualiza** (nuevo
+slot/nombre/email) en vez de duplicar. No hay constraint única en el
+schema todavía (esa es la versión "de verdad", ver más abajo) — esto es
+la versión de aplicación, suficiente para cerrar el problema de fondo sin
+migración.
+
+**Verificado real**: E2E nuevo (`e2e/interview-slots.spec.ts`) entra como
+visitante anónimo (sin login — este flujo es público), confirma que el
+slot vencido no aparece en pantalla, que un email mal formado no llega a
+la pantalla de éxito ni crea fila en `Registration`, y que agendar dos
+veces con el mismo WhatsApp deja **una sola fila** en la base con el
+`slotId` actualizado al segundo intento — verificado con una query
+directa a Postgres, no solo mirando la UI. `lib/interviewSlots.ts` sumado
+al ratchet de cobertura (100%, 8 tests) — cierra una fracción del
+hallazgo 2.3 (módulos `lib/` sin tests) de paso. 21/21 E2E de la suite
+completa pasando.
+
+Shippeado como v1.46.1.
+
+### Preparado, sin pushear: cupo real de entrevistas por slot
+
+Pendiente de decisión de Gunnar — no se pusheó. Diseño: mover
+`INTERVIEW_SLOTS` de array hardcodeado a un modelo `InterviewSlot` en
+Prisma, scoped por `Program` (cada Programa gestiona los suyos desde
+`/admin/programs/[id]`, mismo patrón que `escalas`/`officeSkills`), con
+un campo `capacity` y un conteo de `Registration`s activas contra ese
+slot para saber cuándo está lleno. Esto es la resolución real del punto
+1.4 del audit original — lo que el fix de hoy (2.1) resolvió fue "no
+ofrecer lo vencido", no "no permitir más gente de la que entra".

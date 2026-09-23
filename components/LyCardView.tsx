@@ -7,7 +7,7 @@ import type { Card, OriginMemento, Program, ProgramSkin, Puesto } from "@/genera
 import { t, type Lang } from "@/lib/i18n";
 import { rankById, medalById } from "@/lib/data";
 import { parseEscala } from "@/lib/escalas";
-import { INTERVIEW_SLOTS } from "@/lib/interviewSlots";
+import { upcomingSlots } from "@/lib/interviewSlots";
 import { registerInterviewAction, sendInvitationAction, sendContactMessageAction, sendQrByWhatsappAction } from "@/app/c/actions";
 import { APP_VERSION, CHANGELOG } from "@/lib/version";
 import { isSkinColors, KNOWN_FONTS } from "@/lib/designMd";
@@ -1741,7 +1741,7 @@ export default function LyCardView({
                   </p>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {INTERVIEW_SLOTS.map((slot) => {
+                    {upcomingSlots().map((slot) => {
                       const on = slot.id === selectedSlot;
                       return (
                         <button
