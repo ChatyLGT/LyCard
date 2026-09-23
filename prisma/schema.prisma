@@ -102,6 +102,14 @@ model Card {
   defaultTheme String @default("dark")
   defaultLang  String @default("es")
 
+  // Tamaños ajustables por el dueño (2026-09-23, pedido de Gunnar: "que
+  // pueda reducir la foto un poco, aumentar el botón de QR") -- por Card,
+  // no por Programa: cada dueño ajusta la suya. Record<CardSizeKey,
+  // number> (multiplicador 0.5-1.5), ver lib/cardSizeConfig.ts. Vacío
+  // (el default) = 100% en los 4 módulos, cero cambio visual hasta que
+  // el dueño lo toque.
+  sizeConfig Json @default("{}")
+
   registrations Registration[]
 
   // --- Multi-program platform (PLAN.md Phase 0) ---

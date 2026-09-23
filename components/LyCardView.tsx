@@ -12,6 +12,8 @@ import { APP_VERSION, CHANGELOG } from "@/lib/version";
 import { isSkinColors, KNOWN_FONTS } from "@/lib/designMd";
 import { googleFontHref } from "@/lib/googleFont";
 import { hexToRgbString, lightness, shade } from "@/lib/color";
+import { parseCardSizeConfig, buildCardSizeCssVars, type CardSizeConfig } from "@/lib/cardSizeConfig";
+import CardSizePanel from "@/components/CardSizePanel";
 
 type ModalKey =
   | "od"
@@ -127,10 +129,14 @@ const BADGE_BTN: CSSProperties = {
 };
 
 // The bottom "podium" row: a medium cube either side of the large QR cube.
+// El multiplicador --scale-cubeMedium se hereda del wrapper raíz de
+// LyCardView aunque esto sea una constante de módulo -- las variables
+// CSS resuelven por árbol de DOM en el navegador, no en JS (2026-09-23,
+// ver lib/cardSizeConfig.ts).
 const CUBE_MEDIUM: CSSProperties = {
   flex: "none",
-  width: "clamp(62px,15dvh,82px)",
-  height: "clamp(62px,15dvh,82px)",
+  width: "clamp(calc(62px*var(--scale-cubeMedium,1)),calc(15dvh*var(--scale-cubeMedium,1)),calc(82px*var(--scale-cubeMedium,1)))",
+  height: "clamp(calc(62px*var(--scale-cubeMedium,1)),calc(15dvh*var(--scale-cubeMedium,1)),calc(82px*var(--scale-cubeMedium,1)))",
   borderRadius: 18,
   border: "1px solid rgba(255,230,163,.45)",
   background: "linear-gradient(160deg,var(--accentLight,#E5C378),var(--accentMid,#C8A15A) 55%,var(--accentDeep,#99732B))",
@@ -168,8 +174,8 @@ const SOCIAL_ICON: CSSProperties = {
   position: "relative",
   overflow: "hidden",
   flex: "none",
-  width: "clamp(24px,6.6dvh,27px)",
-  height: "clamp(24px,6.6dvh,27px)",
+  width: "clamp(calc(24px*var(--scale-socialIcon,1)),calc(6.6dvh*var(--scale-socialIcon,1)),calc(27px*var(--scale-socialIcon,1)))",
+  height: "clamp(calc(24px*var(--scale-socialIcon,1)),calc(6.6dvh*var(--scale-socialIcon,1)),calc(27px*var(--scale-socialIcon,1)))",
   borderRadius: 999,
   color: "#FBF8F1",
   background: "linear-gradient(160deg,rgba(255,255,255,.32) 0%,rgba(255,255,255,.06) 45%,rgba(255,255,255,.14) 100%)",
@@ -422,6 +428,43 @@ export default function LyCardView({
   const [lang, setLang] = useState<Lang>((card.defaultLang as Lang) || "es");
   const L = (key: string) => cardLabel(program, lang, key);
   const [modal, setModal] = useState<ModalKey>(null);
+
+  // Tamaños ajustables (2026-09-23, pedido de Gunnar: "aprieto de forma
+  // sostenida y salta el ajuste") -- solo el dueño puede activarlo.
+  // `liveSizeConfig` es el estado que arma las variables CSS del wrapper
+  // de más abajo, así que mover un slider en CardSizePanel cambia la
+  // tarjeta real al toque, no una vista previa aparte.
+  const savedSizeConfig = parseCardSizeConfig(card.sizeConfig);
+  const [liveSizeConfig, setLiveSizeConfig] = useState<CardSizeConfig>(savedSizeConfig);
+  const [sizePanelOpen, setSizePanelOpen] = useState(false);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressStart = useRef<{ x: number; y: number } | null>(null);
+
+  function cancelLongPress() {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    longPressStart.current = null;
+  }
+  function handleCardPointerDown(e: React.PointerEvent) {
+    if (!isHost || modal || scheduleOpen) return;
+    longPressStart.current = { x: e.clientX, y: e.clientY };
+    longPressTimer.current = setTimeout(() => {
+      setLiveSizeConfig(savedSizeConfig);
+      setSizePanelOpen(true);
+    }, 550);
+  }
+  function handleCardPointerMove(e: React.PointerEvent) {
+    if (!longPressStart.current) return;
+    const dx = e.clientX - longPressStart.current.x;
+    const dy = e.clientY - longPressStart.current.y;
+    if (Math.hypot(dx, dy) > 12) cancelLongPress();
+  }
+  function handleSizePanelClose(nextSaved: CardSizeConfig | null) {
+    if (nextSaved) setLiveSizeConfig(nextSaved);
+    setSizePanelOpen(false);
+  }
   const [portal, setPortal] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -777,6 +820,11 @@ export default function LyCardView({
 
   return (
     <div
+      onPointerDown={handleCardPointerDown}
+      onPointerMove={handleCardPointerMove}
+      onPointerUp={cancelLongPress}
+      onPointerLeave={cancelLongPress}
+      onPointerCancel={cancelLongPress}
       style={{
         height: "100dvh",
         width: "100%",
@@ -788,6 +836,7 @@ export default function LyCardView({
         WebkitFontSmoothing: "antialiased",
         ...THEME_VARS[theme],
         ...brandVars,
+        ...buildCardSizeCssVars(liveSizeConfig),
       }}
     >
       <div style={{ position: "relative", width: "100%", maxWidth: 430, height: "100%", overflow: "hidden" }}>
@@ -817,9 +866,11 @@ export default function LyCardView({
                 width: "100%",
                 // -15% (2026-09-17, pedido de Gunnar): 130/420 → 110/357,
                 // para que el panel de botones/social de abajo respire más.
+                // 2026-09-23: multiplicador --scale-photo ajustable por el
+                // dueño (long-press en la tarjeta), ver lib/cardSizeConfig.ts.
                 flex: "1 1 auto",
-                minHeight: 110,
-                maxHeight: 357,
+                minHeight: "calc(110px*var(--scale-photo,1))",
+                maxHeight: "calc(357px*var(--scale-photo,1))",
                 borderRadius: 24,
                 overflow: "hidden",
                 border: "1px solid var(--line,rgba(var(--accentRgb,200,161,90),.22))",
@@ -1244,7 +1295,7 @@ export default function LyCardView({
                 <span style={{ position: "absolute", bottom: 7, left: 7, width: 16, height: 16, borderBottom: "2px solid var(--accentMid,#D4AF37)", borderLeft: "2px solid var(--accentMid,#D4AF37)", borderRadius: "0 0 0 6px" }} />
                 <span style={{ position: "absolute", bottom: 7, right: 7, width: 16, height: 16, borderBottom: "2px solid var(--accentMid,#D4AF37)", borderRight: "2px solid var(--accentMid,#D4AF37)", borderRadius: "0 0 6px 0" }} />
                 <div
-                  style={{ width: "clamp(84px,15dvh,140px)", height: "clamp(84px,15dvh,140px)", background: "#fff", borderRadius: 8, padding: 6 }}
+                  style={{ width: "clamp(calc(84px*var(--scale-qrBtn,1)),calc(15dvh*var(--scale-qrBtn,1)),calc(140px*var(--scale-qrBtn,1)))", height: "clamp(calc(84px*var(--scale-qrBtn,1)),calc(15dvh*var(--scale-qrBtn,1)),calc(140px*var(--scale-qrBtn,1)))", background: "#fff", borderRadius: 8, padding: 6 }}
                   dangerouslySetInnerHTML={{ __html: qrSvg }}
                 />
               </button>
@@ -1255,8 +1306,8 @@ export default function LyCardView({
                 style={{
                   position: "relative",
                   flex: "none",
-                  width: "clamp(84px,15dvh,140px)",
-                  height: "clamp(84px,15dvh,140px)",
+                  width: "clamp(calc(84px*var(--scale-qrBtn,1)),calc(15dvh*var(--scale-qrBtn,1)),calc(140px*var(--scale-qrBtn,1)))",
+                  height: "clamp(calc(84px*var(--scale-qrBtn,1)),calc(15dvh*var(--scale-qrBtn,1)),calc(140px*var(--scale-qrBtn,1)))",
                   borderRadius: 20,
                   background: "linear-gradient(160deg,var(--accentLight,#E5C378),var(--accentMid,#C8A15A) 55%,var(--accentDeep,#99732B))",
                   border: "1px solid rgba(255,230,163,.5)",
@@ -2110,6 +2161,16 @@ export default function LyCardView({
           </div>
         )}
       </div>
+
+      {sizePanelOpen && (
+        <CardSizePanel
+          cardId={card.id}
+          liveConfig={liveSizeConfig}
+          savedConfig={savedSizeConfig}
+          onChange={setLiveSizeConfig}
+          onClose={handleSizePanelClose}
+        />
+      )}
     </div>
   );
 }

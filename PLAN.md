@@ -5124,3 +5124,136 @@ cubierta por E2E en vez del ratchet de `lib/`), build de producción,
 22/22 E2E ambas veces.
 
 Shippeado como v1.47.0.
+
+## Tamaños ajustables por Card — long-press en la tarjeta real (2026-09-23)
+
+Retomó un pedido de Gunnar del 17 de septiembre ("todos los tamaños
+editables desde el Dashboard", Grupo A del backlog grande) que en su
+momento se pausó a propósito: en esa sesión se acordó arrancar con 5
+ajustes fijos en vez de un sistema de tokens completo, dejando "todo
+editable" como fase aparte "si después de probar la tarjeta seguís
+necesitando ese nivel de control" — quedó registrado así en el commit
+`de9b430`. Hoy Gunnar lo volvió a pedir, esta vez con una forma concreta:
+"que aprieto de forma sostenida y saltan los módulos y me permite
+ajustar tamaño."
+
+**Decisión de diseño, explicada antes de programar**: se evaluaron 2
+caminos — (A) handles de arrastre por módulo directo sobre la tarjeta
+(el layout hoy es 100% flexbox + `clamp()`, así que esto implica
+convertir ese sistema responsivo en overrides de píxeles por gesto,
+semanas de trabajo real) vs. (B) un panel de sliders con vista previa EN
+VIVO sobre la tarjeta real (mismo criterio arquitectónico que ya usa
+todo — `officeSkills`/`escalas`/`InterviewSlot` — Json editable con
+fallback fijo). Se propuso B, Gunnar lo confirmó. **Por Card, no por
+Programa** — cada dueño ajusta la suya, decisión suya explícita
+("y si sería para todos no solo para mí").
+
+**`Card.sizeConfig`** (migración `20260923191319_card_size_config`): Json,
+default `{}` — sin tocar nada, 100% en los 4 módulos, cero cambio visual
+para nadie que no abra el panel.
+
+**`lib/cardSizeConfig.ts`** (puro, testeable): 4 módulos ajustables —
+Foto, Botón QR, Cubos laterales, Íconos sociales — cada uno un
+multiplicador 0.5-1.5 (default 1). `parseCardSizeConfig` nunca confía en
+el JSON de la DB a ciegas (clampea, ignora keys desconocidas, cae al
+default ante NaN/Infinity — un valor no-finito no se clampea al máximo,
+se descarta directo). `buildCardSizeCssVars` arma
+`{"--scale-photo": "0.85", ...}` con 2 decimales. 100% de cobertura, 12
+tests.
+
+**El truco técnico real**: todo el layout de `LyCardView.tsx` ya usaba
+`clamp(mín, Xdvh, máx)` para cada módulo dimensionado (precedente:
+`clamp(84px,15dvh,140px)` del botón QR) — no hizo falta inventar una
+unidad nueva, cada `clamp()` se envolvió con
+`calc(valor*var(--scale-X,1))`. Las variables se inyectan una sola vez
+en el wrapper raíz (mismo mecanismo que `--accentRgb` para los colores
+de Skins) y se heredan por CSS hacia cualquier descendiente, aunque el
+estilo del módulo (`CUBE_MEDIUM`, `SOCIAL_ICON`) sea una constante de
+módulo de React, no algo recalculado por instancia — las variables CSS
+resuelven por árbol de DOM en el navegador, no en JS.
+
+**`components/CardSizePanel.tsx`** (nuevo): el panel que abre el
+long-press (550ms sostenido, isHost-only, se cancela si el dedo se mueve
+más de 12px o si ya hay otro modal abierto). `liveConfig` es el MISMO
+estado que arma las variables CSS del wrapper — mover un slider cambia
+la tarjeta real, atrás del panel translúcido, al toque, sin round-trip
+al servidor. "Cancelar" descarta el ajuste en vivo sin tocar la DB;
+"Guardar" llama a `updateCardSizeConfigAction` (nuevo,
+`app/c/sizeConfig-actions.ts`, mismo `assertOwner` que ya usan
+`voiceNotes-actions.ts`/`leads-actions.ts`/`tags-actions.ts`) y persiste
+de verdad.
+
+**Verificado real**: `e2e/card-size-panel.spec.ts` (nuevo, 2 tests) —
+long-press real (`page.mouse.down()` + esperar 700ms) abre el panel,
+mover el slider de Foto a 70% cambia la variable CSS real del wrapper
+**antes** de guardar (leído con `getComputedStyle`, no un mock), guardar
+persiste en Postgres (confirmado con query directa), y recargar la
+página mantiene el 70% sin reabrir el panel. Segundo test: un visitante
+sin sesión mantiene presionado y no pasa nada — el gate `isHost` corta
+antes de que el timer siquiera arranque. 24/24 E2E de la suite completa
+pasando. Script descartable de Playwright confirmó visualmente las 3
+etapas (tarjeta normal → panel abierto con la tarjeta real detrás →
+Foto achicada a 65% + Botón QR agrandado a 140%, ambos cambiando en vivo
+antes de tocar Guardar), capturas revisadas y borradas.
+
+**Fuera de alcance esta ronda**: handles de arrastre directo (Opción A,
+descartada por costo/riesgo, ver arriba). Un 5° o 6° módulo ajustable
+(ej. el nombre/tipografía) — se suma fácil con el mismo patrón el día
+que haga falta. Ajuste a nivel Programa (aplicar el mismo tamaño a las 3
+Cards de una cuenta de un saque) — hoy cada una es independiente, a
+propósito.
+
+Shippeado como v1.48.0.
+
+## Aclaración de contexto: modelo Freemium/planes de precio (2026-09-23)
+
+Gunnar preguntó si el modelo de negocio de niveles de suscripción
+(Freemium → Automatizado → Normal → Enterprise, convertir un usuario
+Freemium a pago mostrándole cómo parametrizar su propia Oficina/Gemelo
+Digital) ya estaba mapeado. **Sí, extensamente** — ver
+`docs/05-ROADMAP-EDT.md` (sección "Modelo de negocio: Programa Legacy y
+sus planes") y `docs/01-VISION-Y-ALCANCE.md`. Incluye hasta un borrador
+de schema (`Program.planTier`/`setupFeeUsd`/`monthlySubscriptionUsd`/
+`commissionOnSalesPct`) y el flujo del "nacimiento" (N0 recibe programa →
+explora → crea tarjetas → las juega en Freemium → crea usuario real, por
+2 caminos: Personal solo-Gemelo-Digital o Full con 3 bots+infraestructura).
+
+**Resuelto por Gunnar en el mismo hilo — los 3 niveles de usuario, con
+nombre propio** (no estaban en ningún doc anterior que se haya
+encontrado; primera vez que quedan registrados con estos nombres):
+
+1. **"Mirón"** — a quien alguien de un Programa le comparte su LyCard
+   (ej. por QR). Solo puede VER esa tarjeta puntual, la del que lo
+   invitó — nada de crear, nada de registrarse. Es exactamente el
+   `VisitorOficina` de hoy, sin sesión. **Esto SÍ coincide** con lo que
+   el doc viejo llama "Freemium" ("todo bloqueado, cero bot") — la
+   discrepancia que se había marcado antes ya no es tal: el doc viejo
+   describe al Mirón, no al Vividor.
+2. **"Vividor"** — se registra, entra a la opción Freemium real, crea
+   sus 3 tarjetas, tiene una Oficina Virtual **básica**: compartir su
+   tarjeta, acceso al CRM (Embudo de Conversión), y todo lo que se
+   construyó en esta sesión completa (Superpoderes, Modo Foco, tamaños
+   ajustables, todo) — **"todo lo que hemos programado y hecho es para
+   ese Fremium"**, palabras de Gunnar. Es el nivel real de uso de la
+   plataforma hoy.
+3. **"Chido"** — paga alguno de los servicios. Pasa primero por el
+   programa de entrevista y luego por la creación de su Oficina Virtual
+   — nivel de personalización y complejidad de esa Oficina depende de
+   la membresía que compró. Es quien mapea a los 4 planes de precio
+   (Freemium/Automatizado/Normal/Enterprise) del doc viejo.
+
+**Un punto sin cerrar, real, no cosmético**: hoy en el código, tener tus
+3 tarjetas depende 100% de `completeInterviewAction` — un N0/Admin tiene
+que activar la membresía a mano, no existe un "me registro y ya tengo
+mis 3 tarjetas" de verdad self-service. Eso encaja con el flujo del
+"Chido" (pasa por entrevista primero) pero **no** con la descripción del
+"Vividor" ("se registra... puede crear sus 3 tarjetas" — sin mencionar
+entrevista). ¿El Vividor también pasa por una entrevista (aunque sea
+liviana, un solo click del N0) antes de tener sus 3 tarjetas, o el plan
+es que se registre y las tenga al toque, sin que nadie del otro lado
+tenga que aprobar nada? Esa es la pieza que falta confirmar antes de
+tocar código de este modelo.
+
+**Nada de esto está construido todavía** — cero campo `planTier` real en
+el schema, cero gate de Oficina por nivel de usuario/suscripción, cero
+Stripe. Sigue siendo 100% diseño.

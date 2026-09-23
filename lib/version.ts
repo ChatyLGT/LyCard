@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.47.0";
+export const APP_VERSION = "1.48.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.48.0",
+    date: "2026-09-23",
+    notes:
+      "Nuevo: tamaños ajustables en tu propia LyCard. Mantené presionada la tarjeta (sin soltar) y aparece un panel con 4 sliders — Foto, Botón QR, Cubos laterales, Íconos sociales — que cambian tu tarjeta real EN VIVO, atrás del panel, mientras los movés. Guardá cuando te guste el resultado, o cancelá y queda todo como estaba. Por tarjeta, no por Programa: cada quien ajusta la suya.",
+  },
   {
     version: "1.47.0",
     date: "2026-09-23",
