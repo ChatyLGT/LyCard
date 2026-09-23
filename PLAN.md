@@ -4927,3 +4927,79 @@ seguimos sin ninguna, el campo es 100% manual. El "CRM del panel admin"
 para ser honesto") sigue sin construirse, a propósito.
 
 Shippeado como v1.45.0.
+
+## Modo Foco — Superpoder nuevo, "algo similar a Brain.fm" (2026-09-23)
+
+Gunnar pidió explorar un Superpoder al estilo Brain.fm (audio funcional
+para sostener atención) apoyado en un par de investigaciones externas
+(un informe sobre LyCard/EinarOS con hallazgos de seguridad reales pero
+fuera de este repo, y un PDF sobre la ciencia detrás de Brain.fm). Antes
+de escribir código se filtró a propósito lo que no aplicaba: nada de
+EinarOS (HorusEye podando rutas, Jev/Score/Choice, Carbono) porque no
+existe en LyCard; nada de "Neural Phase-Locking" ni Solfeggio en el copy
+porque la evidencia real detrás de brainwave entrainment es floja —
+Brain.fm sí tiene un estudio propio con NSF, pero eso no generaliza a
+"cualquier pulso sincroniza tus neuronas". El copy de este Superpoder se
+queda corto a propósito: "un ambiente sonoro constante, sin
+distracciones", nada más.
+
+Decisión de arquitectura clave: **cero pistas de audio externas**. El
+plan original evaluaba curar CC0 de Freesound y alojarlas — se descartó
+apenas se llegó a la implementación real: no había ninguna pista en mano
+para curar de verdad, y fabricar URLs de "pistas curadas" que no existen
+hubiera sido la misma mentira por omisión que ya evitamos en otros
+lados del producto (los datos de demo inventados, los testimonios
+falsos). La solución más honesta terminó siendo también la más barata:
+**todo el audio se sintetiza en vivo en el navegador** con Web Audio
+API — pulso de volumen (LFO modulando el gain principal), ruido de
+fondo (rosa/marrón, generado por algoritmo, dominio público) y un pad
+armónico de 2-3 osciladores. Cero archivos, cero licencias, cero
+storage.
+
+**`lib/focusAudio.ts`** (puro, testeable): 4 modos fijos — Foco
+profundo (pulso 15Hz/ruido marrón), Creativo (6Hz/rosa), Relajación
+(10Hz/rosa), Sueño (2.5Hz/marrón, acorde muy grave) — cada uno con su
+`pulseHz`/`pulseDepth`/`noiseColor`/`padHz`/`padGain`. `getFocusMode`
+nunca revienta ante una key desconocida (cae a "foco"). 3 duraciones
+fijas (10/20/45 min). `formatCountdown`/`formatDurationLabel` para la
+UI. 100% de cobertura, 16 tests.
+
+**`components/FocusModeBlock.tsx`**: arma el grafo de Web Audio real
+(`AudioContext` + `GainNode` maestro modulado por un LFO vía
+`AudioParam`, un `AudioBufferSourceNode` de ruido generado a mano, y
+osciladores para el pad) — el algoritmo de ruido rosa/marrón vive acá
+mismo, no es una librería. Selector de modo + duración → sesión corriendo
+(timer real, pulso visual sincronizado a la frecuencia del modo, pausar/
+terminar) → al cerrar, en vez de saltar a otro Superpoder (frágil si ese
+Programa no tiene Notas de Voz habilitado), reusa el pipeline real de
+Notas de Voz directo acá adentro (mismo `createVoiceNoteAction`, mismo
+`MediaRecorder`) para grabar "¿qué sacaste de esta sesión?" — cero
+tablas nuevas, cero backend nuevo.
+
+**Encaja en el sistema de Superpoderes existente sin migración**: se
+sumó `"modo-foco"` a `OfficeSkillAppType` (una unión de TypeScript, no
+una columna) y una entrada nueva a `DEFAULT_OFFICE_SKILLS` — aparece de
+entrada en cualquier Oficina que no haya personalizado su lista, y
+también quedó disponible en el dropdown de `OfficeSkillsEditor` para
+quien sí la personalizó. Más chico que Notas de Voz, que sí necesitó
+tabla propia.
+
+**Verificado real**: E2E nuevo (`e2e/focus-mode.spec.ts`) confirma que
+el `AudioContext` se arma de verdad en Chromium (sin tirar el error de
+"este navegador no puede reproducir"), que el timer arranca en el
+tiempo elegido, y que terminar la sesión lleva a la pantalla de
+reflexión real. 20/20 E2E de la suite completa pasando. Script
+descartable de Playwright confirmó visualmente las 3 pantallas (setup
+con los 4 modos, sesión corriendo con el timer bajando de verdad,
+reflexión con el grabador), capturas revisadas y borradas.
+
+**Fuera de alcance esta ronda**: pistas de audio pregrabadas (curadas o
+generadas por IA) — quedó resuelto que no hacen falta para el MVP,
+posible capa opcional a futuro si el sintetizado no alcanza. Medición
+de uso (KPI de "sesiones esta semana" en Check de Realidad) — se decide
+después de ver uso real, no antes, según lo charlado con Gunnar. Chequeo
+de patentes sobre el método puntual de Brain.fm — pendiente antes de
+que esto se use como argumento de venta, no bloquea el build porque la
+modulación de amplitud en sí es de dominio público.
+
+Shippeado como v1.46.0.

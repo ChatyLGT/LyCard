@@ -8,6 +8,7 @@ import FathomBriefBlock from "@/components/FathomBriefBlock";
 import VoiceNotesBlock, { type VoiceNoteSummary } from "@/components/VoiceNotesBlock";
 import AgendaBlock from "@/components/AgendaBlock";
 import type { AgendaEventItem, AgendaTaskItem } from "@/lib/agenda";
+import FocusModeBlock from "@/components/FocusModeBlock";
 
 const kickerStyle: CSSProperties = {
   font: "600 8.5px 'Plus Jakarta Sans',sans-serif",
@@ -25,6 +26,7 @@ const APP_TYPE_ICON: Record<OfficeSkill["appType"], string> = {
   mensajes: "chat",
   cartera: "account_balance_wallet",
   configuracion: "settings",
+  "modo-foco": "graphic_eq",
   custom: "bolt",
 };
 
@@ -247,6 +249,7 @@ function AppFace({
   if (skill.appType === "agenda") {
     return <AgendaBlock events={agendaEvents} tasks={agendaTasks} googleConnected={googleConnected} connectUrl={connectUrl} />;
   }
+  if (skill.appType === "modo-foco") return <FocusModeBlock cardId={cardId} />;
   if (skill.appType === "malla" && companyNetworkHref) {
     return (
       <Link

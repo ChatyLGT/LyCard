@@ -27,6 +27,7 @@ const APP_TYPE_OPTIONS: { value: OfficeSkillAppType; label: string }[] = [
   { value: "mensajes", label: "Mensajes" },
   { value: "cartera", label: "Cartera NashMesh" },
   { value: "configuracion", label: "Configuración" },
+  { value: "modo-foco", label: "Modo Foco (audio funcional)" },
   { value: "custom", label: "Otro (sin app conectada todavía)" },
 ];
 

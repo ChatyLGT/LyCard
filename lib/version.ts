@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.45.0";
+export const APP_VERSION = "1.46.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.46.0",
+    date: "2026-09-23",
+    notes:
+      "Nuevo Superpoder \"Modo Foco\": audio funcional generado en vivo en tu propio navegador — un pulso de volumen, ruido de fondo y un pad sostenido, en 4 modos (Foco profundo, Creativo, Relajación, Sueño). Nada de pistas externas ni de licencias que curar: todo se sintetiza al vuelo. Al terminar la sesión, grabás una reflexión corta que queda guardada como una Nota de Voz más de esa tarjeta. Honesto a propósito: el copy no promete \"sincronizar tus neuronas\", solo lo que de verdad se puede sostener — un ambiente sonoro constante, sin distracciones.",
+  },
   {
     version: "1.45.0",
     date: "2026-09-23",

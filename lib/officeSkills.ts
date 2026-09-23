@@ -11,6 +11,7 @@ export type OfficeSkillAppType =
   | "mensajes"
   | "cartera"
   | "configuracion"
+  | "modo-foco"
   | "custom";
 
 export type OfficeSkill = {
@@ -25,7 +26,7 @@ export type OfficeSkill = {
 
 export function parseOfficeSkills(value: unknown): OfficeSkill[] {
   if (!Array.isArray(value)) return [];
-  const APP_TYPES: OfficeSkillAppType[] = ["malla", "fathom-brief", "notas-voz", "agenda", "mensajes", "cartera", "configuracion", "custom"];
+  const APP_TYPES: OfficeSkillAppType[] = ["malla", "fathom-brief", "notas-voz", "agenda", "mensajes", "cartera", "configuracion", "modo-foco", "custom"];
   return value
     .filter((v): v is Record<string, unknown> => typeof v === "object" && v !== null)
     .map((v) => ({
@@ -105,6 +106,15 @@ export const DEFAULT_OFFICE_SKILLS: OfficeSkill[] = [
     iconUrl: "",
     color: "#756c5e",
     appType: "configuracion",
+    enabled: true,
+  },
+  {
+    key: "modo-foco",
+    nombre: "Modo Foco",
+    descripcion: "Audio generado en vivo (pulso + ruido de fondo + un pad) pensado para sostener la atención en una tarea — sin promesas de neurociencia que no podamos probar.",
+    iconUrl: "",
+    color: "#7FB0C4",
+    appType: "modo-foco",
     enabled: true,
   },
 ];
