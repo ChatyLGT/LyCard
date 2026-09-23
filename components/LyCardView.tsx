@@ -7,7 +7,6 @@ import type { Card, OriginMemento, Program, ProgramSkin, Puesto } from "@/genera
 import { t, type Lang } from "@/lib/i18n";
 import { rankById, medalById } from "@/lib/data";
 import { parseEscala } from "@/lib/escalas";
-import { upcomingSlots } from "@/lib/interviewSlots";
 import { registerInterviewAction, sendInvitationAction, sendContactMessageAction, sendQrByWhatsappAction } from "@/app/c/actions";
 import { APP_VERSION, CHANGELOG } from "@/lib/version";
 import { isSkinColors, KNOWN_FONTS } from "@/lib/designMd";
@@ -367,6 +366,7 @@ export default function LyCardView({
   originMemento,
   program,
   puesto,
+  interviewSlots,
 }: {
   card: Card;
   qrSvg: string;
@@ -383,6 +383,10 @@ export default function LyCardView({
   // app/c/[slug]/page.tsx) — 0 or 1 entries, never more.
   program: (Program & { skins: ProgramSkin[] }) | null;
   puesto: Puesto | null;
+  // Horarios reales de "Agendar tu Entrevista" (Auditoría 2026-09-23) --
+  // ya resueltos server-side, sin fechas vencidas: InterviewSlot real del
+  // Programa si tiene, si no el fallback fijo de lib/interviewSlots.ts.
+  interviewSlots: { id: string; label: string; labelEn: string; time: string }[];
 }) {
   const router = useRouter();
   const isProject = card.kind === "project";
@@ -483,6 +487,10 @@ export default function LyCardView({
       });
       if (res.ok) {
         setScheduleResult({ slotLabel: res.slotLabel });
+      } else if (res.error === "full") {
+        setScheduleError(t(lang, "scheduleErrFull"));
+      } else if (res.error === "email") {
+        setScheduleError(t(lang, "scheduleErrEmail"));
       } else {
         setScheduleError(t(lang, "scheduleErrSlot"));
       }
@@ -1741,7 +1749,7 @@ export default function LyCardView({
                   </p>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {upcomingSlots().map((slot) => {
+                    {interviewSlots.map((slot) => {
                       const on = slot.id === selectedSlot;
                       return (
                         <button

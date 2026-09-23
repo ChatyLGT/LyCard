@@ -363,6 +363,33 @@ model Program {
   admins      Admin[]
   puestos     Puesto[]
   skins       ProgramSkin[]
+  interviewSlots InterviewSlot[]
+}
+
+// Auditoría 2026-09-23, hallazgo 1.4/2.1: lib/interviewSlots.ts era un
+// array hardcodeado, sin cupo y sin lógica de vencimiento -- un slot ya
+// pasado seguía siendo reservable en vivo. Esta es la resolución real,
+// por Programa (mismo patrón que Puesto: fila propia, no un JSON
+// compartido, porque necesita contar Registrations reales contra un id
+// estable). No reemplaza lib/interviewSlots.ts todavía -- un Programa sin
+// filas acá sigue cayendo al array fijo como fallback, mismo criterio
+// honesto de "nunca una sección vacía el primer día" que ya usan
+// officeSkills/escalas.
+model InterviewSlot {
+  id        String   @id @default(cuid())
+  programId String
+  program   Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  label     String
+  labelEn   String
+  date      DateTime // fecha real del slot -- se compara contra "hoy" para no ofrecerlo vencido
+  time      String   // texto de display, ej. "18:00 hs (GMT-6)"
+  capacity  Int      @default(20)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  registrations Registration[]
+
+  @@index([programId])
 }
 
 // A saved brand skin for a Program (2026-09-16, noche) — up to 3 per
@@ -543,6 +570,14 @@ model Registration {
   whatsapp  String
   email     String   @default("")
   createdAt DateTime @default(now())
+
+  // Set cuando el slot elegido es una fila real de InterviewSlot (cupo
+  // real por Programa, Auditoría 2026-09-23) en vez de uno de los 4
+  // hardcodeados en lib/interviewSlots.ts. slotId/slotLabel arriba
+  // siguen llenándose siempre igual (snapshot legible), este es el que
+  // habilita contar cupo real.
+  interviewSlotId String?
+  interviewSlot   InterviewSlot? @relation(fields: [interviewSlotId], references: [id], onDelete: SetNull)
 
   // Linked when the visitor registering is a logged-in Member with a
   // membership in the Program behind the card (PLAN.md Fase 4) — nullable so

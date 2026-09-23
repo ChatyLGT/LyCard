@@ -20,6 +20,7 @@ import {
 import { updateMemberAction, deleteMemberAction, messageMemberAction, markMembershipPaidAction } from "../members-actions";
 import { buildFunnelStages } from "@/lib/funnel";
 import { createPuestoAction, updatePuestoAction, deletePuestoAction } from "../puestos-actions";
+import { createInterviewSlotAction, updateInterviewSlotAction, deleteInterviewSlotAction } from "../interview-slots-actions";
 import { CARD_LABEL_FIELDS, defaultCardLabel } from "@/lib/cardLabels";
 import { parseEscala } from "@/lib/escalas";
 import { parseOfficeSkills, DEFAULT_OFFICE_SKILLS } from "@/lib/officeSkills";
@@ -112,6 +113,10 @@ export default async function AdminProgramDetailPage({
     puestoSaved?: string;
     puestoDeleted?: string;
     puestoError?: string;
+    slotCreated?: string;
+    slotSaved?: string;
+    slotDeleted?: string;
+    slotError?: string;
     escalaSaved?: string;
     skinSaved?: string;
     skinError?: string;
@@ -137,6 +142,10 @@ export default async function AdminProgramDetailPage({
     puestoSaved,
     puestoDeleted,
     puestoError,
+    slotCreated,
+    slotSaved,
+    slotDeleted,
+    slotError,
     escalaSaved,
     skinSaved,
     skinError,
@@ -172,6 +181,7 @@ export default async function AdminProgramDetailPage({
     include: {
       admins: { orderBy: { createdAt: "asc" } },
       puestos: { orderBy: { order: "asc" } },
+      interviewSlots: { orderBy: { date: "asc" } },
       skins: { orderBy: { createdAt: "asc" } },
       memberships: {
         orderBy: { createdAt: "desc" },
@@ -522,6 +532,70 @@ export default async function AdminProgramDetailPage({
                 <input name="icono" defaultValue={p.icono} placeholder="Ícono del badge (Material Symbols, ej. diamond)" style={INPUT} />
                 <input name="denominacion" defaultValue={p.denominacion} placeholder="Denominación (ej. Original Dreamer)" style={INPUT} />
                 <textarea name="descripcion" defaultValue={p.descripcion} placeholder="Descripción del puesto" rows={3} style={{ ...INPUT, resize: "vertical" }} />
+                <button type="submit" style={SAVE_BTN}>
+                  Guardar
+                </button>
+              </form>
+            </AccordionRow>
+          ))}
+        </AccordionSection>
+
+        {/* Horarios de Entrevista — cupo real por Programa (Auditoría
+            2026-09-23, hallazgo 1.4). Sin filas acá, "Agendar tu
+            Entrevista" sigue cayendo a los 4 horarios fijos de
+            lib/interviewSlots.ts, mismo criterio honesto de siempre. */}
+        <AccordionSection
+          title="Horarios de Entrevista"
+          subtitle="Cupo real por horario -- cuando se llena, deja de ofrecerse. Sin filas acá, se usan los 4 horarios fijos de ejemplo."
+          meta={<span style={PILL}>{program.interviewSlots.length || "fijos"}</span>}
+          defaultOpen={Boolean(slotCreated || slotSaved || slotDeleted || slotError)}
+        >
+          {slotCreated && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Horario creado.</p>}
+          {slotSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Horario actualizado.</p>}
+          {slotDeleted && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Horario eliminado.</p>}
+          {slotError === "required" && (
+            <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>Completá etiqueta, hora y una fecha válida.</p>
+          )}
+          {slotError === "hasRegistrations" && (
+            <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>No se puede borrar -- ya hay gente anotada en ese horario.</p>
+          )}
+
+          <AccordionAddRow label="Agregar Horario" defaultOpen={program.interviewSlots.length === 0}>
+            <form action={createInterviewSlotAction.bind(null, program.id)} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <input name="label" placeholder="Etiqueta (ej. Martes 30 de Septiembre)" required style={INPUT} />
+              <input name="labelEn" placeholder="Etiqueta en inglés (opcional, cae a la de arriba)" style={INPUT} />
+              <div style={{ display: "flex", gap: 8 }}>
+                <input name="date" type="date" required style={{ ...INPUT, flex: 1 }} />
+                <input name="time" placeholder="Hora (ej. 18:00 hs GMT-6)" required style={{ ...INPUT, flex: 1 }} />
+              </div>
+              <input name="capacity" type="number" min={1} defaultValue={20} placeholder="Cupo" style={{ ...INPUT, width: 100 }} />
+              <button type="submit" style={SAVE_BTN}>
+                Crear Horario
+              </button>
+            </form>
+          </AccordionAddRow>
+
+          {program.interviewSlots.map((s) => (
+            <AccordionRow
+              key={s.id}
+              title={s.label}
+              subtitle={`${s.time} · cupo ${s.capacity}`}
+              trailing={
+                <form action={deleteInterviewSlotAction.bind(null, s.id, program.id)}>
+                  <button type="submit" aria-label="Borrar" style={DELETE_ICON_BTN}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 15 }}>delete</span>
+                  </button>
+                </form>
+              }
+            >
+              <form action={updateInterviewSlotAction.bind(null, s.id, program.id)} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <input name="label" defaultValue={s.label} placeholder="Etiqueta" style={INPUT} />
+                <input name="labelEn" defaultValue={s.labelEn} placeholder="Etiqueta en inglés" style={INPUT} />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input name="date" type="date" defaultValue={s.date.toISOString().slice(0, 10)} style={{ ...INPUT, flex: 1 }} />
+                  <input name="time" defaultValue={s.time} placeholder="Hora" style={{ ...INPUT, flex: 1 }} />
+                </div>
+                <input name="capacity" type="number" min={1} defaultValue={s.capacity} placeholder="Cupo" style={{ ...INPUT, width: 100 }} />
                 <button type="submit" style={SAVE_BTN}>
                   Guardar
                 </button>

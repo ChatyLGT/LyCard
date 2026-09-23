@@ -13,6 +13,10 @@ export type CarouselBundle = {
   // Viewer-relative N0/N1/.../NA (2026-09-16) — independent per Card, unlike
   // isAdmin/isHost below which are shared across the whole carousel.
   badge: string;
+  // Horarios reales de "Agendar tu Entrevista" (Auditoría 2026-09-23) --
+  // ya resueltos server-side (InterviewSlot real del Programa, o el
+  // fallback fijo de lib/interviewSlots.ts), sin fechas vencidas.
+  interviewSlots: { id: string; label: string; labelEn: string; time: string }[];
 };
 
 // Swipeable Programa/Business/Personal carousel for a Member's 3 Cards —
@@ -89,6 +93,7 @@ export default function CardCarousel({
               originMemento={c.originMemento}
               program={c.program}
               puesto={c.puesto}
+              interviewSlots={c.interviewSlots}
             />
           </div>
         ))}

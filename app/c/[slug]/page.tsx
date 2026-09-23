@@ -6,6 +6,7 @@ import { currentMemberId } from "@/lib/memberAuth";
 import { computeBadge } from "@/lib/badge";
 import { buildCardMetadata } from "@/lib/cardMetadata";
 import { parseShareScope } from "@/lib/shareScope";
+import { upcomingSlots } from "@/lib/interviewSlots";
 import LyCardView from "@/components/LyCardView";
 import CardCarousel, { type CarouselBundle } from "@/components/CardCarousel";
 import type { Card, Program, ProgramSkin, Puesto } from "@/generated/prisma/client";
@@ -48,7 +49,27 @@ async function buildCardBundle(
     // shared across the whole carousel, each slide computes its own N.
     computeBadge(card, adminScope, memberId),
   ]);
-  return { card, qrSvg, originMemento, program: card.program, puesto: card.puesto, badge };
+
+  // Cupo real por Programa (Auditoría 2026-09-23, hallazgo 1.4): un
+  // project Card cuyo Programa ya cargó sus propios InterviewSlot los usa
+  // en vez de los 4 hardcodeados de lib/interviewSlots.ts -- un Programa
+  // sin filas propias, o cualquier Card company/personal, sigue cayendo
+  // al array fijo (mismo criterio honesto de siempre, nunca una sección
+  // vacía el primer día).
+  let interviewSlots: { id: string; label: string; labelEn: string; time: string }[] = upcomingSlots();
+  if (card.kind === "project" && card.programId) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const realSlots = await prisma.interviewSlot.findMany({
+      where: { programId: card.programId, date: { gte: today } },
+      orderBy: { date: "asc" },
+    });
+    if (realSlots.length > 0) {
+      interviewSlots = realSlots.map((s) => ({ id: s.id, label: s.label, labelEn: s.labelEn, time: s.time }));
+    }
+  }
+
+  return { card, qrSvg, originMemento, program: card.program, puesto: card.puesto, badge, interviewSlots };
 }
 
 export default async function CardPage({
@@ -103,6 +124,7 @@ export default async function CardPage({
         originMemento={b.originMemento}
         program={b.program}
         puesto={b.puesto}
+        interviewSlots={b.interviewSlots}
       />
     );
   }

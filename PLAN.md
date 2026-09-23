@@ -5060,11 +5060,64 @@ Shippeado como v1.46.1.
 
 ### Preparado, sin pushear: cupo real de entrevistas por slot
 
-Pendiente de decisión de Gunnar — no se pusheó. Diseño: mover
-`INTERVIEW_SLOTS` de array hardcodeado a un modelo `InterviewSlot` en
-Prisma, scoped por `Program` (cada Programa gestiona los suyos desde
-`/admin/programs/[id]`, mismo patrón que `escalas`/`officeSkills`), con
-un campo `capacity` y un conteo de `Registration`s activas contra ese
-slot para saber cuándo está lleno. Esto es la resolución real del punto
-1.4 del audit original — lo que el fix de hoy (2.1) resolvió fue "no
+Rama `feature/cupo-entrevistas-real` (creada desde el commit de los 3
+fixes chicos, `9257b7c`) — **implementado y verificado en local, no
+mergeado ni pusheado**. Pendiente de que Gunnar decida si esto entra
+ahora o se queda a la espera. Esta es la resolución real del punto 1.4
+del audit original — lo que el fix rápido de 2.1 resolvió fue "no
 ofrecer lo vencido", no "no permitir más gente de la que entra".
+
+**Modelo nuevo `InterviewSlot`** (migración `20260923184125_interview_slot_real`):
+`programId` (scoped por Programa, mismo patrón que `Puesto` — filas
+propias con id estable, no un JSON compartido, porque acá hace falta
+contar `Registration`s reales), `label`/`labelEn`/`time` (igual que el
+array viejo), `date` (`DateTime` real, no un string parseado a mano), y
+`capacity` (default 20). `Registration` suma `interviewSlotId` opcional
+(`onDelete: SetNull`) — el snapshot `slotId`/`slotLabel` de siempre sigue
+llenándose igual, esto solo habilita contar cupo real.
+
+**`app/admin/programs/interview-slots-actions.ts`** (nuevo, mismo molde
+que `puestos-actions.ts`): `createInterviewSlotAction`/
+`updateInterviewSlotAction`/`deleteInterviewSlotAction`, con guardia real
+en el borrado — no se puede borrar un horario con gente ya anotada
+(mismo criterio que `deleteMemberAction` con `cardCount`).
+
+**`app/c/actions.ts#registerInterviewAction`**: ahora resuelve el
+`slotId` recibido primero contra `InterviewSlot` (id real, cuid) y solo
+si no lo encuentra cae al array hardcodeado de `lib/interviewSlots.ts` —
+un Programa que no cargó horarios propios sigue funcionando exactamente
+igual que hoy. Con un slot real: rechaza fecha vencida (server-side,
+comparando contra medianoche de hoy), y rechaza reservar si ya hay
+`capacity` personas anotadas — excluyendo de ese conteo a la propia
+persona si está reagendando (no se bloquea a sí misma al cambiar de
+horario). Nuevo código de error `"full"`, con copy propio
+(`scheduleErrFull`/`scheduleErrEmail` en `lib/i18n.ts`, ES/EN).
+
+**Flujo de datos server→cliente cambia**: `LyCardView.tsx` dejó de
+importar `upcomingSlots()` directo (no tenía forma de saber a qué
+Programa pertenecía la Card) — ahora recibe `interviewSlots` como prop,
+resuelta en `app/c/[slug]/page.tsx#buildCardBundle` (real del Programa si
+tiene filas propias y es una Card `project`, si no el fallback fijo de
+siempre) y pasada a través de `CardCarousel.tsx`.
+
+**Nueva sección admin "Horarios de Entrevista"** en
+`/admin/programs/[id]`, mismo patrón visual que "Escalera de Puestos":
+crear/editar/borrar horarios con fecha real (`<input type="date">`),
+hora de display, y cupo.
+
+**Verificado real**: `e2e/interview-slots-real.spec.ts` (nuevo) — un
+horario con `capacity: 1`, una primera persona lo reserva, una SEGUNDA
+persona con WhatsApp distinto lo encuentra lleno (error visible en
+pantalla, y confirmado con query directa a Postgres que sigue habiendo
+una sola fila), y el admin lo ve y lo administra desde
+`/admin/programs/[id]`. 22/22 E2E de la rama completa pasando (suite
+vieja + los 2 specs nuevos de hoy). Script descartable de Playwright
+confirmó visualmente las 4 pantallas (picker con el horario real, éxito
+de la primera reserva, error "Ese horario ya se llenó" de la segunda, y
+la sección de admin con "cupo 1"), capturas revisadas y borradas.
+
+**Pipeline corrido completo salvo el último paso, a propósito**: tsc,
+lint, tests unitarios (100%, sin cambios — toda la lógica nueva es
+DB-backed, cubierta por E2E en vez del ratchet de `lib/`), build de
+producción, 22/22 E2E. **No se corrió `git push` ni se pusheó a
+`origin`** — eso es lo que significa "preparado, no decidido".
