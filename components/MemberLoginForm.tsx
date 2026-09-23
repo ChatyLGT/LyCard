@@ -48,6 +48,7 @@ export default function MemberLoginForm() {
 
   const searchParams = useSearchParams();
   const googleError = GOOGLE_ERROR_COPY[searchParams.get("error") || ""] ?? null;
+  const referredByCardSlug = searchParams.get("ref");
 
   function submitPhone() {
     setError(null);
@@ -67,7 +68,7 @@ export default function MemberLoginForm() {
     setError(null);
     if (!code.trim()) return setError("Ingresá el código.");
     startTransition(async () => {
-      const res = await verifyOtpAction({ whatsapp, code, name });
+      const res = await verifyOtpAction({ whatsapp, code, name, referredByCardSlug });
       if (res.ok) {
         router.push("/m/dashboard");
       } else {

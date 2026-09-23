@@ -5257,3 +5257,97 @@ tocar código de este modelo.
 **Nada de esto está construido todavía** — cero campo `planTier` real en
 el schema, cero gate de Oficina por nivel de usuario/suscripción, cero
 Stripe. Sigue siendo 100% diseño.
+
+## Alta Freemium self-service: cierra el bache del Vividor (2026-09-23)
+
+Gunnar cerró la pregunta que quedó abierta arriba: **"el registro
+Freemium no debería necesitar aprobación de nadie. Cualquier persona
+puede registrarse"**. El flujo ideal que describió: Host invita a Guest
+(comparte su LyCard) → Guest la mira → Guest crea la suya, se convierte
+en Vividor → juega con ella, le gusta → recién ahí entra al proceso de
+membresías para volverse Chido. Nada de esto pasa por un N0 aprobando
+nada en el paso de Vividor.
+
+**El bache real, más profundo de lo que parecía al principio**:
+investigando el código para armar el fix aparecieron dos problemas, no
+uno. El esperado — `joinLegacyProgramAction` (que sí hace el alta+cards)
+nunca estaba conectado al login real, solo al chat de demo de Bot Warren
+("Simulá tu Gemelo Digital" en la Oficina, un feature completamente
+distinto). Y el que no se esperaba — el flujo real de "Creá tu LyCard"
+(`/m/login` → OTP por WhatsApp → `/m/dashboard`) tampoco llamaba a
+`joinLegacyProgramAction` NUNCA: `verifyOtpAction` solo creaba el
+`Member` y la sesión, sin unirlo a ningún Programa. El único camino real
+que activaba una membresía y creaba las 3 Cards era
+`completeInterviewAction`, gateado 100% por un click de admin en
+`/admin/interviews` — exactamente el hueco que Gunnar señaló.
+
+**La solución, sin duplicar la lógica de activación**:
+
+- `lib/activateMembership.ts` (nuevo): se extrajo el corazón de
+  `completeInterviewAction` (activar la membresía, crear las 3 Cards que
+  falten por `kind`, archivar el `OriginMemento` del referente) a
+  `activateMembershipAndSpawnCards(membershipId, {markInterviewed,
+  recruitedAt?})` — la única diferencia real entre un alta por entrevista
+  real y una self-service es ese flag: `markInterviewed: true` solo
+  cuando de verdad hubo una entrevista humana, para no ensuciar la
+  cuenta de "Entrevistado" del Embudo de Conversión (`lib/funnel.ts`).
+  Idempotente por `membershipId` y por `kind` de Card ya existente.
+- `app/admin/interviews/actions.ts#completeInterviewAction`: se
+  refactorizó para llamar a ese helper (`markInterviewed: true`) — mismo
+  comportamiento externo de siempre, ahora sin duplicar 100 líneas.
+- `lib/legacyMembership.ts` (nuevo):
+  `ensureLegacyMembershipAndCards(memberId, referredByCardSlug)` — crea
+  (o encuentra) el Programa Legacy, resuelve el referente por el slug de
+  su Card si vino uno, upsertea la `ProgramMembership` como "invited", y
+  llama al helper de arriba con `markInterviewed: false`. Esto es lo que
+  de verdad convierte a alguien en Vividor.
+- `app/m/actions.ts#verifyOtpAction` — el path real, el que se usa de
+  verdad — ahora llama a `ensureLegacyMembershipAndCards` justo después
+  de crear la sesión del Member. Recibe un `referredByCardSlug` nuevo en
+  su input. Se ejecuta en cada login (no solo el primero) a propósito:
+  es idempotente, así que un Vividor que ya tiene sus Cards no se
+  duplica nada, pero alguien viejo que quedó sin ellas (de antes de este
+  fix) las recibe la próxima vez que entra, sin acción de nadie.
+- `app/m/auth/google/callback/route.ts` — mismo llamado tras crear la
+  sesión, así que el login con Google también da de alta al Vividor
+  (sin referido en esta ronda — el `?ref=` no viaja todavía por el
+  round-trip de OAuth, deferred).
+- `app/m/onboarding/actions.ts#joinLegacyProgramAction` — se simplificó
+  a un llamado directo al mismo helper compartido; sigue siendo el
+  puente del chat de demo Bot Warren, ahora sin lógica propia duplicada.
+- El `?ref=` viaja de punta a punta: el link "Creá tu LyCard" en
+  `LyCardView.tsx` (antes `href="/m/login"` a secas) ahora suma
+  `?ref=${card.slug}`; `MemberLoginForm.tsx` lo lee con el
+  `useSearchParams()` que ya tenía (antes solo para errores de Google) y
+  lo manda en `verifyOtpAction`.
+- `app/m/dashboard/page.tsx`: el aviso de "sin tarjetas todavía" decía
+  que se creaban solas cuando un admin marcara la entrevista — ya no es
+  cierto para el caso normal, así que se cambió a pedir simplemente
+  volver a entrar (cubre el único caso real que puede quedar en 0: un
+  Member de antes de este fix).
+
+**Verificado real**: `e2e/freemium-selfservice.spec.ts` (nuevo, 3 tests)
+— (1) un visitante anónimo entra a la Card real de un Host, ve el link
+"Creá tu LyCard" con el `?ref=` correcto, lo sigue, completa el OTP real
+(lee el código simulado de la propia pantalla, no un mock) y termina en
+`/m/dashboard` con sus 3 Cards ya creadas — confirmado contra Postgres:
+`ProgramMembership.status === "active"` con `interviewedAt === null`
+(no cuenta como entrevista real), y el `OriginMemento` con el slug y
+nombre del Host correctos; (2) un segundo login del mismo WhatsApp no
+duplica las 3 Cards (idempotencia real, contra la DB); (3) — cubriendo
+el refactor de `completeInterviewAction`, que no tenía ningún E2E propio
+hasta hoy — un admin marca la entrevista hecha desde `/admin/interviews`
+y la membresía queda activa con `interviewedAt` sí seteado, más las 3
+Cards creadas, exactamente como antes del refactor. 27/27 E2E de la
+suite completa pasando. `npx tsc --noEmit`, `pnpm lint` (0 errores) y
+`pnpm test:unit:coverage` (100% en lo ratcheted) limpios.
+
+**Fuera de alcance esta ronda**: referido (`?ref=`) por el login de
+Google — el `state` de OAuth no lo lleva todavía, un Vividor que entra
+por Google queda sin `OriginMemento`. El proceso real de "escalar" de
+Vividor a Chido (membresías con distintos niveles de personalización) —
+sigue siendo 100% diseño, nada de código todavía; hoy Chido y Vividor
+comparten exactamente el mismo helper de activación, la única gate real
+que existe hoy es `markInterviewed`.
+
+Shippeado como v1.49.0.

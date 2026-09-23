@@ -1301,7 +1301,7 @@ export default function LyCardView({
               </button>
             ) : (
               <Link
-                href="/m/login"
+                href={`/m/login?ref=${card.slug}`}
                 aria-label={L("createCardBtn")}
                 style={{
                   position: "relative",

@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { exchangeGoogleCode, GOOGLE_STATE_COOKIE } from "@/lib/googleOAuth";
 import { prisma } from "@/lib/prisma";
 import { createMemberSession } from "@/lib/memberAuth";
+import { ensureLegacyMembershipAndCards } from "@/lib/legacyMembership";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -59,5 +60,9 @@ export async function GET(request: NextRequest) {
   }
 
   await createMemberSession(member.id);
+  // Mismo alta Freemium self-service que el login por WhatsApp OTP
+  // (app/m/actions.ts#verifyOtpAction) -- sin referido acá todavía (el
+  // link ?ref= no viaja por el round-trip de OAuth en esta ronda).
+  await ensureLegacyMembershipAndCards(member.id, null);
   return NextResponse.redirect(new URL("/m/dashboard", request.url));
 }

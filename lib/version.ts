@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.48.0";
+export const APP_VERSION = "1.49.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.49.0",
+    date: "2026-09-23",
+    notes:
+      "El registro Freemium ya no necesita que nadie lo apruebe: hasta hoy, tocar \"Creá tu LyCard\" desde cualquier tarjeta ajena creaba tu cuenta pero te dejaba sin tus 3 tarjetas hasta que un admin marcara a mano una entrevista que nunca existió — un bache real. Ahora, al verificar tu WhatsApp (o entrar con Google), quedás con tus 3 tarjetas ya creadas al toque, y si veniste desde el link de alguien, queda guardado quién te trajo. Entrevistarte con un N0 sigue existiendo para escalar de Freemium a un nivel pago, pero ya no es el único camino para tener tu LyCard.",
+  },
   {
     version: "1.48.0",
     date: "2026-09-23",

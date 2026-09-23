@@ -65,7 +65,7 @@ export default async function MemberDashboardPage() {
           </span>
           {cards.length === 0 && (
             <p style={{ margin: 0, font: "400 12px/1.6 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
-              Se crean automáticamente cuando tu entrevista queda marcada como hecha.
+              Volvé a entrar con tu WhatsApp para que se terminen de crear.
             </p>
           )}
           {KIND_ORDER.map((kind) => {

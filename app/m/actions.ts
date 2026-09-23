@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { createMemberSession, currentMemberId, destroyMemberSession } from "@/lib/memberAuth";
+import { ensureLegacyMembershipAndCards } from "@/lib/legacyMembership";
 
 // WhatsApp OTP — simulated (PLAN.md Fase 1). requestOtpAction returns the
 // code directly in its result instead of "sending" it anywhere real; the
@@ -20,7 +21,12 @@ export async function requestOtpAction(input: { whatsapp: string }) {
   return { ok: true as const, simulatedCode: code };
 }
 
-export async function verifyOtpAction(input: { whatsapp: string; code: string; name: string }) {
+export async function verifyOtpAction(input: {
+  whatsapp: string;
+  code: string;
+  name: string;
+  referredByCardSlug?: string | null;
+}) {
   const whatsapp = input.whatsapp.trim();
   const code = input.code.trim();
   if (!whatsapp || !code) return { ok: false as const, error: "invalid_code" };
@@ -41,6 +47,13 @@ export async function verifyOtpAction(input: { whatsapp: string; code: string; n
   }
 
   await createMemberSession(member.id);
+  // Alta Freemium self-service (2026-09-23) -- este es el path real de
+  // "Crear tu LyCard" (no joinLegacyProgramAction, que solo cuelga del
+  // chat de demo Bot Warren). Todo el que pasa por acá, se haya
+  // registrado hoy o esté volviendo a loguearse, queda con su lugar en
+  // Legacy y sus 3 Cards -- idempotente, no duplica nada en logins de
+  // vuelta ni si ya tiene Cards de otro Programa.
+  await ensureLegacyMembershipAndCards(member.id, input.referredByCardSlug?.trim() || null);
   return { ok: true as const };
 }
 
