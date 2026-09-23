@@ -13,7 +13,10 @@ const OVERLAY: CSSProperties = {
   justifyContent: "center",
 };
 
-const STEP = 0.05;
+// 0.01 == 1 punto porcentual: el slider queda 1 a 1 con el % que se
+// muestra al lado (antes era 0.05 -- saltaba de a 5%, se sentía "duro" /
+// poco sensible comparado con lo que el número decía que hacía).
+const STEP = 0.01;
 
 // Panel de ajuste de tamaños (2026-09-23, pedido de Gunnar: "aprieto de
 // forma sostenida y salta el ajuste"). No es una vista previa aparte --
@@ -60,14 +63,19 @@ export default function CardSizePanel({
 
   return (
     <div style={OVERLAY}>
-      <div onClick={handleCancel} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.55)" }} />
+      <div onClick={handleCancel} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.15)" }} />
       <div
         style={{
           position: "relative",
           width: "100%",
           maxWidth: 430,
-          background: "rgba(20,20,20,.97)",
-          backdropFilter: "blur(10px)",
+          // Traslúcido a propósito (pedido de Gunnar, 2026-09-23: "poder
+          // ver cómo aumentan el tamaño las cosas") -- el blur mantiene
+          // el texto legible, pero la tarjeta real de atrás (que ya está
+          // cambiando en vivo con cada slider) se ve moverse a través
+          // del panel, no solo alrededor de él.
+          background: "rgba(20,20,20,.3)",
+          backdropFilter: "blur(10px) saturate(160%)",
           borderTop: "1px solid rgba(200,161,90,.35)",
           borderRadius: "20px 20px 0 0",
           padding: "16px 20px calc(env(safe-area-inset-bottom,0px) + 20px)",

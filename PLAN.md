@@ -5408,3 +5408,38 @@ revisadas y borradas. 28/28 E2E de la suite completa, 100% coverage en
 `lib/focusAudio.ts`, tsc/lint/build limpios.
 
 Shippeado como v1.49.1.
+
+## Panel de tamaños: traslúcido + sensibilidad corregida (2026-09-23)
+
+Gunnar probó el panel de "Ajustar tamaños" (v1.48.0) y pidió dos ajustes
+de diseño: que el panel sea traslúcido de verdad ("poder ver cómo
+aumentan el tamaño las cosas" mientras se arrastra el slider) y que se
+revise la sensibilidad de los sliders.
+
+**Traslúcido de verdad, no solo de nombre**: el fondo del panel pasó de
+`rgba(20,20,20,.97)` (casi opaco) a `rgba(20,20,20,.3)` con
+`backdrop-filter: blur(10px) saturate(160%)`, y el scrim de fondo (el
+que cierra al tocar afuera) de `rgba(0,0,0,.55)` a `rgba(0,0,0,.15)` —
+ya no oscurece la tarjeta real por arriba del panel tampoco. Verificado
+con captura real (no a ojo): en una Card de host con el panel abierto,
+el botón de QR real (que cae físicamente detrás del panel, confirmado
+midiendo las posiciones DOM reales) se ve como un cuadro claro
+difuminado detrás de las filas de sliders, y crece de forma visible al
+mover "Botón QR" a 150% — la iteración anterior (`.55` de fondo, `.38`)
+todavía se sentía demasiado oscura para notar el cambio, así que se bajó
+hasta que el efecto fuera innegable a simple vista.
+
+**Sensibilidad**: el `step` del `<input type="range">` estaba en `0.05`
+(saltos de 5%) mientras el número que se muestra al lado es un
+porcentaje entero — quedaban desalineados, se sentía "duro". Se bajó a
+`0.01`, 1 a 1 con el %.
+
+**Verificado real**: mismo `e2e/card-size-panel.spec.ts` de antes
+(sigue pasando con el nuevo `step`), más una vuelta de scripts
+descartables de Playwright para confirmar visualmente el efecto de
+traslucidez (posiciones reales del botón QR vs. el panel medidas con
+`getBoundingClientRect`, no supuestas) — 2 iteraciones de alpha hasta
+que el resultado fue convincente, capturas revisadas y borradas. 28/28
+E2E de la suite completa, tsc/lint/build/100% coverage limpios.
+
+Shippeado como v1.49.2.

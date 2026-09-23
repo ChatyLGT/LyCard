@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.49.1";
+export const APP_VERSION = "1.49.2";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.49.2",
+    date: "2026-09-23",
+    notes:
+      "Panel de \"Ajustar tamaños\" traslúcido: ahora se ve tu tarjeta real (foto, botón QR, cubos) cambiando de tamaño A TRAVÉS del panel mientras movés los sliders, no solo alrededor de él. Además, cada slider quedó 1 a 1 con el % que muestra al lado (antes saltaba de a 5%, se sentía menos preciso).",
+  },
   {
     version: "1.49.1",
     date: "2026-09-23",
