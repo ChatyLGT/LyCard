@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.42.0";
+export const APP_VERSION = "1.43.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.43.0",
+    date: "2026-09-23",
+    notes:
+      "Nuevo: Janus, el motor de emparejamiento \"todos contra todos\". Cualquier tarjeta puede marcar Ofrezco/Busco con texto libre — desde una certificación real hasta un sandwich de miga — y ahora se cruza con el resto de la red para encontrar coincidencias reales. Los tags se ven en tu Oficina; los cruces se ven en el panel de MasterN0.",
+  },
   {
     version: "1.42.0",
     date: "2026-09-23",

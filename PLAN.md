@@ -4698,3 +4698,109 @@ un análisis, y el nombre real de su Superpoder habilitado al pedir una
 app — 15/15 E2E de la suite completa pasando.
 
 Shippeado como v1.42.0.
+
+## Janus — Tags + motor de emparejamiento "todos contra todos" (2026-09-23)
+
+Después de Bot Warren, Gunnar pidió saltar el Módulo CRM y entrarle al
+roadmap de NashMesh — pero antes de escribir código, explicación
+completa de qué es (motor matemático `Payment_i = φ_i × ψ_i × (1-ε)`,
+no una red social) y un plan concreto, que Gunnar aprobó salvo tres
+puntos sin preferencia suya (los decidí yo, documentado en el chat):
+arrancar por el simulador de un proyecto (no el generador de escenarios
+masivos, que sigue frenado hasta definirlo con Fabricio), v(S) declarado
+a mano en cada simulación, y sin bloquear por Fabricio. **NashMesh en sí
+no se construyó todavía** — antes de arrancar, Gunnar compartió el
+documento de estrategia B4W (`docs.google.com/presentation/...`,
+Plataforma Nacional de Desarrollo de Proveedores, Bolivia) y pidió
+primero un sistema de Tags para cruzar oferta/demanda.
+
+**Lectura del documento B4W**: el export de texto de Google Drive solo
+trajo los headers/footers — el contenido real de cada slide estaba
+flatten a imagen. Se descargó el `.pptx` nativo, se extrajeron las 14
+imágenes de contenido con `python-pptx`/`unzip`, y se leyeron una por
+una. Núcleo del documento: una Empresa Ancla publica demanda (volumen +
+certificaciones), un "Score de Madurez" (5-7 niveles) mide la brecha de
+cada PyME proveedora, y un motor transaccional de 4 pasos (Entrada →
+Validación → Emparejamiento → Ejecución) activa financiamiento
+automático solo cuando hay contrato real.
+
+**Diseño propuesto y confirmado por Gunnar** (con una corrección
+importante de su parte: el parecido con la arquitectura de LyCard no es
+casualidad, se diseñó así a propósito desde el principio):
+
+- El mapeo directo B4W → LyCard ya existente: Cámara/Gobierno =
+  `Program`; Empresa Ancla/PyME = `Card kind:"company"`; Score de
+  Madurez = el patrón "escalas" ya usado 4 veces; el match confirmado =
+  `CardNetworkMembership`; el financiamiento al confirmar = NashMesh
+  (diseñado, no construido); el algoritmo = **Janus**, ya nombrado en el
+  roadmap sin caso de uso real hasta ahora.
+- Corrección de Gunnar que cambió el diseño para mejor: no scopear Janus
+  a "Empresa Ancla busca PyME dentro de un Programa" — tiene que ser
+  **"todos contra todos" de verdad**, cualquier Card cruzando con
+  cualquier otra Card de toda la plataforma, con tags de **cualquier
+  producto o servicio**, no solo industriales — ejemplo textual de
+  Gunnar: *"si alguien quiere un sandwich de miga y alguien en la red lo
+  tiene, ahí sale."* El caso B4W (certificación industrial) y el caso
+  sandwich de miga terminan siendo el mismo cálculo genérico, no dos
+  sistemas — el diseño quedó más simple y más general a la vez.
+- Tres decisiones confirmadas por Gunnar: texto libre para los tags (sin
+  catálogo cerrado); los carga el N0 a mano por ahora, con la intención
+  explícita de que una IA los cargue sola más adelante (de ahí el campo
+  `source` desde el día uno); y sumar tags de servicios además de
+  productos/certificaciones.
+
+**`Tag`** (modelo nuevo, migración `20260923161728_tags_janus`): vive en
+cualquier Card (project/company/personal), `text` libre + `normalized`
+(minúsculas/sin acentos, pre-calculado) + `polarity`
+("ofrezco"|"busco") + `category` libre opcional + `source`
+("manual"|"ai", hoy siempre manual). A diferencia de Seguimiento/KPIs,
+es **público a propósito** — el punto de "todos contra todos" es que se
+pueda descubrir.
+
+**`lib/tags.ts`**: `normalizeTagText` (NFD + strip de marcas
+combinantes, para que "Café" y "cafe" crucen igual), `normalizeTagPolarity`.
+
+**`lib/janus.ts`**: el motor. `tagSimilarity(a,b)` — 1 si exacto, 0.6 si
+uno contiene al otro como palabra (mín. 3 caracteres, evita falsos
+positivos con palabras cortas), 0 si no hay relación — mismo criterio
+honesto y simplificado que ya se usó en el diseño de NashMesh, sin
+IA/embeddings todavía. `computeCardPairMatch` cruza el `busco` de una
+Card contra el `ofrezco` de otra (null, no un 0% falso, cuando falta
+algún lado). `computeAllMatches` corre "todos contra todos" sobre una
+lista de Cards, cada dirección como match separado, rankeado por score.
+9+13 tests entre `lib/tags.ts`/`lib/janus.ts`, 100% de cobertura (sumados
+al ratchet de `vitest.config.mts`).
+
+**`components/TagsBlock.tsx`**: acordeón "Ofrezco/Busco" con prop
+`editable` — el dueño agrega/borra tags (mismo patrón que
+`CardLeadsBlock.tsx`: server actions dedicadas en
+`app/c/[slug]/oficina/tags-actions.ts`, `assertOwner` repetido a
+propósito); un visitante los ve en solo lectura, sin botones de editar.
+Insertado en `OwnerOficina` (después de Seguimiento) y en
+`VisitorOficina` (antes de la Malla).
+
+**`/admin/janus`** (MasterN0-only, nuevo, mismo patrón de acceso que
+`/admin/demo-data`/`/admin/equipo`): lee los tags de todas las Cards
+reales (nunca `isDemo`, mismo criterio que la Malla real), corre
+`computeAllMatches`, muestra el ranking completo con el % y los pares de
+tags que armaron cada match — nunca una caja negra. Link "Janus" sumado
+al nav de `/admin`.
+
+**Verificado real, dos capas**: E2E nuevo
+(`e2e/janus-tags.spec.ts`, 2 tests) — el dueño agrega un tag y un
+visitante lo ve en solo lectura sin poder editarlo; y el caso literal
+del sandwich de miga: dos Cards reales sin relación previa, una Card
+`isDemo` con el mismo tag exacto que NUNCA debe aparecer en el ranking
+(y no aparece) — 17/17 E2E de la suite completa pasando. Script
+descartable de Playwright contra Cards reales del entorno local
+(`mastern0` buscando, una Card nueva ofreciendo) confirmó visualmente
+el 100% de match en `/admin/janus`, con capturas de pantalla.
+
+**Fuera de alcance esta ronda**: el motor de matching sigue siendo
+similitud de texto simple — cuando una IA cargue tags sola (la intención
+que confirmó Gunnar), el campo `source` ya está listo, sin migrar de
+nuevo. NashMesh (el financiamiento que se dispara al confirmar un
+match) sigue diseñado pero no construido — próximo paso natural una vez
+que haya matches reales corriendo.
+
+Shippeado como v1.43.0.

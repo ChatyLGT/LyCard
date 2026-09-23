@@ -178,6 +178,37 @@ model Card {
 
   voiceNotes VoiceNote[]
   leads      CardLead[]
+  tags       Tag[]
+}
+
+// Sistema de Tags — pedido de Gunnar (2026-09-23), base de "Janus", el
+// motor de emparejamiento "todos contra todos": cualquier Card (project,
+// company o personal) puede marcar cosas que OFRECE y cosas que BUSCA,
+// texto libre — desde una certificación industrial real (caso B4W, ver
+// PLAN.md) hasta "tengo un sandwich de miga". El cruce entre el `busco`
+// de una Card y el `ofrezco` de todas las demás es lo que arma un match
+// (lib/janus.ts) — corre sobre TODA la red, no solo dentro de un
+// Programa. `normalized` se guarda aparte de `text` para no recalcular
+// minúsculas/acentos en cada consulta de cruce. `source` siempre
+// "manual" hoy (lo carga el N0 a mano) — el campo existe desde el día
+// uno para que, cuando una IA cargue tags sola más adelante, sea la
+// MISMA fila/action, sin migrar el schema de nuevo.
+model Tag {
+  id     String @id @default(cuid())
+  cardId String
+  card   Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  text       String
+  normalized String
+  polarity   String // "ofrezco" | "busco"
+  category   String @default("") // libre, sugerido: producto | servicio | certificacion | talento | oportunidad
+  source     String @default("manual") // "manual" | "ai"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cardId])
+  @@index([polarity, normalized])
 }
 
 // Skill "Notas de Voz" (2026-09-19, pedido urgente de Gunnar — Skill #3

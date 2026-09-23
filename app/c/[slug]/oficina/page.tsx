@@ -17,6 +17,9 @@ import { parseOfficeSkills, DEFAULT_OFFICE_SKILLS, type OfficeSkill } from "@/li
 import OfficeSkillsBlock from "@/components/OfficeSkillsBlock";
 import type { VoiceNoteSummary } from "@/components/VoiceNotesBlock";
 import CardLeadsBlock, { type CardLeadSummary } from "@/components/CardLeadsBlock";
+import TagsBlock from "@/components/TagsBlock";
+import { listTagsAction } from "@/app/c/[slug]/oficina/tags-actions";
+import type { TagSummary } from "@/lib/tags";
 import {
   parseCalendarEvents,
   parseRealityCheckKpis,
@@ -125,6 +128,10 @@ type OficinaData = {
   googleConnected: boolean;
   connectUrl: string;
   leads: CardLeadSummary[];
+  // Janus (2026-09-23) — a diferencia de leads/KPIs, público a propósito:
+  // el punto de "todos contra todos" es que se pueda descubrir. Se
+  // calcula siempre, visitante u dueño, nunca gateado por isHost.
+  tags: TagSummary[];
   oficinaObjetivo: string;
   realityCheckKpis: RealityCheckKpi[];
   kpisAreDefault: boolean;
@@ -501,6 +508,9 @@ function VisitorOficina({ data }: { data: OficinaData }) {
 
         <div style={hr} />
 
+        <TagsBlock cardId={data.card.id} initialTags={data.tags} accent={accent} editable={false} />
+        {data.tags.length > 0 && <div style={hr} />}
+
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
             <span style={kickerStyle}>La Malla · organismo completo</span>
@@ -631,6 +641,10 @@ function OwnerOficina({ data }: { data: OficinaData }) {
 
         <div style={hr} />
 
+        <TagsBlock cardId={data.card.id} initialTags={data.tags} accent={accent} editable />
+
+        <div style={hr} />
+
         <OfficeSkillsBlock
           skills={data.officeSkills}
           kicker={data.officeSkillsKicker}
@@ -737,6 +751,11 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
         updatedAt: l.updatedAt.toISOString(),
       }))
     : [];
+
+  // Janus (2026-09-23) — público a propósito, tanto para el dueño (que la
+  // edita) como para un visitante (que la ve, sin poder editarla): es la
+  // materia prima del emparejamiento "todos contra todos" entre Cards.
+  const tags = await listTagsAction(card.id);
 
   // Fase F (2026-09-19): si el dueño ya conectó Google (Calendar+Tasks+
   // Drive real), la Agenda lo dice y el botón de conectar desaparece.
@@ -891,6 +910,7 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
     googleConnected,
     connectUrl,
     leads,
+    tags,
     oficinaObjetivo: card.oficinaObjetivo,
     realityCheckKpis,
     kpisAreDefault,
