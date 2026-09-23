@@ -623,7 +623,24 @@ function OwnerOficina({ data }: { data: OficinaData }) {
           </>
         )}
 
-        <TeamMallaBlock accent={accent} teamMalla={data.teamMalla} memberCount={data.teamMalla ? Object.keys(data.teamMalla.info).length - 1 : 0} />
+        {/* Legacy (isOrigin) no es "un equipo más" — es el N0 de todos los
+            Programas, así que su Cerebro Malla es el organismo completo
+            (mismo componente que ve un visitante), no la Malla de un solo
+            Programa. El resto de las Cards project sigue viendo su propio
+            equipo real vía TeamMallaBlock. */}
+        {card.isOrigin && data.mallaRoot ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+              <span style={kickerStyle}>Malla viva · el organismo completo</span>
+            </div>
+            <PublicMallaReal mallaRoot={data.mallaRoot} accent={accent} />
+            <p style={{ margin: 0, font: "400 9.5px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A", textAlign: "center" }}>
+              Tocá un Programa para entrar a su propia red.
+            </p>
+          </div>
+        ) : (
+          <TeamMallaBlock accent={accent} teamMalla={data.teamMalla} memberCount={data.teamMalla ? Object.keys(data.teamMalla.info).length - 1 : 0} />
+        )}
 
         <div style={hr} />
 
@@ -778,15 +795,20 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
 
   // Malla real (2026-09-22, pedido de Gunnar) — reemplaza los datasets
   // hardcodeados de lib/mallaData.ts por un grafo derivado de
-  // ProgramMembership de verdad. La pública (Legacy → triada N1 → cada
-  // Programa real como N3) solo hace falta calcularla para un visitante
-  // (es lo único que VisitorOficina muestra); el Cerebro Malla del dueño
-  // solo si esta Card es de tipo project y tiene un Programa propio con
-  // miembros reales — company/personal siguen sin un equipo real modelado
-  // todavía (ver CardNetworkMembership, próximo paso), caen al dataset de
-  // ejemplo de siempre.
+  // ProgramMembership de verdad. El organismo completo (Legacy → triada
+  // N1 → cada Programa real como N3) hace falta calcularlo para un
+  // visitante (es lo único que VisitorOficina muestra) Y para el dueño de
+  // la Card raíz (card.isOrigin) — Legacy no tiene programId propio (es
+  // el N0 de todos los Programas, no "uno más"), así que su Cerebro Malla
+  // es directamente el organismo completo, no un equipo de un solo
+  // Programa (bug reportado 2026-09-23: Gunnar no veía nada real en su
+  // propia Malla porque ninguna de las dos ramas lo cubría). El Cerebro
+  // Malla del resto de los dueños de project sigue siendo su propio
+  // Programa con miembros reales — company/personal siguen sin un equipo
+  // real modelado todavía (ver CardNetworkMembership, próximo paso), caen
+  // al dataset de ejemplo de siempre.
   let mallaRoot: OficinaData["mallaRoot"] = null;
-  if (!isHost) {
+  if (!isHost || card.isOrigin) {
     const realPrograms = await prisma.program.findMany({
       where: { isDemo: false },
       select: {

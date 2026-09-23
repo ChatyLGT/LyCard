@@ -151,3 +151,74 @@ test.describe("Malla real (grafo derivado de ProgramMembership)", () => {
     await context.close();
   });
 });
+
+// Bug reportado por Gunnar (2026-09-23): siendo MasterN0, su propia Card
+// raíz (isOrigin) no mostraba nada real — ni el organismo completo (solo
+// se calculaba para visitantes) ni el Cerebro Malla de un Programa (Legacy
+// no tiene programId propio, es el N0 de todos, no "un equipo más"). Esta
+// prueba cubre el fix: la Card raíz ahora ve el organismo completo, con la
+// misma info real que un visitante, nunca el fallback de demo.
+test.describe("Malla real — la Card raíz (isOrigin) ve el organismo completo", () => {
+  const e2eDb = createE2eDb();
+  let programId: string;
+  let originSlug: string;
+  let memberIds: string[];
+
+  test.beforeAll(async () => {
+    await e2eDb.connect();
+    const suffix = Date.now();
+
+    const prog = await e2eDb.query<{ id: string }>(
+      `insert into "Program" (id, slug, name, "updatedAt") values (gen_random_uuid()::text, $1, $2, now()) returning id`,
+      [`e2e-malla-origin-${suffix}`, "E2E Legacy Program"]
+    );
+    programId = prog.rows[0].id;
+
+    const m1 = await e2eDb.query<{ id: string }>(
+      `insert into "Member" (id, name, whatsapp, "updatedAt") values (gen_random_uuid()::text, $1, $2, now()) returning id`,
+      ["E2E Root Member", `+549e2eorigin${suffix}`]
+    );
+    memberIds = [m1.rows[0].id];
+
+    await e2eDb.query(
+      `insert into "ProgramMembership" (id, "memberId", "programId", status, "updatedAt") values (gen_random_uuid()::text, $1, $2, 'active', now())`,
+      [m1.rows[0].id, programId]
+    );
+
+    // La Card raíz: isOrigin true, sin programId propio — Legacy de
+    // verdad no pertenece a ningún Programa, es el N0 de todos.
+    originSlug = `e2e-malla-origin-card-${suffix}`;
+    await e2eDb.query(
+      `insert into "Card" (id, slug, "updatedAt", name, title, quote, "isOrigin") values (gen_random_uuid()::text, $1, now(), $2, $3, $4, true)`,
+      [originSlug, "E2E Legacy Raíz", "N0", "Cita"]
+    );
+  });
+
+  test.afterAll(async () => {
+    await e2eDb.query(`delete from "ProgramMembership" where "programId" = $1`, [programId]).catch(() => {});
+    await e2eDb.query(`delete from "Card" where slug = $1`, [originSlug]).catch(() => {});
+    await e2eDb.query(`delete from "Program" where id = $1`, [programId]).catch(() => {});
+    await e2eDb.query(`delete from "Member" where id = any($1)`, [memberIds]).catch(() => {});
+    await e2eDb.end();
+  });
+
+  test("el organismo completo se ve en la Card raíz, no el fallback de demo — sin login, isOrigin ya es host", async ({ browser }) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await page.goto(`${BASE_URL}/c/${originSlug}/oficina`, { waitUntil: "networkidle" });
+
+    await expect(page.getByText("Malla viva · el organismo completo")).toBeVisible();
+    await expect(page.getByText("Vista general de demo")).toHaveCount(0);
+
+    const canvasHandle = page.locator("canvas").first();
+    await canvasHandle.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(1200);
+
+    const box = await canvasHandle.boundingBox();
+    expect(box).not.toBeNull();
+    const hit = await clickUntil(page, box!, () => page.locator("text=/N[0-3] ·/").count().then((c) => c > 0));
+    expect(hit).toBe(true);
+
+    await context.close();
+  });
+});

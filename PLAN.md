@@ -4543,3 +4543,35 @@ tal cual — pero cablearla en `app/m/dashboard/company/network/page.tsx`
 queda para una ronda futura, no se tocó acá.
 
 Shippeado como v1.40.0.
+
+### Fix: la Card raíz (MasterN0) no veía nada real en su propia Malla (2026-09-23)
+
+Gunnar reportó, después de v1.40.0: "no veo que las cosas se vean en mi
+malla... por ser el MasterN0 y Legacy el programa inicial, todo debería
+de ligarse allí." Investigado en la DB: la Card `mastern0` (`isOrigin:
+true`) tiene **`programId: null`** — nunca estuvo atada a ningún
+Programa, porque Legacy no es "un equipo más", es el N0 del que cuelgan
+todos. El bug real: `mallaRoot` (el organismo completo) solo se
+calculaba `if (!isHost)` — nunca para el dueño — y `teamMalla` (el
+Cerebro Malla de un solo Programa) exige `card.programId`, que Legacy no
+tiene. Las dos ramas dejaban a Gunnar afuera al mismo tiempo.
+
+Fix en `app/c/[slug]/oficina/page.tsx`: `mallaRoot` ahora se calcula
+`if (!isHost || card.isOrigin)`, y en `OwnerOficina`, cuando
+`card.isOrigin` es true se renderiza el mismo `PublicMallaReal` que ve
+un visitante (organismo completo, con drill-down fractal a cada
+Programa real) en vez de `TeamMallaBlock`. El resto de las Cards
+project (con su propio `programId`, como Digital Kingdom) siguen viendo
+su propio equipo sin cambios.
+
+Verificado real, dos capas: nuevo test E2E
+(`e2e/malla-real.spec.ts`, describe "la Card raíz ve el organismo
+completo") que crea una Card `isOrigin` de prueba con un Programa real
+con referidos y confirma que aparece "Malla viva · el organismo
+completo" y nunca el fallback "Vista general de demo" — 13/13 E2E de la
+suite completa pasando. Además, script descartable de Playwright contra
+la Card `mastern0` real del entorno local (sembrando Programas/miembros
+de prueba, borrados al final) con capturas de pantalla, confirmando
+visualmente que el bloque se ve prolijo con datos reales.
+
+Shippeado como v1.40.1.

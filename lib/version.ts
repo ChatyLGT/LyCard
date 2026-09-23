@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.40.0";
+export const APP_VERSION = "1.40.1";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.40.1",
+    date: "2026-09-23",
+    notes:
+      "Fix: tu propia Malla (MasterN0, tarjeta Legacy) ahora muestra el organismo completo de verdad — antes no veías nada real ahí porque Legacy no tiene un Programa propio (es el N0 de todos, no \"un equipo más\"), así que ni la vista de equipo ni la del organismo te aplicaban.",
+  },
   {
     version: "1.40.0",
     date: "2026-09-22",
