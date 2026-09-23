@@ -105,11 +105,19 @@ export type MusicPattern = {
   stabSteps: number[]; // steps donde suena un acorde corto (usa el padHz del modo)
 };
 
+// `bassHz` una octava más arriba que la primera versión (2026-09-23,
+// bug real reportado por Gunnar: "no se escucha nada de música, solo la
+// onda"). C2/D2/F2 (65-87Hz) es casi inaudible en el parlante chico de
+// un celular -- el fundamental cae por debajo de lo que ese parlante
+// puede reproducir, sin importar cuánto gain se le ponga. C3/D3/F3
+// (130-175Hz) cae dentro del rango real de un parlante de celular, y el
+// kick pasa de un sweep 150→42Hz a uno 220→90Hz por el mismo motivo (ver
+// scheduleKick en components/FocusModeBlock.tsx).
 export const FOCUS_MUSIC: Record<FocusModeKey, MusicPattern | null> = {
   foco: {
     style: "house",
     bpm: 124,
-    bassHz: 65.41, // C2
+    bassHz: 130.81, // C3
     kickSteps: [0, 4, 8, 12],
     hatSteps: [2, 6, 10, 14],
     bassSteps: [0, 4, 8, 12],
@@ -118,7 +126,7 @@ export const FOCUS_MUSIC: Record<FocusModeKey, MusicPattern | null> = {
   creativo: {
     style: "lounge",
     bpm: 92,
-    bassHz: 73.42, // D2
+    bassHz: 146.83, // D3
     kickSteps: [],
     hatSteps: [4, 12],
     bassSteps: [0, 6, 8, 14],
@@ -127,7 +135,7 @@ export const FOCUS_MUSIC: Record<FocusModeKey, MusicPattern | null> = {
   relajacion: {
     style: "lounge",
     bpm: 100,
-    bassHz: 87.31, // F2
+    bassHz: 174.61, // F3
     kickSteps: [0, 8],
     hatSteps: [],
     bassSteps: [0, 8],

@@ -9,7 +9,7 @@ import {
 } from "../cardSizeConfig";
 
 describe("defaultCardSizeConfig", () => {
-  it("los 4 módulos arrancan en 1 (100%)", () => {
+  it("los 7 módulos arrancan en 1 (100%)", () => {
     const config = defaultCardSizeConfig();
     for (const key of CARD_SIZE_KEYS) {
       expect(config[key]).toBe(1);
@@ -62,15 +62,46 @@ describe("parseCardSizeConfig", () => {
 
 describe("buildCardSizeCssVars", () => {
   it("arma una variable --scale-<key> por cada módulo, con 2 decimales", () => {
-    const vars = buildCardSizeCssVars({ photo: 0.85, qrBtn: 1.1, cubeMedium: 1, socialIcon: 1.333 });
+    const vars = buildCardSizeCssVars({
+      photo: 0.85,
+      qrBtn: 1.1,
+      cubeMedium: 1,
+      socialIcon: 1.333,
+      storyBtn: 1,
+      scheduleBtn: 1,
+      logo: 1,
+    });
     expect(vars["--scale-photo"]).toBe("0.85");
     expect(vars["--scale-qrBtn"]).toBe("1.10");
     expect(vars["--scale-cubeMedium"]).toBe("1.00");
     expect(vars["--scale-socialIcon"]).toBe("1.33");
   });
 
+  it("cubre también los 3 módulos agregados después (Mi camino, Agendar entrevista, Logo)", () => {
+    const vars = buildCardSizeCssVars({
+      photo: 1,
+      qrBtn: 1,
+      cubeMedium: 1,
+      socialIcon: 1,
+      storyBtn: 0.7,
+      scheduleBtn: 1.4,
+      logo: 1.25,
+    });
+    expect(vars["--scale-storyBtn"]).toBe("0.70");
+    expect(vars["--scale-scheduleBtn"]).toBe("1.40");
+    expect(vars["--scale-logo"]).toBe("1.25");
+  });
+
   it("clampea también acá -- nunca deja pasar un valor fuera de rango al CSS", () => {
-    const vars = buildCardSizeCssVars({ photo: 99, qrBtn: -5, cubeMedium: 1, socialIcon: 1 });
+    const vars = buildCardSizeCssVars({
+      photo: 99,
+      qrBtn: -5,
+      cubeMedium: 1,
+      socialIcon: 1,
+      storyBtn: 1,
+      scheduleBtn: 1,
+      logo: 1,
+    });
     expect(vars["--scale-photo"]).toBe(SIZE_MAX.toFixed(2));
     expect(vars["--scale-qrBtn"]).toBe(SIZE_MIN.toFixed(2));
   });

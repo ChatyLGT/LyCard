@@ -83,6 +83,38 @@ test.describe("Panel de tamaños ajustables — long-press en la LyCard", () => 
     await context.close();
   });
 
+  test("los 3 módulos agregados (Mi camino, Agendar entrevista, Logo) están en el panel y el Logo cambia de tamaño en vivo", async ({ browser }) => {
+    const context = await browser.newContext();
+    const cookie = await mintAdminCookie(adminId);
+    await context.addCookies([{ ...cookie, url: BASE_URL }]);
+    const page = await context.newPage();
+
+    await page.goto(`${BASE_URL}/c/${cardSlug}`, { waitUntil: "networkidle" });
+
+    await page.mouse.move(60, 40);
+    await page.mouse.down();
+    await page.waitForTimeout(700);
+    await page.mouse.up();
+
+    await expect(page.getByText("Mi camino", { exact: true })).toBeVisible();
+    await expect(page.getByText("Agendar entrevista", { exact: true })).toBeVisible();
+    await expect(page.getByText("Logo", { exact: true })).toBeVisible();
+
+    const officeBtn = page.getByRole("button", { name: "Virtual Office" });
+    const beforeBox = await officeBtn.boundingBox();
+
+    // "Logo" es el último de los 7 sliders (orden de CARD_SIZE_KEYS)
+    const logoSlider = page.locator('input[type="range"]').last();
+    await logoSlider.fill("1.5");
+    await page.waitForTimeout(150);
+
+    const afterBox = await officeBtn.boundingBox();
+    expect(afterBox!.width).toBeGreaterThan(beforeBox!.width * 1.3);
+
+    await page.getByRole("button", { name: "Cancelar", exact: true }).click();
+    await context.close();
+  });
+
   test("un visitante (sin sesión) nunca dispara el panel -- el long-press no hace nada", async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();

@@ -5479,3 +5479,68 @@ original en sí (ver límite arriba). 28/28 E2E de la suite completa,
 tsc/lint/build/100% coverage limpios.
 
 Shippeado como v1.49.3.
+
+## 3 módulos más al tamaño + mezclador Onda/Música en Modo Foco (2026-09-23)
+
+Gunnar volvió con dos pedidos en el mismo mensaje:
+
+1. **Tamaños**: "Faltan módulos para cambiar tamaño. El de mi camino
+   legacy y el de agendar una entrevista. También el logo." — el panel
+   de v1.48.0/v1.49.2 solo cubría Foto/Botón QR/Cubos laterales/Íconos
+   sociales.
+2. **Modo Foco**: "No se escucha la música, solo la onda" — la música
+   agregada en v1.49.1 sonaba (o casi no sonaba) en el celular. Preguntó
+   si se podía subir/bajar el volumen de la onda y la música por
+   separado, y aclaró que entendió que iba a poder elegir el beat
+   (house/techno/etc.) de cada modo — eso último **sigue siendo una
+   propuesta sin construir**, no lo entendió mal: quedó pendiente de que
+   confirme si la quiere ahora.
+
+**Tamaños — 3 módulos nuevos**: `lib/cardSizeConfig.ts` suma `storyBtn`
+("Mi camino"), `scheduleBtn` ("Agendar entrevista") y `logo` al array
+`CARD_SIZE_KEYS` (de 4 a 7). A diferencia de los 4 originales (que
+viven en constantes de estilo a nivel de módulo como `CUBE_MEDIUM`, y
+por eso necesitan la variable CSS `--scale-<key>`), estos 3 botones
+tienen su estilo inline en el propio JSX del componente, con
+`liveSizeConfig` ya en scope ahí mismo — así que se multiplican
+directo en JS (`${80 * liveSizeConfig.logo}px`, etc.) sin necesidad de
+la indirección de CSS var, más simple y igual de "en vivo" (el estado
+ya dispara un re-render de React al mover el slider).
+
+**Modo Foco — mezclador independiente**: `startEngine`
+(`components/FocusModeBlock.tsx`) ahora arma dos buses --
+`waveBus` (pulso + ruido + pad) y `musicBus` (kick/bajo/hats/acordes),
+ambos colgando del mismo `master` (así la modulación del pulso sigue
+afectando a los dos por igual). Cada uno es un `GainNode` cuyo `.value`
+se puede tocar en vivo sin reconstruir el motor -- dos sliders nuevos
+en la pantalla de sesión corriendo ("Onda"/"Música", 0%-200%, default
+100%). El slider de Música no aparece en Sueño (no tiene patrón, a
+propósito) para no mostrar un control que no hace nada.
+
+**El fix de fondo, no solo el mezclador**: las frecuencias del kick y
+el bajo (65-87Hz, C2/D2/F2) quedaron subidas una octava (130-175Hz,
+C3/D3/F3) y el sweep del kick de 150→42Hz a 220→90Hz -- un parlante de
+celular apenas reproduce nada por debajo de ~100Hz, así que ese era el
+problema real detrás de "no se escucha la música", no solo un tema de
+volumen relativo. El mezclador resuelve el balance; el cambio de
+frecuencia resuelve que haya algo real que balancear. También se
+subieron un poco los gains de hat/stab (0.16→0.24, 0.18→0.24) y el
+filtro pasa-bajos del bajo (380→650Hz) para dejar pasar más armónicos.
+
+**Verificado real**: `e2e/card-size-panel.spec.ts` suma un test que
+confirma los 3 labels nuevos en el panel y que el botón de Logo crece
+de verdad (`boundingBox()` real, no un mock) al mover su slider.
+`e2e/focus-mode.spec.ts` suma un test que confirma los 2 sliders del
+mezclador existen y responden (el % que muestran cambia de verdad al
+moverlos) y que Sueño no ofrece el de Música. Script descartable de
+Playwright confirmó visualmente el panel con los 7 módulos y la
+pantalla de Modo Foco con el mezclador, capturas revisadas y borradas.
+30/30 E2E de la suite completa, tsc/lint/build/100% coverage limpios.
+
+**Límite honesto**: igual que el fix de `ctx.resume()`, no hay forma de
+confirmar por oído desde este sandbox que el kick/bajo ahora se
+escuchan de verdad en un parlante de celular real -- es la corrección
+de DSP estándar para este problema (frecuencia fuera de rango de
+reproducción), pero falta que Gunnar lo confirme en su celular.
+
+Shippeado como v1.50.0.

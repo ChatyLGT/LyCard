@@ -144,4 +144,46 @@ test.describe("Modo Foco — Superpoder de audio funcional", () => {
     await page.getByRole("button", { name: "Terminar", exact: true }).click();
     await context.close();
   });
+
+  // Mezclador Onda/Música (2026-09-23, pedido de Gunnar: "no se escucha
+  // la música, solo la onda -- ¿no podríamos subir/bajar el volumen de
+  // las dos cosas por separado?"). Confirma que los 2 sliders existen
+  // durante la sesión y responden de verdad (el % que muestran cambia),
+  // y que Sueño -- sin patrón musical a propósito -- ni siquiera ofrece
+  // el slider de Música, para no mostrar un control que no hace nada.
+  test("el mezclador Onda/Música responde en vivo -- Sueño no ofrece el slider de Música (no tiene patrón)", async ({ browser }) => {
+    const context = await browser.newContext();
+    const cookie = await mintAdminCookie(adminId);
+    await context.addCookies([{ ...cookie, url: BASE_URL }]);
+    const page = await context.newPage();
+
+    await page.goto(`${BASE_URL}/c/${cardSlug}/oficina`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Modo Foco" }).click();
+    // "Foco profundo" (default) sí tiene música
+    await page.getByRole("button", { name: "10 min", exact: true }).click();
+    await page.getByRole("button", { name: "Empezar sesión", exact: true }).click();
+    await expect(page.getByText("10:00", { exact: true })).toBeVisible();
+
+    await expect(page.getByText("Onda (pulso + ruido)", { exact: true })).toBeVisible();
+    await expect(page.getByText("Música (house)", { exact: true })).toBeVisible();
+    await expect(page.getByText("100%").first()).toBeVisible();
+
+    const [waveSlider, musicSlider] = await page.locator('input[type="range"]').all();
+    await waveSlider.fill("0.3");
+    await musicSlider.fill("1.8");
+
+    await expect(page.getByText("30%", { exact: true })).toBeVisible();
+    await expect(page.getByText("180%", { exact: true })).toBeVisible();
+
+    await page.getByRole("button", { name: "Terminar", exact: true }).click();
+    await page.getByRole("button", { name: "Saltar y volver a elegir modo" }).click();
+
+    await page.getByRole("button", { name: "Sueño" }).click();
+    await page.getByRole("button", { name: "Empezar sesión", exact: true }).click();
+    await expect(page.getByText("Onda (pulso + ruido)", { exact: true })).toBeVisible();
+    await expect(page.getByText("Música", { exact: false })).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Terminar", exact: true }).click();
+    await context.close();
+  });
 });

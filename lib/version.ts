@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.49.3";
+export const APP_VERSION = "1.50.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.50.0",
+    date: "2026-09-23",
+    notes:
+      "3 módulos más en \"Ajustar tamaños\": Mi camino, Agendar entrevista y el Logo (antes solo Foto/QR/Cubos/Íconos). Y en Modo Foco, dos cosas: un mezclador para subir/bajar el volumen de la Onda (pulso+ruido) y la Música (kick/bajo/hats) por separado, y las frecuencias del kick/bajo subidas una octava — en el parlante chico de un celular, las de antes casi no se escuchaban.",
+  },
   {
     version: "1.49.3",
     date: "2026-09-23",

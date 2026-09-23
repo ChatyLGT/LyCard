@@ -1140,8 +1140,8 @@ export default function LyCardView({
                 style={{
                   position: "relative",
                   flex: "none",
-                  width: 80,
-                  height: 80,
+                  width: `${80 * liveSizeConfig.logo}px`,
+                  height: `${80 * liveSizeConfig.logo}px`,
                   borderRadius: 999,
                   padding: 2,
                   background: "linear-gradient(180deg,rgba(229,195,120,.7),rgba(var(--accentRgb,200,161,90),.5),var(--deepBg,#141414))",
@@ -1173,7 +1173,12 @@ export default function LyCardView({
                       <Sweep />
                       <svg
                         viewBox="0 0 100 100"
-                        style={{ width: 56, height: 56, animation: "emblemFloat 3s ease-in-out infinite", filter: "drop-shadow(0 2px 8px rgba(var(--accentRgb,200,161,90),.5))" }}
+                        style={{
+                          width: `${56 * liveSizeConfig.logo}px`,
+                          height: `${56 * liveSizeConfig.logo}px`,
+                          animation: "emblemFloat 3s ease-in-out infinite",
+                          filter: "drop-shadow(0 2px 8px rgba(var(--accentRgb,200,161,90),.5))",
+                        }}
                         fill="none"
                       >
                         <defs>
@@ -1228,12 +1233,14 @@ export default function LyCardView({
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 6,
-                padding: "clamp(5px,0.8dvh,7px) 13px",
+                padding: `calc(clamp(5px,0.8dvh,7px) * ${liveSizeConfig.storyBtn}) ${13 * liveSizeConfig.storyBtn}px`,
                 borderRadius: 999,
                 background: "var(--surf,#141414)",
                 border: "1px solid var(--line2,rgba(var(--accentRgb,200,161,90),.4))",
                 color: "var(--goldtxt,#E5C378)",
-                font: "600 9px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
+                fontWeight: 600,
+                fontSize: `${9 * liveSizeConfig.storyBtn}px`,
+                fontFamily: "var(--brandFont,'Plus Jakarta Sans'),sans-serif",
                 letterSpacing: ".14em",
                 textTransform: "uppercase",
                 cursor: "pointer",
@@ -1242,7 +1249,7 @@ export default function LyCardView({
             >
               <span style={{ color: "var(--accentMid,#C8A15A)" }}>✦</span>
               <span>{L(isProject ? "storyBtn" : isCompany ? "storyBtnCompany" : "storyBtnPersonal")}</span>
-              <Icon name="north_east" size={12} style={{ opacity: 0.8 }} />
+              <Icon name="north_east" size={Math.round(12 * liveSizeConfig.storyBtn)} style={{ opacity: 0.8 }} />
             </button>
           </div>
 
@@ -1360,12 +1367,14 @@ export default function LyCardView({
               onClick={() => setScheduleOpen(true)}
               style={{
                 width: "100%",
-                padding: "clamp(6px,1.1dvh,10px) 14px",
+                padding: `calc(clamp(6px,1.1dvh,10px) * ${liveSizeConfig.scheduleBtn}) 14px`,
                 border: "1px solid rgba(255,230,163,.45)",
                 borderRadius: 16,
                 background: "linear-gradient(90deg,var(--accentLight,#E5C378),var(--accentMid,#C8A15A) 50%,var(--accentDeep,#99732B))",
                 color: "var(--onAccent,#141414)",
-                font: "800 9px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
+                fontWeight: 800,
+                fontSize: `${9 * liveSizeConfig.scheduleBtn}px`,
+                fontFamily: "var(--brandFont,'Plus Jakarta Sans'),sans-serif",
                 letterSpacing: ".16em",
                 textTransform: "uppercase",
                 boxShadow: "0 6px 22px rgba(var(--accentRgb,200,161,90),.42)",
@@ -1376,7 +1385,7 @@ export default function LyCardView({
                 cursor: "pointer",
               }}
             >
-              <Icon name="event" size={13} />
+              <Icon name="event" size={Math.round(13 * liveSizeConfig.scheduleBtn)} />
               <span>
                 {L(
                   isProject

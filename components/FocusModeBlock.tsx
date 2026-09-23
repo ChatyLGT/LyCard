@@ -55,6 +55,15 @@ type Engine = {
   ctx: AudioContext;
   nodes: AudioScheduledSourceNode[];
   schedulerId?: ReturnType<typeof setInterval>;
+  // Dos buses independientes (2026-09-23, pedido de Gunnar: "no se
+  // escucha la música, solo la onda -- ¿no podríamos subir/bajar el
+  // volumen de las dos cosas por separado?"): `waveBus` es el pulso +
+  // ruido + pad de siempre, `musicBus` es el kick/bajo/hats/acordes.
+  // Ambos cuelgan del mismo `master` (así que la modulación del pulso
+  // sigue afectando a los dos), pero cada uno tiene su propio gain
+  // ajustable en vivo -- ver setWaveVolume/setMusicVolume más abajo.
+  waveBus: GainNode;
+  musicBus: GainNode;
 };
 
 // Base musical en vivo (lib/focusAudio.ts#FOCUS_MUSIC) -- ni MP3 ni
@@ -76,13 +85,18 @@ function buildHatBuffer(ctx: AudioContext): AudioBuffer {
   return buffer;
 }
 
+// Frecuencias del kick/bajo subidas una octava respecto a la primera
+// versión (2026-09-23, bug real: "no se escucha nada de música, solo la
+// onda" -- un parlante de celular apenas reproduce nada por debajo de
+// ~100Hz, así que un sweep 150→42Hz quedaba prácticamente en silencio
+// sin importar el gain).
 function scheduleKick(ctx: AudioContext, dest: AudioNode, time: number) {
   const osc = ctx.createOscillator();
   osc.type = "sine";
-  osc.frequency.setValueAtTime(150, time);
-  osc.frequency.exponentialRampToValueAtTime(42, time + 0.11);
+  osc.frequency.setValueAtTime(220, time);
+  osc.frequency.exponentialRampToValueAtTime(90, time + 0.11);
   const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.9, time);
+  gain.gain.setValueAtTime(0.95, time);
   gain.gain.exponentialRampToValueAtTime(0.001, time + 0.14);
   osc.connect(gain);
   gain.connect(dest);
@@ -97,13 +111,13 @@ function scheduleHat(ctx: AudioContext, dest: AudioNode, hatBuffer: AudioBuffer,
   filter.type = "highpass";
   filter.frequency.value = 7000;
   const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.16, time);
-  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+  gain.gain.setValueAtTime(0.24, time);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.06);
   src.connect(filter);
   filter.connect(gain);
   gain.connect(dest);
   src.start(time);
-  src.stop(time + 0.06);
+  src.stop(time + 0.07);
 }
 
 function scheduleBass(ctx: AudioContext, dest: AudioNode, freq: number, time: number, dur: number) {
@@ -112,10 +126,10 @@ function scheduleBass(ctx: AudioContext, dest: AudioNode, freq: number, time: nu
   osc.frequency.value = freq;
   const filter = ctx.createBiquadFilter();
   filter.type = "lowpass";
-  filter.frequency.value = 380;
+  filter.frequency.value = 650;
   const gain = ctx.createGain();
   gain.gain.setValueAtTime(0, time);
-  gain.gain.linearRampToValueAtTime(0.45, time + 0.008);
+  gain.gain.linearRampToValueAtTime(0.5, time + 0.008);
   gain.gain.exponentialRampToValueAtTime(0.001, time + dur);
   osc.connect(filter);
   filter.connect(gain);
@@ -127,7 +141,7 @@ function scheduleBass(ctx: AudioContext, dest: AudioNode, freq: number, time: nu
 function scheduleStab(ctx: AudioContext, dest: AudioNode, freqs: number[], time: number, dur: number) {
   const gain = ctx.createGain();
   gain.gain.setValueAtTime(0, time);
-  gain.gain.linearRampToValueAtTime(0.18, time + 0.02);
+  gain.gain.linearRampToValueAtTime(0.24, time + 0.02);
   gain.gain.exponentialRampToValueAtTime(0.001, time + dur);
   gain.connect(dest);
   for (const freq of freqs) {
@@ -200,20 +214,32 @@ function startEngine(mode: (typeof FOCUS_MODES)[FocusModeKey]): Engine {
   lfo.start();
   nodes.push(lfo);
 
+  // Dos buses independientes, ambos cuelgan de `master` (así el pulso
+  // sigue modulando todo por igual) -- waveBus/musicBus.gain quedan
+  // como AudioParam ajustables en vivo desde el componente, sin
+  // reconstruir el motor (ver setWaveVolume/setMusicVolume).
+  const waveBus = ctx.createGain();
+  waveBus.gain.value = 1;
+  waveBus.connect(master);
+
+  const musicBus = ctx.createGain();
+  musicBus.gain.value = 1;
+  musicBus.connect(master);
+
   const noiseSource = ctx.createBufferSource();
   noiseSource.buffer = buildNoiseBuffer(ctx, mode.noiseColor);
   noiseSource.loop = true;
   const noiseGain = ctx.createGain();
   noiseGain.gain.value = mode.noiseGain;
   noiseSource.connect(noiseGain);
-  noiseGain.connect(master);
+  noiseGain.connect(waveBus);
   noiseSource.start();
   nodes.push(noiseSource);
 
   const padGainNode = ctx.createGain();
   padGainNode.gain.value = 0;
   padGainNode.gain.linearRampToValueAtTime(mode.padGain, ctx.currentTime + 2.5);
-  padGainNode.connect(master);
+  padGainNode.connect(waveBus);
   for (const freq of mode.padHz) {
     const osc = ctx.createOscillator();
     osc.type = "sine";
@@ -224,9 +250,9 @@ function startEngine(mode: (typeof FOCUS_MODES)[FocusModeKey]): Engine {
   }
 
   const musicPattern = FOCUS_MUSIC[mode.key];
-  const schedulerId = musicPattern ? startMusicScheduler(ctx, master, musicPattern, mode.padHz) : undefined;
+  const schedulerId = musicPattern ? startMusicScheduler(ctx, musicBus, musicPattern, mode.padHz) : undefined;
 
-  return { ctx, nodes, schedulerId };
+  return { ctx, nodes, schedulerId, waveBus, musicBus };
 }
 
 function stopEngine(engine: Engine) {
@@ -275,6 +301,12 @@ export default function FocusModeBlock({ cardId }: { cardId: string }) {
   const [recording, setRecording] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Mezclador independiente Onda/Música (2026-09-23, pedido de Gunnar:
+  // "no se escucha la música, solo la onda -- ¿no podríamos subir/bajar
+  // el volumen de las dos cosas por separado?"). 0-2 = 0%-200%, ajusta
+  // el AudioParam en vivo sin reconstruir el motor.
+  const [waveVolume, setWaveVolume] = useState(1);
+  const [musicVolume, setMusicVolume] = useState(1);
 
   const engineRef = useRef<Engine | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -304,6 +336,8 @@ export default function FocusModeBlock({ cardId }: { cardId: string }) {
     setError(null);
     try {
       engineRef.current = startEngine(FOCUS_MODES[modeKey]);
+      engineRef.current.waveBus.gain.value = waveVolume;
+      engineRef.current.musicBus.gain.value = musicVolume;
     } catch {
       setError("Este navegador no puede reproducir audio funcional ahora mismo.");
       return;
@@ -315,6 +349,16 @@ export default function FocusModeBlock({ cardId }: { cardId: string }) {
 
   function togglePause() {
     setPaused((p) => !p);
+  }
+
+  function updateWaveVolume(v: number) {
+    setWaveVolume(v);
+    if (engineRef.current) engineRef.current.waveBus.gain.value = v;
+  }
+
+  function updateMusicVolume(v: number) {
+    setMusicVolume(v);
+    if (engineRef.current) engineRef.current.musicBus.gain.value = v;
   }
 
   function endSession() {
@@ -488,6 +532,42 @@ export default function FocusModeBlock({ cardId }: { cardId: string }) {
         </div>
         <style>{`@keyframes focusPulse { 0%,100% { opacity: .75; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }`}</style>
         <span style={{ font: "700 12px 'Plus Jakarta Sans',sans-serif", color: "#E5C378" }}>{mode.label}</span>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
+          <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <span style={{ display: "flex", justifyContent: "space-between", font: "600 9.5px 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>
+              <span>Onda (pulso + ruido)</span>
+              <span style={{ color: "#C2BEB5" }}>{Math.round(waveVolume * 100)}%</span>
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={2}
+              step={0.05}
+              value={waveVolume}
+              onChange={(e) => updateWaveVolume(Number(e.target.value))}
+              style={{ width: "100%", accentColor: "#C8A15A" }}
+            />
+          </label>
+          {FOCUS_MUSIC[modeKey] && (
+            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <span style={{ display: "flex", justifyContent: "space-between", font: "600 9.5px 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>
+                <span>Música ({FOCUS_MUSIC[modeKey]?.style === "house" ? "house" : "lounge"})</span>
+                <span style={{ color: "#C2BEB5" }}>{Math.round(musicVolume * 100)}%</span>
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={2}
+                step={0.05}
+                value={musicVolume}
+                onChange={(e) => updateMusicVolume(Number(e.target.value))}
+                style={{ width: "100%", accentColor: "#C8A15A" }}
+              />
+            </label>
+          )}
+        </div>
+
         <div style={{ display: "flex", gap: 10, width: "100%" }}>
           <button
             type="button"

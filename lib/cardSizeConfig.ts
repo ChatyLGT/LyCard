@@ -7,15 +7,29 @@
 // (`--scale-<key>`) y se aplica DENTRO del clamp() ya existente. Sin
 // tocar nada, el default es 1 (100%, el tamaño de siempre) en los 4.
 
-export type CardSizeKey = "photo" | "qrBtn" | "cubeMedium" | "socialIcon";
+export type CardSizeKey = "photo" | "qrBtn" | "cubeMedium" | "socialIcon" | "storyBtn" | "scheduleBtn" | "logo";
 
-export const CARD_SIZE_KEYS: CardSizeKey[] = ["photo", "qrBtn", "cubeMedium", "socialIcon"];
+export const CARD_SIZE_KEYS: CardSizeKey[] = [
+  "photo",
+  "qrBtn",
+  "cubeMedium",
+  "socialIcon",
+  "storyBtn",
+  "scheduleBtn",
+  "logo",
+];
 
 export const CARD_SIZE_LABEL: Record<CardSizeKey, string> = {
   photo: "Foto",
   qrBtn: "Botón QR",
   cubeMedium: "Cubos laterales",
   socialIcon: "Íconos sociales",
+  // 3 módulos agregados (2026-09-23, pedido de Gunnar: "faltan módulos
+  // para cambiar tamaño -- el de mi camino legacy, agendar entrevista,
+  // el logo").
+  storyBtn: "Mi camino",
+  scheduleBtn: "Agendar entrevista",
+  logo: "Logo",
 };
 
 export const SIZE_MIN = 0.5;
@@ -25,7 +39,15 @@ const SIZE_DEFAULT = 1;
 export type CardSizeConfig = Record<CardSizeKey, number>;
 
 export function defaultCardSizeConfig(): CardSizeConfig {
-  return { photo: SIZE_DEFAULT, qrBtn: SIZE_DEFAULT, cubeMedium: SIZE_DEFAULT, socialIcon: SIZE_DEFAULT };
+  return {
+    photo: SIZE_DEFAULT,
+    qrBtn: SIZE_DEFAULT,
+    cubeMedium: SIZE_DEFAULT,
+    socialIcon: SIZE_DEFAULT,
+    storyBtn: SIZE_DEFAULT,
+    scheduleBtn: SIZE_DEFAULT,
+    logo: SIZE_DEFAULT,
+  };
 }
 
 function clampSize(v: number): number {
