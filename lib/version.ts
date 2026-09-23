@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.41.0";
+export const APP_VERSION = "1.42.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.42.0",
+    date: "2026-09-23",
+    notes:
+      "Bot Warren: tu Gemelo Digital deja de repetir el mismo guión fijo para todos. Ahora le pedís algo de verdad — que te ayude a vender, te arme una app a medida, te analice una oportunidad, te publique en redes, te facture o te dé un pronóstico — y responde con tus propios datos (tu nombre, tu Programa, tu cita, tus Superpoderes activos, tus KPIs si ya cargaste los tuyos). Sigue siendo 100% simulado y honesto sobre serlo.",
+  },
   {
     version: "1.41.0",
     date: "2026-09-23",

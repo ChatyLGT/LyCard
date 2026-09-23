@@ -4634,3 +4634,67 @@ entorno local confirmando visualmente el orden exacto pedido y la
 ausencia de Calendario/Portafolio duplicado.
 
 Shippeado como v1.41.0.
+
+## Bot Warren — el Gemelo Digital pasa de guión fijo a chat de ramas con datos reales (2026-09-23)
+
+Retomando el roadmap grande, Gunnar pidió entrarle a "Oficina: Negocio→
+Programa, Bot Warren". Al explicarlo mal la primera vez (propuse rutear
+Superpoderes reales vía IA), Gunnar corrigió: Bot Warren es la puerta al
+Gemelo Digital — el "CEO de tu Oficina Virtual", el único con quien el
+N0 habla — y el desarrollo de IA real detrás **no se construye acá**, lo
+hace otro equipo directo en producción. Lo que pidió para esta ronda es
+mejorar la simulación (`components/OfficeDemoChat.tsx`, hasta ahora un
+guión lineal fijo, idéntico para cualquier Programa, con un solo botón
+de respuesta sugerida por paso) para que "la gente lo juegue" de
+verdad: un chat que **use todos los datos reales de la Card/Programa**
+y deje pedirle al CEO simulado cosas concretas — vender, crear una app
+a medida, analizar una oportunidad, publicar en redes, facturar,
+pronosticar (el rango de posibilidades que habilita el equipo de
+microservicios de Sergio).
+
+**Diseño**: se mantiene la regla de oro del proyecto — nunca texto
+libre fingiendo entender algo que no entiende. En cambio, un **chat de
+ramas**: un menú de 6 pedidos (+ "nada por ahora") como respuestas
+sugeridas, cada uno lleva a una respuesta simulada armada con datos
+reales (nombre, rol, Programa, cita, Superpoderes habilitados, KPIs si
+son reales), y siempre vuelve al menú — replayable, se puede pedir más
+de una cosa en la misma sesión.
+
+**`lib/gemeloDigitalScript.ts`** (nuevo): `buildGemeloScript(ctx)`, pura
+y testeable — arma los 9 nodos (`start`/`menu`/6 pedidos/`end`) a partir
+de un `GemeloContext` con los datos reales. Nunca inventa un número
+cuando no hay dato real: sin KPIs cargados, "análisis" y "pronóstico"
+dicen explícitamente que no hay con qué, en vez de mostrar una cifra
+falsa: mismo criterio honesto que el resto de la Oficina (KPIs/noticias/
+calendario de ejemplo, siempre marcados como tal). 17 tests, 100% de
+cobertura (`lib/gemeloDigitalScript.ts` sumado al ratchet de
+`vitest.config.mts`).
+
+**`components/OfficeDemoChat.tsx`**: reescrito para navegar por nodos en
+vez de un guión lineal — el menú de opciones se re-renderiza según el
+nodo actual, cada línea que empieza con "Simulación —" se muestra más
+chica/atenuada para distinguir la aclaración honesta del contenido
+simulado en sí.
+
+**Candado de privacidad nuevo**: `app/c/[slug]/oficina/demo/page.tsx`
+antes no chequeaba quién la visitaba ("cero datos reales", decía su
+propio comentario) — ahora sí importa, porque las respuestas usan
+`oficinaObjetivo`/`realityCheckKpis`, que son privados del dueño. Se le
+agregó el mismo candado `isHost` que el resto de la Oficina —
+`redirect` a `/c/[slug]/oficina` para cualquiera que no sea el dueño.
+
+**Bug real encontrado y arreglado durante la verificación visual**: con
+una Card sin `title` ni `puesto` (el caso real de `mastern0` en local),
+el mensaje de cierre quedaba "...como  de tu Legacy" (espacio doble,
+rol vacío) — fallback agregado (`roleLabel || "el dueño"`) en el loader.
+
+**Verificado real, dos capas**: script descartable de Playwright contra
+la Card `mastern0` real del entorno local, recorriendo las 6 ramas con
+capturas de pantalla (así se encontró el bug de arriba). E2E permanente
+nuevo (`e2e/gemelo-digital-chat.spec.ts`): confirma que un visitante sin
+sesión nunca llega al chat (redirect), y que el dueño ve su saludo con
+su propio nombre, un KPI real propio (no el de ejemplo fijo) al pedir
+un análisis, y el nombre real de su Superpoder habilitado al pedir una
+app — 15/15 E2E de la suite completa pasando.
+
+Shippeado como v1.42.0.
