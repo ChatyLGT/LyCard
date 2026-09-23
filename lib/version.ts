@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.40.1";
+export const APP_VERSION = "1.41.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.41.0",
+    date: "2026-09-23",
+    notes:
+      "Reorden de tu Oficina: Keep in Flow, Tu Gemelo Digital, Check de Realidad, Seguimiento, Superpoderes, Noticias y la Malla al final. Se sacaron dos secciones que duplicaban info: el Calendario suelto (ya está adentro del Superpoder Agenda) y una fila de KPIs vieja que mezclaba tu badge con el conteo de Portafolio.",
+  },
   {
     version: "1.40.1",
     date: "2026-09-23",

@@ -26,15 +26,12 @@ import {
   DEFAULT_REALITY_CHECK_KPIS,
   DEFAULT_MOTIVATIONAL_PHRASES,
   DEFAULT_NEWS_ITEMS,
-  DEFAULT_CALENDAR_EVENTS,
   type RealityCheckKpi,
   type NewsItem,
-  type CalendarEvent,
 } from "@/lib/oficinaExtras";
 import KeepInFlowBlock from "@/components/KeepInFlowBlock";
 import CheckDeRealidadBlock from "@/components/CheckDeRealidadBlock";
 import NewsTasksBlock from "@/components/NewsTasksBlock";
-import CalendarBlock from "@/components/CalendarBlock";
 import { fetchLiveAgenda, defaultAgendaWindow, type AgendaEventItem, type AgendaTaskItem } from "@/lib/agenda";
 import { refreshGoogleAccessToken } from "@/lib/googleOAuth";
 import { buildCardMetadata } from "@/lib/cardMetadata";
@@ -135,8 +132,6 @@ type OficinaData = {
   phraseIsDefault: boolean;
   newsItems: NewsItem[];
   newsAreDefault: boolean;
-  calendarEventsForBlock: CalendarEvent[];
-  calendarAreDefault: boolean;
   // Malla real (2026-09-22) — null cuando no hay data real todavía
   // (Programas sin memberships), en cuyo caso los bloques caen al
   // dataset de ejemplo de siempre en vez de mostrar un grafo vacío.
@@ -223,6 +218,10 @@ function IdentityBlock({ data }: { data: OficinaData }) {
   );
 }
 
+// Solo la usa VisitorOficina (embudo público de reclutamiento) — se sacó
+// de la Oficina del dueño (2026-09-23, pedido de Gunnar): ahí "Malla" en
+// realidad mostraba el badge O.D. (nada que ver con el grafo real) y
+// "Portafolio" duplicaba PortfolioBlock, que ya se muestra debajo.
 function KpiRow({ data }: { data: OficinaData }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6 }}>
@@ -588,24 +587,23 @@ function OwnerOficina({ data }: { data: OficinaData }) {
           </div>
         </div>
 
+        {/* Orden pedido por Gunnar (2026-09-23): Keep in Flow → Gemelo
+            Digital → Check de Realidad → Seguimiento → Superpoderes →
+            Noticias → BrainNet (Cerebro Malla) al final. Se sacaron dos
+            bloques de acá: KpiRow (Portafolio/Malla/Cartera) era cáscara
+            vestigial de antes de que existiera Check de Realidad — el
+            "Portafolio" duplicaba PortfolioBlock de abajo, "Malla" en
+            realidad mostraba el badge O.D. (nada que ver con el grafo real)
+            y "Cartera" era un placeholder deshabilitado; y el Calendario
+            suelto de Fase E4, que mostraba el mismo Card.calendarEvents que
+            ya se ve adentro del Superpoder Agenda, dos veces la misma info
+            en formato distinto. */}
         <KeepInFlowBlock
           objetivo={data.oficinaObjetivo}
           phrase={data.motivationalPhrase}
           isDefaultPhrase={data.phraseIsDefault}
           accent={accent}
         />
-
-        <div style={hr} />
-
-        <CheckDeRealidadBlock kpis={data.realityCheckKpis} isDefault={data.kpisAreDefault} accent={accent} />
-
-        <div style={hr} />
-
-        <KpiRow data={data} />
-
-        <div style={hr} />
-
-        <CardLeadsBlock cardId={data.card.id} initialLeads={data.leads} />
 
         <div style={hr} />
 
@@ -616,31 +614,20 @@ function OwnerOficina({ data }: { data: OficinaData }) {
             dejar dos separadores pegados sin contenido en el medio. */}
         {(card.kind !== "project" || data.origin) && (
           <>
+            <div style={hr} />
             <FirstConnections data={data} />
             <div style={hr} />
             <PortfolioBlock data={data} />
-            <div style={hr} />
           </>
         )}
 
-        {/* Legacy (isOrigin) no es "un equipo más" — es el N0 de todos los
-            Programas, así que su Cerebro Malla es el organismo completo
-            (mismo componente que ve un visitante), no la Malla de un solo
-            Programa. El resto de las Cards project sigue viendo su propio
-            equipo real vía TeamMallaBlock. */}
-        {card.isOrigin && data.mallaRoot ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-              <span style={kickerStyle}>Malla viva · el organismo completo</span>
-            </div>
-            <PublicMallaReal mallaRoot={data.mallaRoot} accent={accent} />
-            <p style={{ margin: 0, font: "400 9.5px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A", textAlign: "center" }}>
-              Tocá un Programa para entrar a su propia red.
-            </p>
-          </div>
-        ) : (
-          <TeamMallaBlock accent={accent} teamMalla={data.teamMalla} memberCount={data.teamMalla ? Object.keys(data.teamMalla.info).length - 1 : 0} />
-        )}
+        <div style={hr} />
+
+        <CheckDeRealidadBlock kpis={data.realityCheckKpis} isDefault={data.kpisAreDefault} accent={accent} />
+
+        <div style={hr} />
+
+        <CardLeadsBlock cardId={data.card.id} initialLeads={data.leads} />
 
         <div style={hr} />
 
@@ -664,7 +651,24 @@ function OwnerOficina({ data }: { data: OficinaData }) {
 
         <div style={hr} />
 
-        <CalendarBlock events={data.calendarEventsForBlock} isDefault={data.calendarAreDefault} accent={accent} />
+        {/* Legacy (isOrigin) no es "un equipo más" — es el N0 de todos los
+            Programas, así que su Cerebro Malla es el organismo completo
+            (mismo componente que ve un visitante), no la Malla de un solo
+            Programa. El resto de las Cards project sigue viendo su propio
+            equipo real vía TeamMallaBlock. */}
+        {card.isOrigin && data.mallaRoot ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+              <span style={kickerStyle}>Malla viva · el organismo completo</span>
+            </div>
+            <PublicMallaReal mallaRoot={data.mallaRoot} accent={accent} />
+            <p style={{ margin: 0, font: "400 9.5px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A", textAlign: "center" }}>
+              Tocá un Programa para entrar a su propia red.
+            </p>
+          </div>
+        ) : (
+          <TeamMallaBlock accent={accent} teamMalla={data.teamMalla} memberCount={data.teamMalla ? Object.keys(data.teamMalla.info).length - 1 : 0} />
+        )}
       </div>
     </div>
   );
@@ -740,11 +744,11 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
   const googleConnected = Boolean(ownerMember?.googleRefreshToken);
   const connectUrl = `/m/auth/google/connect-start?cardId=${card.id}&returnTo=${encodeURIComponent(`/c/${slug}/oficina`)}`;
 
-  // Se parsea una sola vez acá — lo usan tanto el fallback simulado de la
-  // Agenda (Superpoder, abajo) como el bloque "Calendario" de Fase E4 más
-  // abajo. Mismo campo (Card.calendarEvents), dos lugares donde se
-  // muestra: la Agenda es una herramienta que se abre a propósito, el
-  // Calendario es la vista rápida en la Oficina misma.
+  // Alimenta el fallback simulado de la Agenda (Superpoder, abajo) cuando
+  // no hay Google conectado. El bloque "Calendario" suelto de Fase E4 se
+  // sacó de la Oficina (2026-09-23, pedido de Gunnar): mostraba el mismo
+  // Card.calendarEvents que ya se ve adentro del Superpoder Agenda, dos
+  // veces la misma info en dos formatos.
   const calendarEventsParsed = isHost ? parseCalendarEvents(card.calendarEvents) : [];
 
   // Agenda real (2026-09-22, ver lib/agenda.ts): conectado, se leen
@@ -789,9 +793,6 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
   const newsItemsParsed = isHost ? parseNewsItems(card.newsItems) : [];
   const newsItems = newsItemsParsed.length > 0 ? newsItemsParsed : DEFAULT_NEWS_ITEMS;
   const newsAreDefault = newsItemsParsed.length === 0;
-
-  const calendarEventsForBlock = calendarEventsParsed.length > 0 ? calendarEventsParsed : DEFAULT_CALENDAR_EVENTS;
-  const calendarAreDefault = calendarEventsParsed.length === 0;
 
   // Malla real (2026-09-22, pedido de Gunnar) — reemplaza los datasets
   // hardcodeados de lib/mallaData.ts por un grafo derivado de
@@ -897,8 +898,6 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
     phraseIsDefault,
     newsItems,
     newsAreDefault,
-    calendarEventsForBlock,
-    calendarAreDefault,
     mallaRoot,
     teamMalla,
   };

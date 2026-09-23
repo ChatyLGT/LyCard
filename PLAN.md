@@ -4575,3 +4575,62 @@ de prueba, borrados al final) con capturas de pantalla, confirmando
 visualmente que el bloque se ve prolijo con datos reales.
 
 Shippeado como v1.40.1.
+
+### Reorden de la Oficina del dueño + poda de secciones duplicadas (2026-09-23)
+
+Gunnar reportó varias cosas juntas sobre su propia Oficina después del
+fix anterior:
+
+- Los números de la Malla que le di como ejemplo (11 enlaces/2
+  Programas/4 miembros) no coincidían con lo que veía (7/1/0). Aclarado:
+  esos números salieron de un script de verificación descartable que
+  sembró datos de prueba en el entorno **local** y los borró al
+  terminar — nunca tocaron producción. Lo que él ve en prod es su data
+  real, matemáticamente consistente (root = 1 Legacy + 3 triada N1 + N
+  Programas reales; solo 1 de esos Programas tiene `ProgramMembership`
+  real cargada, y esos miembros están en estado `invited`/`interviewed`,
+  no `active` todavía — de ahí el 0).
+- Preguntó si generar Programas demo (`/admin/demo-data`) contaba como
+  "compartir la tarjeta". Verificado en el código
+  (`app/admin/demo-data/actions.ts`): la generación demo solo crea
+  `Program`+`Card` marcados `isDemo`, nunca toca `Member` ni
+  `ProgramMembership` ni `CardLead` — son tres conceptos separados a
+  propósito: Programas demo (bulk, para probar la plataforma llena),
+  red real de un Programa (`ProgramMembership`, vía el flujo real de
+  entrevista/activación), y Seguimiento (`CardLead`, gente a la que le
+  compartiste tu Card puntual). Generar demo Programas no es "compartir
+  tu tarjeta" — son features distintas, no un bug.
+- Pidió revisar si los "KPIs" de `KpiRow` (Portafolio/Malla/Próx.
+  Cartera) eran lo mismo que Check de Realidad. Confirmado que NO son
+  el mismo dato — pero sí son redundantes/confusos: "Portafolio"
+  duplicaba `PortfolioBlock` de más abajo, "Malla" en realidad mostraba
+  el badge O.D. (nada que ver con el grafo real, un nombre que ahora
+  confunde con la Malla de verdad), y "Cartera" era un placeholder
+  deshabilitado sin nada atrás. Se sacó de la Oficina del dueño — sigue
+  existiendo tal cual para `VisitorOficina` (el embudo público de
+  reclutamiento), donde no genera la misma confusión.
+- Pidió chequear si el "Calendario" suelto (Fase E4) era redundante con
+  el Superpoder "Agenda" (Fase F). Confirmado: los dos leen
+  `Card.calendarEvents` — Agenda lo usa como fallback simulado cuando
+  no hay Google conectado (y datos reales de Calendar+Tasks cuando sí),
+  el Calendario suelto mostraba lo mismo en una lista aparte al final de
+  la página. Se sacó `components/CalendarBlock.tsx` — el campo
+  `Card.calendarEvents` y su editor en `OficinaExtrasEditor.tsx` siguen
+  intactos (siguen alimentando el fallback de Agenda).
+- Pidió el reorden: Keep in Flow → Tu Gemelo Digital → Check de
+  Realidad → Seguimiento → Superpoderes → Noticias → Malla/Cerebro
+  (al final). Implementado tal cual en `OwnerOficina`
+  (`app/c/[slug]/oficina/page.tsx`). `FirstConnections`/`PortfolioBlock`
+  (no mencionados en la lista) se mantuvieron — son contenido real para
+  company/personal y para project recrutado (referrer real), invisibles
+  de por sí en la propia Card de Legacy (sin referente) — se ubicaron
+  justo después de "Tu Gemelo Digital", antes de "Check de Realidad".
+
+Verificado real, dos capas: E2E completo (13/13) con
+`e2e/oficina-fase-e4.spec.ts` actualizado (ya no prueba el Calendario
+suelto — confirma explícitamente que NO reaparece, regresión); y
+script descartable de Playwright contra la Card `mastern0` real del
+entorno local confirmando visualmente el orden exacto pedido y la
+ausencia de Calendario/Portafolio duplicado.
+
+Shippeado como v1.41.0.

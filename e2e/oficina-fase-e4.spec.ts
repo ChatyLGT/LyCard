@@ -4,12 +4,16 @@ import { createE2eDb, mintAdminCookie } from "./helpers/adminSession";
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
 
-// Fase E4 de Oficina Virtual: Noticias + Calendario, al final de la
-// Oficina del dueño. El Calendario en particular tiene lógica real que
-// probar (lib/oficinaExtras.ts#sortCalendarEventsByDate) — esta prueba
-// carga los eventos a propósito FUERA de orden y confirma que la
-// pantalla los muestra ordenados, no en el orden en que se guardaron.
-test.describe("Oficina Virtual — Fase E4 (Noticias + Calendario)", () => {
+// Fase E4 de Oficina Virtual: Noticias, en la Oficina del dueño. El
+// bloque "Calendario" suelto que vivía acá se sacó (2026-09-23, pedido de
+// Gunnar): mostraba el mismo Card.calendarEvents que ya se ve adentro del
+// Superpoder Agenda — dos veces la misma info en formato distinto. Los
+// eventos siguen persistiendo (alimentan el fallback simulado de Agenda
+// cuando no hay Google conectado) y sortCalendarEventsByDate sigue
+// probado en lib/__tests__/oficinaExtras.test.ts — esta prueba ahora
+// confirma que Noticias se ve y que el bloque suelto de Calendario NO
+// vuelve a aparecer (regresión).
+test.describe("Oficina Virtual — Fase E4 (Noticias)", () => {
   const e2eDb = createE2eDb();
   let cardSlug: string;
   let adminId: string;
@@ -53,7 +57,7 @@ test.describe("Oficina Virtual — Fase E4 (Noticias + Calendario)", () => {
     await e2eDb.end();
   });
 
-  test("el dueño ve sus noticias y el calendario ordenado por fecha (no por orden de carga)", async ({ browser }) => {
+  test("el dueño ve sus noticias, y el bloque suelto de Calendario ya no está", async ({ browser }) => {
     const context = await browser.newContext();
     const cookie = await mintAdminCookie(adminId);
     await context.addCookies([{ ...cookie, url: BASE_URL }]);
@@ -63,25 +67,20 @@ test.describe("Oficina Virtual — Fase E4 (Noticias + Calendario)", () => {
 
     await expect(page.getByText("Noticia de prueba E2E")).toBeVisible();
 
-    // El más próximo (soon) tiene que aparecer ANTES que el más lejano en
-    // el DOM, aunque en la DB se cargó al revés.
-    const sooner = page.getByText("Evento próximo");
-    const later = page.getByText("Evento lejano");
-    await expect(sooner).toBeVisible();
-    await expect(later).toBeVisible();
-    const sBox = await sooner.boundingBox();
-    const lBox = await later.boundingBox();
-    expect(sBox?.y).toBeLessThan(lBox?.y ?? Infinity);
+    // Regresión: el bloque suelto "Calendario" (Fase E4 original) se sacó
+    // por duplicar el Superpoder Agenda — no debe reaparecer en la vista
+    // principal de la Oficina.
+    await expect(page.getByText("Evento próximo")).toHaveCount(0);
+    await expect(page.getByText("Evento lejano")).toHaveCount(0);
   });
 
-  test("un visitante (sin sesión) no ve ni Noticias ni Calendario", async ({ browser }) => {
+  test("un visitante (sin sesión) no ve Noticias", async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
 
     await page.goto(`${BASE_URL}/c/${cardSlug}/oficina`, { waitUntil: "networkidle" });
 
     await expect(page.getByText("Noticia de prueba E2E")).toHaveCount(0);
-    await expect(page.getByText("Evento próximo")).toHaveCount(0);
 
     await context.close();
   });
