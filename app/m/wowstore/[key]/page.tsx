@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
-import { currentMember } from "@/lib/memberAuth";
 import { prisma } from "@/lib/prisma";
+import { requireCardHost } from "@/lib/cardHost";
 import { installWowAppAction, requestAdaptationAction } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -39,15 +39,11 @@ export default async function WowAppDetailPage({
   params: Promise<{ key: string }>;
   searchParams: Promise<{ cardId?: string; installed?: string; adaptationRequested?: string; adaptationError?: string }>;
 }) {
-  const member = await currentMember();
-  if (!member) redirect("/m/login");
-
   const { key } = await params;
   const { cardId, installed, adaptationRequested, adaptationError } = await searchParams;
   if (!cardId) redirect("/m/dashboard");
 
-  const card = await prisma.card.findUnique({ where: { id: cardId } });
-  if (!card || card.memberId !== member.id) redirect("/m/dashboard");
+  const card = await requireCardHost(cardId);
 
   const wowApp = await prisma.wowApp.findUnique({ where: { key } });
   if (!wowApp) notFound();

@@ -50,9 +50,21 @@ export async function proxy(request: NextRequest) {
 
   if (pathname.startsWith("/m/") && !MEMBER_PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
     const token = request.cookies.get(MEMBER_COOKIE_NAME)?.value;
-    const authed = await isMemberRequestAuthed(token);
-    if (!authed) {
-      return NextResponse.redirect(new URL("/m/login", request.url));
+    const memberAuthed = await isMemberRequestAuthed(token);
+    if (!memberAuthed) {
+      // Puente Admin→Member simétrico al que ya existe del lado
+      // /admin/* (2026-09-24, bug real reportado por Gunnar en
+      // WowStore): un N0/MasterN0 logueado SOLO como Admin quedaba
+      // bloqueado ACÁ, antes de que la página siquiera corriera su
+      // propio chequeo de host (lib/cardHost.ts#requireCardHost). El
+      // middleware solo valida que la sesión sea criptográficamente
+      // válida de algún tipo -- la autorización real por Card sigue
+      // viviendo en cada página/action, no se duplica ni se afloja acá.
+      const adminToken = request.cookies.get(ADMIN_COOKIE_NAME)?.value;
+      const adminAuthed = await isRequestAuthed(adminToken);
+      if (!adminAuthed) {
+        return NextResponse.redirect(new URL("/m/login", request.url));
+      }
     }
   }
 

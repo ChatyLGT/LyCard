@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { currentMember } from "@/lib/memberAuth";
 import { prisma } from "@/lib/prisma";
+import { requireCardHost } from "@/lib/cardHost";
 import { RUBROS, PAIN_POINTS, matchWowApps, toCatalogEntry } from "@/lib/wowApps";
 
 export const dynamic = "force-dynamic";
@@ -27,14 +27,10 @@ export default async function WowStorePage({
 }: {
   searchParams: Promise<{ cardId?: string; rubro?: string; dolor?: string }>;
 }) {
-  const member = await currentMember();
-  if (!member) redirect("/m/login");
-
   const { cardId, rubro, dolor } = await searchParams;
   if (!cardId) redirect("/m/dashboard");
 
-  const card = await prisma.card.findUnique({ where: { id: cardId } });
-  if (!card || card.memberId !== member.id) redirect("/m/dashboard");
+  const card = await requireCardHost(cardId);
 
   const showResults = Boolean(rubro || dolor);
   const catalogRows = showResults ? await prisma.wowApp.findMany() : [];

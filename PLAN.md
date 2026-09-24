@@ -6065,6 +6065,44 @@ sobre una Card `project` real: confirma el tile visible, instala una
 WowApp desde ahí, y confirma que aparece de vuelta en esa misma
 Oficina. 36/36 E2E, 185/185 unit, 100% coverage, tsc/lint/build limpios.
 
+**Fix v1.56.2 -- WowStore rebotaba a /m/login estando logueado de
+verdad (bug real, encontrado en dos capas)**: Gunnar volvió a probar
+v1.56.1 y seguía sin poder entrar -- "me manda al login.. cuando ya
+estoy logeado". La causa NO era la UI (el tile "+ WowStore" ya estaba
+ahí y andaba bien), era autenticación, en dos lugares:
+
+1. **`app/m/wowstore/*` exigía `currentMember()` a secas**, igual que
+   ya se había documentado y corregido una vez antes en "Editar
+   Oficina" (2026-09-19) para otra pantalla -- Gunnar navega logueado
+   como Admin/MasterN0 (vía `/admin`), no como Member (vía `/m/login`),
+   así que nunca tuvo la cookie que esas pantallas pedían. Fix: nuevo
+   `lib/cardHost.ts#requireCardHost(cardId)`, mismo criterio de "isHost"
+   que ya usa la Oficina Virtual (`isAdmin || card.isOrigin ||
+   memberId === card.memberId`), reusado en `app/m/wowstore/page.tsx`,
+   `app/m/wowstore/[key]/page.tsx` y `app/m/wowstore/actions.ts` en vez
+   de repetir el chequeo viejo en cada archivo.
+2. **La causa real, más profunda: el middleware (`proxy.ts`) bloqueaba
+   TODO `/m/*` antes de que el punto 1 llegara siquiera a correr.**
+   El lado `/admin/*` del middleware ya tenía un puente explícito
+   ("Puente Member→Admin", 2026-09-24, promoción Chido→Programa) que
+   deja pasar una sesión de Member válida además de la de Admin -- pero
+   el lado `/m/*` nunca tuvo el puente simétrico, solo aceptaba cookie
+   de Member. Sin ese puente, el fix del punto 1 era inútil: la request
+   nunca llegaba a la página. Fix: mismo puente, en espejo, del lado
+   `/m/*` -- acepta también una cookie de Admin válida. El middleware
+   solo valida que la sesión sea criptográficamente válida de algún
+   tipo; la autorización real por Card sigue viviendo en
+   `requireCardHost`, no se duplica ni se afloja.
+
+`e2e/wowstore.spec.ts` ganó un tercer tramo que reproduce el bug real
+reportado: un Admin (MasterN0) sin ninguna cookie de Member navega
+`/m/wowstore` para su propia Card `project`, confirma que NUNCA
+aterriza en `/m/login` en ningún paso del flujo (explorar → detalle →
+instalar), e instala una WowApp de verdad. 36/36 E2E (incluida la
+regresión de todo lo demás que pasa por `/m/*`, dado que tocar el
+middleware es alto impacto), 185/185 unit, 100% coverage, tsc/lint/
+build limpios.
+
 ## Mensajería Interna -- Fase M1 (2026-09-24)
 
 Gunnar pidió mapear un sistema de mensajería propio de LyCard: un N0

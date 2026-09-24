@@ -178,5 +178,33 @@ test.describe("WowStore", () => {
     expect(adaptationRow.rows[0].adaptationNotes).toContain("taquería de barrio");
 
     await memberContext.close();
+
+    // --- Bug real reportado por Gunnar (2026-09-24): entra a WowStore
+    // logueado SOLO como Admin/MasterN0 (sin sesión de Member) y antes
+    // del fix rebotaba a /m/login aunque ya estuviera logueado. lib/
+    // cardHost.ts#requireCardHost ahora acepta el mismo criterio de host
+    // que ya usa la Oficina Virtual (Admin, no solo Member dueño). ---
+    const adminOnlyContext = await browser.newContext();
+    const adminOnlyCookie = await mintAdminCookie(adminId);
+    await adminOnlyContext.addCookies([{ ...adminOnlyCookie, url: BASE_URL }]);
+    const adminOnlyPage = await adminOnlyContext.newPage();
+
+    await adminOnlyPage.goto(`${BASE_URL}/m/wowstore?cardId=${projectCardId}&rubro=retail&dolor=cobrar`, { waitUntil: "networkidle" });
+    expect(adminOnlyPage.url()).not.toContain("/m/login");
+    await expect(adminOnlyPage.getByText("WowCobranza E2E")).toBeVisible();
+    await adminOnlyPage.getByText("WowCobranza E2E").click();
+    await adminOnlyPage.waitForURL(new RegExp(`/m/wowstore/${keyOther}`));
+    expect(adminOnlyPage.url()).not.toContain("/m/login");
+    await adminOnlyPage.getByRole("button", { name: "Instalación Express" }).click();
+    await adminOnlyPage.waitForURL(/installed=1/);
+    expect(adminOnlyPage.url()).not.toContain("/m/login");
+
+    const adminInstallRow = await e2eDb.query<{ id: string }>(
+      `select wi.id from "WowAppInstall" wi join "WowApp" w on w.id = wi."wowAppId" where wi."cardId" = $1 and w.key = $2`,
+      [projectCardId, keyOther]
+    );
+    expect(adminInstallRow.rows).toHaveLength(1);
+
+    await adminOnlyContext.close();
   });
 });

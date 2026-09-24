@@ -3,15 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { currentMemberId } from "@/lib/memberAuth";
-
-async function requireOwnCard(cardId: string) {
-  const memberId = await currentMemberId();
-  if (!memberId) redirect("/m/login");
-  const card = await prisma.card.findUnique({ where: { id: cardId } });
-  if (!card || card.memberId !== memberId) redirect("/m/dashboard");
-  return card;
-}
+import { requireCardHost } from "@/lib/cardHost";
 
 async function requireWowApp(wowAppKey: string) {
   const wowApp = await prisma.wowApp.findUnique({ where: { key: wowAppKey } });
@@ -22,7 +14,7 @@ async function requireWowApp(wowAppKey: string) {
 // Instalación base -- mismo criterio honesto que markMembershipPaidAction:
 // no hay pasarela de pago real todavía, esto solo registra la instalación.
 export async function installWowAppAction(cardId: string, wowAppKey: string) {
-  await requireOwnCard(cardId);
+  await requireCardHost(cardId);
   const wowApp = await requireWowApp(wowAppKey);
 
   await prisma.wowAppInstall.upsert({
@@ -42,7 +34,7 @@ export async function installWowAppAction(cardId: string, wowAppKey: string) {
 // Sin ellas, el pedido igual queda registrado -- nunca se pierde por
 // falta de mail.
 export async function requestAdaptationAction(cardId: string, wowAppKey: string, formData: FormData) {
-  const card = await requireOwnCard(cardId);
+  const card = await requireCardHost(cardId);
   const wowApp = await requireWowApp(wowAppKey);
 
   const notes = String(formData.get("notes") || "").trim();

@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.56.1";
+export const APP_VERSION = "1.56.2";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.56.2",
+    date: "2026-09-24",
+    notes:
+      "Fix real: entrar a WowStore como N0/MasterN0 (logueado por /admin, sin sesión de Member) rebotaba a la pantalla de login aunque ya estuvieras adentro. Las 3 pantallas de WowApps -- \"Explorar\", detalle de cada app y \"pedir adaptación a medida\" -- ya funcionan con tu login de siempre.",
+  },
   {
     version: "1.56.1",
     date: "2026-09-24",
