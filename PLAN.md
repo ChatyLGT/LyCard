@@ -8,6 +8,35 @@ revisión (marcadas **[DECISIÓN GUNNAR]**).
 
 ---
 
+## ⚠️ REGLA PERMANENTE — no negociable, leer antes de tocar cualquier cosa (2026-09-24)
+
+**Esto no es para salir al mercado.** Todo lo que se construye en este repo
+es para entregárselo a **Sergio y Fabricio** — son los únicos que dan luz
+verde para producción real, nunca este proceso por sí solo. Ninguna sesión
+de trabajo acá — ni yo, ni ninguna instancia futura de Claude en este
+repo — decide ni implica que algo "ya está listo para salir".
+
+Lo que esto significa en la práctica, todos los días:
+
+- El objetivo de cada feature es ser **top 1%** — el criterio no es "que
+  funcione", es "que a Sergio/Fabricio les resulte fácil auditarlo, entender
+  el porqué de cada decisión, y no tener que rehacerlo". Código y docs
+  siempre escritos para que otro humano (no Gunnar, no quien lo pidió) pueda
+  retomarlo sin arqueología.
+- Nunca decir ni implicar "esto está listo para producción/para clientes
+  reales" — el lenguaje correcto es "está construido, testeado, y
+  documentado para que Sergio/Fabricio lo evalúen", nunca más que eso.
+- La disciplina de shipeo ya establecida (tsc + lint + tests 100% + build +
+  E2E + verificación visual + PLAN.md + versión) sigue siendo el piso, no el
+  techo — es lo mínimo para que la entrega a ellos sea honesta, no el
+  criterio de "ya se puede vender".
+- Cáscara honesta aplica también hacia adentro: si algo es simulado,
+  parcial, o una apuesta de diseño sin validar, se documenta como tal en
+  PLAN.md — Sergio/Fabricio necesitan saber exactamente qué es real y qué
+  no para poder auditar de verdad.
+
+---
+
 ## Fase 0 — Fundaciones: Programa + Miembro
 
 **Objetivo:** dejar de asumir que todo es "Legacy". Introducir la entidad
