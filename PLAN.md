@@ -5599,3 +5599,79 @@ borrada. 31/31 E2E de la suite completa, tsc/lint/build/100% coverage
 limpios.
 
 Shippeado como v1.51.0.
+
+## Modelo de monetización cerrado: 3 ejes + mecanismo de promoción Chido→Programa (2026-09-24)
+
+Gunnar pidió un resumen completo del estado del MVP; de ahí salió que lo
+que yo llamaba "`planTier` bloqueando el MVP" mezclaba 3 ejes que son
+independientes entre sí. Después de varias rondas de precisión, quedó
+cerrado así — **decisión de arquitectura, todavía sin código**:
+
+**Eje A — Programa no es un plan que se elige, es un umbral estructural
+que se cruza.** Un Chido (persona que pagó, pasó por el proceso Legacy
+completo: entrevista → armado de oficina → 3 meses de prueba) se
+convierte en **N0 de su propio Programa** en el momento exacto en que
+tiene **1+ persona humana real bajo él** (no importa cuántos agentes IA
+tenga — eso es indiferente para el umbral). Mecanismo de la promoción,
+tal como lo definió Gunnar:
+
+1. El Chido recluta a un humano — mismo flujo self-service de siempre
+   (`ensureLegacyMembershipAndCards`) o invitación.
+2. Ese humano pasa por **su propio** proceso de entrevista real —
+   **bajo Legacy**, el mismo pipeline que ya existe hoy
+   (`registerInterviewAction` → `completeInterviewAction`). Nada nuevo
+   acá — decisión explícita de Gunnar (opción "a" sobre dos caminos que
+   le propuse): no existe un estado de "Programa embrionario/pendiente"
+   antes de que el umbral se cruce, se reusa 100% el pipeline actual.
+3. En el instante en que ese humano queda `status:"active"`, el sistema
+   **computa** (no pide aprobación aparte): ¿la membresía que lo
+   refirió (`referredByMembershipId`) pertenece a alguien con
+   `membershipPaidAt` seteado (=Chido) que ahora tiene 1+ referido
+   activo? Todos los campos para esta cuenta ya existen en
+   `ProgramMembership` (`referredByMembershipId`, `membershipPaidAt`,
+   `status`) — cero campos nuevos necesarios para la detección en sí.
+4. Si el umbral se cruza: se crea el Programa nuevo (la Card de
+   company del Chido se vuelve su raíz, mismo lugar que hoy ocupa
+   `project` para Legacy), se lo da de alta como Admin de ese Programa
+   nuevo, su vieja Card de proyecto (la relación con Legacy) queda
+   como "Programa Legado" — visible pero ya no la default. Y la
+   membresía + Cards del humano recién activado se **migran** del
+   Programa Legacy al Programa nuevo recién creado (opción "a": nacen
+   bajo Legacy, se mudan en el momento de la promoción — no nacen ya
+   bajo un Programa que todavía no existía).
+5. La Oficina Virtual de ese humano recién activado no es genérica —
+   se arma con Superpoderes/objetivos según **su función dentro del
+   programa** (un vendedor no tiene la misma oficina que un soporte).
+   Esto conecta con "Puesto" (Fase 9.1/9.2, ya existe en el schema) —
+   el Puesto asignado a su Card determina qué le corresponde.
+
+**Eje B — Mirón/Vividor/Chido/Chido+ (nombres 100% internos, nunca en
+la app ni en marketing — "si sale a la luz nos cuelgan", palabras de
+Gunnar).** El embudo natural que la app automatiza: Mirón (visitante
+sin cuenta) → Vividor (se registra self-service, Freemium, 3 Cards) →
+Chido (pasa por entrevista, paga) → Chido+ (variantes de escalamiento,
+todavía sin definir en detalle) → cruza el umbral del Eje A y se
+convierte en Programa. Un Chido con solo agentes IA bajo él (cero
+humanos) sigue siendo Chido, nunca Programa, sin importar cuántos
+agentes tenga.
+
+**Eje C — precio a la carta por WowApp/Superpoder, confirmado tal cual
+ya estaba documentado** en la sección "Modelo de precio a la carta" de
+este mismo archivo (arriba, "AppStore de Skills") — cada Skill con su
+propio precio (suscripción o pago único), independiente del status del
+Member. Un Vividor puede comprar una WowApp puntual sin necesidad de
+ser Chido.
+
+**Lo que este modelo NO necesita, que sí estaba en el roadmap viejo**:
+`Program.planTier` como campo elegible a mano (Freemium/Automatizado/
+Normal/Enterprise como "plan que alguien selecciona") deja de tener
+sentido como primer bloqueador — los $ de infraestructura de agentes
+(Automatizado $25/Normal $100/Enterprise $500) pasan a describir el
+nivel de infraestructura que un Programa YA formado sigue pagando, no
+la puerta de entrada.
+
+**Sigue sin construir, todo esto es diseño puro todavía**: la lógica de
+detección del umbral (paso 3), la creación real de Programa+Admin+
+migración de membresía (paso 4), el campo/flag de "Programa Legado" en
+la Card vieja, y la conexión Puesto→Superpoderes específicos por
+función (paso 5). Próximo paso: EDT de fases para construir esto.
