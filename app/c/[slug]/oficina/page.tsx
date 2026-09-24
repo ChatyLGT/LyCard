@@ -550,10 +550,18 @@ function VisitorOficina({ data }: { data: OficinaData }) {
 
         <div style={hr} />
 
+        {/* Fix W2.1 (2026-09-24, reportado por Gunnar): un solo kicker
+            "WowStore" para las herramientas del equipo + las apps
+            instaladas -- antes eran 2 secciones con títulos distintos
+            ("WowApps" arriba, "WowApps · WowStore" abajo), confuso y
+            enterraba la marca WowStore en un subtítulo. */}
+        {(card.kind === "project" || data.installedWowApps.length > 0) && (
+          <span style={kickerStyle}>{card.kind === "project" ? data.officeSkillsKicker : "WowStore"}</span>
+        )}
         {card.kind === "project" && (
           <OfficeSkillsBlock
             skills={data.officeSkills}
-            kicker={data.officeSkillsKicker}
+            kicker=""
             isHost={false}
             fathomBrief={{ enabled: false }}
             companyNetworkHref={null}
@@ -566,11 +574,7 @@ function VisitorOficina({ data }: { data: OficinaData }) {
           />
         )}
         {data.installedWowApps.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {card.kind === "project" && <div style={hr} />}
-            <span style={kickerStyle}>{card.kind === "project" ? "WowApps · WowStore" : "WowApps"}</span>
-            <WowAppsBlock installs={data.installedWowApps} isHost={false} cardId={data.card.id} aweEntries={[]} />
-          </div>
+          <WowAppsBlock installs={data.installedWowApps} isHost={false} cardId={data.card.id} aweEntries={[]} />
         )}
       </div>
     </div>
@@ -661,30 +665,30 @@ function OwnerOficina({ data }: { data: OficinaData }) {
 
         <div style={hr} />
 
+        {/* Fix W2.1 (2026-09-24, reportado por Gunnar): un solo kicker
+            "WowStore" para todo el bloque -- antes eran 2 secciones con
+            títulos distintos ("WowApps" arriba, "WowApps · WowStore"
+            abajo), confuso y enterraba la marca WowStore en un
+            subtítulo. Las herramientas reales del equipo (favoritas,
+            "las que funcionan") y lo instalado desde WowStore quedan en
+            la MISMA grilla, un único título arriba. */}
+        <span style={kickerStyle}>{card.kind === "project" ? data.officeSkillsKicker : "WowStore"}</span>
         {card.kind === "project" && (
-          <>
-            <OfficeSkillsBlock
-              skills={data.officeSkills}
-              kicker={data.officeSkillsKicker}
-              isHost
-              fathomBrief={data.fathomBrief}
-              companyNetworkHref={null}
-              cardId={data.card.id}
-              voiceNotes={data.voiceNotes}
-              agendaEvents={data.agendaEvents}
-              agendaTasks={data.agendaTasks}
-              googleConnected={data.googleConnected}
-              connectUrl={data.connectUrl}
-            />
-            <div style={hr} />
-          </>
+          <OfficeSkillsBlock
+            skills={data.officeSkills}
+            kicker=""
+            isHost
+            fathomBrief={data.fathomBrief}
+            companyNetworkHref={null}
+            cardId={data.card.id}
+            voiceNotes={data.voiceNotes}
+            agendaEvents={data.agendaEvents}
+            agendaTasks={data.agendaTasks}
+            googleConnected={data.googleConnected}
+            connectUrl={data.connectUrl}
+          />
         )}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {/* Project ya tiene su propio kicker "WowApps" arriba (Program.
-              officeSkills, el toolkit interno del equipo) -- acá abajo se
-              distingue como "· WowStore" para no repetir el mismo título
-              dos veces seguidas en la misma pantalla. */}
-          <span style={kickerStyle}>{card.kind === "project" ? "WowApps · WowStore" : "WowApps"}</span>
           <WowAppsBlock installs={data.installedWowApps} isHost browseHref={`/m/wowstore?cardId=${card.id}`} cardId={card.id} aweEntries={data.aweEntries} />
           {card.kind === "company" && (
             <Link
@@ -962,7 +966,7 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
     agentLogoUrl: card.kind === "project" ? card.program?.logoUrl ?? null : card.kind === "company" ? card.logoUrl : null,
     fathomBrief,
     officeSkills,
-    officeSkillsKicker: typeof officeSkillsKicker === "string" && officeSkillsKicker.trim() ? officeSkillsKicker : "WowApps",
+    officeSkillsKicker: typeof officeSkillsKicker === "string" && officeSkillsKicker.trim() ? officeSkillsKicker : "WowStore",
     voiceNotes,
     agendaEvents,
     agendaTasks,

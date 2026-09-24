@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.57.0";
+export const APP_VERSION = "1.57.1";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.57.1",
+    date: "2026-09-24",
+    notes:
+      "4 correcciones reales a WowStore: ahora todas sus pantallas tienen un \"← Volver a tu tarjeta\" (antes quedabas atrapado adentro); la sección de tu Oficina pasa a llamarse \"WowStore\" en vez de dos títulos distintos; las herramientas reales de tu equipo (Brief, Notas de Voz, Agenda, Mensajes, Malla, Modo Foco, etc.) ahora aparecen en \"Mis WowApps\"; y las tarjetas de cada WowApp en Explorar y su detalle se ven con más peso — precio destacado, insignia de \"Instalación inmediata\".",
+  },
   {
     version: "1.57.0",
     date: "2026-09-24",

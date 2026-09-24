@@ -71,29 +71,49 @@ export default async function WowAppDetailPage({
   return (
     <div style={{ minHeight: "100vh", background: "#131313", color: "#e5e2e1", fontFamily: "'Plus Jakarta Sans',sans-serif", padding: "40px 20px" }}>
       <div style={{ maxWidth: 480, margin: "0 auto", display: "flex", flexDirection: "column", gap: 20 }}>
-        <Link href={`/m/wowstore?cardId=${cardId}`} style={{ color: "#8a8378", font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase" }}>
-          ← WowStore
-        </Link>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ flex: "none", width: 46, height: 46, borderRadius: 14, background: `${wowApp.color}1F`, border: `1px solid ${wowApp.color}55`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span className="material-symbols-outlined" style={{ fontSize: 22, color: wowApp.color }}>bolt</span>
-          </span>
-          <div>
-            <h1 style={{ margin: 0, font: "500 22px 'Playfair Display',serif", color: "#F5F2EB" }}>{wowApp.nombre}</h1>
-            <span style={{ font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: wowApp.status === "activo" ? "#7BC98E" : "#C8A15A" }}>
-              {wowApp.status === "activo" ? "Activa" : "Próximamente"}
-            </span>
-          </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <Link href={`/c/${card.slug}/oficina`} style={{ color: "#8a8378", font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", textDecoration: "none" }}>
+            ← Volver a tu tarjeta
+          </Link>
+          <Link href={`/m/wowstore?cardId=${cardId}`} style={{ color: "#8a8378", font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", textDecoration: "none" }}>
+            ← WowStore
+          </Link>
         </div>
 
-        <p style={{ margin: 0, font: "400 13px/1.7 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{wowApp.descripcion}</p>
+        <div
+          style={{
+            display: "flex", flexDirection: "column", gap: 10, padding: 20, borderRadius: 18,
+            background: `linear-gradient(160deg, ${wowApp.color}26, #171717 65%)`, border: `1px solid ${wowApp.color}40`,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ flex: "none", width: 50, height: 50, borderRadius: 15, background: `${wowApp.color}2A`, border: `1px solid ${wowApp.color}66`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 24, color: wowApp.color }}>bolt</span>
+            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h1 style={{ margin: 0, font: "500 22px 'Playfair Display',serif", color: "#F5F2EB" }}>{wowApp.nombre}</h1>
+              <span
+                style={{
+                  display: "inline-block", marginTop: 3, font: "700 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase",
+                  color: wowApp.status === "activo" ? "#7BC98E" : "#C8A15A",
+                  background: wowApp.status === "activo" ? "rgba(123,201,142,.14)" : "rgba(200,161,90,.14)",
+                  borderRadius: 999, padding: "3px 9px",
+                }}
+              >
+                {wowApp.status === "activo" ? "Instalación inmediata" : "Próximamente"}
+              </span>
+            </div>
+          </div>
 
-        {wowApp.basePriceUsd > 0 && (
-          <p style={{ margin: 0, font: "700 14px 'Plus Jakarta Sans',sans-serif", color: "#E5C378" }}>
-            Desde ${wowApp.basePriceUsd.toFixed(2)} USD
-          </p>
-        )}
+          <p style={{ margin: 0, font: "400 13px/1.7 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{wowApp.descripcion}</p>
+
+          <div style={{ display: "flex", alignItems: "baseline", gap: 6, paddingTop: 4, borderTop: "1px solid rgba(255,255,255,.08)" }}>
+            <span style={{ font: "700 20px 'Plus Jakarta Sans',sans-serif", color: "#E5C378" }}>
+              {wowApp.basePriceUsd > 0 ? `$${wowApp.basePriceUsd.toFixed(0)} USD` : "Gratis"}
+            </span>
+            {wowApp.basePriceUsd > 0 && <span style={{ font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>pago único</span>}
+          </div>
+        </div>
 
         <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#9a8f80" }}>
           Elegí cómo la querés

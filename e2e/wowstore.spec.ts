@@ -26,6 +26,11 @@ test.describe("WowStore", () => {
   // Este fixture prueba exactamente ese caso, no uno inventado.
   let projectCardId: string;
   let projectCardSlug: string;
+  // Fix W2.1 (2026-09-24, reportado por Gunnar): las herramientas
+  // reales del equipo (Program.officeSkills) tienen que verse en "Mis
+  // WowApps" de una Card project -- este Programa+skill prueba
+  // exactamente eso, no una lista vacía.
+  let programId: string;
 
   test.beforeAll(async () => {
     await e2eDb.connect();
@@ -50,10 +55,22 @@ test.describe("WowStore", () => {
     );
     cardId = card.rows[0].id;
 
+    const program = await e2eDb.query<{ id: string }>(
+      `insert into "Program" (id, slug, name, "officeSkills", "updatedAt") values (gen_random_uuid()::text, $1, $2, $3, now()) returning id`,
+      [
+        `e2e-wowstore-program-${suffix}`,
+        "Taquería E2E Legacy",
+        JSON.stringify([
+          { key: "brief-e2e", nombre: "Brief E2E", descripcion: "d", iconUrl: "", color: "#C8A15A", appType: "fathom-brief", enabled: true },
+        ]),
+      ]
+    );
+    programId = program.rows[0].id;
+
     projectCardSlug = `e2e-wowstore-project-${suffix}`;
     const projectCard = await e2eDb.query<{ id: string }>(
-      `insert into "Card" (id, slug, "updatedAt", name, title, quote, kind, "memberId") values (gen_random_uuid()::text, $1, now(), $2, 'Dueño', 'cita', 'project', $3) returning id`,
-      [projectCardSlug, "Taquería E2E (Legacy)", memberId]
+      `insert into "Card" (id, slug, "updatedAt", name, title, quote, kind, "memberId", "programId") values (gen_random_uuid()::text, $1, now(), $2, 'Dueño', 'cita', 'project', $3, $4) returning id`,
+      [projectCardSlug, "Taquería E2E (Legacy)", memberId, programId]
     );
     projectCardId = projectCard.rows[0].id;
   });
@@ -62,6 +79,7 @@ test.describe("WowStore", () => {
     await e2eDb.query(`delete from "WowAppInstall" where "cardId" in ($1, $2)`, [cardId, projectCardId]).catch(() => {});
     await e2eDb.query(`delete from "WowApp" where key in ($1, $2)`, [keyMatch, keyOther]).catch(() => {});
     await e2eDb.query(`delete from "Card" where id in ($1, $2)`, [cardId, projectCardId]).catch(() => {});
+    await e2eDb.query(`delete from "Program" where id = $1`, [programId]).catch(() => {});
     await e2eDb.query(`delete from "Member" where id = $1`, [memberId]).catch(() => {});
     await e2eDb.query(`delete from "Admin" where id = $1`, [adminId]).catch(() => {});
     await e2eDb.end();
@@ -144,7 +162,11 @@ test.describe("WowStore", () => {
 
     // Aparece de verdad en la Oficina Virtual de esa Card.
     await memberPage.goto(`${BASE_URL}/c/${cardSlug}/oficina`, { waitUntil: "networkidle" });
-    await expect(memberPage.getByText("WowStore", { exact: true })).toBeVisible();
+    // Fix W2.1 (2026-09-24): el kicker de la sección y el tile "+
+    // WowStore" ahora dicen los dos "WowStore" -- exact:true matchea
+    // ambos a propósito (es el mismo rebranding, no una ambigüedad
+    // real), .first() alcanza para confirmar que el rename se ve.
+    await expect(memberPage.getByText("WowStore", { exact: true }).first()).toBeVisible();
     await memberPage.getByText("WowBot Pedidos E2E").click();
     await expect(memberPage.getByText("Toma pedidos por WhatsApp.")).toBeVisible();
 
@@ -177,8 +199,22 @@ test.describe("WowStore", () => {
     expect(projectInstallRow.rows).toHaveLength(1);
 
     await memberPage.goto(`${BASE_URL}/c/${projectCardSlug}/oficina`, { waitUntil: "networkidle" });
-    await expect(memberPage.getByText("WowApps · WowStore", { exact: true })).toBeVisible();
+    await expect(memberPage.getByText("WowStore", { exact: true }).first()).toBeVisible();
     await expect(memberPage.getByText("WowBot Pedidos E2E")).toBeVisible();
+
+    // --- Fix W2.1 (2026-09-24, reportado por Gunnar): "Brief E2E" es
+    // una herramienta real del equipo (Program.officeSkills), no una
+    // WowApp instalada -- tiene que verse igual en "Mis WowApps". ---
+    await memberPage.goto(`${BASE_URL}/m/wowstore/mias?cardId=${projectCardId}`, { waitUntil: "networkidle" });
+    await expect(memberPage.getByText("Brief E2E")).toBeVisible();
+    await expect(memberPage.getByText("WowBot Pedidos E2E")).toBeVisible();
+
+    // --- Fix W2.1: siempre hay forma de volver a la tarjeta desde
+    // cualquier pantalla de WowStore -- antes no existía ese link. ---
+    const backLink = memberPage.getByRole("link", { name: "← Volver a tu tarjeta" });
+    await expect(backLink).toBeVisible();
+    await backLink.click();
+    await memberPage.waitForURL(new RegExp(`/c/${projectCardSlug}/oficina`));
 
     // Pide adaptación paga en la otra WowApp (nunca instalada tal cual).
     await memberPage.goto(`${BASE_URL}/m/wowstore/${keyOther}?cardId=${cardId}`, { waitUntil: "networkidle" });

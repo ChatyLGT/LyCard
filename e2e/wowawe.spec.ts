@@ -73,7 +73,8 @@ test.describe("WowAwe", () => {
     const page = await context.newPage();
 
     await page.goto(`${BASE_URL}/c/${cardSlug}/oficina`, { waitUntil: "networkidle" });
-    await expect(page.getByText("WowApps", { exact: true })).toBeVisible();
+    // Fix W2.1 (2026-09-24): la sección se renombró "WowApps" -> "WowStore".
+    await expect(page.getByText("WowStore", { exact: true }).first()).toBeVisible();
     await page.getByRole("button", { name: /WowAwe E2E/ }).click();
 
     await expect(page.getByText(/Salí a caminar 15 minutos/)).toBeVisible();

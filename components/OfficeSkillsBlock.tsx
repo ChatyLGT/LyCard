@@ -86,7 +86,10 @@ export default function OfficeSkillsBlock({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <span style={kickerStyle}>{kicker}</span>
+      {/* Fix W2.1 (2026-09-24): el kicker es opcional -- cuando esta
+          grilla se muestra pegada a otra (WowStore, ver oficina/page.tsx)
+          el título único vive afuera, no se repite acá. */}
+      {kicker && <span style={kickerStyle}>{kicker}</span>}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "10px 6px" }}>
         {visible.map((skill) => (
           <button key={skill.key} type="button" onClick={() => openSkill(skill)} style={tileStyle}>

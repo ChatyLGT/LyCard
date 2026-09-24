@@ -6390,7 +6390,41 @@ Lo documentado como "fuera de alcance" (ratings, Perfil de Negocio,
 tab bar nativa, buscador de texto libre) sigue exactamente ahí --
 ninguno se construyó, ver el detalle arriba.
 
----
+**Fix W2.1 -- feedback real de Gunnar sobre v1.57.0 (2026-09-24)**:
+probó y devolvió 4 problemas reales, no estética por estética:
+
+1. **"No hay forma de regresar a la tarjeta"** -- ninguna de las 4
+   pantallas de WowStore linkeaba de vuelta a la Oficina. Fix: link
+   fijo "← Volver a tu tarjeta" en `WowStoreTabs` (las 3 pantallas con
+   tabs) y en el detalle de cada WowApp.
+2. **"Las WowApps ya creadas (Superpoderes) deberían tener nombre y
+   apellido en el inventario... no están en Mis WowApps"** -- las 8
+   herramientas reales de la Oficina (Brief, Notas de Voz, Agenda,
+   Mensajes, Malla, Cartera, Configuración, Modo Foco) viven en
+   `Program.officeSkills`, un modelo totalmente aparte de
+   `WowApp`/`WowAppInstall` -- por diseño original (ver "Hallazgo de
+   arquitectura" en la Fase W1), pero eso las volvía invisibles desde
+   WowStore. **No se migran a la tabla `WowApp`** (mover 8 features
+   reales y funcionando a un modelo pensado para catálogo externo
+   arriesgaba romperlas -- sus componentes reales, `FathomBriefBlock`/
+   `VoiceNotesBlock`/`AgendaBlock`/`FocusModeBlock`, no tienen
+   equivalente dentro de `WowAppsBlock`, que hoy solo sabe renderizar
+   `appType:"awe"` de verdad). En cambio, `/m/wowstore/mias` ahora
+   también lista las `officeSkills` del Programa de una Card `project`
+   -- mismo tile, mismo ícono, mismo nombre real -- cada una con un
+   link "Ver en tu Oficina" (ahí vive su lógica real, no se duplica).
+3. **"El diseño de entrada está horrible / no da ganas de comprar"**
+   -- las 2 secciones separadas y con doble título ("WOWAPPS" +
+   "WOWAPPS · WOWSTORE") se funden en UNA sola, kicker "WowStore" en
+   vez de "WowApps" (default cambia en `oficina/page.tsx`, sigue
+   siendo editable por Programa vía `cardLabels`). Las tarjetas de
+   resultado en Explorar y el detalle de cada WowApp ganan más peso
+   visual (precio destacado, badge de "Instalación inmediata" cuando
+   corresponde) -- sin copiar el mockup Tailwind/claro, manteniéndonos
+   en el sistema de LyCard.
+
+No se tocó el schema (`WowApp`/`WowAppInstall` intactos) -- todo el
+fix vive en cómo se arma la UI a partir de datos que ya existen.
 
 **Recordatorio de la regla permanente de arriba**: esto sigue sin ser
 luz verde de producción. Fase P1 y Fase W1 están listas para que Sergio

@@ -71,7 +71,7 @@ export default async function WowStorePage({
           </h1>
         </div>
 
-        <WowStoreTabs cardId={cardId} active="explorar" />
+        <WowStoreTabs cardId={cardId} cardSlug={card.slug} active="explorar" />
 
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -103,7 +103,7 @@ export default async function WowStorePage({
         </div>
 
         {showResults && (
-          <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <section style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#9a8f80" }}>
               Lo que encontramos para vos
             </span>
@@ -117,18 +117,38 @@ export default async function WowStorePage({
                 key={app.key}
                 href={`/m/wowstore/${app.key}?cardId=${cardId}`}
                 style={{
-                  display: "flex", alignItems: "center", gap: 12, padding: 14, borderRadius: 14,
-                  background: "#201f1f", textDecoration: "none", color: "#F5F2EB",
+                  display: "flex", flexDirection: "column", gap: 10, padding: 16, borderRadius: 16,
+                  background: "linear-gradient(155deg,#201f1f,#181818)", border: `1px solid ${app.color}30`,
+                  textDecoration: "none", color: "#F5F2EB", boxShadow: "0 6px 18px rgba(0,0,0,.25)",
                 }}
               >
-                <span style={{ flex: "none", width: 34, height: 34, borderRadius: 10, background: `${app.color}1F`, border: `1px solid ${app.color}55`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: 17, color: app.color }}>bolt</span>
-                </span>
-                <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-                  <span style={{ font: "700 13px 'Plus Jakarta Sans',sans-serif" }}>{app.nombre}</span>
-                  <span style={{ font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#8a8378", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{app.descripcion}</span>
-                </span>
-                <span style={{ font: "700 16px sans-serif", color: "#C8A15A" }}>→</span>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                  <span style={{ flex: "none", width: 42, height: 42, borderRadius: 12, background: `${app.color}22`, border: `1px solid ${app.color}55`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 21, color: app.color }}>bolt</span>
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+                    <span style={{ font: "700 14.5px 'Plus Jakarta Sans',sans-serif" }}>{app.nombre}</span>
+                    <span style={{ font: "400 11.5px/1.4 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>{app.descripcion}</span>
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 4, borderTop: "1px solid rgba(255,255,255,.06)" }}>
+                  <span
+                    style={{
+                      font: "700 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase",
+                      color: app.status === "activo" ? "#7BC98E" : "#C8A15A",
+                      background: app.status === "activo" ? "rgba(123,201,142,.12)" : "rgba(200,161,90,.12)",
+                      borderRadius: 999, padding: "4px 9px",
+                    }}
+                  >
+                    {app.status === "activo" ? "Instalación inmediata" : "Próximamente"}
+                  </span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ font: "700 13px 'Plus Jakarta Sans',sans-serif", color: "#E5C378" }}>
+                      {app.basePriceUsd > 0 ? `$${app.basePriceUsd.toFixed(0)} USD` : "Gratis"}
+                    </span>
+                    <span style={{ font: "700 15px sans-serif", color: app.color }}>→</span>
+                  </span>
+                </div>
               </Link>
             ))}
           </section>

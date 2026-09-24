@@ -31,7 +31,7 @@ export default async function SolicitudesPage({
   const { cardId } = await searchParams;
   if (!cardId) redirect("/m/dashboard");
 
-  await requireCardHost(cardId);
+  const card = await requireCardHost(cardId);
   const solicitudes = await prisma.wowAppInstall.findMany({
     where: { cardId, adaptationStatus: { not: "sin_pedir" } },
     include: { wowApp: true },
@@ -50,7 +50,7 @@ export default async function SolicitudesPage({
           </h1>
         </div>
 
-        <WowStoreTabs cardId={cardId} active="solicitudes" />
+        <WowStoreTabs cardId={cardId} cardSlug={card.slug} active="solicitudes" />
 
         {solicitudes.length === 0 && (
           <p style={{ margin: 0, font: "400 12.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
