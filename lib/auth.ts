@@ -2,6 +2,7 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { currentMemberId } from "@/lib/memberAuth";
 
 const COOKIE_NAME = "lycard_admin";
 const SESSION_TTL = "12h";
@@ -14,7 +15,11 @@ function secretKey() {
 
 export async function verifyAdminCredentials(email: string, password: string) {
   const admin = await prisma.admin.findUnique({ where: { email: email.trim().toLowerCase() } });
-  if (!admin) return null;
+  // passwordHash null == una fila de Admin nacida de la promoción
+  // automática Chido→Programa (Admin.memberId) -- nunca tuvo password
+  // propio, nunca puede loguearse por acá. bcrypt.compare no acepta
+  // null, así que se corta antes en vez de dejarlo reventar.
+  if (!admin || !admin.passwordHash) return null;
   const ok = await bcrypt.compare(password, admin.passwordHash);
   return ok ? admin : null;
 }
@@ -63,9 +68,20 @@ export async function isAdminAuthed() {
 // change without needing to re-issue its session token.
 export async function currentAdminScope(): Promise<{ id: string; programId: string | null } | null> {
   const id = await currentAdminId();
-  if (!id) return null;
-  const admin = await prisma.admin.findUnique({ where: { id }, select: { id: true, programId: true } });
-  return admin;
+  if (id) {
+    const admin = await prisma.admin.findUnique({ where: { id }, select: { id: true, programId: true } });
+    if (admin) return admin;
+  }
+  // Puente Member→Admin (2026-09-24, promoción automática Chido→Programa,
+  // ver PLAN.md "Modelo de monetización cerrado"): un Chido promovido a
+  // N0 de su propio Programa nunca tuvo login de Admin separado -- su
+  // fila de Admin nace linkeada a su Member (Admin.memberId), sin cookie
+  // propia. Si hay sesión de Member activa y ese Member tiene un Admin
+  // linkeado, esa es su sesión de Admin también: una sola cuenta, dos
+  // capacidades, sin login aparte que recordar.
+  const memberId = await currentMemberId();
+  if (!memberId) return null;
+  return prisma.admin.findUnique({ where: { memberId }, select: { id: true, programId: true } });
 }
 
 export const ADMIN_COOKIE_NAME = COOKIE_NAME;

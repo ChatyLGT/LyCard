@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.51.0";
+export const APP_VERSION = "1.52.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.52.0",
+    date: "2026-09-24",
+    notes:
+      "Cuando alguien que ya paga su membresía recluta a una persona real y esa persona activa su propia Oficina Virtual, la del reclutador se convierte sola en su propio Programa — sin que nadie lo apruebe como paso aparte. Administra su Programa nuevo con la misma cuenta de siempre (WhatsApp/Google), nunca un login separado. Su tarjeta de origen queda intacta, marcada como \"Programa Legado\".",
+  },
   {
     version: "1.51.0",
     date: "2026-09-24",

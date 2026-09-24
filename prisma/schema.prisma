@@ -11,16 +11,31 @@ datasource db {
 // single-Admin account). A scoped Program N0 when programId is set: same
 // login/session system, but every admin page/action must check this and
 // restrict reach to that one Program (PLAN.md Fase 6) — only MasterN0
-// creates these scoped accounts.
+// creates these scoped accounts, EXCEPT for the row described below.
 model Admin {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
+  id    String  @id @default(cuid())
+  // Nullable (2026-09-24, promoción automática Chido→Programa): una fila
+  // de Admin nacida de esa promoción no tiene login propio -- su dueño ya
+  // tiene sesión de Member (WhatsApp/Google), nunca eligió un
+  // email/password de Admin. `email`/`passwordHash` siguen siendo
+  // obligatorios para cualquier Admin "clásico" (dado de alta a mano por
+  // MasterN0, con su propio login); lib/auth.ts nunca deja loguearse por
+  // password/Google a una fila con `passwordHash` null.
+  email        String? @unique
+  passwordHash String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   programId String?
   program   Program? @relation(fields: [programId], references: [id])
+
+  // Link real a Member (2026-09-24) -- cuando existe, esta fila de Admin
+  // ES ese Member actuando con autoridad sobre su propio Programa, no una
+  // cuenta aparte. lib/auth.ts#currentAdminScope() la resuelve vía la
+  // sesión de Member ya activa (lib/memberAuth.ts), sin cookie de Admin
+  // propia. Ver PLAN.md, "Modelo de monetización cerrado" (2026-09-24).
+  memberId String? @unique
+  member   Member? @relation(fields: [memberId], references: [id])
 }
 
 // Bitácora de todo intento de login de Admin, exitoso o no (2026-09-19,
@@ -486,6 +501,9 @@ model Member {
   cards              Card[]
   origin             OriginMemento?
   networkMemberships CardNetworkMembership[]
+  // No-null cuando este Member fue promovido a N0 de su propio Programa
+  // (2026-09-24) -- ver Admin.memberId arriba.
+  promotedAdmin      Admin?
 }
 
 // A simulated WhatsApp OTP (PLAN.md Fase 1 — real sending is Fase 8).

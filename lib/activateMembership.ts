@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { MEDALS, RANKS } from "@/lib/data";
 import { slugify, uniqueSlug } from "@/lib/slug";
+import { checkAndPromoteToPrograma } from "@/lib/programPromotion";
 
 type NewCard = {
   slug: string;
@@ -119,4 +120,13 @@ export async function activateMembershipAndSpawnCards(
         ]
       : []),
   ]);
+
+  // Promoción Chido→Programa (2026-09-24) -- se chequea DESPUÉS de que la
+  // transacción de arriba ya comprometió el "active", nunca antes: si el
+  // referente ya es Chido, este humano recién activado puede ser el que
+  // le cruza el umbral. No hace nada si no hay referente, o si el
+  // referente no es Chido todavía -- ver lib/programPromotion.ts.
+  if (membership.referredByMembershipId) {
+    await checkAndPromoteToPrograma(membership.referredByMembershipId);
+  }
 }

@@ -47,7 +47,12 @@ export async function changePasswordAction(formData: FormData) {
   const confirmPassword = String(formData.get("confirmPassword") || "");
 
   const admin = await prisma.admin.findUnique({ where: { id: adminId } });
-  if (!admin) redirect("/admin/login");
+  // passwordHash null == fila nacida de la promoción Chido→Programa
+  // (Admin.memberId) -- no tiene password que cambiar por acá, se
+  // maneja 100% por su sesión de Member. No debería llegar hasta acá en
+  // la práctica (esta pantalla exige cookie de Admin clásica, que un
+  // Admin promovido nunca tiene), pero el chequeo es gratis.
+  if (!admin || !admin.passwordHash) redirect("/admin/login");
 
   const currentOk = await bcrypt.compare(currentPassword, admin.passwordHash);
   if (!currentOk) {

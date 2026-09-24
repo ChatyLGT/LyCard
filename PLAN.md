@@ -5704,3 +5704,111 @@ detección del umbral (paso 3), la creación real de Programa+Admin+
 migración de membresía (paso 4), el campo/flag de "Programa Legado" en
 la Card vieja, y la conexión Puesto→Superpoderes específicos por
 función (paso 5). Próximo paso: EDT de fases para construir esto.
+
+## Fase P1: detección + promoción automática Chido→Programa (2026-09-24)
+
+Construye los pasos 3-4 del Eje A de arriba (la lógica de detección y
+la promoción real), con luz verde de Gunnar ("seguimos"). El paso 5
+(Puesto→Superpoderes por función) queda explícitamente fuera de esta
+ronda -- Gunnar mismo lo describió como "todavía sin definir en
+detalle".
+
+**Gap de arquitectura encontrado antes de escribir código, no durante**:
+`Admin` y `Member` eran dos sistemas de identidad totalmente separados
+-- no había forma de que un Chido promovido tuviera autoridad de Admin
+sin inventarle una credencial nueva de cero. Propuesta hecha y aprobada
+por Gunnar ("vale.. me late.."): `Admin.memberId` (FK opcional, única)
+-- el `Admin` de un Chido promovido nace **sin password ni email
+propios**; su sesión de Member de siempre (WhatsApp OTP/Google, cookie
+`lycard_member`) es la que le da autoridad de Admin sobre su Programa
+nuevo, vía `lib/auth.ts#currentAdminScope()`. Nunca un segundo login.
+
+**Schema** (`prisma/schema.prisma`, migración
+`20260924123422_admin_member_link`): `Admin.email` y
+`Admin.passwordHash` pasan a nullable (un Admin promovido no tiene
+ninguno de los dos), y `Admin.memberId` nuevo (opcional, único, FK a
+`Member`) -- con su reverse relation `Member.promotedAdmin`.
+
+**`lib/programPromotion.ts`** (nuevo): `checkAndPromoteToPrograma(
+membershipId)` -- dado el id de la membresía que refirió a alguien
+recién activado, chequea 3 condiciones (el referrer pagó
+`membershipPaidAt`, todavía no está promovido, tiene 1+ referido
+`status:"active"`) y si las 3 se cumplen, promueve: crea el `Program`
+nuevo (nombre = el de la Card `company` del Chido, slug único), muda
+esa Card a ser su raíz (`programId`), crea el `Admin` linkeado por
+`memberId` (sin password), y migra la `ProgramMembership` + Card
+`project` de cada referido activo del Programa Legacy al nuevo. La
+vieja Card `project` del Chido (su relación con Legacy) **no se toca**
+-- queda intacta, se muestra como "Programa Legado" en su dashboard
+(computado, sin campo nuevo). `findPromotedProgram(memberId)` para que
+cualquier pantalla pregunte "¿este Member ya tiene su propio Programa?"
+sin repetir la query.
+
+**Dos disparadores reales, los dos cubiertos** -- la promoción no vive
+pegada a un solo botón, dispara desde cualquier lado donde una
+membresía cruce a `active` + `pagada`:
+- `lib/activateMembership.ts`: al activar la membresía de un recién
+  entrevistado (`completeInterviewAction`, el pipeline de siempre, sin
+  cambios), si tenía referrer, se chequea la promoción de ESE referrer.
+- `app/admin/programs/members-actions.ts#markMembershipPaidAction`: al
+  marcar "pagada" a mano una membresía que YA tenía un referido activo
+  desde antes (no hace falta una entrevista nueva en ese momento --
+  el umbral se cruza ahí mismo).
+
+**`proxy.ts` -- bug real encontrado por el primer E2E, no adivinado**:
+el middleware gateaba TODO `/admin/*` mirando solo la cookie
+`lycard_admin` -- un Chido promovido nunca la tiene, así que rebotaba a
+`/admin/login` ANTES de que la request llegara a la página, donde
+`currentAdminScope()` sí sabe resolverlo bien. Fix: si no hay cookie de
+Admin válida, el middleware ahora también acepta una cookie de Member
+válida y deja pasar -- la autorización real de negocio sigue viviendo
+en un solo lugar (la página/action), el middleware solo prefiltra por
+JWT sin tocar la DB, como ya hacía para `/m/*`.
+
+**UI**: `/m/dashboard` suma un banner dorado "✦ Ya tenés tu propio
+Programa" (solo si `findPromotedProgram` devuelve algo) con link directo
+a `/admin/programs/[id]` -- usando la MISMA sesión de Member, nunca un
+login aparte -- y la Card `project` vieja se etiqueta "· Programa
+Legado". El roster de cada Programa (`/admin/programs/[id]`) ya
+mostraba `a.email` crudo para cada Admin de ese Programa -- para un
+Admin promovido (sin email) eso se hubiera visto en blanco; ahora cae
+a mostrar el nombre/WhatsApp del Member vinculado con "(vía su cuenta,
+sin password propio)".
+
+**Verificado real**: `e2e/program-promotion.spec.ts`, dos escenarios
+completos contra Postgres real, cada uno con su propio Programa/
+Member/Card de prueba creados y borrados en `beforeAll`/`afterAll` --
+nunca contra datos de Legacy real:
+1. *Vía entrevista* -- un admin marca "Marcar entrevista hecha" en
+   `/admin/interviews` sobre el reclutado de un Chido ya pagado con un
+   solo click real de Playwright, y se confirma contra la DB: el
+   Programa nuevo existe con el nombre correcto, el `Admin` está
+   linkeado por `memberId` sin password/email, la membresía y Card del
+   reclutado migraron, la Card vieja del Chido sigue en Legacy sin
+   tocar -- y, con la sesión de Member del Chido (sin ninguna cookie de
+   Admin), entra directo a `/admin/programs/[id]` y ve su Programa.
+2. *Vía "marcar como pagada"* -- un Chido que YA tenía un referido
+   activo antes de pagar; el admin le toca el botón real "Marcar como
+   pagada" en `/admin/programs/[id]` (acotado a esa fila específica --
+   el propio reclutado también tenía botón, había que no confundirlos)
+   y se confirma la misma promoción completa disparando ahí mismo, sin
+   ninguna entrevista nueva de por medio.
+
+33/33 E2E de la suite completa (sin regresiones en nada preexistente),
+tsc/lint/100% coverage unitaria (159 tests)/build de producción,
+todos limpios.
+
+**Límite honesto**: sin pasarela de pago real (ya documentado desde
+antes, `markMembershipPaidAction` sigue siendo un flag a mano, no una
+confirmación de cobro) -- la promoción hereda esa misma cáscara: se
+dispara sobre un "pagado" marcado a mano, no sobre un cobro real
+verificado. El paso 5 (Oficina del recién promovido armada según su
+Puesto/función) queda sin construir, a propósito, fuera de esta ronda.
+
+Shippeado como v1.52.0.
+
+---
+
+**Recordatorio de la regla permanente de arriba**: esto sigue sin ser
+luz verde de producción. Fase P1 está lista para que Sergio y Fabricio
+la auditen -- no para que un cliente real la use.

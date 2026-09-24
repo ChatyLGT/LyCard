@@ -26,12 +26,25 @@ export async function proxy(request: NextRequest) {
   }
 
   if (pathname.startsWith("/admin")) {
-    const token = request.cookies.get(ADMIN_COOKIE_NAME)?.value;
-    const authed = await isRequestAuthed(token);
-    if (!authed) {
-      const loginUrl = new URL("/admin/login", request.url);
-      loginUrl.searchParams.set("next", pathname);
-      return NextResponse.redirect(loginUrl);
+    const adminToken = request.cookies.get(ADMIN_COOKIE_NAME)?.value;
+    const adminAuthed = await isRequestAuthed(adminToken);
+    // Puente Member→Admin (2026-09-24, promoción Chido→Programa): un N0
+    // promovido nunca tiene cookie de Admin, solo la de Member de
+    // siempre. El middleware no puede consultar la DB (Admin.memberId)
+    // para saber si ESE Member tiene autoridad real -- eso lo hace
+    // lib/auth.ts#currentAdminScope() ya adentro de cada página/action,
+    // que si no encuentra nada devuelve null y esa misma página redirige
+    // a /admin/login igual. Acá solo se deja pasar a cualquiera con una
+    // sesión de Member criptográficamente válida; la autorización real
+    // sigue viviendo en un solo lugar, no se duplica.
+    if (!adminAuthed) {
+      const memberToken = request.cookies.get(MEMBER_COOKIE_NAME)?.value;
+      const memberAuthed = await isMemberRequestAuthed(memberToken);
+      if (!memberAuthed) {
+        const loginUrl = new URL("/admin/login", request.url);
+        loginUrl.searchParams.set("next", pathname);
+        return NextResponse.redirect(loginUrl);
+      }
     }
   }
 

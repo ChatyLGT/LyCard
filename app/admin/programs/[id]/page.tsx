@@ -179,7 +179,7 @@ export default async function AdminProgramDetailPage({
   const program = await prisma.program.findUnique({
     where: { id },
     include: {
-      admins: { orderBy: { createdAt: "asc" } },
+      admins: { orderBy: { createdAt: "asc" }, include: { member: true } },
       puestos: { orderBy: { order: "asc" } },
       interviewSlots: { orderBy: { date: "asc" } },
       skins: { orderBy: { createdAt: "asc" } },
@@ -715,7 +715,15 @@ export default async function AdminProgramDetailPage({
             )}
             {program.admins.map((a) => (
               <div key={a.id} style={{ font: "400 12.5px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
-                {a.email}
+                {a.email ?? (
+                  // Sin email == promovido automático (Admin.memberId,
+                  // 2026-09-24) -- nunca tuvo login propio, opera con su
+                  // sesión de Member de siempre.
+                  <>
+                    {a.member?.name || a.member?.whatsapp || "N0 promovido"}{" "}
+                    <span style={{ color: "#5A5A5A" }}>(vía su cuenta, sin password propio)</span>
+                  </>
+                )}
               </div>
             ))}
             <AccordionAddRow label="Agregar N0 delegado" defaultOpen={Boolean(adminError)}>

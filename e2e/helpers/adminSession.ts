@@ -40,3 +40,22 @@ export async function mintAdminCookie(adminId: string) {
 
   return { name: COOKIE_NAME, value: token, httpOnly: true, sameSite: "Lax" as const };
 }
+
+// Mismo mecanismo que lib/memberAuth.ts#createMemberSession, reimplementado
+// acá por el mismo motivo que mintAdminCookie de arriba (next/headers no
+// existe fuera de una request real de Next). Cookie name/payload/TTL deben
+// seguir siendo IDÉNTICOS a los de memberAuth.ts.
+const MEMBER_COOKIE_NAME = "lycard_member";
+
+export async function mintMemberCookie(memberId: string) {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) throw new Error("SESSION_SECRET no está seteado — necesario para los E2E de Member");
+
+  const token = await new SignJWT({ sub: memberId, scope: "member" })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("30d")
+    .sign(new TextEncoder().encode(secret));
+
+  return { name: MEMBER_COOKIE_NAME, value: token, httpOnly: true, sameSite: "Lax" as const };
+}

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { currentAdminScope, canAccessProgram } from "@/lib/auth";
+import { checkAndPromoteToPrograma } from "@/lib/programPromotion";
 
 // MasterN0 can manage any Program's members; a scoped N0 only their own —
 // and only members who actually belong to that Program (checked at the
@@ -98,10 +99,20 @@ export async function markMembershipPaidAction(memberId: string, programId: stri
     redirect(`/admin/programs/${programId}?memberError=paidRequiresActive`);
   }
 
+  const willBePaid = !membership.membershipPaidAt;
   await prisma.programMembership.update({
     where: { id: membership.id },
-    data: { membershipPaidAt: membership.membershipPaidAt ? null : new Date() },
+    data: { membershipPaidAt: willBePaid ? new Date() : null },
   });
+
+  // Promoción Chido→Programa (2026-09-24) -- solo al pasar a pagado, nunca
+  // al des-marcar. Des-marcar "pagado" por error no des-promueve: una vez
+  // que existe un Programa con gente real adentro, no se desarma solo
+  // porque alguien tocó un checkbox de vuelta -- fuera de alcance por
+  // ahora, ver lib/programPromotion.ts.
+  if (willBePaid) {
+    await checkAndPromoteToPrograma(membership.id);
+  }
 
   revalidatePath(`/admin/programs/${programId}`);
   redirect(`/admin/programs/${programId}?memberPaidToggled=1`);
