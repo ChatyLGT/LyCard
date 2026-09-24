@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.56.0";
+export const APP_VERSION = "1.56.1";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.56.1",
+    date: "2026-09-24",
+    notes:
+      "Fix: la entrada a WowStore (\"+ WowStore\" en la sección WowApps de tu Oficina Virtual) faltaba en tu tarjeta Legacy — solo se veía en las de Empresa y Personal. Ahora está en las 3, así que podés instalar y ver tus WowApps desde cualquiera de tus tarjetas.",
+  },
   {
     version: "1.56.0",
     date: "2026-09-24",

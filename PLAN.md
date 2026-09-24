@@ -6046,6 +6046,25 @@ nadie se lo empuja.
 
 Shippeado como v1.55.0.
 
+**Fix v1.56.1 -- el acceso a WowStore faltaba en la Card "project"
+(Legacy)**: reportado por Gunnar ("no encuentro la forma de entrar a la
+WowStore"). Causa real: la unificación de v1.54.0 metió el tile "+
+WowStore" adentro de `WowAppsBlock`, pero ese componente SOLO se
+renderizaba para `card.kind` company/personal -- las Cards `project`
+seguían mostrando nada más que `OfficeSkillsBlock` (los Superpoderes
+internos del equipo), sin ningún acceso a WowStore. Fix: `installedWowApps`
+deja de forzarse a `[]` para project (ya venía incluido en la query,
+solo se descartaba en el mapeo), y `WowAppsBlock` (con su tile "+
+WowStore", `browseHref: /m/wowstore?cardId=<esa Card>`) ahora se
+renderiza en las 3, debajo de `OfficeSkillsBlock` cuando es project --
+con el kicker "WowApps · WowStore" en ese caso puntual para no repetir
+el mismo título "WowApps" dos veces seguidas en la misma pantalla (el
+de arriba es el toolkit interno del equipo, el de abajo es el catálogo
+externo para tu negocio). `e2e/wowstore.spec.ts` ganó un segundo tramo
+sobre una Card `project` real: confirma el tile visible, instala una
+WowApp desde ahí, y confirma que aparece de vuelta en esa misma
+Oficina. 36/36 E2E, 185/185 unit, 100% coverage, tsc/lint/build limpios.
+
 ## Mensajería Interna -- Fase M1 (2026-09-24)
 
 Gunnar pidió mapear un sistema de mensajería propio de LyCard: un N0

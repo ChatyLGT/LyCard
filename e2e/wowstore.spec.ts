@@ -20,6 +20,12 @@ test.describe("WowStore", () => {
   let memberId: string;
   let cardId: string;
   let cardSlug: string;
+  // Card "project" del mismo Member (2026-09-24, ver PLAN.md): WowStore
+  // dejó de ser exclusivo de company/personal -- Gunnar reportó que no
+  // veía forma de entrar desde SU Oficina (la Legacy, kind:"project").
+  // Este fixture prueba exactamente ese caso, no uno inventado.
+  let projectCardId: string;
+  let projectCardSlug: string;
 
   test.beforeAll(async () => {
     await e2eDb.connect();
@@ -43,12 +49,19 @@ test.describe("WowStore", () => {
       [cardSlug, "Taquería E2E", memberId]
     );
     cardId = card.rows[0].id;
+
+    projectCardSlug = `e2e-wowstore-project-${suffix}`;
+    const projectCard = await e2eDb.query<{ id: string }>(
+      `insert into "Card" (id, slug, "updatedAt", name, title, quote, kind, "memberId") values (gen_random_uuid()::text, $1, now(), $2, 'Dueño', 'cita', 'project', $3) returning id`,
+      [projectCardSlug, "Taquería E2E (Legacy)", memberId]
+    );
+    projectCardId = projectCard.rows[0].id;
   });
 
   test.afterAll(async () => {
-    await e2eDb.query(`delete from "WowAppInstall" where "cardId" = $1`, [cardId]).catch(() => {});
+    await e2eDb.query(`delete from "WowAppInstall" where "cardId" in ($1, $2)`, [cardId, projectCardId]).catch(() => {});
     await e2eDb.query(`delete from "WowApp" where key in ($1, $2)`, [keyMatch, keyOther]).catch(() => {});
-    await e2eDb.query(`delete from "Card" where id = $1`, [cardId]).catch(() => {});
+    await e2eDb.query(`delete from "Card" where id in ($1, $2)`, [cardId, projectCardId]).catch(() => {});
     await e2eDb.query(`delete from "Member" where id = $1`, [memberId]).catch(() => {});
     await e2eDb.query(`delete from "Admin" where id = $1`, [adminId]).catch(() => {});
     await e2eDb.end();
@@ -124,6 +137,31 @@ test.describe("WowStore", () => {
     await expect(memberPage.getByText("WowStore", { exact: true })).toBeVisible();
     await memberPage.getByText("WowBot Pedidos E2E").click();
     await expect(memberPage.getByText("Toma pedidos por WhatsApp.")).toBeVisible();
+
+    // --- El acceso a WowStore también vive en la Oficina de la Card
+    // "project" (Legacy) del mismo dueño -- reportado por Gunnar como
+    // faltante, ahora cubierto de punta a punta. ---
+    await memberPage.goto(`${BASE_URL}/c/${projectCardSlug}/oficina`, { waitUntil: "networkidle" });
+    const wowStoreTile = memberPage.getByRole("link", { name: /WowStore/ });
+    await expect(wowStoreTile).toBeVisible();
+    await wowStoreTile.click();
+    await memberPage.waitForURL(new RegExp(`/m/wowstore\\?cardId=${projectCardId}`));
+
+    await memberPage.goto(`${BASE_URL}/m/wowstore?cardId=${projectCardId}&rubro=restaurante&dolor=vender-mas`, { waitUntil: "networkidle" });
+    await memberPage.getByText("WowBot Pedidos E2E").click();
+    await memberPage.waitForURL(new RegExp(`/m/wowstore/${keyMatch}`));
+    await memberPage.getByRole("button", { name: "Instalación Express" }).click();
+    await memberPage.waitForURL(/installed=1/);
+
+    const projectInstallRow = await e2eDb.query<{ id: string }>(
+      `select wi.id from "WowAppInstall" wi join "WowApp" w on w.id = wi."wowAppId" where wi."cardId" = $1 and w.key = $2`,
+      [projectCardId, keyMatch]
+    );
+    expect(projectInstallRow.rows).toHaveLength(1);
+
+    await memberPage.goto(`${BASE_URL}/c/${projectCardSlug}/oficina`, { waitUntil: "networkidle" });
+    await expect(memberPage.getByText("WowApps · WowStore", { exact: true })).toBeVisible();
+    await expect(memberPage.getByText("WowBot Pedidos E2E")).toBeVisible();
 
     // Pide adaptación paga en la otra WowApp (nunca instalada tal cual).
     await memberPage.goto(`${BASE_URL}/m/wowstore/${keyOther}?cardId=${cardId}`, { waitUntil: "networkidle" });
