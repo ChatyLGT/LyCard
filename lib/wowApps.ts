@@ -6,7 +6,7 @@
 // Json de tags, y el algoritmo de match: puro, sin tocar la DB, para que
 // quede 100% cubierto por tests unitarios.
 
-export type WowAppAppType = "agenda" | "whatsapp-bot" | "cobranza" | "custom";
+export type WowAppAppType = "agenda" | "whatsapp-bot" | "cobranza" | "awe" | "custom";
 
 export type Rubro = { key: string; label: string };
 export type PainPoint = { key: string; label: string };
@@ -24,9 +24,13 @@ export const PAIN_POINTS: PainPoint[] = [
   { key: "inventario", label: "El desmadre del inventario" },
   { key: "cobrar", label: "Cobrar a tiempo" },
   { key: "clientes", label: "Conseguir clientes" },
+  // WowAwe (2026-09-24) -- el único dolor que no es del negocio, es del
+  // dueño. Rubro-agnóstico a propósito (WowAwe no lleva industryTags),
+  // así que aparece sin importar qué rubro se haya elegido.
+  { key: "bienestar-fundador", label: "El peso de estar solo con todo esto" },
 ];
 
-export const WOW_APP_TYPES: WowAppAppType[] = ["agenda", "whatsapp-bot", "cobranza", "custom"];
+export const WOW_APP_TYPES: WowAppAppType[] = ["agenda", "whatsapp-bot", "cobranza", "awe", "custom"];
 
 export function parseTags(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
@@ -99,7 +103,22 @@ export const EXAMPLE_WOW_APPS: {
   industryTags: string[];
   painPointTags: string[];
   basePriceUsd: number;
+  // "activo" solo cuando el appType tiene una app real conectada
+  // (hoy, únicamente "awe") -- el resto arranca "proximamente" hasta
+  // que se construya su lógica.
+  status: "activo" | "proximamente";
 }[] = [
+  {
+    key: "wowawe",
+    nombre: "WowAwe -- Caminata de Asombro",
+    descripcion: "Para el 'impuesto a la soledad' de todo fundador: una vez por semana, salí a caminar 15 minutos, sacate 3 selfies (inicio/mitad/final) y grabale una nota contando qué viste. Tu Índice de Asombro es un número orientativo (no una medición clínica real) para que veas la tendencia semana a semana -- la nota de voz sí queda transcrita de verdad.",
+    color: "#7FB0C4",
+    appType: "awe",
+    industryTags: [],
+    painPointTags: ["bienestar-fundador"],
+    basePriceUsd: 0,
+    status: "activo",
+  },
   {
     key: "chatbot-whatsapp-pedidos",
     nombre: "Atención y Pedidos por WhatsApp",
@@ -109,6 +128,7 @@ export const EXAMPLE_WOW_APPS: {
     industryTags: ["restaurante", "retail"],
     painPointTags: ["vender-mas", "clientes"],
     basePriceUsd: 4500,
+    status: "proximamente",
   },
   {
     key: "reservas-agenda-automatica",
@@ -119,6 +139,7 @@ export const EXAMPLE_WOW_APPS: {
     industryTags: ["clinica", "despacho"],
     painPointTags: ["clientes"],
     basePriceUsd: 4500,
+    status: "proximamente",
   },
   {
     key: "landing-sitio-ventas",
@@ -129,6 +150,7 @@ export const EXAMPLE_WOW_APPS: {
     industryTags: ["retail", "emprendedor", "despacho"],
     painPointTags: ["clientes", "vender-mas"],
     basePriceUsd: 350,
+    status: "proximamente",
   },
   {
     key: "publicidad-redes-sociales",
@@ -139,6 +161,7 @@ export const EXAMPLE_WOW_APPS: {
     industryTags: ["restaurante", "retail", "emprendedor"],
     painPointTags: ["clientes"],
     basePriceUsd: 60,
+    status: "proximamente",
   },
   {
     key: "qr-dinamico-negocio",
@@ -149,6 +172,7 @@ export const EXAMPLE_WOW_APPS: {
     industryTags: ["restaurante", "retail"],
     painPointTags: ["vender-mas"],
     basePriceUsd: 15,
+    status: "proximamente",
   },
   {
     key: "notas-voz-negocio",
@@ -159,6 +183,7 @@ export const EXAMPLE_WOW_APPS: {
     industryTags: ["emprendedor", "despacho"],
     painPointTags: ["inventario"],
     basePriceUsd: 0,
+    status: "proximamente",
   },
 ];
 

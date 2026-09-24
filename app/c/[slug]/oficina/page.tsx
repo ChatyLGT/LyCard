@@ -16,6 +16,7 @@ import { getFathomBrief, type FathomBrief } from "@/lib/fathom";
 import { parseOfficeSkills, DEFAULT_OFFICE_SKILLS, type OfficeSkill } from "@/lib/officeSkills";
 import OfficeSkillsBlock from "@/components/OfficeSkillsBlock";
 import WowAppsBlock from "@/components/WowAppsBlock";
+import type { AweWalkEntrySummary } from "@/components/WowAweBlock";
 import type { VoiceNoteSummary } from "@/components/VoiceNotesBlock";
 import CardLeadsBlock, { type CardLeadSummary } from "@/components/CardLeadsBlock";
 import TagsBlock from "@/components/TagsBlock";
@@ -149,6 +150,7 @@ type OficinaData = {
   // (company/personal, un negocio MiPyME) -- vacío para project, ese
   // sigue siendo solo Superpoderes internos de Legacy.
   installedWowApps: (WowAppInstall & { wowApp: WowApp })[];
+  aweEntries: AweWalkEntrySummary[];
 };
 
 // ---------------- Piezas compartidas ----------------
@@ -566,7 +568,7 @@ function VisitorOficina({ data }: { data: OficinaData }) {
           data.installedWowApps.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <span style={kickerStyle}>WowApps</span>
-              <WowAppsBlock installs={data.installedWowApps} isHost={false} />
+              <WowAppsBlock installs={data.installedWowApps} isHost={false} cardId={data.card.id} aweEntries={[]} />
             </div>
           )
         )}
@@ -676,7 +678,7 @@ function OwnerOficina({ data }: { data: OficinaData }) {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <span style={kickerStyle}>WowApps</span>
-            <WowAppsBlock installs={data.installedWowApps} isHost browseHref={`/m/wowstore?cardId=${card.id}`} />
+            <WowAppsBlock installs={data.installedWowApps} isHost browseHref={`/m/wowstore?cardId=${card.id}`} cardId={card.id} aweEntries={data.aweEntries} />
             {card.kind === "company" && (
               <Link
                 href="/m/dashboard/company/network"
@@ -756,6 +758,28 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
         transcript: n.transcript,
         summary: n.summary,
         createdAt: n.createdAt.toISOString(),
+      }))
+    : [];
+
+  // WowAwe (2026-09-24) -- mismo criterio de privacidad que Notas de Voz.
+  const aweEntries: AweWalkEntrySummary[] = isHost
+    ? (
+        await prisma.aweWalkEntry.findMany({
+          where: { cardId: card.id },
+          orderBy: { createdAt: "desc" },
+          take: 20,
+          include: { voiceNote: true },
+        })
+      ).map((e) => ({
+        id: e.id,
+        photoStartUrl: e.photoStartUrl,
+        photoMidUrl: e.photoMidUrl,
+        photoEndUrl: e.photoEndUrl,
+        aweIndex: e.aweIndex,
+        createdAt: e.createdAt.toISOString(),
+        voiceNote: e.voiceNote
+          ? { status: e.voiceNote.status, transcript: e.voiceNote.transcript, summary: e.voiceNote.summary }
+          : null,
       }))
     : [];
 
@@ -950,6 +974,7 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
     mallaRoot,
     teamMalla,
     installedWowApps: card.kind === "project" ? [] : card.wowAppInstalls,
+    aweEntries,
   };
 
   return isHost ? <OwnerOficina data={data} /> : <VisitorOficina data={data} />;

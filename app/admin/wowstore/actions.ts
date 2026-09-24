@@ -121,7 +121,7 @@ export async function seedExampleWowAppsAction() {
         industryTags: example.industryTags,
         painPointTags: example.painPointTags,
         basePriceUsd: example.basePriceUsd,
-        status: "proximamente",
+        status: example.status,
       },
     });
     created++;

@@ -131,10 +131,17 @@ describe("EXAMPLE_WOW_APPS", () => {
     }
   });
 
-  it("cada ejemplo tiene al menos 1 rubro y 1 dolor -- si no, nunca aparece en un match", () => {
+  it("cada ejemplo tiene al menos 1 dolor -- si no, nunca aparece en un match", () => {
     for (const app of EXAMPLE_WOW_APPS) {
-      expect(app.industryTags.length).toBeGreaterThan(0);
       expect(app.painPointTags.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("industryTags puede quedar vacío a propósito (rubro-agnóstico, ej. WowAwe) -- pero solo si matchea por dolor solo", () => {
+    for (const app of EXAMPLE_WOW_APPS) {
+      if (app.industryTags.length === 0) {
+        expect(app.painPointTags.length).toBeGreaterThan(0);
+      }
     }
   });
 

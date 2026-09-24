@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.54.0";
+export const APP_VERSION = "1.55.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.55.0",
+    date: "2026-09-24",
+    notes:
+      "Nueva WowApp: WowAwe, la caminata de asombro semanal — salí 15 minutos, sacate una selfie al arrancar, otra a mitad de camino y otra al volver, y (si querés) grabale una nota a tu Legacy Card contando qué viste. La nota queda transcrita de verdad. Tu Índice de Asombro es un número orientativo para ver la tendencia semana a semana — no es una medición clínica real, y nunca decimos que lo sea.",
+  },
   {
     version: "1.54.0",
     date: "2026-09-24",

@@ -3,6 +3,7 @@
 import { useState, type CSSProperties } from "react";
 import Link from "next/link";
 import type { WowApp, WowAppInstall } from "@/generated/prisma/client";
+import WowAweBlock, { type AweWalkEntrySummary } from "@/components/WowAweBlock";
 
 const tileStyle: CSSProperties = { display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center", cursor: "pointer", background: "none", border: "none", padding: 0, font: "inherit" };
 
@@ -23,10 +24,14 @@ export default function WowAppsBlock({
   installs,
   isHost,
   browseHref,
+  cardId,
+  aweEntries,
 }: {
   installs: (WowAppInstall & { wowApp: WowApp })[];
   isHost: boolean;
   browseHref?: string;
+  cardId: string;
+  aweEntries: AweWalkEntrySummary[];
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const active = installs.find((i) => i.id === openId) || null;
@@ -116,7 +121,11 @@ export default function WowAppsBlock({
               </p>
             )}
 
-            {isHost && (
+            {isHost && active.wowApp.appType === "awe" && (
+              <WowAweBlock cardId={cardId} initialEntries={aweEntries} />
+            )}
+
+            {isHost && active.wowApp.appType !== "awe" && (
               <p style={{ margin: 0, font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
                 Todavía sin conectar — próximamente.
               </p>

@@ -48,6 +48,7 @@ const APP_TYPE_LABEL: Record<string, string> = {
   agenda: "Agenda / turnos",
   "whatsapp-bot": "Bot de WhatsApp",
   cobranza: "Cobranza",
+  awe: "Caminata de Asombro (WowAwe)",
   custom: "Otro (sin app conectada todavía)",
 };
 

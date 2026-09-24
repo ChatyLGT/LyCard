@@ -5969,6 +5969,83 @@ tests)/build de producción, todos limpios.
 
 Shippeado como v1.54.0.
 
+## WowAwe -- la primera WowApp con lógica real (2026-09-24)
+
+Gunnar mandó un video sobre el estudio de las "Awe Walks" (caminatas de
+asombro) -- caminar buscando algo que te asombre reduce el cortisol y el
+enfoque egocéntrico, medible en selfies (proporción del encuadre que
+ocupa la persona) y en la intensidad de la sonrisa genuina. Pidió una
+WowApp para el "impuesto a la soledad" del fundador de una MiPyME: salir
+a caminar, sacarse selfies, contarle cosas a su Legacy Card, "yo aquí te
+mido". Aprobado explícitamente en simulación ("aunque sea en
+simulación").
+
+**Freno puesto antes de construir, no después**: la propuesta original
+(de una charla con Gemini) sugería medir el encuadre real por visión
+por computadora y biomarcadores de estrés acústico en la voz -- eso es
+investigación aplicada real, no "conectar n8n", y este proyecto no tiene
+NINGUNA infraestructura de IA real construida todavía (confirmado esta
+sesión). Fingir esa medición hubiera roto la cáscara honesta que se
+sostuvo en TODO el proyecto -- doblemente grave tratándose de bienestar
+mental. Se construyó 100% simulado del lado de la "medición", 100% real
+del lado de la nota de voz (mismo pipeline ya construido de Notas de
+Voz).
+
+**Arquitectura**: WowAwe es la primera entrada del catálogo con
+`status:"activo"` de verdad -- las otras 5 siguen "proximamente". Vive
+en `lib/wowApps.ts` como parte de `EXAMPLE_WOW_APPS` (que ahora lleva un
+campo `status` por entrada, no un hardcode único en
+`seedExampleWowAppsAction`), con `industryTags: []` (rubro-agnóstico a
+propósito, no es sobre el negocio) y un tag de dolor nuevo
+`"bienestar-fundador"` agregado a `PAIN_POINTS` -- el único que no es
+sobre plata, es sobre la persona.
+
+**Schema** (`prisma/schema.prisma`, migración `20260924141705_awe_walk`):
+`AweWalkEntry` (cardId, 3 URLs de foto, `voiceNoteId` opcional -- FK
+directa a `VoiceNote`, no un campo de audio propio -- y `aweIndex`
+Int simulado). `lib/aweWalk.ts#generateSimulatedAweIndex()`: número al
+azar 40-85, la única lógica de "medición" que existe, con un comentario
+explícito de por qué nunca es real.
+
+**Reuso total del pipeline de Notas de Voz, cero infraestructura
+nueva**: `app/c/[slug]/oficina/awe-actions.ts#createAweWalkEntryAction`
+sube las 3 fotos (`saveUpload`, mismo que cualquier otra imagen del
+proyecto) y, si hay audio, llama directo a
+`createVoiceNoteAction` (la MISMA función que ya usan Notas de Voz y el
+cierre de Modo Foco) -- la transcripción con AssemblyAI es 100% real,
+sin reinventar nada.
+
+**`components/WowAweBlock.tsx`** (nuevo): 3 selectores de foto (cámara
+en mobile vía `capture="user"`) + grabación de audio opcional (mismo
+patrón MediaRecorder que `FocusModeBlock.tsx`, copiado línea por línea
+a propósito para no reinventar algo que ya funciona) + historial de
+caminatas anteriores, con el Índice de Asombro SIEMPRE etiquetado
+"(simulado, no es una medición clínica real)". Primera vez que
+`components/WowAppsBlock.tsx` tiene una rama real en vez del fallback
+"Todavía sin conectar" -- `appType === "awe"` renderiza `WowAweBlock`,
+el resto sigue cayendo al mismo fallback de siempre.
+
+**Verificado real**: `e2e/wowawe.spec.ts` -- fixture con WowApp real
+(`status:"activo"`) instalada en una Card personal, el dueño entra a su
+Oficina, sube 3 fotos reales (PNG mínimo, no un mock de la subida) sin
+audio (MediaRecorder queda fuera de este spec, ya cubierto por
+`focus-mode.spec.ts` sobre el mismo pipeline), guarda, y se confirma
+tanto en pantalla (Índice de Asombro visible, etiqueta de simulado)
+como en DB (fila real de `AweWalkEntry`, índice dentro de 40-85, URLs
+de foto no vacías). 35/35 E2E de la suite completa (sin regresiones),
+tsc/lint/100% coverage unitaria (176 tests)/build de producción, todos
+limpios.
+
+**Límite honesto**: el Índice de Asombro NUNCA es un análisis real de
+las fotos o el audio -- es un número al azar dentro de un rango
+plausible, etiquetado como tal en toda la UI. La transcripción de la
+nota de voz sí es real (mismo AssemblyAI de siempre). No hay
+recordatorio semanal automático todavía (el "protocolo" de Gemini de
+bloquear 15 minutos en la agenda) -- el dueño entra cuando quiere,
+nadie se lo empuja.
+
+Shippeado como v1.55.0.
+
 ---
 
 **Recordatorio de la regla permanente de arriba**: esto sigue sin ser
