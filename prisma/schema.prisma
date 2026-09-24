@@ -36,6 +36,11 @@ model Admin {
   // propia. Ver PLAN.md, "Modelo de monetización cerrado" (2026-09-24).
   memberId String? @unique
   member   Member? @relation(fields: [memberId], references: [id])
+
+  // Mensajería Interna (2026-09-24) — un N0 "clásico" (email/password,
+  // sin Member vinculado) manda como este Admin en vez de como un
+  // Member, ver Message.senderAdminId.
+  sentMessages Message[]
 }
 
 // Bitácora de todo intento de login de Admin, exitoso o no (2026-09-19,
@@ -426,6 +431,62 @@ model Program {
   puestos     Puesto[]
   skins       ProgramSkin[]
   interviewSlots InterviewSlot[]
+  messages    Message[]
+}
+
+// Mensajería Interna (2026-09-24) -- ver PLAN.md "Mensajería Interna".
+// N0 manda "masivo" a todo su Programa (o multi-Programa si es
+// MasterN0, resuelto en la action, no en el schema); cualquier otro
+// humano solo "directo" 1:1 con alguien de su mismo Programa. N1
+// (tríada Gemelo Digital) y N2 (guardianas) nunca participan -- no son
+// Member, así que ni siquiera pueden aparecer acá.
+model Message {
+  id        String   @id @default(cuid())
+  programId String
+  program   Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  // Exactamente uno de los dos está seteado -- ver el wrinkle
+  // documentado en PLAN.md: no todo N0 tiene un Member propio (un N0
+  // "clásico" de /admin/programs, email/password, puede no tenerlo).
+  senderMemberId String?
+  senderMember   Member? @relation(fields: [senderMemberId], references: [id])
+  senderAdminId  String?
+  senderAdmin    Admin?  @relation(fields: [senderAdminId], references: [id])
+
+  scope String // "masivo" | "directo"
+  body  String @db.Text
+
+  createdAt DateTime @default(now())
+
+  deliveries MessageDelivery[]
+
+  @@index([programId])
+}
+
+model MessageDelivery {
+  id        String  @id @default(cuid())
+  messageId String
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  recipientMemberId String
+  recipient         Member @relation(fields: [recipientMemberId], references: [id], onDelete: Cascade)
+
+  channel String // "lycard" | "email" | "telegram" | "whatsapp"
+  // "pendiente" | "enviado" | "fallido" | "simulado" -- nunca "enviado"
+  // si el canal no mandó nada de verdad (cáscara honesta, mismo
+  // criterio que membershipPaidAt/adaptationStatus).
+  status      String  @default("pendiente")
+  errorDetail String?
+
+  // Leído/no leído para la bandeja LyCard interna -- solo tiene sentido
+  // real quando channel="lycard" (los otros canales no tienen "leído"
+  // que este sistema pueda saber).
+  readAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([messageId])
+  @@index([recipientMemberId])
 }
 
 // Auditoría 2026-09-23, hallazgo 1.4/2.1: lib/interviewSlots.ts era un
@@ -543,6 +604,12 @@ model Member {
   // No-null cuando este Member fue promovido a N0 de su propio Programa
   // (2026-09-24) -- ver Admin.memberId arriba.
   promotedAdmin      Admin?
+
+  // Mensajería Interna (2026-09-24) — este Member como remitente (solo
+  // cuando llegó a ser N0 vía la promoción de Fase P1, ver
+  // Message.senderMemberId) y como destinatario de cualquier envío.
+  sentMessages      Message[]
+  messageDeliveries MessageDelivery[]
 }
 
 // A simulated WhatsApp OTP (PLAN.md Fase 1 — real sending is Fase 8).

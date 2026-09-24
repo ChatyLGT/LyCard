@@ -61,6 +61,12 @@ export default async function MemberDashboardPage() {
           <span style={{ font: "400 13px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
             Email: {member.email || "— sin cargar —"}
           </span>
+          <Link
+            href="/m/dashboard/messages"
+            style={{ alignSelf: "flex-start", marginTop: 6, font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#C8A15A" }}
+          >
+            Mensajes →
+          </Link>
         </section>
 
         {promotedProgram && (

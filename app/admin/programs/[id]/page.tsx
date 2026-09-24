@@ -18,6 +18,8 @@ import {
   updateMotivationalPhrasesAction,
 } from "../actions";
 import { updateMemberAction, deleteMemberAction, messageMemberAction, markMembershipPaidAction } from "../members-actions";
+import { sendMassMessageAction } from "../messages-actions";
+import { CHANNELS } from "@/lib/messaging";
 import { buildFunnelStages } from "@/lib/funnel";
 import { createPuestoAction, updatePuestoAction, deletePuestoAction } from "../puestos-actions";
 import { createInterviewSlotAction, updateInterviewSlotAction, deleteInterviewSlotAction } from "../interview-slots-actions";
@@ -124,6 +126,8 @@ export default async function AdminProgramDetailPage({
     officeSkillsError?: string;
     motivationalPhrasesSaved?: string;
     focus?: string;
+    messageSent?: string;
+    messageError?: string;
   }>;
 }) {
   const { id } = await params;
@@ -137,6 +141,8 @@ export default async function AdminProgramDetailPage({
     memberMessaged,
     memberError,
     memberPaidToggled,
+    messageSent,
+    messageError,
     labelsSaved,
     puestoCreated,
     puestoSaved,
@@ -878,6 +884,58 @@ export default async function AdminProgramDetailPage({
               </AccordionRow>
             );
           })}
+        </AccordionSection>
+
+        {/* Mensajería Interna (2026-09-24) -- solo N0 llega hasta acá
+            (requireProgramAccess ya lo filtra en la action). Sin
+            destinatarios tildados, manda a todos los miembros activos
+            del Programa -- mismo criterio de "menos clicks para el caso
+            común" que el resto del panel. */}
+        <AccordionSection
+          title="Mensajería"
+          subtitle="Mandale un mensaje a todo tu Programa, o a una selección -- por el canal (o combinación de canales) que elijas."
+          defaultOpen={Boolean(messageSent || messageError)}
+        >
+          {messageSent && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Mensaje enviado.</p>}
+          {messageError === "empty" && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>Escribí algo antes de mandar.</p>}
+          {messageError === "noChannel" && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>Elegí al menos un canal.</p>}
+          {messageError === "noRecipients" && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>No hay destinatarios activos con esa selección.</p>}
+
+          <form action={sendMassMessageAction.bind(null, program.id)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <textarea name="body" placeholder="Tu mensaje..." rows={4} style={{ ...INPUT, resize: "vertical" }} />
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#5A5A5A" }}>Canales</span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                {CHANNELS.map((c) => (
+                  <label key={c.key} style={{ display: "flex", alignItems: "center", gap: 6, font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: c.real ? "#C2BEB5" : "#5A5A5A" }}>
+                    <input type="checkbox" name="channels" value={c.key} defaultChecked={c.real} />
+                    {c.label} {!c.real && "(simulado -- sin integración real todavía)"}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#5A5A5A" }}>
+                Destinatarios (sin tildar ninguno = todos los activos)
+              </span>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 160, overflowY: "auto" }}>
+                {program.memberships
+                  .filter((m) => m.status === "active")
+                  .map((m) => (
+                    <label key={m.member.id} style={{ display: "flex", alignItems: "center", gap: 6, font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
+                      <input type="checkbox" name="recipientIds" value={m.member.id} />
+                      {m.member.name || m.member.whatsapp || "Miembro"}
+                    </label>
+                  ))}
+              </div>
+            </div>
+
+            <button type="submit" style={SAVE_BTN}>
+              Enviar mensaje
+            </button>
+          </form>
         </AccordionSection>
 
         {/* Interviews */}

@@ -111,7 +111,11 @@ test.describe("Embudo de Conversión — /admin/programs/[id]", () => {
 
     // El miembro "E2E Funnel Member 1" está activo pero sin pagar -- togglealo
     await page.getByRole("button", { name: "Miembros" }).click();
-    await page.getByText("E2E Funnel Member 1", { exact: true }).click();
+    // getByRole en vez de getByText -- la nueva sección "Mensajería" (misma
+    // página) también renderiza este nombre como texto plano dentro de un
+    // <label> de checkbox de destinatario, así que getByText ya no es único.
+    // El toggle real del miembro SÍ es un <button>, el <label> no.
+    await page.getByRole("button", { name: "E2E Funnel Member 1" }).click();
     const paidToggle = page.locator("form").filter({ hasText: "Marcar como pagada" }).getByRole("button");
     await expect(paidToggle).toBeVisible();
     await paidToggle.click();

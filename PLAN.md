@@ -6046,7 +6046,7 @@ nadie se lo empuja.
 
 Shippeado como v1.55.0.
 
-## Mensajería Interna -- diseño cerrado, Fase M1 sin construir todavía (2026-09-24)
+## Mensajería Interna -- Fase M1 (2026-09-24)
 
 Gunnar pidió mapear un sistema de mensajería propio de LyCard: un N0
 puede mandar mensajes masivos a su Programa (multi-Programa si es
@@ -6176,6 +6176,34 @@ mismos límites de tokens de esta sesión)**:
 real (queda para una fase aparte si se decide sumar), WhatsApp real
 (depende de una cuenta de negocio que hoy no existe), cualquier
 adjunto/multimedia en el mensaje, notificaciones push nativas.
+
+**Shippeado como v1.56.0.** Lo de arriba se construyó tal cual estaba
+diseñado, con dos ajustes reales encontrados haciendo el E2E de punta a
+punta (no adivinados, encontrados corriendo la UI real):
+
+- **Bug real de producto**: la bandeja de cada Member
+  (`/m/dashboard/messages`) traía TODAS las `MessageDelivery` del
+  destinatario sin filtrar por canal -- un mismo mensaje mandado por 4
+  canales aparecía 4 veces duplicado en la bandeja. Fix: la bandeja solo
+  lee `channel:"lycard"` -- los otros canales son intentos de entrega
+  por FUERA de la app, no representan un mensaje "en tu bandeja" acá.
+- **Simplificación honesta de M1, documentada a propósito**: la pantalla
+  member-facing opera sobre la PRIMERA `ProgramMembership` activa del
+  Member, no sobre todas -- hoy la enorme mayoría solo tiene una
+  (Legacy, salvo que haya sido referido a más de un Programa). Multi-
+  Programa en la bandeja del Member queda para una fase aparte si hace
+  falta -- no bloqueante para lo que Gunnar pidió.
+
+Lo demás salió tal cual el diseño: `Message`/`MessageDelivery` migrados,
+compositor masivo en `/admin/programs/[id]` (sección "Mensajería",
+LyCard+Email real, Telegram+WhatsApp `status:"simulado"` sin fingir
+envío), directo 1:1 member-facing con bandeja + "marcar leído", y el
+`Message.senderMemberId`/`senderAdminId` opcional resolviendo el
+wrinkle de N0-sin-Member documentado arriba. `e2e/messaging.spec.ts`
+nuevo cubre el flujo real completo (masivo con los 4 canales + estado
+honesto de cada uno, directo 1:1, bandeja de ambos lados). Suite
+completa: 36/36 E2E, 185/185 unit, 100% coverage en los archivos
+ratcheted, tsc/lint/build limpios.
 
 ---
 

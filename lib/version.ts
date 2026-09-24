@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.55.0";
+export const APP_VERSION = "1.56.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.56.0",
+    date: "2026-09-24",
+    notes:
+      "Nueva Mensajería Interna: si sos N0 de un Programa, ahora podés mandarle un mensaje a todo tu equipo de una — elegís el texto y por qué canales sale (LyCard, Email real; Telegram y WhatsApp quedan simulados hasta que tengamos esas integraciones de verdad). Cualquier otro miembro puede mandarle un directo 1:1 a alguien de su mismo equipo, y todos ven su propia bandeja con \"marcar como leído\" desde su cuenta.",
+  },
   {
     version: "1.55.0",
     date: "2026-09-24",
