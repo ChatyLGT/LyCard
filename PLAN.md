@@ -5807,8 +5807,97 @@ Puesto/función) queda sin construir, a propósito, fuera de esta ronda.
 
 Shippeado como v1.52.0.
 
+## WowStore -- Fase W1: la tienda (2026-09-24)
+
+Gunnar pidió una segunda vidriera pública, separada de la Oficina interna
+de Legacy: WowStore, un appstore de "WowApps" para cualquier MiPyME
+(restaurante, retail, despacho, emprendedor), navegado por rubro+dolor
+("soy taquería, busco vender más") en vez de categoría técnica -- el
+diferencial real frente a Shopify App Store/Square/Odoo Apps (ninguno
+cruza industria×dolor como primer filtro, ninguno mete el upsell de
+adaptación paga en el momento exacto de elegir la app). Gemini aportó un
+boceto de flow + 3 apps ancla (WowBot Pedidos, WowAgenda Pro,
+WowCobranza) usado como punto de partida. Restricción dura de la ronda:
+pocos tokens de la semana -- se recortó a construir la TIENDA en sí, sin
+lógica real de ninguna WowApp todavía (ver "Límite honesto" abajo).
+
+**Hallazgo de arquitectura, decidido antes de tocar el schema**: existen
+dos catálogos de apps conceptualmente distintos. Los Superpoderes
+internos (`Program.officeSkills`, ya construidos) son herramientas que
+el N0 de un Programa da a SU PROPIO equipo (Fathom Brief, Agenda, Notas
+de Voz, Modo Foco) -- viven en el Program, las comparten las Cards
+`project`. WowStore es para el negocio EXTERNO de cualquier MiPyME --
+la Card `company` (o `personal` para un emprendedor solo) de un Vividor
+o Chido, que hoy no tiene `programId` y solo mostraba
+`DEFAULT_OFFICE_SKILLS` genérico, cero personalización real. Por eso el
+catálogo y las instalaciones son modelos Prisma nuevos, por Card, no un
+campo más en `Program.officeSkills` -- se reusa el PATRÓN visual de
+`OfficeSkillsBlock`/`OfficeSkillsEditor`, no el campo.
+
+**Schema** (`prisma/schema.prisma`, migración `20260924130848_wowstore`):
+`WowApp` (catálogo global, MasterN0-only -- key/nombre/descripcion/
+iconUrl/color/appType/industryTags/painPointTags/basePriceUsd/status/
+demoVideoUrl) y `WowAppInstall` (cardId+wowAppId única, con
+`adaptationNotes`/`adaptationStatus`/`adaptationPaidAt` -- mismo criterio
+honesto que `ProgramMembership.membershipPaidAt`: flag manual, sin
+pasarela de pago real).
+
+**`lib/wowApps.ts`** (nuevo, 100% cobertura unitaria): vocabulario fijo
+de 5 rubros/4 dolores para los selectores, `parseTags`/`toCatalogEntry`
+(sanitiza los 2 campos Json), y `matchWowApps` -- función pura que
+cruza rubro+dolor y devuelve como mucho 3 resultados ordenados por
+cantidad de coincidencias, nunca el catálogo entero.
+
+**`/admin/wowstore`** (MasterN0-only, nuevo): CRUD real del catálogo,
+mismo patrón que `Puesto` (`app/admin/wowstore/actions.ts` +
+acordeón). Linkeado desde `/admin/programs`.
+
+**`/m/wowstore`** (member-facing, nuevo): pantalla 1+2 en una sola page
+server-rendered vía `<form method="get">` (sin JS de cliente) -- 2
+selectores (rubro/dolor), resultado del match debajo en la misma
+navegación. `/m/wowstore/[key]` es el detalle, con los 2 CTA reales de
+Gemini: "Instalación Express" (`installWowAppAction`, sin pasarela real)
+y "Quiero que funcione exacto para mi negocio" (`requestAdaptationAction`
+-- guarda el pedido en DB siempre, y avisa por email al equipo si
+`WOWSTORE_ADAPTATION_TO`/`RESEND_API_KEY` están configurados; sin ellos,
+el pedido igual queda registrado, nunca se pierde).
+
+**`components/WowAppsBlock.tsx`** (nuevo): mismo patrón grilla+bottom-
+sheet que `OfficeSkillsBlock.tsx`, fuente `card.wowAppInstalls` en vez
+de `Program.officeSkills`. Insertado en `app/c/[slug]/oficina/page.tsx`
+solo para Cards `company`/`personal` (nunca `project`, ese sigue siendo
+100% Superpoderes internos), tanto para el dueño como para un visitante.
+Botón "Buscar WowApps para mi negocio" nuevo en `MemberCardEditor.tsx`
+(company y personal).
+
+**Verificado real**: `e2e/wowstore.spec.ts`, flujo de punta a punta
+contra Postgres real -- MasterN0 crea 2 WowApps por la UI real de
+`/admin/wowstore` (no seed directo a DB), un Member navega
+`/m/wowstore` con rubro+dolor y confirma que el match filtra bien (la
+que no matchea no aparece), instala una (confirma en DB Y que aparece
+de verdad renderizada en su Oficina vía `WowAppsBlock`), y pide
+adaptación paga en la otra (confirma `adaptationStatus`/`adaptationNotes`
+en DB). Fixtures propios, `beforeAll`/`afterAll`, nunca toca Legacy
+real. 34/34 E2E de la suite completa (sin regresiones), tsc/lint/100%
+coverage unitaria (170 tests)/build de producción, todos limpios.
+
+**Límite honesto**: ninguna de las 3 WowApps ancla de Gemini tiene
+lógica real conectada todavía -- toda WowApp instalada muestra "Todavía
+sin conectar -- próximamente" en su Oficina, mismo fallback que
+cualquier Superpoder sin backend. WowBot Pedidos necesita WhatsApp
+Business API + speech-to-text; WowCobranza necesita integración de
+facturación/pagos que hoy no existe; WowAgenda Pro es la más barata a
+futuro porque puede generalizar el motor de capacidad+booking que ya
+existe en `lib/interviewSlots.ts` en vez de partir de cero -- pero
+sigue siendo una fase aparte, no entró en W1. Tampoco hay pasarela de
+pago real para la instalación ni la adaptación (mismo límite que
+`membershipPaidAt` desde siempre), y el pedido de adaptación no tiene
+backend automatizado -- es un email a una persona real.
+
+Shippeado como v1.53.0.
+
 ---
 
 **Recordatorio de la regla permanente de arriba**: esto sigue sin ser
-luz verde de producción. Fase P1 está lista para que Sergio y Fabricio
-la auditen -- no para que un cliente real la use.
+luz verde de producción. Fase P1 y Fase W1 están listas para que Sergio
+y Fabricio las auditen -- no para que un cliente real las use.

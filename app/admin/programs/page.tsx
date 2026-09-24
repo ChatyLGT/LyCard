@@ -155,6 +155,12 @@ export default async function AdminProgramsPage({
 
         <div style={{ display: "flex", gap: 16 }}>
           <Link
+            href="/admin/wowstore"
+            style={{ alignSelf: "flex-start", color: "#8a8378", font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase" }}
+          >
+            WowStore →
+          </Link>
+          <Link
             href="/admin/demo-data"
             style={{ alignSelf: "flex-start", color: "#8a8378", font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase" }}
           >

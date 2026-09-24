@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.52.0";
+export const APP_VERSION = "1.53.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.53.0",
+    date: "2026-09-24",
+    notes:
+      "Nace WowStore: un catálogo de WowApps pensado para cualquier negocio chico (restaurante, comercio, despacho, emprendedor) — elegís tu rubro y tu problema del día y te mostramos hasta 3 apps hechas para eso, no un catálogo entero. Instalación directa o, si querés que quede exacta para tu negocio, pedís una adaptación a medida y te contactamos. Lo que instalás aparece de verdad en la Oficina Virtual de tu tarjeta de Empresa o Personal.",
+  },
   {
     version: "1.52.0",
     date: "2026-09-24",

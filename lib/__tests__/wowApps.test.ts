@@ -1,0 +1,120 @@
+import { describe, it, expect } from "vitest";
+import { parseTags, toCatalogEntry, matchWowApps, type WowAppCatalogEntry } from "@/lib/wowApps";
+
+function entry(partial: Partial<WowAppCatalogEntry>): WowAppCatalogEntry {
+  return {
+    id: "id",
+    key: "key",
+    nombre: "nombre",
+    descripcion: "descripcion",
+    iconUrl: "",
+    color: "#C8A15A",
+    appType: "custom",
+    industryTags: [],
+    painPointTags: [],
+    basePriceUsd: 0,
+    status: "proximamente",
+    demoVideoUrl: "",
+    ...partial,
+  };
+}
+
+describe("parseTags", () => {
+  it("no es array -> lista vacía", () => {
+    expect(parseTags(null)).toEqual([]);
+    expect(parseTags(undefined)).toEqual([]);
+    expect(parseTags("restaurante")).toEqual([]);
+    expect(parseTags({ a: 1 })).toEqual([]);
+  });
+
+  it("filtra elementos que no son string o son vacíos", () => {
+    expect(parseTags(["restaurante", 5, null, "  ", "retail"])).toEqual(["restaurante", "retail"]);
+  });
+
+  it("array de strings válido pasa tal cual", () => {
+    expect(parseTags(["a", "b"])).toEqual(["a", "b"]);
+  });
+});
+
+describe("toCatalogEntry", () => {
+  it("parsea los campos Json crudos a string[]", () => {
+    const result = toCatalogEntry({
+      id: "1",
+      key: "wowagenda-pro",
+      nombre: "WowAgenda Pro",
+      descripcion: "desc",
+      iconUrl: "",
+      color: "#C8A15A",
+      appType: "agenda",
+      industryTags: ["clinica", "despacho"],
+      painPointTags: ["clientes"],
+      basePriceUsd: 9.9,
+      status: "activo",
+      demoVideoUrl: "",
+    });
+    expect(result.industryTags).toEqual(["clinica", "despacho"]);
+    expect(result.painPointTags).toEqual(["clientes"]);
+    expect(result.basePriceUsd).toBe(9.9);
+  });
+
+  it("Json corrupto (no array) cae a lista vacía, no rompe", () => {
+    const result = toCatalogEntry({
+      id: "1",
+      key: "k",
+      nombre: "n",
+      descripcion: "d",
+      iconUrl: "",
+      color: "#000",
+      appType: "custom",
+      industryTags: "no-es-array",
+      painPointTags: null,
+      basePriceUsd: 0,
+      status: "proximamente",
+      demoVideoUrl: "",
+    });
+    expect(result.industryTags).toEqual([]);
+    expect(result.painPointTags).toEqual([]);
+  });
+});
+
+describe("matchWowApps", () => {
+  const catalog: WowAppCatalogEntry[] = [
+    entry({ key: "wowbot-pedidos", industryTags: ["restaurante"], painPointTags: ["vender-mas"] }),
+    entry({ key: "wowagenda-pro", industryTags: ["clinica", "despacho"], painPointTags: ["clientes"] }),
+    entry({ key: "wowcobranza", industryTags: ["retail", "despacho"], painPointTags: ["cobrar"] }),
+    entry({ key: "sin-tags" }),
+  ];
+
+  it("sin rubro ni dolor elegidos, no devuelve nada (todavía no se preguntó)", () => {
+    expect(matchWowApps(catalog, null, null)).toEqual([]);
+  });
+
+  it("filtra por rubro solo", () => {
+    const result = matchWowApps(catalog, "despacho", null);
+    expect(result.map((a) => a.key)).toEqual(["wowagenda-pro", "wowcobranza"]);
+  });
+
+  it("filtra por dolor solo", () => {
+    const result = matchWowApps(catalog, null, "vender-mas");
+    expect(result.map((a) => a.key)).toEqual(["wowbot-pedidos"]);
+  });
+
+  it("una app que matchea rubro Y dolor puntúa más alto y sale primero", () => {
+    const doubleMatch: WowAppCatalogEntry[] = [
+      entry({ key: "solo-rubro", industryTags: ["restaurante"], painPointTags: [] }),
+      entry({ key: "rubro-y-dolor", industryTags: ["restaurante"], painPointTags: ["vender-mas"] }),
+    ];
+    const result = matchWowApps(doubleMatch, "restaurante", "vender-mas");
+    expect(result.map((a) => a.key)).toEqual(["rubro-y-dolor", "solo-rubro"]);
+  });
+
+  it("nunca devuelve más de 3, aunque matcheen más", () => {
+    const many: WowAppCatalogEntry[] = Array.from({ length: 5 }, (_, i) => entry({ key: `app-${i}`, industryTags: ["retail"] }));
+    expect(matchWowApps(many, "retail", null)).toHaveLength(3);
+  });
+
+  it("una app sin ninguna coincidencia no aparece", () => {
+    const result = matchWowApps(catalog, "restaurante", null);
+    expect(result.map((a) => a.key)).toEqual(["wowbot-pedidos"]);
+  });
+});

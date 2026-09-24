@@ -229,6 +229,12 @@ export default function MemberCardEditor({
               Ver mi Red de Clientes →
             </Link>
           )}
+          <Link
+            href={`/m/wowstore?cardId=${card.id}`}
+            style={{ alignSelf: "flex-start", font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#C8A15A" }}
+          >
+            Buscar WowApps para mi negocio →
+          </Link>
         </div>
 
         <AccordionSection title="Foto" defaultOpen={true}>

@@ -202,6 +202,11 @@ model Card {
   voiceNotes VoiceNote[]
   leads      CardLead[]
   tags       Tag[]
+
+  // WowStore (2026-09-24) — WowApps instaladas en ESTA Card puntual
+  // (típicamente company/personal, un negocio MiPyME) — independiente
+  // de Program.officeSkills, ver WowAppInstall.
+  wowAppInstalls WowAppInstall[]
 }
 
 // Sistema de Tags — pedido de Gunnar (2026-09-23), base de "Janus", el
@@ -620,6 +625,57 @@ model Registration {
   @@index([cardId])
   @@index([membershipId])
   @@index([networkMembershipId])
+}
+
+// WowStore (2026-09-24) — appstore de WowApps pensado para cualquier
+// MiPyME (restaurante, retail, despacho, emprendedor), navegado por
+// rubro+dolor, no por categoría técnica. Catálogo curado por MasterN0
+// desde /admin/wowstore, distinto de Program.officeSkills (eso sigue
+// siendo el catálogo INTERNO de Legacy para su propio equipo) -- ver
+// PLAN.md "WowStore -- Fase W1" para el porqué de la separación.
+model WowApp {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  nombre    String
+  descripcion String
+  iconUrl   String   @default("")
+  color     String   @default("#C8A15A")
+  // "agenda" | "whatsapp-bot" | "cobranza" | "custom" -- qué componente
+  // real corre adentro cuando está instalada, ver lib/wowApps.ts.
+  appType   String   @default("custom")
+  // string[] serializados -- rubro ("restaurante","retail",...) y dolor
+  // ("vender-mas","inventario",...), parseados en lib/wowApps.ts.
+  industryTags  Json @default("[]")
+  painPointTags Json @default("[]")
+  basePriceUsd  Float  @default(0)
+  // "activo" | "proximamente" -- nunca se muestra como funcional si no
+  // lo es, cáscara honesta.
+  status        String @default("proximamente")
+  demoVideoUrl  String @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  installs WowAppInstall[]
+}
+
+model WowAppInstall {
+  id       String @id @default(cuid())
+  cardId   String
+  card     Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  wowAppId String
+  wowApp   WowApp @relation(fields: [wowAppId], references: [id], onDelete: Cascade)
+
+  installedAt DateTime @default(now())
+
+  // Adaptación a medida, paga -- mismo criterio honesto que
+  // ProgramMembership.membershipPaidAt: flag marcado a mano, todavía
+  // sin pasarela de pago real. El pedido en sí llega por email al
+  // equipo (Sergio/Fabricio), no hay backend automatizado.
+  adaptationNotes  String    @default("")
+  adaptationStatus String    @default("sin_pedir") // sin_pedir | pendiente | en_progreso | entregada
+  adaptationPaidAt DateTime?
+
+  @@unique([cardId, wowAppId])
 }
 
 // --- Módulo HR/PM (docs/05-ROADMAP-EDT.md) ---

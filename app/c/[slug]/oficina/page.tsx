@@ -15,6 +15,7 @@ import MallaExplorer from "@/components/MallaExplorer";
 import { getFathomBrief, type FathomBrief } from "@/lib/fathom";
 import { parseOfficeSkills, DEFAULT_OFFICE_SKILLS, type OfficeSkill } from "@/lib/officeSkills";
 import OfficeSkillsBlock from "@/components/OfficeSkillsBlock";
+import WowAppsBlock from "@/components/WowAppsBlock";
 import type { VoiceNoteSummary } from "@/components/VoiceNotesBlock";
 import CardLeadsBlock, { type CardLeadSummary } from "@/components/CardLeadsBlock";
 import TagsBlock from "@/components/TagsBlock";
@@ -38,7 +39,7 @@ import NewsTasksBlock from "@/components/NewsTasksBlock";
 import { fetchLiveAgenda, defaultAgendaWindow, type AgendaEventItem, type AgendaTaskItem } from "@/lib/agenda";
 import { refreshGoogleAccessToken } from "@/lib/googleOAuth";
 import { buildCardMetadata } from "@/lib/cardMetadata";
-import type { Card, OriginMemento, Program, Puesto } from "@/generated/prisma/client";
+import type { Card, OriginMemento, Program, Puesto, WowApp, WowAppInstall } from "@/generated/prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -144,6 +145,10 @@ type OficinaData = {
   // dataset de ejemplo de siempre en vez de mostrar un grafo vacío.
   mallaRoot: { root: MallaGraphData; subGraphs: Record<string, MallaGraphData> } | null;
   teamMalla: MallaGraphData | null;
+  // WowStore (2026-09-24) — WowApps instaladas en ESTA Card puntual
+  // (company/personal, un negocio MiPyME) -- vacío para project, ese
+  // sigue siendo solo Superpoderes internos de Legacy.
+  installedWowApps: (WowAppInstall & { wowApp: WowApp })[];
 };
 
 // ---------------- Piezas compartidas ----------------
@@ -556,6 +561,13 @@ function VisitorOficina({ data }: { data: OficinaData }) {
           googleConnected={false}
           connectUrl={data.connectUrl}
         />
+
+        {data.installedWowApps.length > 0 && (
+          <>
+            <div style={hr} />
+            <WowAppsBlock installs={data.installedWowApps} isHost={false} />
+          </>
+        )}
       </div>
     </div>
   );
@@ -659,6 +671,30 @@ function OwnerOficina({ data }: { data: OficinaData }) {
           connectUrl={data.connectUrl}
         />
 
+        {card.kind !== "project" && (
+          <>
+            <div style={hr} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                <span style={kickerStyle}>WowStore</span>
+                <Link
+                  href={`/m/wowstore?cardId=${card.id}`}
+                  style={{ font: "700 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#C8A15A", textDecoration: "none" }}
+                >
+                  {data.installedWowApps.length > 0 ? "Buscar más" : "Buscar WowApps"} →
+                </Link>
+              </div>
+              {data.installedWowApps.length > 0 ? (
+                <WowAppsBlock installs={data.installedWowApps} isHost />
+              ) : (
+                <p style={{ margin: 0, font: "400 11.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
+                  Sin WowApps instaladas todavía -- apps pensadas para tu rubro puntual, no para el equipo de Legacy.
+                </p>
+              )}
+            </div>
+          </>
+        )}
+
         <div style={hr} />
 
         <NewsTasksBlock items={data.newsItems} isDefault={data.newsAreDefault} />
@@ -692,7 +728,7 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
   const { slug } = await params;
   const card = await prisma.card.findUnique({
     where: { slug },
-    include: { program: true, puesto: true },
+    include: { program: true, puesto: true, wowAppInstalls: { include: { wowApp: true }, orderBy: { installedAt: "asc" } } },
   });
   if (!card) notFound();
 
@@ -920,6 +956,7 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
     newsAreDefault,
     mallaRoot,
     teamMalla,
+    installedWowApps: card.kind === "project" ? [] : card.wowAppInstalls,
   };
 
   return isHost ? <OwnerOficina data={data} /> : <VisitorOficina data={data} />;
