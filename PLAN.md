@@ -6264,6 +6264,104 @@ ratcheted, tsc/lint/build limpios.
 
 ---
 
+## WowStore -- Fase W2: rediseño rico, diseño cerrado, sin construir todavía (2026-09-24)
+
+Gunnar probó WowStore ya arreglado (v1.56.2) y pegó un mockup completo
+(HTML/Tailwind generado con Gemini/AIDA, 5 pantallas: Explorar, Detalle
+de App, Mis WowApps, Solicitud de Adaptación, Perfil de Negocio) como
+referencia de hacia dónde quiere llevar la experiencia -- una vidriera
+mucho más rica que el flujo actual de 2 selects + 3 resultados.
+Pedido explícito: documentar el diseño acá primero, clarísimo, antes
+de tocar código -- mismo criterio ya usado con Mensajería Interna.
+
+**Restricción dura que gobierna todo este diseño**: el mockup es
+Tailwind/Material Symbols, tema claro, con datos 100% inventados
+(rating 4.9★, "128 taquerías activas", testimonio de "Don Pedro",
+RFC fiscal, tarjeta de crédito terminada en 4821, asesor "Ing. Carlos
+Mendoza" con foto de stock). Ninguno de esos elementos entra tal cual:
+(a) el tema visual de LyCard es Playfair Display/Plus Jakarta Sans,
+dorado (#C8A15A) sobre negro (#0B0B0A) -- no se adopta un segundo
+sistema de diseño para una sola sección; (b) ratings, reseñas,
+testimonios y datos fiscales/de facturación fabricados violan la
+cáscara honesta que gobierna todo el proyecto -- si no hay un dato
+real detrás, no se muestra, no se inventa un número creíble.
+
+**Lo que SÍ se adopta del mockup, traducido a datos reales y al
+sistema de diseño de LyCard**:
+
+1. **Chips de rubro con contador real** (reemplaza los 2 `<select>`
+   actuales): scroll horizontal de rubros (`RUBROS` de
+   `lib/wowApps.ts`, ya existe), cada chip con la cantidad real de
+   WowApps `status:"activo"` que matchean ese rubro -- `lib/wowApps.ts`
+   suma una función pura nueva, `countByRubro(catalog): Record<string,
+   number>`, testeable sin DB igual que `matchWowApps`. El dolor sigue
+   siendo un segundo selector (o un segundo set de chips), no
+   inventamos un buscador de texto libre en esta ronda -- el buscador
+   con texto libre del mockup ("comanda rápida, menú QR...") queda
+   fuera de alcance de W2 (necesitaría full-text search real sobre
+   nombre/descripción, no está roto ni pedido explícitamente, se
+   documenta como posible W3).
+2. **Tab "Mis WowApps" separado de "Explorar"**: hoy lo instalado en
+   una Card solo se ve de vuelta en su Oficina Virtual -- WowStore en
+   sí (`/m/wowstore`) es una vidriera de una sola vía (solo explorar).
+   W2 suma una segunda vista `/m/wowstore/mias?cardId=...` con las
+   WowApps ya instaladas en ESA Card (mismo dato que ya lee
+   `WowAppsBlock`, reusado, no duplicado) + link directo de vuelta a
+   la Oficina para verlas operando.
+3. **Tab "Solicitudes"**: lista real de `WowAppInstall` con
+   `adaptationStatus !== "sin_pedir"` para esa Card, mostrando el
+   estado real (`pendiente` | `en_progreso` | `entregada`) como
+   badge simple -- **sin** el stepper de 4 fases con % inventado ni el
+   asesor de foto de stock del mockup. Si algún día hay un flujo de
+   ingeniería real con fases reales, se agrega entonces -- no antes.
+4. **Detalle de WowApp con 2 opciones lado a lado**: el mockup separa
+   "Estándar" vs "Personalizada" como dos cards seleccionables con
+   precio -- esto YA es, casi 1:1, lo que hace hoy `installWowAppAction`
+   ("Instalación Express") vs `requestAdaptationAction` ("Adaptación a
+   medida"), solo que hoy se ven apiladas verticalmente con estilos
+   distintos. W2 las rearma como 2 cards del mismo tamaño, mismo
+   patrón visual, sin inventar un segundo precio -- el de adaptación
+   sigue siendo "a cotizar" (no hay pasarela de pago real todavía,
+   mismo límite honesto de siempre).
+
+**Explícitamente fuera de alcance de W2 (documentado, no se construye)**:
+- Ratings/reseñas/testimonios -- no hay mecanismo real de reseñas en
+  todo el proyecto, inventar uno es un pedazo de trabajo aparte (y
+  requeriría moderación, otra cosa que no existe).
+- Tab "Perfil de Negocio" con datos fiscales/facturación/tarjeta -- no
+  hay ese modelo de datos en Prisma hoy (RFC, CFDI, medios de pago).
+  Lo que YA existe para "mi negocio" vive en `MemberCardEditor`
+  (`/m/dashboard/company`), no se duplica acá.
+- Barra de navegación inferior fija tipo app nativa (Explorar/Mis
+  WowApps/Solicitudes/Perfil) -- LyCard usa navegación por link
+  "← Volver", no tab bar persistente; se resuelve con links simples
+  entre las 3 pantallas de W2, sin rediseñar la navegación global.
+- Buscador de texto libre -- ver punto 1, queda para una fase W3 si
+  se pide.
+- Cualquier automatización real del pedido de adaptación -- sigue
+  siendo un email al equipo, igual que hoy.
+
+**EDT propuesta -- Fase W2 (para cuando se decida construir)**:
+1. `lib/wowApps.ts`: `countByRubro`, tests unitarios.
+2. `app/m/wowstore/page.tsx`: chips de rubro con contador real +
+   segundo set de chips para dolor (reemplaza los 2 `<select>`).
+3. `app/m/wowstore/mias/page.tsx` (nuevo): tab "Mis WowApps" -- reusa
+   `card.wowAppInstalls`, mismo helper `requireCardHost` ya construido
+   en el fix de v1.56.2.
+4. `app/m/wowstore/solicitudes/page.tsx` (nuevo): tab "Solicitudes" --
+   `WowAppInstall` con `adaptationStatus !== "sin_pedir"`, badge de
+   estado real.
+5. `app/m/wowstore/[key]/page.tsx`: rediseño de las 2 opciones
+   (Instalación Express / Adaptación a medida) como cards lado a lado.
+6. Nav simple entre las 3 pantallas (Explorar/Mis WowApps/Solicitudes),
+   sin tab bar fija.
+7. Verificación de siempre: tsc/lint/100% coverage/build,
+   `e2e/wowstore.spec.ts` extendido para cubrir las 2 pantallas nuevas,
+   suite completa sin regresiones, version bump, PLAN.md, commit, push,
+   poll de Vercel.
+
+---
+
 **Recordatorio de la regla permanente de arriba**: esto sigue sin ser
 luz verde de producción. Fase P1 y Fase W1 están listas para que Sergio
 y Fabricio las auditen -- no para que un cliente real las use.
