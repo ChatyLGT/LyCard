@@ -5896,6 +5896,27 @@ backend automatizado -- es un email a una persona real.
 
 Shippeado como v1.53.0.
 
+**Addendum -- sembrar catálogo de ejemplo (2026-09-24)**: Gunnar pasó el
+Excel de servicios de Mercosur Irpavi/HeroSuite y preguntó por qué no
+subía los Superpoderes ya construidos (Brief, Notas de Voz, Modo Foco)
+como WowApps. Respuesta corta: son Program-level, para el equipo interno
+de Legacy -- WowStore es por Card, para el negocio externo de cualquier
+MiPyME (ver "Hallazgo de arquitectura" arriba). Nada impide catalogar la
+MISMA capacidad como una WowApp aparte, así que se sumó
+`EXAMPLE_WOW_APPS` en `lib/wowApps.ts` (6 entradas: 5 recortadas del
+Excel real de Irpavi -- la mayoría de ese catálogo es infraestructura IT
+para empresas de 10+ empleados, no MiPyME chica, se filtró a las que sí
+calzan -- más "Notas de Voz para tu Negocio", la misma idea que el
+Superpoder interno) y `seedExampleWowAppsAction` -- botón MasterN0-only
+en `/admin/wowstore`, idempotente por `key` (nunca pisa una entrada ya
+editada a mano), todas con `status:"proximamente"` (ninguna tiene lógica
+real conectada, mismo límite honesto de W1). Test nuevo en
+`wowApps.test.ts` confirma que las 6 usan tags reales del vocabulario
+(ninguna queda invisible en el match por un typo). tsc/lint/100%
+coverage/build limpios, `wowstore.spec.ts` sigue pasando.
+
+Shippeado como v1.53.1.
+
 ---
 
 **Recordatorio de la regla permanente de arriba**: esto sigue sin ser

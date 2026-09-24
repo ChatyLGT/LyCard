@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { currentAdminScope, isMasterN0Scope } from "@/lib/auth";
-import { WOW_APP_TYPES, type WowAppAppType } from "@/lib/wowApps";
+import { WOW_APP_TYPES, EXAMPLE_WOW_APPS, type WowAppAppType } from "@/lib/wowApps";
 
 // Catálogo global de WowStore -- MasterN0-only, no está scoped a ningún
 // Programa (a diferencia de Puesto/officeSkills): cualquier MiPyME lo ve,
@@ -94,6 +94,41 @@ export async function updateWowAppAction(wowAppId: string, formData: FormData) {
 
   revalidatePath("/admin/wowstore");
   redirect("/admin/wowstore?wowAppSaved=1");
+}
+
+// "Sembrar catálogo de ejemplo" (2026-09-24, pedido de Gunnar: "solo
+// para que se vea poblada") -- idempotente por key, nunca pisa una
+// entrada que el N0 ya editó a mano. Ninguna tiene lógica real conectada
+// (status "proximanente" fijo, mismo criterio de W1); son ejemplos
+// reales sacados del catálogo de servicios de Mercosur Irpavi/HeroSuite
+// (el resto de ese catálogo es infraestructura IT para empresas
+// grandes, no calza con una MiPyME chica) más "Notas de Voz", la misma
+// capacidad que ya corre como Superpoder interno de Legacy.
+export async function seedExampleWowAppsAction() {
+  await requireMasterN0();
+
+  let created = 0;
+  for (const example of EXAMPLE_WOW_APPS) {
+    const existing = await prisma.wowApp.findUnique({ where: { key: example.key } });
+    if (existing) continue;
+    await prisma.wowApp.create({
+      data: {
+        key: example.key,
+        nombre: example.nombre,
+        descripcion: example.descripcion,
+        color: example.color,
+        appType: example.appType,
+        industryTags: example.industryTags,
+        painPointTags: example.painPointTags,
+        basePriceUsd: example.basePriceUsd,
+        status: "proximamente",
+      },
+    });
+    created++;
+  }
+
+  revalidatePath("/admin/wowstore");
+  redirect(`/admin/wowstore?wowAppsSeeded=${created}`);
 }
 
 export async function deleteWowAppAction(wowAppId: string) {

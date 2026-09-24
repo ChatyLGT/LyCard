@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { currentAdminScope, isMasterN0Scope } from "@/lib/auth";
-import { createWowAppAction, updateWowAppAction, deleteWowAppAction } from "./actions";
+import { createWowAppAction, updateWowAppAction, deleteWowAppAction, seedExampleWowAppsAction } from "./actions";
 import { RUBROS, PAIN_POINTS, WOW_APP_TYPES } from "@/lib/wowApps";
 import { AccordionSection, AccordionRow, AccordionAddRow } from "@/components/Accordion";
 
@@ -59,13 +59,13 @@ const ERROR_COPY: Record<string, string> = {
 export default async function AdminWowStorePage({
   searchParams,
 }: {
-  searchParams: Promise<{ wowAppCreated?: string; wowAppSaved?: string; wowAppDeleted?: string; wowAppError?: string }>;
+  searchParams: Promise<{ wowAppCreated?: string; wowAppSaved?: string; wowAppDeleted?: string; wowAppError?: string; wowAppsSeeded?: string }>;
 }) {
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
   if (!isMasterN0Scope(scope)) redirect("/admin");
 
-  const { wowAppCreated, wowAppSaved, wowAppDeleted, wowAppError } = await searchParams;
+  const { wowAppCreated, wowAppSaved, wowAppDeleted, wowAppError, wowAppsSeeded } = await searchParams;
   const catalog = await prisma.wowApp.findMany({ orderBy: { createdAt: "asc" } });
 
   return (
@@ -97,6 +97,33 @@ export default async function AdminWowStorePage({
           <code>/m/wowstore</code>, navegada por rubro + dolor, no por categoría técnica. Independiente de los
           Superpoderes internos de cada Programa.
         </p>
+
+        <form action={seedExampleWowAppsAction}>
+          <button
+            type="submit"
+            style={{
+              alignSelf: "flex-start",
+              padding: "10px 16px",
+              border: "1px dashed rgba(200,161,90,.4)",
+              borderRadius: 10,
+              background: "none",
+              color: "#C8A15A",
+              font: "700 10.5px 'Plus Jakarta Sans',sans-serif",
+              letterSpacing: ".08em",
+              textTransform: "uppercase",
+              cursor: "pointer",
+            }}
+          >
+            Sembrar catálogo de ejemplo
+          </button>
+        </form>
+        {wowAppsSeeded !== undefined && (
+          <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>
+            {Number(wowAppsSeeded) > 0
+              ? `✓ ${wowAppsSeeded} WowApp${wowAppsSeeded === "1" ? "" : "s"} de ejemplo agregada${wowAppsSeeded === "1" ? "" : "s"}.`
+              : "Ya estaban todas -- no había ninguna nueva para agregar."}
+          </p>
+        )}
 
         <AccordionSection
           title="Catálogo de WowApps"

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseTags, toCatalogEntry, matchWowApps, type WowAppCatalogEntry } from "@/lib/wowApps";
+import { parseTags, toCatalogEntry, matchWowApps, EXAMPLE_WOW_APPS, RUBROS, PAIN_POINTS, WOW_APP_TYPES, type WowAppCatalogEntry } from "@/lib/wowApps";
 
 function entry(partial: Partial<WowAppCatalogEntry>): WowAppCatalogEntry {
   return {
@@ -116,5 +116,30 @@ describe("matchWowApps", () => {
   it("una app sin ninguna coincidencia no aparece", () => {
     const result = matchWowApps(catalog, "restaurante", null);
     expect(result.map((a) => a.key)).toEqual(["wowbot-pedidos"]);
+  });
+});
+
+describe("EXAMPLE_WOW_APPS", () => {
+  const rubroKeys = RUBROS.map((r) => r.key);
+  const dolorKeys = PAIN_POINTS.map((p) => p.key);
+
+  it("todas usan tags reales del vocabulario -- ninguna queda invisible en el match por un typo", () => {
+    for (const app of EXAMPLE_WOW_APPS) {
+      for (const tag of app.industryTags) expect(rubroKeys).toContain(tag);
+      for (const tag of app.painPointTags) expect(dolorKeys).toContain(tag);
+      expect(WOW_APP_TYPES).toContain(app.appType);
+    }
+  });
+
+  it("cada ejemplo tiene al menos 1 rubro y 1 dolor -- si no, nunca aparece en un match", () => {
+    for (const app of EXAMPLE_WOW_APPS) {
+      expect(app.industryTags.length).toBeGreaterThan(0);
+      expect(app.painPointTags.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("keys únicas -- no hay dos ejemplos que se pisen", () => {
+    const keys = EXAMPLE_WOW_APPS.map((a) => a.key);
+    expect(new Set(keys).size).toBe(keys.length);
   });
 });

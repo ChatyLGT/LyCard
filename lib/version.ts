@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.53.0";
+export const APP_VERSION = "1.53.1";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.53.1",
+    date: "2026-09-24",
+    notes:
+      "WowStore ya no arranca vacía: un botón nuevo en el panel de MasterN0 (\"Sembrar catálogo de ejemplo\") carga 6 WowApps de ejemplo reales — atención por WhatsApp, reservas automáticas, sitio de ventas, redes sociales, QR dinámico y notas de voz — para que el catálogo se vea poblado desde el primer día.",
+  },
   {
     version: "1.53.0",
     date: "2026-09-24",

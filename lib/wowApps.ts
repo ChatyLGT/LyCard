@@ -80,6 +80,88 @@ export function toCatalogEntry(row: {
   };
 }
 
+// Ejemplos para poblar el catálogo un mínimo (2026-09-24, pedido de
+// Gunnar: "solo para que se vea poblada"). 5 salen del catálogo real de
+// servicios de Mercosur Irpavi/HeroSuite (el Excel que ya había pasado),
+// recortados a los que de verdad calzan con una MiPyME chica -- la
+// mayoría de ese Excel es infraestructura IT para empresas de 10+
+// empleados, no para una taquería. La sexta es la misma capacidad de
+// "Notas de Voz" que ya corre como Superpoder interno de Legacy, ahora
+// catalogada aparte para que cualquier MiPyME la vea, aunque siga siendo
+// otro sistema por dentro. Ninguna tiene lógica real conectada todavía
+// (status "proximamente" en las 6) -- mismo criterio de W1.
+export const EXAMPLE_WOW_APPS: {
+  key: string;
+  nombre: string;
+  descripcion: string;
+  color: string;
+  appType: WowAppAppType;
+  industryTags: string[];
+  painPointTags: string[];
+  basePriceUsd: number;
+}[] = [
+  {
+    key: "chatbot-whatsapp-pedidos",
+    nombre: "Atención y Pedidos por WhatsApp",
+    descripcion: "Un asistente que responde consultas, toma pedidos y agenda reuniones por WhatsApp, sin que tengas que estar pegado al celular todo el día.",
+    color: "#25D366",
+    appType: "whatsapp-bot",
+    industryTags: ["restaurante", "retail"],
+    painPointTags: ["vender-mas", "clientes"],
+    basePriceUsd: 4500,
+  },
+  {
+    key: "reservas-agenda-automatica",
+    nombre: "Reservas y Agenda Automática",
+    descripcion: "Tus clientes agendan turnos o reservas solos, con recordatorios automáticos -- vos solo revisás la agenda.",
+    color: "#6FCF7A",
+    appType: "agenda",
+    industryTags: ["clinica", "despacho"],
+    painPointTags: ["clientes"],
+    basePriceUsd: 4500,
+  },
+  {
+    key: "landing-sitio-ventas",
+    nombre: "Sitio Web Orientado a Ventas",
+    descripcion: "Una página pensada para convertir visitas en clientes -- formulario, botón de WhatsApp, y todo armado para que te contacten.",
+    color: "#C8A15A",
+    appType: "custom",
+    industryTags: ["retail", "emprendedor", "despacho"],
+    painPointTags: ["clientes", "vender-mas"],
+    basePriceUsd: 350,
+  },
+  {
+    key: "publicidad-redes-sociales",
+    nombre: "Publicidad y Redes Sociales",
+    descripcion: "Manejo de tus campañas y contenido en redes -- pauta, seguimiento y reportes, para que no tengas que improvisar publicaciones.",
+    color: "#9085e9",
+    appType: "custom",
+    industryTags: ["restaurante", "retail", "emprendedor"],
+    painPointTags: ["clientes"],
+    basePriceUsd: 60,
+  },
+  {
+    key: "qr-dinamico-negocio",
+    nombre: "QR Dinámico para tu Negocio",
+    descripcion: "Un QR que podés reprogramar cuando quieras (menú, promo, link) sin reimprimir nada -- con estadísticas de cuánta gente lo usa.",
+    color: "#E5C378",
+    appType: "custom",
+    industryTags: ["restaurante", "retail"],
+    painPointTags: ["vender-mas"],
+    basePriceUsd: 15,
+  },
+  {
+    key: "notas-voz-negocio",
+    nombre: "Notas de Voz para tu Negocio",
+    descripcion: "Grabás una nota hablada -- un pedido, un pendiente, un conteo de stock -- y queda transcrita y resumida sola, sin escribir nada.",
+    color: "#E5C378",
+    appType: "custom",
+    industryTags: ["emprendedor", "despacho"],
+    painPointTags: ["inventario"],
+    basePriceUsd: 0,
+  },
+];
+
 // El "match curado": nunca el catálogo entero, como mucho 3 -- ordenadas
 // por cantidad de coincidencias (rubro + dolor). Sin ningún filtro
 // elegido, no devuelve nada (la pantalla de onboarding sigue pidiendo
