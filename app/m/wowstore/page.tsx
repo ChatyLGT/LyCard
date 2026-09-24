@@ -2,26 +2,45 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireCardHost } from "@/lib/cardHost";
-import { RUBROS, PAIN_POINTS, matchWowApps, toCatalogEntry } from "@/lib/wowApps";
+import { RUBROS, PAIN_POINTS, matchWowApps, countByRubro, toCatalogEntry } from "@/lib/wowApps";
+import WowStoreTabs from "@/components/WowStoreTabs";
 
 export const dynamic = "force-dynamic";
 
-const SELECT_STYLE = {
-  background: "#0D0D0D",
-  border: "1px solid rgba(200,161,90,.3)",
-  borderRadius: 10,
-  padding: "11px 14px",
-  color: "#F5F2EB",
-  font: "400 14px 'Plus Jakarta Sans',sans-serif",
-  outline: "none",
-  width: "100%",
-} as const;
+function chipHref(cardId: string, currentRubro: string, currentDolor: string, kind: "rubro" | "dolor", key: string) {
+  const nextRubro = kind === "rubro" ? (currentRubro === key ? "" : key) : currentRubro;
+  const nextDolor = kind === "dolor" ? (currentDolor === key ? "" : key) : currentDolor;
+  const params = new URLSearchParams({ cardId });
+  if (nextRubro) params.set("rubro", nextRubro);
+  if (nextDolor) params.set("dolor", nextDolor);
+  return `/m/wowstore?${params.toString()}`;
+}
 
-// WowStore (2026-09-24) — vidriera pública de WowApps para cualquier
-// MiPyME, navegada por rubro+dolor en vez de categoría técnica. Pantalla
-// 1 (selector) y 2 (match curado) viven en la misma page, coordinadas
-// por query string (?rubro=&dolor=) -- sin JS de cliente, un <form
-// method="get"> alcanza y es más barato de construir/testear.
+function chipStyle(active: boolean) {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    flex: "none",
+    padding: "8px 12px",
+    borderRadius: 999,
+    textDecoration: "none",
+    whiteSpace: "nowrap" as const,
+    background: active ? "#C8A15A" : "#201f1f",
+    color: active ? "#0D0D0D" : "#C2BEB5",
+    border: `1px solid ${active ? "#C8A15A" : "rgba(200,161,90,.25)"}`,
+    font: "600 11.5px 'Plus Jakarta Sans',sans-serif",
+  };
+}
+
+// WowStore (2026-09-24, Fase W1/W2) — vidriera de WowApps para cualquier
+// MiPyME, navegada por rubro+dolor en vez de categoría técnica. Fase W2
+// (2026-09-24, pedido de Gunnar a partir de un mockup de referencia)
+// reemplaza los 2 <select> por chips -- cada click en un chip navega a
+// un nuevo estado de ?rubro=&dolor=, sin necesitar JS de cliente ni un
+// botón "Buscar" aparte. El chip de rubro muestra un contador real
+// (countByRubro, cuenta solo status:"activo") -- nunca un número
+// inventado como el "12 apps activas" del mockup original.
 export default async function WowStorePage({
   searchParams,
 }: {
@@ -32,9 +51,13 @@ export default async function WowStorePage({
 
   const card = await requireCardHost(cardId);
 
+  const catalogRows = await prisma.wowApp.findMany();
+  const catalog = catalogRows.map(toCatalogEntry);
+  const rubroCounts = countByRubro(catalog);
+  const currentRubro = rubro || "";
+  const currentDolor = dolor || "";
   const showResults = Boolean(rubro || dolor);
-  const catalogRows = showResults ? await prisma.wowApp.findMany() : [];
-  const results = showResults ? matchWowApps(catalogRows.map(toCatalogEntry), rubro || null, dolor || null) : [];
+  const results = showResults ? matchWowApps(catalog, rubro || null, dolor || null) : [];
 
   return (
     <div style={{ minHeight: "100vh", background: "#131313", color: "#e5e2e1", fontFamily: "'Plus Jakarta Sans',sans-serif", padding: "40px 20px" }}>
@@ -48,37 +71,36 @@ export default async function WowStorePage({
           </h1>
         </div>
 
-        <form method="get" style={{ background: "#201f1f", borderRadius: 14, padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
-          <input type="hidden" name="cardId" value={cardId} />
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <WowStoreTabs cardId={cardId} active="explorar" />
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#9a8f80" }}>
               Soy un
             </span>
-            <select name="rubro" defaultValue={rubro || ""} style={SELECT_STYLE}>
-              <option value="">Elegí tu rubro</option>
+            <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 2 }}>
               {RUBROS.map((r) => (
-                <option key={r.key} value={r.key}>{r.label}</option>
+                <Link key={r.key} href={chipHref(cardId, currentRubro, currentDolor, "rubro", r.key)} style={chipStyle(currentRubro === r.key)}>
+                  {r.label}
+                  <span style={{ opacity: 0.75 }}>· {rubroCounts[r.key] ?? 0}</span>
+                </Link>
               ))}
-            </select>
-          </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#9a8f80" }}>
               Y mi mayor dolor de cabeza hoy es
             </span>
-            <select name="dolor" defaultValue={dolor || ""} style={SELECT_STYLE}>
-              <option value="">Elegí tu dolor</option>
+            <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 2 }}>
               {PAIN_POINTS.map((p) => (
-                <option key={p.key} value={p.key}>{p.label}</option>
+                <Link key={p.key} href={chipHref(cardId, currentRubro, currentDolor, "dolor", p.key)} style={chipStyle(currentDolor === p.key)}>
+                  {p.label}
+                </Link>
               ))}
-            </select>
-          </label>
-          <button
-            type="submit"
-            style={{ padding: 13, border: "none", borderRadius: 10, background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)", color: "#0D0D0D", font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", cursor: "pointer" }}
-          >
-            Buscar mi WowApp
-          </button>
-        </form>
+            </div>
+          </div>
+        </div>
 
         {showResults && (
           <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>

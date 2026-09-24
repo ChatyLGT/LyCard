@@ -32,6 +32,22 @@ const CTA_SECONDARY = {
   width: "100%",
 } as const;
 
+// Fase W2 (2026-09-24) -- las 2 opciones ("Instalación Express" y
+// "Adaptación a medida") pasan a ser 2 cards del mismo peso visual, en
+// vez de un botón suelto arriba + un panel abajo -- tomado del mockup
+// de referencia de Gunnar (ahí eran "Estándar" vs "Personalizada"), sin
+// inventar un segundo precio: la adaptación sigue siendo "a cotizar",
+// no hay pasarela de pago real todavía (ver PLAN.md "WowStore -- Fase
+// W2").
+const OPTION_CARD = {
+  background: "#201f1f",
+  borderRadius: 14,
+  padding: 18,
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: 10,
+};
+
 export default async function WowAppDetailPage({
   params,
   searchParams,
@@ -79,24 +95,33 @@ export default async function WowAppDetailPage({
           </p>
         )}
 
-        {install && (
-          <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>
-            ✓ Ya instalada en {card.name || card.slug} — la ves desde su Oficina Virtual.
+        <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#9a8f80" }}>
+          Elegí cómo la querés
+        </span>
+
+        <div style={OPTION_CARD}>
+          <span style={{ font: "700 12px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>Instalación Express</span>
+          <p style={{ margin: 0, font: "400 11.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>
+            La versión base, lista ya, tal cual está en el catálogo — sin esperar nada.
           </p>
-        )}
-        {installed === "1" && !install && (
-          <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Instalada.</p>
-        )}
+          {install && (
+            <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>
+              ✓ Ya instalada en {card.name || card.slug} — la ves desde su Oficina Virtual.
+            </p>
+          )}
+          {installed === "1" && !install && (
+            <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Instalada.</p>
+          )}
+          {!install && (
+            <form action={installWowAppAction.bind(null, cardId, key)}>
+              <button type="submit" style={CTA_PRIMARY}>
+                Instalación Express
+              </button>
+            </form>
+          )}
+        </div>
 
-        {!install && (
-          <form action={installWowAppAction.bind(null, cardId, key)}>
-            <button type="submit" style={CTA_PRIMARY}>
-              Instalación Express
-            </button>
-          </form>
-        )}
-
-        <div style={{ background: "#201f1f", borderRadius: 14, padding: 18, display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={OPTION_CARD}>
           <span style={{ font: "700 12px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>
             Adaptación a tu medida
           </span>

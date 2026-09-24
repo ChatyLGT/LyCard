@@ -6264,7 +6264,7 @@ ratcheted, tsc/lint/build limpios.
 
 ---
 
-## WowStore -- Fase W2: rediseño rico, diseño cerrado, sin construir todavía (2026-09-24)
+## WowStore -- Fase W2: rediseño rico (2026-09-24)
 
 Gunnar probó WowStore ya arreglado (v1.56.2) y pegó un mockup completo
 (HTML/Tailwind generado con Gemini/AIDA, 5 pantallas: Explorar, Detalle
@@ -6359,6 +6359,36 @@ sistema de diseño de LyCard**:
    `e2e/wowstore.spec.ts` extendido para cubrir las 2 pantallas nuevas,
    suite completa sin regresiones, version bump, PLAN.md, commit, push,
    poll de Vercel.
+
+**Shippeado como v1.57.0.** Se construyó tal cual el diseño de arriba,
+sin desvíos:
+
+- `lib/wowApps.ts#countByRubro` (nueva, pura), con `lib/__tests__/
+  wowApps.test.ts` ampliado (catálogo vacío, solo cuenta `activo`,
+  una app en varios rubros, rubro-agnóstico no suma, tag corrupto se
+  ignora sin romper).
+- `app/m/wowstore/page.tsx`: los 2 `<select>` se fueron -- ahora son 2
+  filas de chips (`<Link>` con query string, sin JS de cliente, mismo
+  criterio "zero-JS" del resto del proyecto), el chip de rubro con su
+  contador real al lado.
+- `components/WowStoreTabs.tsx` (nuevo): la fila de 3 tabs
+  (Explorar/Mis WowApps/Solicitudes), reusada en las 3 pantallas --
+  no es una tab bar global, LyCard sigue sin tener una.
+- `app/m/wowstore/mias/page.tsx` y `app/m/wowstore/solicitudes/page.tsx`
+  (nuevas), ambas sobre `requireCardHost` (el mismo helper del fix de
+  v1.56.2, no uno nuevo).
+- `app/m/wowstore/[key]/page.tsx`: "Instalación Express" y "Adaptación
+  a tu medida" ahora son 2 cards del mismo peso visual (`OPTION_CARD`),
+  mismos datos y acciones reales de siempre -- ningún precio inventado.
+- `e2e/wowstore.spec.ts` ganó cobertura real de las 2 pantallas nuevas
+  y del contador del chip (sin acoplarse a un valor exacto -- eso ya
+  lo cubre el unit test puro, el E2E solo confirma que el número está
+  de verdad ahí). 36/36 E2E, 190/190 unit, 100% coverage, tsc/lint/
+  build limpios.
+
+Lo documentado como "fuera de alcance" (ratings, Perfil de Negocio,
+tab bar nativa, buscador de texto libre) sigue exactamente ahí --
+ninguno se construyó, ver el detalle arriba.
 
 ---
 

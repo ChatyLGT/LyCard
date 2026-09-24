@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseTags, toCatalogEntry, matchWowApps, EXAMPLE_WOW_APPS, RUBROS, PAIN_POINTS, WOW_APP_TYPES, type WowAppCatalogEntry } from "@/lib/wowApps";
+import { parseTags, toCatalogEntry, matchWowApps, countByRubro, EXAMPLE_WOW_APPS, RUBROS, PAIN_POINTS, WOW_APP_TYPES, type WowAppCatalogEntry } from "@/lib/wowApps";
 
 function entry(partial: Partial<WowAppCatalogEntry>): WowAppCatalogEntry {
   return {
@@ -148,5 +148,41 @@ describe("EXAMPLE_WOW_APPS", () => {
   it("keys únicas -- no hay dos ejemplos que se pisen", () => {
     const keys = EXAMPLE_WOW_APPS.map((a) => a.key);
     expect(new Set(keys).size).toBe(keys.length);
+  });
+});
+
+describe("countByRubro", () => {
+  it("catálogo vacío -- todos los rubros en 0, ni un key de más ni de menos", () => {
+    const counts = countByRubro([]);
+    for (const r of RUBROS) expect(counts[r.key]).toBe(0);
+    expect(Object.keys(counts).sort()).toEqual(RUBROS.map((r) => r.key).sort());
+  });
+
+  it("solo cuenta status:activo -- proximamente no suma aunque tenga el tag", () => {
+    const catalog = [
+      entry({ key: "a", status: "activo", industryTags: ["restaurante"] }),
+      entry({ key: "b", status: "proximamente", industryTags: ["restaurante"] }),
+    ];
+    expect(countByRubro(catalog).restaurante).toBe(1);
+  });
+
+  it("una app con varios rubros suma a cada uno", () => {
+    const catalog = [entry({ key: "a", status: "activo", industryTags: ["restaurante", "retail"] })];
+    const counts = countByRubro(catalog);
+    expect(counts.restaurante).toBe(1);
+    expect(counts.retail).toBe(1);
+    expect(counts.clinica).toBe(0);
+  });
+
+  it("industryTags vacío (rubro-agnóstico, ej. WowAwe) no suma a ningún rubro", () => {
+    const catalog = [entry({ key: "wowawe", status: "activo", industryTags: [] })];
+    const counts = countByRubro(catalog);
+    for (const r of RUBROS) expect(counts[r.key]).toBe(0);
+  });
+
+  it("un tag que no está en RUBROS (dato corrupto/legacy) se ignora sin romper", () => {
+    const catalog = [entry({ key: "a", status: "activo", industryTags: ["rubro-inventado"] })];
+    const counts = countByRubro(catalog);
+    for (const r of RUBROS) expect(counts[r.key]).toBe(0);
   });
 });

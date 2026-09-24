@@ -187,6 +187,26 @@ export const EXAMPLE_WOW_APPS: {
   },
 ];
 
+// Fase W2 (2026-09-24) -- contador real por chip de rubro en /m/wowstore,
+// reemplaza el "12 apps activas" fijo del mockup de referencia de Gunnar
+// por un número que sale de verdad del catálogo. Solo cuenta WowApps
+// status:"activo" -- mostrarle a alguien un rubro con 4 apps "próximamente"
+// como si ya tuviera 4 disponibles sería la misma mentira que el resto
+// del proyecto evita a propósito. Entradas rubro-agnósticas (industryTags
+// vacío, como WowAwe) no suman a ningún rubro puntual -- siguen
+// apareciendo igual cuando matchean por dolor, ver matchWowApps.
+export function countByRubro(catalog: WowAppCatalogEntry[]): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const rubro of RUBROS) counts[rubro.key] = 0;
+  for (const app of catalog) {
+    if (app.status !== "activo") continue;
+    for (const tag of app.industryTags) {
+      if (tag in counts) counts[tag] += 1;
+    }
+  }
+  return counts;
+}
+
 // El "match curado": nunca el catálogo entero, como mucho 3 -- ordenadas
 // por cantidad de coincidencias (rubro + dolor). Sin ningún filtro
 // elegido, no devuelve nada (la pantalla de onboarding sigue pidiendo

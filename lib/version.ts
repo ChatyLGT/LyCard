@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.56.2";
+export const APP_VERSION = "1.57.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.57.0",
+    date: "2026-09-24",
+    notes:
+      "WowStore se pone las pilas: elegís tu rubro y tu dolor tocando chips en vez de 2 menús desplegables, y cada chip de rubro muestra cuántas WowApps hay de verdad disponibles para él. Sumamos 2 pestañas nuevas -- \"Mis WowApps\" (todo lo que ya instalaste en esa tarjeta) y \"Solicitudes\" (el estado real de cada adaptación que pediste) -- y el detalle de cada WowApp ahora muestra las 2 formas de tenerla (Instalación Express / Adaptación a medida) como 2 opciones del mismo peso, más fáciles de comparar.",
+  },
   {
     version: "1.56.2",
     date: "2026-09-24",

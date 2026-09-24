@@ -116,6 +116,16 @@ test.describe("WowStore", () => {
     await memberContext.addCookies([{ ...memberCookie, url: BASE_URL }]);
     const memberPage = await memberContext.newPage();
 
+    // --- Fase W2 (2026-09-24): chips de rubro con contador real +
+    // tabs Explorar/Mis WowApps/Solicitudes, reemplazan los 2 <select>
+    // de W1 -- pedido de Gunnar a partir de un mockup de referencia. ---
+    await memberPage.goto(`${BASE_URL}/m/wowstore?cardId=${cardId}`, { waitUntil: "networkidle" });
+    await expect(memberPage.getByRole("link", { name: "Explorar" })).toBeVisible();
+    // El chip de rubro muestra un número real al lado (countByRubro) --
+    // no se afirma un valor exacto acá (eso ya lo cubre el unit test
+    // puro), solo que el número está de verdad ahí.
+    await expect(memberPage.getByText(/Restaurante \/ Taquería.*\d+/)).toBeVisible();
+
     await memberPage.goto(`${BASE_URL}/m/wowstore?cardId=${cardId}&rubro=restaurante&dolor=vender-mas`, { waitUntil: "networkidle" });
     await expect(memberPage.getByText("WowBot Pedidos E2E")).toBeVisible();
     // La que no matchea rubro+dolor no aparece en el resultado curado.
@@ -137,6 +147,13 @@ test.describe("WowStore", () => {
     await expect(memberPage.getByText("WowStore", { exact: true })).toBeVisible();
     await memberPage.getByText("WowBot Pedidos E2E").click();
     await expect(memberPage.getByText("Toma pedidos por WhatsApp.")).toBeVisible();
+
+    // --- Tab "Mis WowApps" (Fase W2): reusa el mismo dato que ya lee
+    // WowAppsBlock en la Oficina, no lo duplica. ---
+    await memberPage.goto(`${BASE_URL}/m/wowstore/mias?cardId=${cardId}`, { waitUntil: "networkidle" });
+    await expect(memberPage.getByRole("link", { name: "Mis WowApps" })).toBeVisible();
+    await expect(memberPage.getByText("WowBot Pedidos E2E")).toBeVisible();
+    await expect(memberPage.getByText("WowCobranza E2E")).not.toBeVisible();
 
     // --- El acceso a WowStore también vive en la Oficina de la Card
     // "project" (Legacy) del mismo dueño -- reportado por Gunnar como
@@ -176,6 +193,15 @@ test.describe("WowStore", () => {
     expect(adaptationRow.rows).toHaveLength(1);
     expect(adaptationRow.rows[0].adaptationStatus).toBe("pendiente");
     expect(adaptationRow.rows[0].adaptationNotes).toContain("taquería de barrio");
+
+    // --- Tab "Solicitudes" (Fase W2): el estado real guardado --
+    // "Pendiente", nada de un stepper con % inventado. ---
+    await memberPage.goto(`${BASE_URL}/m/wowstore/solicitudes?cardId=${cardId}`, { waitUntil: "networkidle" });
+    await expect(memberPage.getByRole("link", { name: "Solicitudes" })).toBeVisible();
+    await expect(memberPage.getByText("WowCobranza E2E")).toBeVisible();
+    await expect(memberPage.getByText("Pendiente", { exact: true })).toBeVisible();
+    // La instalada Express nunca pidió adaptación -- no aparece acá.
+    await expect(memberPage.getByText("WowBot Pedidos E2E")).not.toBeVisible();
 
     await memberContext.close();
 
