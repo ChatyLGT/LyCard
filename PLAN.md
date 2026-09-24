@@ -5917,6 +5917,58 @@ coverage/build limpios, `wowstore.spec.ts` sigue pasando.
 
 Shippeado como v1.53.1.
 
+**Addendum -- entrada real en la Oficina + unificación de nombre
+(2026-09-24)**: Gunnar probó el flujo en prod (creó las WowApps de
+ejemplo) y no encontró el link "Buscar WowApps para mi negocio" -- vivía
+solo en el editor de `/m/dashboard/company`, no en la Oficina Virtual en
+sí, que es donde miró primero. Pedido explícito: el acceso a WowStore
+tiene que estar DENTRO de la sección de Superpoderes de la Oficina, y de
+paso renombrar "Superpoderes" a "WowApps" en toda la app para no tener
+dos nombres para el mismo tipo de cosa (corrección propia: "WowStore" es
+la vidriera/catálogo navegable, "WowApps" son las apps individuales que
+viven adentro -- instaladas o en catálogo).
+
+Cambios en `app/c/[slug]/oficina/page.tsx` (Owner y Visitor):
+- Cards `kind:"project"` (Legacy interno) siguen mostrando
+  `OfficeSkillsBlock` sin cambios funcionales -- solo el kicker por
+  default pasa de "Superpoderes" a "WowApps" (`officeSkillsKicker`
+  fallback).
+- Cards `kind:"company"`/`"personal"` YA NO muestran
+  `DEFAULT_OFFICE_SKILLS` (nunca tuvo sentido real para el negocio de
+  una MiPyME -- eran los mismos 8 tiles internos de Legacy para
+  cualquiera). En su lugar, una sección única "WowApps" con
+  `WowAppsBlock` -- las instaladas de esa Card, más (solo para el
+  dueño) un tile "+ WowStore" DENTRO de la misma grilla que linkea a
+  `/m/wowstore?cardId=...` -- ya no hay que salir a otra pantalla ni
+  buscar en el editor. `components/WowAppsBlock.tsx` suma la prop
+  `browseHref` para este tile nuevo.
+- El link "Ver mi Red de Clientes" (antes atado al appType "malla" de
+  `OfficeSkillsBlock`) pasa a un link directo fuera del bloque, ya que
+  las Cards company/personal no usan más ese componente.
+- Título de la sección en `/admin/programs/[id]` (editor de
+  `Program.officeSkills`) pasa de "Superpoderes de la Oficina" a
+  "WowApps internas de la Oficina", aclarando en el subtítulo que es
+  para el equipo de Legacy, no el catálogo público (ese vive en
+  `/admin/wowstore`).
+
+**Bug real encontrado en el camino, no de esta feature**: el E2E de
+`e2e/wowstore.spec.ts` empezó a fallar de forma reproducible (incluso
+aislado, con dev server y Postgres reiniciados limpios) al hacer click
+en "Crear WowApp" justo después de abrir el acordeón "+ Agregar
+WowApp" -- el propio contenedor del acordeón tapaba el botón por un
+instante, sin importar cuánto se esperara antes del click. Se
+reemplazó el click por `form.requestSubmit()` vía `.evaluate()` --
+mismo Server Action, mismo resultado que un click real, sin el riesgo
+de intercepción de puntero. No es un bug de producto (Gunnar ya había
+confirmado el flujo real funcionando en prod), es una fragilidad del
+propio `Accordion.tsx` frente a Playwright que quedó documentada acá
+por si vuelve a aparecer en otro spec.
+
+34/34 E2E de la suite completa, tsc/lint/100% coverage unitaria (173
+tests)/build de producción, todos limpios.
+
+Shippeado como v1.54.0.
+
 ---
 
 **Recordatorio de la regla permanente de arriba**: esto sigue sin ser

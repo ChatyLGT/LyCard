@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type CSSProperties } from "react";
+import Link from "next/link";
 import type { WowApp, WowAppInstall } from "@/generated/prisma/client";
 
 const tileStyle: CSSProperties = { display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center", cursor: "pointer", background: "none", border: "none", padding: 0, font: "inherit" };
@@ -12,18 +13,40 @@ const tileStyle: CSSProperties = { display: "flex", flexDirection: "column", ali
 // esta ronda (cáscara honesta, mismo criterio que el resto del
 // proyecto): la cara "App" siempre cae al fallback "Todavía sin conectar
 // -- próximamente", igual que hacía cualquier Superpoder sin backend.
+//
+// `browseHref` (2026-09-24, pedido de Gunnar): el acceso al WowStore
+// -- la vidriera donde se buscan/instalan más WowApps -- vive DENTRO de
+// esta misma grilla como un tile más ("+ WowStore"), no como un link
+// aparte en otra pantalla. Solo el dueño lo ve -- un visitante no puede
+// instalar nada en una Card ajena.
 export default function WowAppsBlock({
   installs,
   isHost,
+  browseHref,
 }: {
   installs: (WowAppInstall & { wowApp: WowApp })[];
   isHost: boolean;
+  browseHref?: string;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const active = installs.find((i) => i.id === openId) || null;
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "10px 6px" }}>
+      {isHost && browseHref && (
+        <Link href={browseHref} style={{ ...tileStyle, textDecoration: "none" }}>
+          <div
+            style={{
+              width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+              border: "1px dashed rgba(200,161,90,.45)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 17, color: "#C8A15A" }}>add</span>
+          </div>
+          <span style={{ font: "400 9px 'Plus Jakarta Sans',sans-serif", color: "#C8A15A" }}>WowStore</span>
+        </Link>
+      )}
       {installs.map((install) => (
         <button key={install.id} type="button" onClick={() => setOpenId(install.id)} style={tileStyle}>
           <div

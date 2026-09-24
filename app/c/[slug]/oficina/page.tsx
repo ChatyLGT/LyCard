@@ -548,25 +548,27 @@ function VisitorOficina({ data }: { data: OficinaData }) {
 
         <div style={hr} />
 
-        <OfficeSkillsBlock
-          skills={data.officeSkills}
-          kicker={data.officeSkillsKicker}
-          isHost={false}
-          fathomBrief={{ enabled: false }}
-          companyNetworkHref={null}
-          cardId={data.card.id}
-          voiceNotes={[]}
-          agendaEvents={[]}
-          agendaTasks={[]}
-          googleConnected={false}
-          connectUrl={data.connectUrl}
-        />
-
-        {data.installedWowApps.length > 0 && (
-          <>
-            <div style={hr} />
-            <WowAppsBlock installs={data.installedWowApps} isHost={false} />
-          </>
+        {card.kind === "project" ? (
+          <OfficeSkillsBlock
+            skills={data.officeSkills}
+            kicker={data.officeSkillsKicker}
+            isHost={false}
+            fathomBrief={{ enabled: false }}
+            companyNetworkHref={null}
+            cardId={data.card.id}
+            voiceNotes={[]}
+            agendaEvents={[]}
+            agendaTasks={[]}
+            googleConnected={false}
+            connectUrl={data.connectUrl}
+          />
+        ) : (
+          data.installedWowApps.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <span style={kickerStyle}>WowApps</span>
+              <WowAppsBlock installs={data.installedWowApps} isHost={false} />
+            </div>
+          )
         )}
       </div>
     </div>
@@ -657,42 +659,33 @@ function OwnerOficina({ data }: { data: OficinaData }) {
 
         <div style={hr} />
 
-        <OfficeSkillsBlock
-          skills={data.officeSkills}
-          kicker={data.officeSkillsKicker}
-          isHost
-          fathomBrief={data.fathomBrief}
-          companyNetworkHref={card.kind === "company" ? "/m/dashboard/company/network" : null}
-          cardId={data.card.id}
-          voiceNotes={data.voiceNotes}
-          agendaEvents={data.agendaEvents}
-          agendaTasks={data.agendaTasks}
-          googleConnected={data.googleConnected}
-          connectUrl={data.connectUrl}
-        />
-
-        {card.kind !== "project" && (
-          <>
-            <div style={hr} />
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                <span style={kickerStyle}>WowStore</span>
-                <Link
-                  href={`/m/wowstore?cardId=${card.id}`}
-                  style={{ font: "700 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#C8A15A", textDecoration: "none" }}
-                >
-                  {data.installedWowApps.length > 0 ? "Buscar más" : "Buscar WowApps"} →
-                </Link>
-              </div>
-              {data.installedWowApps.length > 0 ? (
-                <WowAppsBlock installs={data.installedWowApps} isHost />
-              ) : (
-                <p style={{ margin: 0, font: "400 11.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
-                  Sin WowApps instaladas todavía -- apps pensadas para tu rubro puntual, no para el equipo de Legacy.
-                </p>
-              )}
-            </div>
-          </>
+        {card.kind === "project" ? (
+          <OfficeSkillsBlock
+            skills={data.officeSkills}
+            kicker={data.officeSkillsKicker}
+            isHost
+            fathomBrief={data.fathomBrief}
+            companyNetworkHref={null}
+            cardId={data.card.id}
+            voiceNotes={data.voiceNotes}
+            agendaEvents={data.agendaEvents}
+            agendaTasks={data.agendaTasks}
+            googleConnected={data.googleConnected}
+            connectUrl={data.connectUrl}
+          />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <span style={kickerStyle}>WowApps</span>
+            <WowAppsBlock installs={data.installedWowApps} isHost browseHref={`/m/wowstore?cardId=${card.id}`} />
+            {card.kind === "company" && (
+              <Link
+                href="/m/dashboard/company/network"
+                style={{ font: "700 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#C8A15A", textDecoration: "none", alignSelf: "flex-start" }}
+              >
+                Ver mi Red de Clientes →
+              </Link>
+            )}
+          </div>
         )}
 
         <div style={hr} />
@@ -939,7 +932,7 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
     agentLogoUrl: card.kind === "project" ? card.program?.logoUrl ?? null : card.kind === "company" ? card.logoUrl : null,
     fathomBrief,
     officeSkills,
-    officeSkillsKicker: typeof officeSkillsKicker === "string" && officeSkillsKicker.trim() ? officeSkillsKicker : "Superpoderes",
+    officeSkillsKicker: typeof officeSkillsKicker === "string" && officeSkillsKicker.trim() ? officeSkillsKicker : "WowApps",
     voiceNotes,
     agendaEvents,
     agendaTasks,

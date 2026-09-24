@@ -644,8 +644,8 @@ export default async function AdminProgramDetailPage({
             vez de un número a mano). El ícono de cada power sube aparte, una
             vez que ya está guardado (no entra en el JSON del array). */}
         <AccordionSection
-          title="Superpoderes de la Oficina"
-          subtitle={`Nombre, descripción y color de cada herramienta de trabajo que ve el dueño en su Oficina Virtual. Sin nada acá, se muestran los ${DEFAULT_OFFICE_SKILLS.length} de siempre.`}
+          title="WowApps internas de la Oficina"
+          subtitle={`Nombre, descripción y color de cada herramienta de trabajo que ve el dueño en su Oficina Virtual (equipo de Legacy -- para el catálogo público de MiPyMEs, ver /admin/wowstore). Sin nada acá, se muestran las ${DEFAULT_OFFICE_SKILLS.length} de siempre.`}
           meta={<span style={PILL}>{officeSkills.length || `${DEFAULT_OFFICE_SKILLS.length} fijos`}</span>}
           defaultOpen={!!officeSkillsSaved || !!officeSkillsError || focus === "officeSkills"}
         >

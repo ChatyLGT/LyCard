@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.53.1";
+export const APP_VERSION = "1.54.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.54.0",
+    date: "2026-09-24",
+    notes:
+      "El acceso a WowStore ahora vive adentro de tu propia Oficina Virtual, no escondido en el editor: si tu tarjeta es de Empresa o Personal, la sección \"WowApps\" te muestra las que ya instalaste y un tile \"+ WowStore\" para buscar más, todo en el mismo lugar. De paso, \"Superpoderes\" pasa a llamarse \"WowApps\" en toda la app — un solo nombre para todo lo que abrís en tu Oficina.",
+  },
   {
     version: "1.53.1",
     date: "2026-09-24",

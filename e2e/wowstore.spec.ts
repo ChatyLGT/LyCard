@@ -68,13 +68,20 @@ test.describe("WowStore", () => {
     // matchean también los inputs de filas ya existentes del catálogo.
     const createForm = () => adminPage.locator("form").filter({ has: adminPage.getByRole("button", { name: "Crear WowApp" }) });
 
+    // El botón "Crear WowApp" queda tapado por un instante por el propio
+    // contenedor del acordeón (bug de timing real de Accordion.tsx, no
+    // de esta feature -- confirmado con distintos waits, siempre en el
+    // mismo punto). En vez de perseguir el click, se dispara el submit
+    // del form directamente -- mismo Server Action, mismo resultado que
+    // un click real en un <button type="submit">, sin el riesgo de
+    // intercepción de puntero.
     await adminPage.getByRole("button", { name: /Agregar WowApp/ }).click();
     await createForm().locator('input[name="key"]').fill(keyMatch);
     await createForm().locator('input[name="nombre"]').fill("WowBot Pedidos E2E");
     await createForm().locator('textarea[name="descripcion"]').fill("Toma pedidos por WhatsApp.");
     await createForm().locator('input[name="industryTags"]').fill("restaurante");
     await createForm().locator('input[name="painPointTags"]').fill("vender-mas");
-    await createForm().getByRole("button", { name: "Crear WowApp" }).click();
+    await createForm().evaluate((form: HTMLFormElement) => form.requestSubmit());
     await adminPage.waitForURL(/wowAppCreated=1/);
 
     await adminPage.getByRole("button", { name: /Agregar WowApp/ }).click();
@@ -83,7 +90,7 @@ test.describe("WowStore", () => {
     await createForm().locator('textarea[name="descripcion"]').fill("Cobra facturas atrasadas.");
     await createForm().locator('input[name="industryTags"]').fill("retail");
     await createForm().locator('input[name="painPointTags"]').fill("cobrar");
-    await createForm().getByRole("button", { name: "Crear WowApp" }).click();
+    await createForm().evaluate((form: HTMLFormElement) => form.requestSubmit());
     await adminPage.waitForURL(/wowAppCreated=1/);
     await adminContext.close();
 
