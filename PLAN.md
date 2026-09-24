@@ -6046,6 +6046,137 @@ nadie se lo empuja.
 
 Shippeado como v1.55.0.
 
+## Mensajería Interna -- diseño cerrado, Fase M1 sin construir todavía (2026-09-24)
+
+Gunnar pidió mapear un sistema de mensajería propio de LyCard: un N0
+puede mandar mensajes masivos a su Programa (multi-Programa si es
+MasterN0), personalizables en contenido y canal (LyCard interno,
+WhatsApp, email, Telegram, etc. -- individual, todos, o combinación),
+y cualquiera que no sea N0 solo puede mandar mensajes directos 1:1 con
+su equipo. Pedido explícito: documentar TODO acá primero, clarísimo,
+para que si la sesión se corta a mitad de camino quede recuperable sin
+adivinar nada -- recién después, si alcanzan los tokens, se construye.
+
+**Vocabulario del fractal, aclarado por Gunnar (reemplaza cualquier
+supuesto anterior de "profundidad de árbol de referidos" para este
+feature en particular)**:
+- **N0**: el humano, dueño del Programa.
+- **N1**: fija -- la tríada Gemelo Digital (Einar/Chaty/Warren). No es
+  humana.
+- **N2**: las 12 "guardianas del ser" (etapas/perfiles/objetivo/legado).
+  No son humanas.
+- **N3**: Expertos -- pueden ser IA o humanos. Un N3 humano sin Programa
+  propio **es literalmente el mismo Chido** que ya existe en el
+  vocabulario y la Fase P1 (Chido→Programa) -- el instante en que ese
+  humano crea su propio Programa, se convierte en N0 de ese Programa
+  nuevo. Mismo mecanismo, mismo momento, sin nada nuevo que construir
+  para esa parte.
+- **N4**: Especialistas. Niveles más abajo (N5+) existen en la
+  arquitectura de EinarOS pero **no aplican a este feature** -- pedido
+  explícito de Gunnar de no mapearlos acá, el permiso de mensajería no
+  los necesita (ver regla de permiso abajo, es binaria).
+
+**Regla de permiso, cerrada y binaria -- no hace falta el árbol
+completo**:
+- Solo los miembros **humanos** participan de la mensajería. N1 y N2
+  nunca son remitente ni destinatario -- quedan afuera del sistema por
+  completo, ni siquiera se modelan como Member.
+- **N0 → masivo.** Se resuelve con lo que YA existe:
+  `currentAdminScope()` devuelve un scope con `programId` (N0 de ese
+  Programa) o `isMasterN0Scope(scope)` (multi-Programa) → puede armar un
+  envío masivo.
+- **Cualquier humano que no sea N0 (N3/Chido, N4/Especialista, lo que
+  sea) → solo directo 1:1.** No hace falta distinguir de qué nivel
+  exacto es -- el corte es binario, N0 o no-N0.
+- **"Tu equipo" para el directo** = cualquier otro miembro humano del
+  mismo Programa (`ProgramMembership.programId` compartido) -- la
+  definición más simple, ya soportada por el dato que existe hoy, sin
+  inventar visibilidad por rama del árbol de referidos.
+
+**Modelo de datos propuesto** (todavía sin migrar):
+```prisma
+model Message {
+  id             String   @id @default(cuid())
+  programId      String
+  program        Program  @relation(fields: [programId], references: [id])
+  // Quién manda -- ver wrinkle de Admin-sin-Member abajo, por eso
+  // los dos campos opcionales en vez de uno solo obligatorio.
+  senderMemberId String?
+  senderAdminId  String?
+  scope          String   // "masivo" | "directo"
+  body           String   @db.Text
+  createdAt      DateTime @default(now())
+  deliveries     MessageDelivery[]
+}
+
+model MessageDelivery {
+  id                String   @id @default(cuid())
+  messageId         String
+  message           Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  recipientMemberId String
+  recipient         Member   @relation(fields: [recipientMemberId], references: [id])
+  channel           String   // "lycard" | "email" | "telegram" | "whatsapp"
+  // "pendiente" | "enviado" | "fallido" | "simulado" -- nunca
+  // "enviado" si el canal no mandó nada de verdad (cáscara honesta,
+  // mismo criterio que membershipPaidAt/adaptationStatus/etc).
+  status      String   @default("pendiente")
+  errorDetail String?
+  createdAt   DateTime @default(now())
+}
+```
+
+**Wrinkle real encontrado pensando el modelo, no adivinado**: no todo
+N0 tiene necesariamente un `Member` propio. Un N0 promovido vía Fase P1
+(Chido→Programa) sí lo tiene (`Admin.memberId`), pero un N0 dado de
+alta a mano por MasterN0 desde `/admin/programs` (`createProgramAdminAction`,
+el flujo de siempre con email/password) puede no tener ningún `Member`
+vinculado. Por eso `Message.senderMemberId`/`senderAdminId` quedan los
+dos opcionales -- se llena el que corresponda según cómo llegó ese N0 a
+serlo, resuelto en la implementación, no bloqueante para el diseño.
+
+**Canales -- feasibility real por canal, sin vender humo**:
+- **LyCard interno**: cero blockers, se construye de cero, 100% bajo
+  nuestro control.
+- **Email**: YA hay integración real (Resend, usada en 3 lugares del
+  proyecto: invitaciones, mensajes de contacto, mensajes a miembros
+  desde `/admin/programs/[id]`) -- se reusa directo.
+- **Telegram**: Bot API gratis, sin aprobación de terceros -- el canal
+  "real" más barato de sumar si se quiere uno nuevo de verdad
+  funcionando.
+- **WhatsApp**: sin integración real de ENVÍO en todo el repo hoy (solo
+  el login OTP simulado). Mandar WhatsApp real requiere WhatsApp
+  Business API -- aprobación de Meta, número verificado, costo por
+  mensaje -- no es "conectar una librería", es un trámite de negocio
+  real. Queda **simulado/loggeado** (`status:"simulado"`) hasta que esa
+  cuenta exista de verdad -- prometerlo como real sería mentir.
+
+**EDT propuesta -- Fase M1 (recorte razonable para no volver a los
+mismos límites de tokens de esta sesión)**:
+1. **Schema**: `Message` + `MessageDelivery`, migración.
+2. **Envío masivo (N0)**: nueva sección en `/admin/programs/[id]`
+   (o página propia `/admin/programs/[id]/mensajes`) -- compositor de
+   mensaje, selector de destinatarios (todos / selección), selector de
+   canal por destinatario o en combo. Canales reales en M1: LyCard +
+   Email. Telegram y WhatsApp quedan documentados como próxima fase
+   (Telegram) o simulados (WhatsApp) hasta que haya decisión de
+   negocio.
+3. **Directo 1:1**: pantalla nueva member-facing (`/m/dashboard` o
+   dentro de la Oficina) -- elegir a alguien del mismo Programa,
+   mandar/recibir mensajes directos, canal LyCard por default (no hace
+   falta selector de canal para 1:1 en M1, eso es más una cosa de
+   difusión masiva).
+4. **Bandeja LyCard interna**: dónde ve cada Member sus mensajes
+   recibidos (masivos + directos) -- nueva sección, contador de no
+   leídos.
+5. Verificación de siempre: tsc/lint/100% coverage/build/E2E real de
+   punta a punta (N0 manda masivo por la UI real, un Member lo ve en su
+   bandeja; dos Members se mandan un directo) antes de shippear.
+
+**Fuera de alcance de M1, documentado, no se toca todavía**: Telegram
+real (queda para una fase aparte si se decide sumar), WhatsApp real
+(depende de una cuenta de negocio que hoy no existe), cualquier
+adjunto/multimedia en el mensaje, notificaciones push nativas.
+
 ---
 
 **Recordatorio de la regla permanente de arriba**: esto sigue sin ser
