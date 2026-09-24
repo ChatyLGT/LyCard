@@ -5544,3 +5544,58 @@ de DSP estándar para este problema (frecuencia fuera de rango de
 reproducción), pero falta que Gunnar lo confirme en su celular.
 
 Shippeado como v1.50.0.
+
+## Selector de estilo por modo en Modo Foco (2026-09-24)
+
+Gunnar confirmó el fix de v1.50.0 ("si funciono") y dio luz verde a la
+propuesta pendiente desde la conversación anterior: poder elegir el
+beat (house/techno/etc.) dentro de cada modo — la que había preguntado
+si había entendido mal, y no, no había entendido mal: era exactamente
+la propuesta hecha (variantes DENTRO de cada modo, nunca un dropdown
+libre que mezclara un beat de un modo con el propósito de otro).
+
+`lib/focusAudio.ts`: `FOCUS_MUSIC` (un patrón fijo por modo) se
+reemplaza por `FOCUS_MUSIC_VARIANTS: Record<FocusModeKey,
+MusicPattern[]>` — 2-3 variantes reales por modo, cada una con su
+propio `key`/`label`, pero todas respetando el mismo rango de tempo y
+la misma lógica funcional del modo:
+
+- **Foco** (sostener atención): House / Techno / Minimal — las 3 con
+  kick real, no negociable (un test nuevo lo confirma explícitamente).
+  Techno sube el tempo a 128 y mete hats en cada corchea (más
+  mecánico/insistente); Minimal baja a medio tiempo, mucho más espacio.
+- **Creativo** (divergir): Lounge / Downtempo — Downtempo baja a 80 BPM,
+  un solo golpe suave por compás, más atmosférico. Ninguna de las dos
+  tiene kick duro -- sigue sin ser un modo para "concentrarte en un
+  punto".
+- **Relajación** (bajar revoluciones sin dormirte): Lounge / Chill
+  House — Chill House es la única variante fuera de Foco con
+  four-on-the-floor real, pero a un tempo suave (108) y con los gains
+  bajos que ya tenía el motor.
+- **Sueño**: `[]`, sin ninguna variante, mismo motivo de siempre — un
+  ritmo va en contra del propósito del modo, así que ni se le muestra
+  el selector.
+
+`components/FocusModeBlock.tsx`: nuevo estado `variantKey` (se resetea
+a la primera variante del modo cada vez que cambiás de modo, para no
+quedar con una key huérfana de otro modo) y un selector de pills en el
+setup, entre "Modo" y "Duración" -- solo aparece si el modo tiene
+variantes. `startEngine` ahora recibe el patrón ya resuelto como
+parámetro en vez de buscarlo él mismo por `mode.key`, así que el mismo
+motor sirve para cualquier variante sin cambios. La pantalla de sesión
+corriendo usa `activePattern.label` (guardado al arrancar) para el
+mezclador, en vez de derivarlo de nuevo.
+
+**Verificado real**: `lib/__tests__/focusAudio.test.ts` reescrito para
+`FOCUS_MUSIC_VARIANTS` -- Sueño sin variantes, los otros 3 modos con
+2+, keys únicas por modo, Foco con kick en las 3 sin excepción, todos
+los steps dentro del compás. `e2e/focus-mode.spec.ts` suma un test que
+elige "Techno" en el setup y confirma que la pantalla de sesión
+corriendo de verdad dice "Música (Techno)" -- no solo que el botón se
+puede tocar, sino que la elección se propaga al motor real -- y que
+Sueño nunca muestra el selector. Script descartable de Playwright
+confirmó visualmente el selector de 3 pills en Foco, captura revisada y
+borrada. 31/31 E2E de la suite completa, tsc/lint/build/100% coverage
+limpios.
+
+Shippeado como v1.51.0.

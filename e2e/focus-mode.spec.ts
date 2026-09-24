@@ -165,7 +165,7 @@ test.describe("Modo Foco — Superpoder de audio funcional", () => {
     await expect(page.getByText("10:00", { exact: true })).toBeVisible();
 
     await expect(page.getByText("Onda (pulso + ruido)", { exact: true })).toBeVisible();
-    await expect(page.getByText("Música (house)", { exact: true })).toBeVisible();
+    await expect(page.getByText("Música (House)", { exact: true })).toBeVisible();
     await expect(page.getByText("100%").first()).toBeVisible();
 
     const [waveSlider, musicSlider] = await page.locator('input[type="range"]').all();
@@ -184,6 +184,45 @@ test.describe("Modo Foco — Superpoder de audio funcional", () => {
     await expect(page.getByText("Música", { exact: false })).toHaveCount(0);
 
     await page.getByRole("button", { name: "Terminar", exact: true }).click();
+    await context.close();
+  });
+
+  // Selector de estilo por modo (2026-09-24, pedido de Gunnar: "poder
+  // elegir el beat en cada onda"). Confirma que Foco ofrece sus 3
+  // variantes (House/Techno/Minimal), que elegir "Techno" es lo que de
+  // verdad suena (el label de la pantalla de sesión lo confirma), y que
+  // Sueño -- sin ninguna variante, a propósito -- no muestra el
+  // selector para nada.
+  test("el selector de estilo por modo ofrece variantes reales, y la que elegís es la que suena", async ({ browser }) => {
+    const context = await browser.newContext();
+    const cookie = await mintAdminCookie(adminId);
+    await context.addCookies([{ ...cookie, url: BASE_URL }]);
+    const page = await context.newPage();
+
+    await page.goto(`${BASE_URL}/c/${cardSlug}/oficina`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Modo Foco" }).click();
+
+    // "Foco profundo" (default) ofrece sus 3 variantes
+    await expect(page.getByText("Estilo de música", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "House", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Techno", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Minimal", exact: true })).toBeVisible();
+
+    await page.getByRole("button", { name: "Techno", exact: true }).click();
+    await page.getByRole("button", { name: "10 min", exact: true }).click();
+    await page.getByRole("button", { name: "Empezar sesión", exact: true }).click();
+    await expect(page.getByText("10:00", { exact: true })).toBeVisible();
+
+    // La que elegiste en el setup es la que de verdad quedó sonando
+    await expect(page.getByText("Música (Techno)", { exact: true })).toBeVisible();
+
+    await page.getByRole("button", { name: "Terminar", exact: true }).click();
+    await page.getByRole("button", { name: "Saltar y volver a elegir modo" }).click();
+
+    // Sueño no tiene ninguna variante -- ni el selector se le muestra
+    await page.getByRole("button", { name: "Sueño" }).click();
+    await expect(page.getByText("Estilo de música", { exact: true })).toHaveCount(0);
+
     await context.close();
   });
 });

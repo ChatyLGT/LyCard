@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.50.0";
+export const APP_VERSION = "1.51.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.51.0",
+    date: "2026-09-24",
+    notes:
+      "Modo Foco: ahora elegís el estilo de música dentro de cada modo — Foco profundo tiene House/Techno/Minimal, Creativo tiene Lounge/Downtempo, Relajación tiene Lounge/Chill House. Cada variante respeta el propósito del modo (Foco siempre tiene kick real, Sueño nunca tiene ninguna variante — sigue sin ritmo, a propósito). Se elige en el selector antes de arrancar la sesión.",
+  },
   {
     version: "1.50.0",
     date: "2026-09-23",

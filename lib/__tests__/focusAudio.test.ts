@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   FOCUS_MODES,
   FOCUS_MODE_ORDER,
-  FOCUS_MUSIC,
+  FOCUS_MUSIC_VARIANTS,
   DURATION_OPTIONS_SECONDS,
   getFocusMode,
   isDurationSeconds,
@@ -75,30 +75,48 @@ describe("stepDurationSeconds", () => {
   });
 });
 
-describe("FOCUS_MUSIC", () => {
-  it("sueño se queda sin secuencia rítmica a propósito -- un modo de sueño no debería tener beat", () => {
-    expect(FOCUS_MUSIC.sueno).toBeNull();
+describe("FOCUS_MUSIC_VARIANTS", () => {
+  it("sueño se queda sin ninguna variante a propósito -- un modo de sueño no debería ofrecer beat", () => {
+    expect(FOCUS_MUSIC_VARIANTS.sueno).toEqual([]);
   });
 
-  it("los otros 3 modos sí tienen patrón, con al menos un step disparando algo (kick, bajo o acorde)", () => {
+  it("los otros 3 modos ofrecen al menos 2 variantes reales para elegir", () => {
     for (const key of FOCUS_MODE_ORDER) {
       if (key === "sueno") continue;
-      const pattern = FOCUS_MUSIC[key];
-      expect(pattern).not.toBeNull();
-      const totalHits = (pattern!.kickSteps.length + pattern!.bassSteps.length + pattern!.stabSteps.length);
-      expect(totalHits).toBeGreaterThan(0);
-      expect(pattern!.bpm).toBeGreaterThan(0);
+      expect(FOCUS_MUSIC_VARIANTS[key].length).toBeGreaterThanOrEqual(2);
     }
   });
 
-  it("todos los steps declarados caen dentro del compás de 16", () => {
+  it("cada variante tiene key/label únicos dentro de su modo, bpm real, y al menos un step disparando algo", () => {
     for (const key of FOCUS_MODE_ORDER) {
-      const pattern = FOCUS_MUSIC[key];
-      if (!pattern) continue;
-      const allSteps = [...pattern.kickSteps, ...pattern.hatSteps, ...pattern.bassSteps, ...pattern.stabSteps];
-      for (const step of allSteps) {
-        expect(step).toBeGreaterThanOrEqual(0);
-        expect(step).toBeLessThan(16);
+      const variants = FOCUS_MUSIC_VARIANTS[key];
+      const seenKeys = new Set<string>();
+      for (const pattern of variants) {
+        expect(pattern.key.length).toBeGreaterThan(0);
+        expect(pattern.label.length).toBeGreaterThan(0);
+        expect(seenKeys.has(pattern.key)).toBe(false);
+        seenKeys.add(pattern.key);
+        expect(pattern.bpm).toBeGreaterThan(0);
+        const totalHits = pattern.kickSteps.length + pattern.bassSteps.length + pattern.stabSteps.length;
+        expect(totalHits).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("Foco siempre tiene kick en sus 3 variantes -- sostener atención pide un pulso insistente, no es negociable", () => {
+    for (const pattern of FOCUS_MUSIC_VARIANTS.foco) {
+      expect(pattern.kickSteps.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("todos los steps declarados, en toda variante de todo modo, caen dentro del compás de 16", () => {
+    for (const key of FOCUS_MODE_ORDER) {
+      for (const pattern of FOCUS_MUSIC_VARIANTS[key]) {
+        const allSteps = [...pattern.kickSteps, ...pattern.hatSteps, ...pattern.bassSteps, ...pattern.stabSteps];
+        for (const step of allSteps) {
+          expect(step).toBeGreaterThanOrEqual(0);
+          expect(step).toBeLessThan(16);
+        }
       }
     }
   });

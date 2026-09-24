@@ -87,15 +87,13 @@ export const FOCUS_MODE_ORDER: FocusModeKey[] = ["foco", "creativo", "relajacion
 // ondas"). No hay forma de licenciar/curar pistas reales desde acá, así
 // que se genera también en vivo con Web Audio (mismo criterio que el
 // resto de Modo Foco) — un kick + bajo + hats + acordes cortos, en vez
-// de un pad estático. `null` = sin secuencia: sueño se queda como drone
-// puro A PROPÓSITO, no por falta de tiempo — un ritmo, por suave que
-// sea, va en contra de lo que se supone que tiene que hacer un modo
-// pensado para quedarte dormido (ni Brain.fm pone house en sus pistas de
-// sueño). El armado real de los osciladores vive en
+// de un pad estático. El armado real de los osciladores vive en
 // components/FocusModeBlock.tsx, igual que el resto del motor.
 export type MusicStyle = "house" | "lounge";
 
 export type MusicPattern = {
+  key: string; // "house" | "techno" | "minimal" | "lounge" | "downtempo" | "chill" -- id estable, se guarda en el estado del componente
+  label: string; // lo que ve Gunnar en el selector ("House", "Techno"...)
   style: MusicStyle;
   bpm: number;
   bassHz: number; // raíz del bajo, una octava abajo de la raíz del pad del modo
@@ -112,36 +110,103 @@ export type MusicPattern = {
 // puede reproducir, sin importar cuánto gain se le ponga. C3/D3/F3
 // (130-175Hz) cae dentro del rango real de un parlante de celular, y el
 // kick pasa de un sweep 150→42Hz a uno 220→90Hz por el mismo motivo (ver
-// scheduleKick en components/FocusModeBlock.tsx).
-export const FOCUS_MUSIC: Record<FocusModeKey, MusicPattern | null> = {
-  foco: {
-    style: "house",
-    bpm: 124,
-    bassHz: 130.81, // C3
-    kickSteps: [0, 4, 8, 12],
-    hatSteps: [2, 6, 10, 14],
-    bassSteps: [0, 4, 8, 12],
-    stabSteps: [],
-  },
-  creativo: {
-    style: "lounge",
-    bpm: 92,
-    bassHz: 146.83, // D3
-    kickSteps: [],
-    hatSteps: [4, 12],
-    bassSteps: [0, 6, 8, 14],
-    stabSteps: [0, 8],
-  },
-  relajacion: {
-    style: "lounge",
-    bpm: 100,
-    bassHz: 174.61, // F3
-    kickSteps: [0, 8],
-    hatSteps: [],
-    bassSteps: [0, 8],
-    stabSteps: [0, 8],
-  },
-  sueno: null,
+// scheduleKick en components/FocusModeBlock.tsx). Confirmado por Gunnar
+// (2026-09-24): "si funciono".
+//
+// 2-3 variantes por modo (2026-09-24, pedido de Gunnar: "poder elegir
+// el beat en cada onda") -- nunca sueltas: cada variante respeta el
+// mismo rango de tempo y la misma lógica funcional del modo (Foco
+// siempre tiene kick real porque sostener atención pide un pulso
+// insistente; Creativo/Relajación nunca tienen un kick tan duro como
+// Foco porque son para bajar revoluciones o divergir, no para
+// concentrarte en un punto). `[]` = sin variantes: Sueño se queda sin
+// selector, a propósito, mismo motivo que antes (ver docstring vieja
+// más abajo en PLAN.md) -- nunca se le agrega ritmo.
+export const FOCUS_MUSIC_VARIANTS: Record<FocusModeKey, MusicPattern[]> = {
+  foco: [
+    {
+      key: "house",
+      label: "House",
+      style: "house",
+      bpm: 124,
+      bassHz: 130.81, // C3
+      kickSteps: [0, 4, 8, 12],
+      hatSteps: [2, 6, 10, 14],
+      bassSteps: [0, 4, 8, 12],
+      stabSteps: [],
+    },
+    {
+      key: "techno",
+      label: "Techno",
+      style: "house",
+      bpm: 128,
+      bassHz: 130.81,
+      kickSteps: [0, 4, 8, 12],
+      hatSteps: [1, 3, 5, 7, 9, 11, 13, 15], // hats en cada corchea -- más mecánico, más insistente
+      bassSteps: [0, 4, 8, 12],
+      stabSteps: [],
+    },
+    {
+      key: "minimal",
+      label: "Minimal",
+      style: "house",
+      bpm: 122,
+      bassHz: 130.81,
+      kickSteps: [0, 8], // medio tiempo -- mucho más espacio entre golpes
+      hatSteps: [],
+      bassSteps: [0, 8],
+      stabSteps: [],
+    },
+  ],
+  creativo: [
+    {
+      key: "lounge",
+      label: "Lounge",
+      style: "lounge",
+      bpm: 92,
+      bassHz: 146.83, // D3
+      kickSteps: [],
+      hatSteps: [4, 12],
+      bassSteps: [0, 6, 8, 14],
+      stabSteps: [0, 8],
+    },
+    {
+      key: "downtempo",
+      label: "Downtempo",
+      style: "lounge",
+      bpm: 80,
+      bassHz: 146.83,
+      kickSteps: [0], // un solo golpe suave por compás -- ambiental, no bailable
+      hatSteps: [8],
+      bassSteps: [0, 8],
+      stabSteps: [0, 8],
+    },
+  ],
+  relajacion: [
+    {
+      key: "lounge",
+      label: "Lounge",
+      style: "lounge",
+      bpm: 100,
+      bassHz: 174.61, // F3
+      kickSteps: [0, 8],
+      hatSteps: [],
+      bassSteps: [0, 8],
+      stabSteps: [0, 8],
+    },
+    {
+      key: "chill",
+      label: "Chill House",
+      style: "house",
+      bpm: 108,
+      bassHz: 174.61,
+      kickSteps: [0, 4, 8, 12], // el único four-on-the-floor fuera de Foco -- pero suave (gains bajos ya definidos en el motor)
+      hatSteps: [6, 14],
+      bassSteps: [0, 4, 8, 12],
+      stabSteps: [0, 8],
+    },
+  ],
+  sueno: [],
 };
 
 // Duración real de un step (corchea de 16, 1/4 de negra) en segundos,

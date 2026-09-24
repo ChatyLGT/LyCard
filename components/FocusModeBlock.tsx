@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
   FOCUS_MODES,
   FOCUS_MODE_ORDER,
-  FOCUS_MUSIC,
+  FOCUS_MUSIC_VARIANTS,
   DURATION_OPTIONS_SECONDS,
   formatDurationLabel,
   formatCountdown,
@@ -66,7 +66,7 @@ type Engine = {
   musicBus: GainNode;
 };
 
-// Base musical en vivo (lib/focusAudio.ts#FOCUS_MUSIC) -- ni MP3 ni
+// Base musical en vivo (lib/focusAudio.ts#FOCUS_MUSIC_VARIANTS) -- ni MP3 ni
 // streaming, un step-sequencer real con lookahead (patrón estándar de
 // Web Audio: programar cada golpe con su propio AudioContext.currentTime
 // en vez de setTimeout, así no se desincroniza aunque el hilo principal
@@ -154,9 +154,10 @@ function scheduleStab(ctx: AudioContext, dest: AudioNode, freqs: number[], time:
   }
 }
 
-// Arranca el step-sequencer para un modo con patrón musical (sueño no
-// tiene -- ver FOCUS_MUSIC). `dest` es el master gain: la música queda
-// mezclada bajo la misma modulación del pulso que el resto del motor.
+// Arranca el step-sequencer para la variante elegida (sueño no ofrece
+// ninguna -- ver FOCUS_MUSIC_VARIANTS). `dest` es el bus de música: la
+// música queda mezclada bajo la misma modulación del pulso que el resto
+// del motor, pero con su propio volumen independiente (musicBus).
 function startMusicScheduler(
   ctx: AudioContext,
   dest: AudioNode,
@@ -187,7 +188,7 @@ function startMusicScheduler(
 // solo GainNode maestro -- así la música respira con el mismo pulso.
 // Cáscara honesta: esto es modulación de amplitud real, no "sincroniza
 // tus neuronas" -- ver lib/focusAudio.ts.
-function startEngine(mode: (typeof FOCUS_MODES)[FocusModeKey]): Engine {
+function startEngine(mode: (typeof FOCUS_MODES)[FocusModeKey], musicPattern: MusicPattern | null): Engine {
   const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
   const ctx = new AudioCtx();
   // Bug real (Gunnar, 2026-09-23: "no escucho nada"): varios navegadores
@@ -249,7 +250,6 @@ function startEngine(mode: (typeof FOCUS_MODES)[FocusModeKey]): Engine {
     nodes.push(osc);
   }
 
-  const musicPattern = FOCUS_MUSIC[mode.key];
   const schedulerId = musicPattern ? startMusicScheduler(ctx, musicBus, musicPattern, mode.padHz) : undefined;
 
   return { ctx, nodes, schedulerId, waveBus, musicBus };
@@ -295,6 +295,13 @@ type Step = "setup" | "running" | "reflect" | "saved";
 export default function FocusModeBlock({ cardId }: { cardId: string }) {
   const [step, setStep] = useState<Step>("setup");
   const [modeKey, setModeKey] = useState<FocusModeKey>("foco");
+  // Variante de estilo dentro del modo (2026-09-24, pedido de Gunnar:
+  // "poder elegir el beat en cada onda") -- arranca en la primera
+  // variante del modo default ("house", primera de Foco). Sueño no
+  // tiene ninguna (FOCUS_MUSIC_VARIANTS.sueno = []), así que se queda
+  // en "" y el setup no le muestra selector.
+  const [variantKey, setVariantKey] = useState<string>(FOCUS_MUSIC_VARIANTS.foco[0].key);
+  const [activePattern, setActivePattern] = useState<MusicPattern | null>(null);
   const [durationSeconds, setDurationSeconds] = useState<number>(1200);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -334,14 +341,17 @@ export default function FocusModeBlock({ cardId }: { cardId: string }) {
 
   function beginSession() {
     setError(null);
+    const variants = FOCUS_MUSIC_VARIANTS[modeKey];
+    const pattern = variants.find((v) => v.key === variantKey) ?? variants[0] ?? null;
     try {
-      engineRef.current = startEngine(FOCUS_MODES[modeKey]);
+      engineRef.current = startEngine(FOCUS_MODES[modeKey], pattern);
       engineRef.current.waveBus.gain.value = waveVolume;
       engineRef.current.musicBus.gain.value = musicVolume;
     } catch {
       setError("Este navegador no puede reproducir audio funcional ahora mismo.");
       return;
     }
+    setActivePattern(pattern);
     setSecondsLeft(durationSeconds);
     setPaused(false);
     setStep("running");
@@ -349,6 +359,14 @@ export default function FocusModeBlock({ cardId }: { cardId: string }) {
 
   function togglePause() {
     setPaused((p) => !p);
+  }
+
+  // Al cambiar de modo, la variante seleccionada tiene que resetearse a
+  // la primera del modo nuevo -- una key de otro modo (ej. "downtempo",
+  // que no existe en Foco) quedaría huérfana.
+  function selectMode(key: FocusModeKey) {
+    setModeKey(key);
+    setVariantKey(FOCUS_MUSIC_VARIANTS[key][0]?.key ?? "");
   }
 
   function updateWaveVolume(v: number) {
@@ -442,7 +460,7 @@ export default function FocusModeBlock({ cardId }: { cardId: string }) {
                 <button
                   key={key}
                   type="button"
-                  onClick={() => setModeKey(key)}
+                  onClick={() => selectMode(key)}
                   style={{
                     textAlign: "left",
                     padding: "10px 12px",
@@ -462,6 +480,35 @@ export default function FocusModeBlock({ cardId }: { cardId: string }) {
             })}
           </div>
         </div>
+
+        {FOCUS_MUSIC_VARIANTS[modeKey].length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={LABEL}>Estilo de música</span>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {FOCUS_MUSIC_VARIANTS[modeKey].map((variant) => {
+                const selected = variant.key === variantKey;
+                return (
+                  <button
+                    key={variant.key}
+                    type="button"
+                    onClick={() => setVariantKey(variant.key)}
+                    style={{
+                      padding: "8px 14px",
+                      borderRadius: 10,
+                      border: `1px solid ${selected ? "rgba(200,161,90,.6)" : "rgba(255,255,255,.08)"}`,
+                      background: selected ? "rgba(200,161,90,.12)" : "rgba(255,255,255,.03)",
+                      color: selected ? "#E5C378" : "#C2BEB5",
+                      font: "700 11px 'Plus Jakarta Sans',sans-serif",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {variant.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <span style={LABEL}>Duración</span>
@@ -549,10 +596,10 @@ export default function FocusModeBlock({ cardId }: { cardId: string }) {
               style={{ width: "100%", accentColor: "#C8A15A" }}
             />
           </label>
-          {FOCUS_MUSIC[modeKey] && (
+          {activePattern && (
             <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <span style={{ display: "flex", justifyContent: "space-between", font: "600 9.5px 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>
-                <span>Música ({FOCUS_MUSIC[modeKey]?.style === "house" ? "house" : "lounge"})</span>
+                <span>Música ({activePattern.label})</span>
                 <span style={{ color: "#C2BEB5" }}>{Math.round(musicVolume * 100)}%</span>
               </span>
               <input
