@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.57.2";
+export const APP_VERSION = "1.58.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.58.0",
+    date: "2026-09-24",
+    notes:
+      "WowStore ahora se pinta con la identidad de marca real de tu Programa (mismo sistema de Skins que tu LyCard) en sus 4 pantallas. Sumamos un testimonio corto (marcado \"(simulado)\") en el detalle de cada WowApp, y una pestaña nueva \"Perfil\" con los datos reales de tu negocio, tus canales de contacto y cuántas WowApps instalaste — sin inventar RFC, tarjeta de pago ni facturación falsa: ahí dice clarito que todavía no hay pasarela real.",
+  },
   {
     version: "1.57.2",
     date: "2026-09-24",

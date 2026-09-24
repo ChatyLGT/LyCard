@@ -6440,6 +6440,75 @@ cantidad de reseñas en Explorar y en el detalle, **siempre** con
 rango (4.30-5.00 / 8-64) y determinismo. 36/36 E2E, 195/195 unit, 100%
 coverage, tsc/lint/build limpios.
 
+## WowStore -- Fase W3: skins + testimonio + Perfil (2026-09-24)
+
+Gunnar pasó 5 mockups de Sketch (storefront B2B rico: hero banner,
+detalle con rating/testimonios/specs, "Mis WowApps" con métricas y un
+stepper de 4 fases con asesor asignado, configurador de adaptación con
+precios línea a línea, y un tab "Perfil" con RFC/tarjeta/hardware) más
+la pregunta de por qué su cuenta MasterN0 no ve todo el catálogo. Dos
+frentes:
+
+**1. MasterN0/superadmin -- no había bug.** `isMasterN0Scope`
+(`lib/authScope.ts`, `scope.programId === null`) ya es el nivel
+"superadmin": acceso irrestricto a todo Programa/Card/WowApp, sin
+tabla ni rol separado que crear. Si a Gunnar el catálogo real se le ve
+vacío/incompleto, es un problema de DATOS (WowApp sin sembrar o sin
+`industryTags`/`painPointTags` que matcheen su rubro+dolor elegido),
+no de permisos -- confirmado leyendo `app/admin/wowstore/actions.ts`,
+`app/admin/wowstore/page.tsx`, `app/admin/auth/google/callback/route.ts`.
+
+**2. De los 5 mockups, qué se construyó y qué no (y por qué):**
+
+- **Skins de marca en WowStore, igual que la LyCard** -- pedido
+  explícito ("con la posibilidad de cambiar sus skins, igual que
+  nuestras LyCards"), y lo único 100% real y factible del lote sin
+  inventar nada: se reusa el `ProgramSkin` que ya existía (mismo
+  `colors`/`font`/`isSkinColors`/`KNOWN_FONTS`/`shade()` de
+  `lib/designMd.ts` y `components/LyCardView.tsx`), leído vía
+  `resolveWowStoreSkin(card.program)` (`lib/wowStoreSkin.ts`, nuevo,
+  100% cobertura unitaria) y aplicado por una namespace CSS paralela
+  (`--ws-bg`, `--ws-surf`, `--ws-accent`, etc., `wowStoreSkinVars()`)
+  en las 4 pantallas de WowStore (`page.tsx`, `[key]/page.tsx`,
+  `mias/page.tsx`, `solicitudes/page.tsx`, `WowStoreTabs.tsx`). Sin
+  skin activo en el Programa, cae al mismo dorado/negro de siempre --
+  cero cambio visual para quien no tiene marca propia cargada.
+  `requireCardHost` ahora eager-carga `program.skins` (solo el activo)
+  para no duplicar la query en cada pantalla.
+- **Testimonio simulado en el detalle** -- mismo criterio ya aceptado
+  en W2.2 (simular ≠ mentir si se etiqueta): 3 frases genéricas
+  rotadas por hash de `key` (`simulatedTestimonial`, en
+  `[key]/page.tsx`), **nunca** un nombre ni negocio inventado (eso sí
+  cruzaría la línea -- una cosa es "alguien dijo algo parecido a
+  esto", otra es fabricar una identidad real que no existe). Siempre
+  con "— testimonio (simulado)" a la vista.
+- **Tab "Perfil" nuevo** (4ta pestaña en `WowStoreTabs`,
+  `app/m/wowstore/perfil/page.tsx`) -- muestra datos REALES de la
+  Card (nombre, Programa, ubicación, canales de contacto cargados) +
+  contadores reales (`WowAppInstall` instaladas / adaptaciones
+  pedidas, vía `prisma.count`) + link directo al editor real de esa
+  Card (`/m/dashboard/company|personal|project`).
+- **Lo que el mockup pedía y NO se construyó, a propósito**: RFC,
+  últimos 4 dígitos de tarjeta, historial de pagos, stepper de 4 fases
+  con % de avance y asesor asignado con foto de stock, configurador de
+  adaptación con precios línea a línea. Fabricar un RFC o un número de
+  tarjeta -- aunque se etiquete "(simulado)" -- no es lo mismo que un
+  rating o un testimonio genérico: es inventar una IDENTIDAD FISCAL o
+  un MEDIO DE PAGO que el negocio nunca cargó, terreno de "registro
+  falso", no de "estética de catálogo". La sección Perfil en cambio
+  dice literal "No hay -- todavía no existe una pasarela de pago
+  real", que es la regla de Gunnar aplicada tal cual ("lo que no es se
+  pone no hay"). El stepper de 4 fases con asesor asignado tampoco --
+  Solicitudes ya mostraba el `adaptationStatus` real; se sumó solo una
+  línea aclaratoria para `en_progreso` ("nuestro equipo ya la está
+  armando, sin ETA exacta -- simulado: no hay tracking automático de
+  avance"), sin inventar un % ni un nombre de asesor que no existe.
+  Esta línea sí quedó decidida unilateralmente en esta sesión, no
+  re-confirmada con Gunnar -- si la quiere de vuelta, es una
+  conversación aparte, no un bug a corregir.
+
+36/36 E2E, 201/201 unit, 100% coverage, tsc/lint/build limpios.
+
 **Recordatorio de la regla permanente de arriba**: esto sigue sin ser
 luz verde de producción. Fase P1 y Fase W1 están listas para que Sergio
 y Fabricio las auditen -- no para que un cliente real las use.

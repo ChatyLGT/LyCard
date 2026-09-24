@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireCardHost } from "@/lib/cardHost";
 import { simulatedRating, simulatedReviewCount } from "@/lib/wowApps";
+import { resolveWowStoreSkin, wowStoreSkinVars } from "@/lib/wowStoreSkin";
 import { installWowAppAction, requestAdaptationAction } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -11,9 +12,9 @@ const CTA_PRIMARY = {
   padding: 14,
   border: "none",
   borderRadius: 12,
-  background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)",
-  color: "#0D0D0D",
-  font: "700 12px 'Plus Jakarta Sans',sans-serif",
+  background: "linear-gradient(90deg,var(--ws-accent-light,#E5C378),var(--ws-accent,#C8A15A) 50%,var(--ws-accent-dark,#99732B))",
+  color: "var(--ws-bg,#0D0D0D)",
+  font: "700 12px var(--ws-font,'Plus Jakarta Sans'),sans-serif",
   letterSpacing: ".08em",
   textTransform: "uppercase",
   cursor: "pointer",
@@ -25,8 +26,8 @@ const CTA_SECONDARY = {
   border: "1px solid rgba(200,161,90,.4)",
   borderRadius: 12,
   background: "none",
-  color: "#C8A15A",
-  font: "700 12px 'Plus Jakarta Sans',sans-serif",
+  color: "var(--ws-accent,#C8A15A)",
+  font: "700 12px var(--ws-font,'Plus Jakarta Sans'),sans-serif",
   letterSpacing: ".08em",
   textTransform: "uppercase",
   cursor: "pointer",
@@ -41,13 +42,30 @@ const CTA_SECONDARY = {
 // no hay pasarela de pago real todavía (ver PLAN.md "WowStore -- Fase
 // W2").
 const OPTION_CARD = {
-  background: "#201f1f",
+  background: "var(--ws-surf,#201f1f)",
   borderRadius: 14,
   padding: 18,
   display: "flex",
   flexDirection: "column" as const,
   gap: 10,
 };
+
+// Testimonio simulado (2026-09-24, pedido de Gunnar): un solo ejemplo
+// genérico, rotado por color de la WowApp para no repetir el mismo
+// texto siempre -- SIEMPRE con "(simulado)" a la vista, nunca un
+// nombre ni negocio real inventado (eso sí cruzaría la línea, a
+// diferencia de una estrella o un número de reseñas).
+const SIMULATED_TESTIMONIALS = [
+  "Así de simple se ve para cualquier negocio como el tuyo -- instalás y ya está funcionando.",
+  "Lo bueno de arrancar de una base ya armada: no perdés tiempo configurando desde cero.",
+  "Se ve exactamente así en el celular -- nada que instalar aparte, nada que aprender de cero.",
+];
+
+function simulatedTestimonial(key: string): string {
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+  return SIMULATED_TESTIMONIALS[hash % SIMULATED_TESTIMONIALS.length];
+}
 
 export default async function WowAppDetailPage({
   params,
@@ -61,6 +79,7 @@ export default async function WowAppDetailPage({
   if (!cardId) redirect("/m/dashboard");
 
   const card = await requireCardHost(cardId);
+  const skin = resolveWowStoreSkin(card.program);
 
   const wowApp = await prisma.wowApp.findUnique({ where: { key } });
   if (!wowApp) notFound();
@@ -70,13 +89,19 @@ export default async function WowAppDetailPage({
   });
 
   return (
-    <div style={{ minHeight: "100vh", background: "#131313", color: "#e5e2e1", fontFamily: "'Plus Jakarta Sans',sans-serif", padding: "40px 20px" }}>
+    <div
+      style={{
+        minHeight: "100vh", background: "var(--ws-bg,#131313)", color: "var(--ws-ink,#e5e2e1)",
+        fontFamily: "var(--ws-font,'Plus Jakarta Sans'),sans-serif", padding: "40px 20px",
+        ...wowStoreSkinVars(skin),
+      }}
+    >
       <div style={{ maxWidth: 480, margin: "0 auto", display: "flex", flexDirection: "column", gap: 20 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <Link href={`/c/${card.slug}/oficina`} style={{ color: "#8a8378", font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", textDecoration: "none" }}>
+          <Link href={`/c/${card.slug}/oficina`} style={{ color: "var(--ws-ink2,#8a8378)", font: "600 10px var(--ws-font,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", textDecoration: "none" }}>
             ← Volver a tu tarjeta
           </Link>
-          <Link href={`/m/wowstore?cardId=${cardId}`} style={{ color: "#8a8378", font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", textDecoration: "none" }}>
+          <Link href={`/m/wowstore?cardId=${cardId}`} style={{ color: "var(--ws-ink2,#8a8378)", font: "600 10px var(--ws-font,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", textDecoration: "none" }}>
             ← WowStore
           </Link>
         </div>
@@ -92,11 +117,11 @@ export default async function WowAppDetailPage({
               <span className="material-symbols-outlined" style={{ fontSize: 24, color: wowApp.color }}>bolt</span>
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <h1 style={{ margin: 0, font: "500 22px 'Playfair Display',serif", color: "#F5F2EB" }}>{wowApp.nombre}</h1>
+              <h1 style={{ margin: 0, font: "500 22px var(--ws-font,'Playfair Display'),serif", color: "var(--ws-ink,#F5F2EB)" }}>{wowApp.nombre}</h1>
               <span
                 style={{
-                  display: "inline-block", marginTop: 3, font: "700 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase",
-                  color: wowApp.status === "activo" ? "#7BC98E" : "#C8A15A",
+                  display: "inline-block", marginTop: 3, font: "700 9px var(--ws-font,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".06em", textTransform: "uppercase",
+                  color: wowApp.status === "activo" ? "#7BC98E" : "var(--ws-accent,#C8A15A)",
                   background: wowApp.status === "activo" ? "rgba(123,201,142,.14)" : "rgba(200,161,90,.14)",
                   borderRadius: 999, padding: "3px 9px",
                 }}
@@ -109,28 +134,41 @@ export default async function WowAppDetailPage({
           {/* Rating simulado (2026-09-24, pedido de Gunnar): mismo
               principio que WhatsApp/Telegram en Mensajería -- se
               etiqueta explícito, nunca se presenta como real. */}
-          <span style={{ display: "flex", alignItems: "center", gap: 4, font: "600 12px 'Plus Jakarta Sans',sans-serif", color: "#E5C378" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 4, font: "600 12px var(--ws-font,'Plus Jakarta Sans'),sans-serif", color: "var(--ws-accent-light,#E5C378)" }}>
             <span className="material-symbols-outlined" style={{ fontSize: 15 }}>star</span>
             {simulatedRating(key).toFixed(1)} · {simulatedReviewCount(key)} reseñas (simulado)
           </span>
 
-          <p style={{ margin: 0, font: "400 13px/1.7 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{wowApp.descripcion}</p>
+          <p style={{ margin: 0, font: "400 13px/1.7 var(--ws-font,'Plus Jakarta Sans'),sans-serif", color: "var(--ws-ink,#C2BEB5)" }}>{wowApp.descripcion}</p>
+
+          <p
+            style={{
+              margin: 0, padding: "10px 12px", borderRadius: 10, background: "rgba(255,255,255,.04)",
+              borderLeft: "2px solid var(--ws-accent,#C8A15A)", font: "400 italic 12px/1.6 var(--ws-font,'Plus Jakarta Sans'),sans-serif",
+              color: "var(--ws-ink2,#a49c8d)",
+            }}
+          >
+            &ldquo;{simulatedTestimonial(key)}&rdquo;
+            <span style={{ display: "block", marginTop: 4, font: "700 9px var(--ws-font,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".06em", textTransform: "uppercase", fontStyle: "normal", opacity: 0.7 }}>
+              — testimonio (simulado)
+            </span>
+          </p>
 
           <div style={{ display: "flex", alignItems: "baseline", gap: 6, paddingTop: 4, borderTop: "1px solid rgba(255,255,255,.08)" }}>
-            <span style={{ font: "700 20px 'Plus Jakarta Sans',sans-serif", color: "#E5C378" }}>
+            <span style={{ font: "700 20px var(--ws-font,'Plus Jakarta Sans'),sans-serif", color: "var(--ws-accent-light,#E5C378)" }}>
               {wowApp.basePriceUsd > 0 ? `$${wowApp.basePriceUsd.toFixed(0)} USD` : "Gratis"}
             </span>
-            {wowApp.basePriceUsd > 0 && <span style={{ font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>pago único</span>}
+            {wowApp.basePriceUsd > 0 && <span style={{ font: "400 11px var(--ws-font,'Plus Jakarta Sans'),sans-serif", color: "var(--ws-ink2,#8a8378)" }}>pago único</span>}
           </div>
         </div>
 
-        <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#9a8f80" }}>
+        <span style={{ font: "500 10px var(--ws-font,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ws-ink2,#9a8f80)" }}>
           Elegí cómo la querés
         </span>
 
         <div style={OPTION_CARD}>
-          <span style={{ font: "700 12px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>Instalación Express</span>
-          <p style={{ margin: 0, font: "400 11.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>
+          <span style={{ font: "700 12px var(--ws-font,'Plus Jakarta Sans'),sans-serif", color: "var(--ws-ink,#F5F2EB)" }}>Instalación Express</span>
+          <p style={{ margin: 0, font: "400 11.5px/1.6 var(--ws-font,'Plus Jakarta Sans'),sans-serif", color: "var(--ws-ink2,#8a8378)" }}>
             La versión base, lista ya, tal cual está en el catálogo — sin esperar nada.
           </p>
           {install && (
@@ -151,10 +189,10 @@ export default async function WowAppDetailPage({
         </div>
 
         <div style={OPTION_CARD}>
-          <span style={{ font: "700 12px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>
+          <span style={{ font: "700 12px var(--ws-font,'Plus Jakarta Sans'),sans-serif", color: "var(--ws-ink,#F5F2EB)" }}>
             Adaptación a tu medida
           </span>
-          <p style={{ margin: 0, font: "400 11.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>
+          <p style={{ margin: 0, font: "400 11.5px/1.6 var(--ws-font,'Plus Jakarta Sans'),sans-serif", color: "var(--ws-ink2,#8a8378)" }}>
             Contanos qué necesitás ajustado para {card.name || "tu negocio"} — nuestro equipo te contacta para
             cotizarlo. Pedido real, atendido por una persona, no un backend automatizado.
           </p>
@@ -178,7 +216,7 @@ export default async function WowAppDetailPage({
               name="notes"
               placeholder="Ej. cargame el menú y que hable como una taquería de barrio, no un bistró cheto"
               rows={3}
-              style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 10, padding: "10px 12px", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none", resize: "vertical" }}
+              style={{ background: "var(--ws-bg,#0D0D0D)", border: "1px solid rgba(200,161,90,.25)", borderRadius: 10, padding: "10px 12px", color: "var(--ws-ink,#F5F2EB)", font: "400 12.5px var(--ws-font,'Plus Jakarta Sans'),sans-serif", outline: "none", resize: "vertical" }}
             />
             <button type="submit" style={CTA_SECONDARY}>
               Quiero que funcione exacto para mi negocio
