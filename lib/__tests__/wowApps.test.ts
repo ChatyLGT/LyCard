@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseTags, toCatalogEntry, matchWowApps, countByRubro, EXAMPLE_WOW_APPS, RUBROS, PAIN_POINTS, WOW_APP_TYPES, type WowAppCatalogEntry } from "@/lib/wowApps";
+import { parseTags, toCatalogEntry, matchWowApps, countByRubro, simulatedRating, simulatedReviewCount, EXAMPLE_WOW_APPS, RUBROS, PAIN_POINTS, WOW_APP_TYPES, type WowAppCatalogEntry } from "@/lib/wowApps";
 
 function entry(partial: Partial<WowAppCatalogEntry>): WowAppCatalogEntry {
   return {
@@ -184,5 +184,38 @@ describe("countByRubro", () => {
     const catalog = [entry({ key: "a", status: "activo", industryTags: ["rubro-inventado"] })];
     const counts = countByRubro(catalog);
     for (const r of RUBROS) expect(counts[r.key]).toBe(0);
+  });
+});
+
+describe("simulatedRating", () => {
+  it("siempre cae en el rango 4.30 .. 5.00", () => {
+    for (const key of ["a", "wowawe", "wowtest-match-123", "", "z".repeat(40)]) {
+      const rating = simulatedRating(key);
+      expect(rating).toBeGreaterThanOrEqual(4.3);
+      expect(rating).toBeLessThanOrEqual(5.0);
+    }
+  });
+
+  it("es determinístico -- la misma key siempre da el mismo número", () => {
+    expect(simulatedRating("wowbot-pedidos")).toBe(simulatedRating("wowbot-pedidos"));
+  });
+
+  it("keys distintas dan ratings distintos (no es un valor fijo disfrazado)", () => {
+    const ratings = new Set(["a", "b", "c", "d", "e"].map(simulatedRating));
+    expect(ratings.size).toBeGreaterThan(1);
+  });
+});
+
+describe("simulatedReviewCount", () => {
+  it("siempre cae en el rango 8 .. 64", () => {
+    for (const key of ["a", "wowawe", ""]) {
+      const count = simulatedReviewCount(key);
+      expect(count).toBeGreaterThanOrEqual(8);
+      expect(count).toBeLessThanOrEqual(64);
+    }
+  });
+
+  it("es determinístico", () => {
+    expect(simulatedReviewCount("wowbot-pedidos")).toBe(simulatedReviewCount("wowbot-pedidos"));
   });
 });

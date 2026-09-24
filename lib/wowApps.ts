@@ -207,6 +207,33 @@ export function countByRubro(catalog: WowAppCatalogEntry[]): Record<string, numb
   return counts;
 }
 
+// Fase W2.2 (2026-09-24) -- rating + cantidad de reseñas simulados.
+// Corrección de Gunnar sobre el criterio de cáscara honesta: simular
+// NO es mentir siempre que se etiquete como tal ("simulado" visible en
+// la UI, nunca oculto) -- mismo principio que ya rige WhatsApp/Telegram
+// en Mensajería o el Índice de Asombro de WowAwe. Sin esto, el catálogo
+// no tiene ninguna prueba social y no invita a instalar nada.
+// Determinístico por `key` (no `Math.random()` en cada render) para que
+// el mismo WowApp muestre siempre el mismo número -- un rating que
+// cambia solo con refrescar la página se vería roto, no simulado.
+function hashKey(key: string): number {
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) {
+    hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+  }
+  return hash;
+}
+
+export function simulatedRating(key: string): number {
+  const hash = hashKey(key);
+  return Math.round((4.3 + (hash % 71) / 100) * 100) / 100; // 4.30 .. 5.00
+}
+
+export function simulatedReviewCount(key: string): number {
+  const hash = hashKey(`${key}-count`);
+  return 8 + (hash % 57); // 8 .. 64
+}
+
 // El "match curado": nunca el catálogo entero, como mucho 3 -- ordenadas
 // por cantidad de coincidencias (rubro + dolor). Sin ningún filtro
 // elegido, no devuelve nada (la pantalla de onboarding sigue pidiendo

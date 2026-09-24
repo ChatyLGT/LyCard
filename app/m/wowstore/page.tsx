@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireCardHost } from "@/lib/cardHost";
-import { RUBROS, PAIN_POINTS, matchWowApps, countByRubro, toCatalogEntry } from "@/lib/wowApps";
+import { RUBROS, PAIN_POINTS, matchWowApps, countByRubro, simulatedRating, simulatedReviewCount, toCatalogEntry } from "@/lib/wowApps";
 import WowStoreTabs from "@/components/WowStoreTabs";
 
 export const dynamic = "force-dynamic";
@@ -129,6 +129,14 @@ export default async function WowStorePage({
                   <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
                     <span style={{ font: "700 14.5px 'Plus Jakarta Sans',sans-serif" }}>{app.nombre}</span>
                     <span style={{ font: "400 11.5px/1.4 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>{app.descripcion}</span>
+                    {/* Rating simulado (2026-09-24, pedido de Gunnar): NO es
+                        deshonesto si se etiqueta -- sin esto el catálogo no
+                        tenía ninguna prueba social. Determinístico por key,
+                        nunca real, siempre marcado "(simulado)". */}
+                    <span style={{ display: "flex", alignItems: "center", gap: 3, font: "600 10.5px 'Plus Jakarta Sans',sans-serif", color: "#E5C378" }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 13 }}>star</span>
+                      {simulatedRating(app.key).toFixed(1)} ({simulatedReviewCount(app.key)}, simulado)
+                    </span>
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 4, borderTop: "1px solid rgba(255,255,255,.06)" }}>

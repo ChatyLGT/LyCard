@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireCardHost } from "@/lib/cardHost";
+import { simulatedRating, simulatedReviewCount } from "@/lib/wowApps";
 import { installWowAppAction, requestAdaptationAction } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -104,6 +105,14 @@ export default async function WowAppDetailPage({
               </span>
             </div>
           </div>
+
+          {/* Rating simulado (2026-09-24, pedido de Gunnar): mismo
+              principio que WhatsApp/Telegram en Mensajería -- se
+              etiqueta explícito, nunca se presenta como real. */}
+          <span style={{ display: "flex", alignItems: "center", gap: 4, font: "600 12px 'Plus Jakarta Sans',sans-serif", color: "#E5C378" }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 15 }}>star</span>
+            {simulatedRating(key).toFixed(1)} · {simulatedReviewCount(key)} reseñas (simulado)
+          </span>
 
           <p style={{ margin: 0, font: "400 13px/1.7 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{wowApp.descripcion}</p>
 

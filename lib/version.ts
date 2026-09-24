@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.57.1";
+export const APP_VERSION = "1.57.2";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.57.2",
+    date: "2026-09-24",
+    notes:
+      "Cada WowApp en Explorar y en su detalle ahora muestra un rating con estrellas y cantidad de reseñas -- marcado siempre \"(simulado)\", igual que el resto de la app nunca finge algo que todavía no existe de verdad.",
+  },
   {
     version: "1.57.1",
     date: "2026-09-24",

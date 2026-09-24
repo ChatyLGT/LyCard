@@ -6426,6 +6426,20 @@ probó y devolvió 4 problemas reales, no estética por estética:
 No se tocó el schema (`WowApp`/`WowAppInstall` intactos) -- todo el
 fix vive en cómo se arma la UI a partir de datos que ya existen.
 
+**Fix W2.2 -- rating simulado, corrección de criterio (2026-09-24)**:
+Gunnar corrigió el criterio de cáscara honesta que había usado para
+excluir ratings/reseñas de la Fase W2: simular NO es mentir siempre
+que se etiquete como tal -- mismo principio que ya rige WhatsApp/
+Telegram en Mensajería o el Índice de Asombro de WowAwe, aplicado acá
+por primera vez a "prueba social". `lib/wowApps.ts#simulatedRating`/
+`simulatedReviewCount` (puras, determinísticas por `key` vía un hash
+simple -- nunca `Math.random()` en cada render, el mismo WowApp
+siempre muestra el mismo número) alimentan un rating con estrellas +
+cantidad de reseñas en Explorar y en el detalle, **siempre** con
+"(simulado)" visible al lado, nunca oculto. Tests unitarios cubren
+rango (4.30-5.00 / 8-64) y determinismo. 36/36 E2E, 195/195 unit, 100%
+coverage, tsc/lint/build limpios.
+
 **Recordatorio de la regla permanente de arriba**: esto sigue sin ser
 luz verde de producción. Fase P1 y Fase W1 están listas para que Sergio
 y Fabricio las auditen -- no para que un cliente real las use.
