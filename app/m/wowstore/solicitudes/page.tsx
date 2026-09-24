@@ -69,9 +69,12 @@ export default async function SolicitudesPage({
         {solicitudes.length > 0 && (
           <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {solicitudes.map((s) => (
-              <div key={s.id} style={{ display: "flex", flexDirection: "column", gap: 8, padding: 14, borderRadius: 14, background: "var(--ws-surf,#201f1f)" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                  <span style={{ font: "700 13px var(--ws-font,'Plus Jakarta Sans'),sans-serif" }}>{s.wowApp.nombre}</span>
+              <div key={s.id} style={{ display: "flex", flexDirection: "column", gap: 10, padding: 16, borderRadius: 16, background: "var(--ws-surf,#201f1f)", border: "1px solid rgba(255,255,255,.06)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ flex: "none", width: 38, height: 38, borderRadius: 11, background: `${s.wowApp.color}1F`, border: `1px solid ${s.wowApp.color}55`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 18, color: s.wowApp.color }}>bolt</span>
+                  </span>
+                  <span style={{ flex: 1, minWidth: 0, font: "700 14px var(--ws-font,'Plus Jakarta Sans'),sans-serif" }}>{s.wowApp.nombre}</span>
                   <span
                     style={{
                       font: "700 9px var(--ws-font,'Plus Jakarta Sans'),sans-serif",
@@ -81,7 +84,7 @@ export default async function SolicitudesPage({
                       background: `${STATUS_COLOR[s.adaptationStatus] || "#8a8378"}1F`,
                       border: `1px solid ${STATUS_COLOR[s.adaptationStatus] || "#8a8378"}55`,
                       borderRadius: 999,
-                      padding: "3px 8px",
+                      padding: "4px 9px",
                       flex: "none",
                     }}
                   >
@@ -98,7 +101,7 @@ export default async function SolicitudesPage({
                 )}
                 <Link
                   href={`/m/wowstore/${s.wowApp.key}?cardId=${cardId}`}
-                  style={{ font: "700 9px var(--ws-font,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "var(--ws-accent,#C8A15A)", textDecoration: "none", alignSelf: "flex-start" }}
+                  style={{ flex: "none", font: "700 9px var(--ws-font,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "var(--ws-bg,#0D0D0D)", background: "var(--ws-accent,#C8A15A)", borderRadius: 8, padding: "7px 11px", textDecoration: "none", alignSelf: "flex-start" }}
                 >
                   Ver WowApp
                 </Link>

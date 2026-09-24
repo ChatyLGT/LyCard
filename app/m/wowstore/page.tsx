@@ -2,7 +2,19 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireCardHost } from "@/lib/cardHost";
-import { RUBROS, PAIN_POINTS, matchWowApps, countByRubro, simulatedRating, simulatedReviewCount, toCatalogEntry } from "@/lib/wowApps";
+import {
+  RUBROS,
+  PAIN_POINTS,
+  matchWowApps,
+  countByRubro,
+  featuredWowApps,
+  simulatedRating,
+  simulatedReviewCount,
+  rubroLabel,
+  painPointLabel,
+  toCatalogEntry,
+  type WowAppCatalogEntry,
+} from "@/lib/wowApps";
 import { resolveWowStoreSkin, wowStoreSkinVars } from "@/lib/wowStoreSkin";
 import WowStoreTabs from "@/components/WowStoreTabs";
 
@@ -34,14 +46,101 @@ function chipStyle(active: boolean) {
   };
 }
 
-// WowStore (2026-09-24, Fase W1/W2) — vidriera de WowApps para cualquier
-// MiPyME, navegada por rubro+dolor en vez de categoría técnica. Fase W2
-// (2026-09-24, pedido de Gunnar a partir de un mockup de referencia)
-// reemplaza los 2 <select> por chips -- cada click en un chip navega a
-// un nuevo estado de ?rubro=&dolor=, sin necesitar JS de cliente ni un
-// botón "Buscar" aparte. El chip de rubro muestra un contador real
-// (countByRubro, cuenta solo status:"activo") -- nunca un número
-// inventado como el "12 apps activas" del mockup original.
+// Fase W3.1 (2026-09-24) -- una sola card reusada por Destacadas y por
+// Resultados. Rediseño real (no solo color) pedido 4 veces por Gunnar a
+// partir de su mockup de Sketch: más peso visual (badges, precio grande,
+// botón real en vez de solo una flecha), y tags de rubro/dolor PINTADOS
+// como pills -- pero sacados de industryTags/painPointTags reales de la
+// WowApp, nunca un feature inventado como "Impresora Térmica 80mm" del
+// mockup (eso sí sería fabricar specs que no existen).
+function WowAppCard({ app, cardId, featured }: { app: WowAppCatalogEntry; cardId: string; featured?: boolean }) {
+  const tags = [...app.industryTags.map(rubroLabel), ...app.painPointTags.map(painPointLabel)];
+  return (
+    <Link
+      href={`/m/wowstore/${app.key}?cardId=${cardId}`}
+      style={{
+        display: "flex", flexDirection: "column", gap: 12, padding: 16, borderRadius: 18,
+        background: "linear-gradient(155deg,var(--ws-surf,#201f1f),var(--ws-surf2,#181818))",
+        border: `1px solid ${app.color}35`, textDecoration: "none", color: "var(--ws-ink,#F5F2EB)",
+        boxShadow: "0 8px 22px rgba(0,0,0,.3)", position: "relative",
+      }}
+    >
+      {featured && (
+        <span
+          style={{
+            position: "absolute", top: -9, left: 14, font: "700 9px var(--ws-font,'Plus Jakarta Sans'),sans-serif",
+            letterSpacing: ".06em", textTransform: "uppercase", color: "var(--ws-bg,#0D0D0D)",
+            background: "var(--ws-accent-light,#E5C378)", borderRadius: 999, padding: "3px 10px",
+          }}
+        >
+          ★ Destacada
+        </span>
+      )}
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+        <span style={{ flex: "none", width: 46, height: 46, borderRadius: 13, background: `${app.color}22`, border: `1px solid ${app.color}55`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 23, color: app.color }}>bolt</span>
+        </span>
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={{ font: "700 15.5px var(--ws-font,'Plus Jakarta Sans'),sans-serif" }}>{app.nombre}</span>
+          <span style={{ font: "400 11.5px/1.4 var(--ws-font,'Plus Jakarta Sans'),sans-serif", color: "var(--ws-ink2,#8a8378)" }}>{app.descripcion}</span>
+          <span style={{ display: "flex", alignItems: "center", gap: 3, font: "600 10.5px var(--ws-font,'Plus Jakarta Sans'),sans-serif", color: "var(--ws-accent-light,#E5C378)" }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 13 }}>star</span>
+            {simulatedRating(app.key).toFixed(1)} ({simulatedReviewCount(app.key)}, simulado)
+          </span>
+        </div>
+      </div>
+
+      {tags.length > 0 && (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {tags.map((t) => (
+            <span
+              key={t}
+              style={{
+                font: "600 9.5px var(--ws-font,'Plus Jakarta Sans'),sans-serif", color: "var(--ws-ink2,#a49c8d)",
+                background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.08)",
+                borderRadius: 999, padding: "3px 9px",
+              }}
+            >
+              {t}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,.07)" }}>
+        <span
+          style={{
+            font: "700 9px var(--ws-font,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".06em", textTransform: "uppercase",
+            color: app.status === "activo" ? "#7BC98E" : "var(--ws-accent,#C8A15A)",
+            background: app.status === "activo" ? "rgba(123,201,142,.12)" : "rgba(200,161,90,.12)",
+            borderRadius: 999, padding: "4px 9px", flex: "none",
+          }}
+        >
+          {app.status === "activo" ? "Instalación inmediata" : "Próximamente"}
+        </span>
+        <span style={{ flex: 1, minWidth: 0, textAlign: "right", font: "700 14px var(--ws-font,'Plus Jakarta Sans'),sans-serif", color: "var(--ws-accent-light,#E5C378)" }}>
+          {app.basePriceUsd > 0 ? `$${app.basePriceUsd.toFixed(0)} USD` : "Gratis"}
+        </span>
+        <span
+          style={{
+            flex: "none", font: "700 10px var(--ws-font,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".05em", textTransform: "uppercase",
+            color: "var(--ws-bg,#0D0D0D)", background: "var(--ws-accent,#C8A15A)", borderRadius: 9, padding: "8px 13px",
+          }}
+        >
+          Ver App
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+// WowStore (2026-09-24, Fase W1/W2/W3) — vidriera de WowApps para
+// cualquier MiPyME, navegada por rubro+dolor en vez de categoría técnica.
+// Fase W3.1 suma "Destacadas": WowApps activas marcadas a mano por
+// MasterN0 (lib/wowApps.ts#featuredWowApps) que se muestran SIEMPRE,
+// arriba de todo, sin depender de qué chip de rubro/dolor esté tocado --
+// corrige que WowAwe (la única WowApp con lógica real hoy) quedara
+// invisible en la práctica al no tener industryTags propio.
 export default async function WowStorePage({
   searchParams,
 }: {
@@ -60,6 +159,7 @@ export default async function WowStorePage({
   const currentDolor = dolor || "";
   const showResults = Boolean(rubro || dolor);
   const results = showResults ? matchWowApps(catalog, rubro || null, dolor || null) : [];
+  const featured = featuredWowApps(catalog);
 
   return (
     <div
@@ -69,7 +169,7 @@ export default async function WowStorePage({
         ...wowStoreSkinVars(skin),
       }}
     >
-      <div style={{ maxWidth: 480, margin: "0 auto", display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ maxWidth: 480, margin: "0 auto", display: "flex", flexDirection: "column", gap: 22 }}>
         <div>
           <span style={{ font: "600 10px var(--ws-font,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".24em", textTransform: "uppercase", color: "var(--ws-accent,#C8A15A)" }}>
             WowStore
@@ -80,6 +180,19 @@ export default async function WowStorePage({
         </div>
 
         <WowStoreTabs cardId={cardId} cardSlug={card.slug} active="explorar" />
+
+        {featured.length > 0 && (
+          <section style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <span style={{ font: "500 10px var(--ws-font,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ws-ink2,#9a8f80)" }}>
+              Destacadas
+            </span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {featured.map((app) => (
+                <WowAppCard key={app.key} app={app} cardId={cardId} featured />
+              ))}
+            </div>
+          </section>
+        )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -111,7 +224,7 @@ export default async function WowStorePage({
         </div>
 
         {showResults && (
-          <section style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <section style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <span style={{ font: "500 10px var(--ws-font,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ws-ink2,#9a8f80)" }}>
               Lo que encontramos para vos
             </span>
@@ -121,51 +234,7 @@ export default async function WowStorePage({
               </p>
             )}
             {results.map((app) => (
-              <Link
-                key={app.key}
-                href={`/m/wowstore/${app.key}?cardId=${cardId}`}
-                style={{
-                  display: "flex", flexDirection: "column", gap: 10, padding: 16, borderRadius: 16,
-                  background: "linear-gradient(155deg,var(--ws-surf,#201f1f),var(--ws-surf2,#181818))", border: `1px solid ${app.color}30`,
-                  textDecoration: "none", color: "var(--ws-ink,#F5F2EB)", boxShadow: "0 6px 18px rgba(0,0,0,.25)",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                  <span style={{ flex: "none", width: 42, height: 42, borderRadius: 12, background: `${app.color}22`, border: `1px solid ${app.color}55`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: 21, color: app.color }}>bolt</span>
-                  </span>
-                  <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
-                    <span style={{ font: "700 14.5px var(--ws-font,'Plus Jakarta Sans'),sans-serif" }}>{app.nombre}</span>
-                    <span style={{ font: "400 11.5px/1.4 var(--ws-font,'Plus Jakarta Sans'),sans-serif", color: "var(--ws-ink2,#8a8378)" }}>{app.descripcion}</span>
-                    {/* Rating simulado (2026-09-24, pedido de Gunnar): NO es
-                        deshonesto si se etiqueta -- sin esto el catálogo no
-                        tenía ninguna prueba social. Determinístico por key,
-                        nunca real, siempre marcado "(simulado)". */}
-                    <span style={{ display: "flex", alignItems: "center", gap: 3, font: "600 10.5px var(--ws-font,'Plus Jakarta Sans'),sans-serif", color: "var(--ws-accent-light,#E5C378)" }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: 13 }}>star</span>
-                      {simulatedRating(app.key).toFixed(1)} ({simulatedReviewCount(app.key)}, simulado)
-                    </span>
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 4, borderTop: "1px solid rgba(255,255,255,.06)" }}>
-                  <span
-                    style={{
-                      font: "700 9px var(--ws-font,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".06em", textTransform: "uppercase",
-                      color: app.status === "activo" ? "#7BC98E" : "var(--ws-accent,#C8A15A)",
-                      background: app.status === "activo" ? "rgba(123,201,142,.12)" : "rgba(200,161,90,.12)",
-                      borderRadius: 999, padding: "4px 9px",
-                    }}
-                  >
-                    {app.status === "activo" ? "Instalación inmediata" : "Próximamente"}
-                  </span>
-                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ font: "700 13px var(--ws-font,'Plus Jakarta Sans'),sans-serif", color: "var(--ws-accent-light,#E5C378)" }}>
-                      {app.basePriceUsd > 0 ? `$${app.basePriceUsd.toFixed(0)} USD` : "Gratis"}
-                    </span>
-                    <span style={{ font: "700 15px sans-serif", color: app.color }}>→</span>
-                  </span>
-                </div>
-              </Link>
+              <WowAppCard key={app.key} app={app} cardId={cardId} />
             ))}
           </section>
         )}

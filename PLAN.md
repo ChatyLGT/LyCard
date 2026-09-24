@@ -6509,6 +6509,84 @@ no de permisos -- confirmado leyendo `app/admin/wowstore/actions.ts`,
 
 36/36 E2E, 201/201 unit, 100% coverage, tsc/lint/build limpios.
 
+## WowStore -- Fase W3.1: rediseño visual real + Destacadas (2026-09-24)
+
+Gunnar volvió con captura real de producción y las 5 imágenes de Sketch
+otra vez, y fue directo: "sigue siendo todo texto", "me estás asegurando
+cosas que no son ciertas", "no veo la WowAwe", "no hay forma de poner
+favoritos", "tu diseño es horrible y anda intuitivo". Tres cosas reales,
+no percepción:
+
+1. **Los "· 0" en cada chip de rubro no eran un bug, pero confundían**:
+   `countByRubro` (Fase W2, a propósito) solo cuenta `status:"activo"` --
+   el catálogo sembrado de ejemplo tiene TODO en "proximamente" salvo
+   WowAwe (que es rubro-agnóstica, no suma a ningún chip). Sin contexto,
+   se ve como "no hay nada". No se tocó esa lógica (sigue siendo la
+   correcta: nunca prometer una app que no está lista), se explicó.
+2. **La Fase W3 anterior solo cambió colores/tipografía (el sistema de
+   Skins), no el layout** -- eso fue un error de comunicación mío: dije
+   "que se vea atractivo para comprar" como si estuviera resuelto, y no
+   lo estaba. Esta ronda SÍ es un rediseño real de estructura, no de
+   paleta.
+3. **WowAwe (la única WowApp con lógica real) era invisible en la
+   práctica** -- al no tener `industryTags`, solo aparecía si alguien
+   tocaba el chip de dolor exacto "El peso de estar solo con todo esto".
+   Gunnar ya había pedido esto en Fase W2 ("marcá como favoritas las que
+   funcionan") y no se había resuelto.
+
+**Lo que se construyó, todo verificado con capturas reales (Playwright
+contra fixtures sembradas, no maquetas):**
+
+- **`WowApp.destacado`** (schema nuevo, migración
+  `20260924165435_wowapp_destacado`) -- toggle manual de MasterN0 desde
+  `/admin/wowstore`. `lib/wowApps.ts#featuredWowApps(catalog)` devuelve
+  las `status:"activo" && destacado`, sección "Destacadas" en Explorar
+  que se muestra SIEMPRE arriba de todo, sin depender de qué rubro/dolor
+  esté tocado -- a diferencia de `matchWowApps`. WowAwe queda marcada
+  `destacado:true` en `EXAMPLE_WOW_APPS` (la seed de ejemplo); en
+  producción Gunnar la marca él mismo desde el admin real.
+- **Cards rediseñadas de raíz** (`WowAppCard`, componente compartido
+  entre Destacadas y Resultados en `app/m/wowstore/page.tsx`): ícono más
+  grande, badge "★ Destacada", tags de rubro/dolor pintados como pills
+  -- pero sacados de `industryTags`/`painPointTags` REALES de cada
+  WowApp (`rubroLabel`/`painPointLabel`, nuevas en `lib/wowApps.ts`),
+  nunca una feature inventada como "Impresora Térmica 80mm" del mockup.
+  Precio grande + botón real "Ver App" (antes era solo una flecha "→").
+- **Detalle de cada WowApp**: nueva caja "Ficha Técnica" con los mismos
+  rubros/dolores reales de esa app -- honesto, sin fabricar
+  compatibilidad de hardware ni specs que no existen.
+- **Mis WowApps / Solicitudes**: mismo peso visual (íconos más grandes,
+  badges de estado, botones reales en vez de solo texto-link), estrella
+  ★ en instaladas que son `destacado`. Sin fabricar métricas de
+  pedidos/ventas ($ que el mockup mostraba) -- esos números no existen.
+- **Perfil**: sección "Soporte" nueva -- si el Programa tiene `wa`
+  cargado, aparece un botón real "Escribir por WhatsApp" (mismo builder
+  de link que `LyCardView.tsx`) al equipo real, en vez del "Asesor
+  Técnico Asignado" con foto y SLA inventados del mockup. El resto
+  (Facturación "No hay") queda igual que en W3 -- sigue siendo la línea
+  que no se cruza: RFC, tarjeta terminada en 4 dígitos, historial de
+  pagos y crédito en bolsa son identidad fiscal/financiera fabricada,
+  categoría distinta de una estrella o un testimonio genérico.
+
+**Un bug real encontrado en el camino, sin relación con el diseño**: el
+primer intento de correr la suite E2E completa falló en
+`wowstore.spec.ts` (timeout esperando el redirect al crear una WowApp
+desde `/admin/wowstore`) -- la causa fue un `next dev` que llevaba
+corriendo desde ANTES de la migración de `destacado`, con el Prisma
+Client viejo en memoria (sin esa columna) -- `prisma.wowApp.create`
+tronaba en el server. Se resolvió matando ese proceso y dejando que
+Playwright levantara un dev server fresco. No es un bug de producción
+(Vercel siempre hace `prisma generate` + build limpio en cada deploy),
+pero deja una lección para esta sesión: reiniciar el dev server local
+después de cualquier migración de schema, no asumir que un servidor
+viejo se entera solo.
+
+36/36 E2E, 209/209 unit, 100% coverage, tsc/lint/build limpios.
+Verificado con 5 capturas reales (Explorar/Detalle/Mis WowApps/
+Solicitudes/Perfil) contra datos sembrados, enviadas a Gunnar antes de
+avisar que esto estaba listo -- mismo criterio de "no prometer sin
+mostrar" que ya se usó una vez antes en esta misma Fase.
+
 **Recordatorio de la regla permanente de arriba**: esto sigue sin ser
 luz verde de producción. Fase P1 y Fase W1 están listas para que Sergio
 y Fabricio las auditen -- no para que un cliente real las use.

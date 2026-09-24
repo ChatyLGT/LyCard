@@ -50,6 +50,7 @@ export type WowAppCatalogEntry = {
   basePriceUsd: number;
   status: string;
   demoVideoUrl: string;
+  destacado: boolean;
 };
 
 // Convierte una fila cruda de Prisma (con los 2 campos Json todavía sin
@@ -67,6 +68,7 @@ export function toCatalogEntry(row: {
   basePriceUsd: number;
   status: string;
   demoVideoUrl: string;
+  destacado: boolean;
 }): WowAppCatalogEntry {
   return {
     id: row.id,
@@ -81,7 +83,19 @@ export function toCatalogEntry(row: {
     basePriceUsd: row.basePriceUsd,
     status: row.status,
     demoVideoUrl: row.demoVideoUrl,
+    destacado: row.destacado,
   };
+}
+
+// Rótulos reales de rubro/dolor para pintar como pills en las cards del
+// catálogo -- reusa el mismo vocabulario fijo de los 2 selectores (RUBROS/
+// PAIN_POINTS), nunca un texto de feature inventado por WowApp.
+export function rubroLabel(key: string): string {
+  return RUBROS.find((r) => r.key === key)?.label ?? key;
+}
+
+export function painPointLabel(key: string): string {
+  return PAIN_POINTS.find((p) => p.key === key)?.label ?? key;
 }
 
 // Ejemplos para poblar el catálogo un mínimo (2026-09-24, pedido de
@@ -107,6 +121,7 @@ export const EXAMPLE_WOW_APPS: {
   // (hoy, únicamente "awe") -- el resto arranca "proximamente" hasta
   // que se construya su lógica.
   status: "activo" | "proximamente";
+  destacado: boolean;
 }[] = [
   {
     key: "wowawe",
@@ -118,6 +133,13 @@ export const EXAMPLE_WOW_APPS: {
     painPointTags: ["bienestar-fundador"],
     basePriceUsd: 0,
     status: "activo",
+    // Fase W3.1 -- destacada a propósito: es la única WowApp con lógica
+    // real conectada hoy, y al no tener industryTags (rubro-agnóstica)
+    // nunca aparecía en un resultado de Explorar salvo que alguien
+    // tocara justo el chip de dolor "El peso de estar solo con todo
+    // esto" -- invisible en la práctica. La sección Destacadas la
+    // muestra siempre, sin depender de qué rubro/dolor se haya elegido.
+    destacado: true,
   },
   {
     key: "chatbot-whatsapp-pedidos",
@@ -129,6 +151,7 @@ export const EXAMPLE_WOW_APPS: {
     painPointTags: ["vender-mas", "clientes"],
     basePriceUsd: 4500,
     status: "proximamente",
+    destacado: false,
   },
   {
     key: "reservas-agenda-automatica",
@@ -140,6 +163,7 @@ export const EXAMPLE_WOW_APPS: {
     painPointTags: ["clientes"],
     basePriceUsd: 4500,
     status: "proximamente",
+    destacado: false,
   },
   {
     key: "landing-sitio-ventas",
@@ -151,6 +175,7 @@ export const EXAMPLE_WOW_APPS: {
     painPointTags: ["clientes", "vender-mas"],
     basePriceUsd: 350,
     status: "proximamente",
+    destacado: false,
   },
   {
     key: "publicidad-redes-sociales",
@@ -162,6 +187,7 @@ export const EXAMPLE_WOW_APPS: {
     painPointTags: ["clientes"],
     basePriceUsd: 60,
     status: "proximamente",
+    destacado: false,
   },
   {
     key: "qr-dinamico-negocio",
@@ -173,6 +199,7 @@ export const EXAMPLE_WOW_APPS: {
     painPointTags: ["vender-mas"],
     basePriceUsd: 15,
     status: "proximamente",
+    destacado: false,
   },
   {
     key: "notas-voz-negocio",
@@ -184,6 +211,7 @@ export const EXAMPLE_WOW_APPS: {
     painPointTags: ["inventario"],
     basePriceUsd: 0,
     status: "proximamente",
+    destacado: false,
   },
 ];
 
@@ -251,4 +279,14 @@ export function matchWowApps(catalog: WowAppCatalogEntry[], rubro: string | null
     .sort((a, b) => b.score - a.score)
     .slice(0, 3)
     .map((s) => s.app);
+}
+
+// Fase W3.1 (2026-09-24, pedido real de Gunnar) -- las WowApps activas Y
+// marcadas destacado (toggle manual de MasterN0 en /admin/wowstore) se
+// muestran SIEMPRE arriba de Explorar, sin depender de si eligieron un
+// rubro/dolor que matchee -- a diferencia de matchWowApps, que devuelve
+// vacío sin filtro. Pensado para que WowAwe (la única con lógica real
+// hoy, sin industryTags propio) deje de ser invisible.
+export function featuredWowApps(catalog: WowAppCatalogEntry[]): WowAppCatalogEntry[] {
+  return catalog.filter((app) => app.status === "activo" && app.destacado);
 }

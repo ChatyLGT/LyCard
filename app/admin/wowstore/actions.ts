@@ -56,6 +56,7 @@ export async function createWowAppAction(formData: FormData) {
       basePriceUsd: Number(formData.get("basePriceUsd") || 0) || 0,
       status: String(formData.get("status") || "proximamente").trim() || "proximamente",
       demoVideoUrl: String(formData.get("demoVideoUrl") || "").trim(),
+      destacado: formData.get("destacado") === "on",
     },
   });
 
@@ -89,6 +90,7 @@ export async function updateWowAppAction(wowAppId: string, formData: FormData) {
       basePriceUsd: Number(formData.get("basePriceUsd") || 0) || 0,
       status: String(formData.get("status") || "proximamente").trim() || "proximamente",
       demoVideoUrl: String(formData.get("demoVideoUrl") || "").trim(),
+      destacado: formData.get("destacado") === "on",
     },
   });
 
@@ -122,6 +124,7 @@ export async function seedExampleWowAppsAction() {
         painPointTags: example.painPointTags,
         basePriceUsd: example.basePriceUsd,
         status: example.status,
+        destacado: example.destacado,
       },
     });
     created++;

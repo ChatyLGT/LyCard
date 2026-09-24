@@ -1,5 +1,20 @@
 import { describe, it, expect } from "vitest";
-import { parseTags, toCatalogEntry, matchWowApps, countByRubro, simulatedRating, simulatedReviewCount, EXAMPLE_WOW_APPS, RUBROS, PAIN_POINTS, WOW_APP_TYPES, type WowAppCatalogEntry } from "@/lib/wowApps";
+import {
+  parseTags,
+  toCatalogEntry,
+  matchWowApps,
+  countByRubro,
+  simulatedRating,
+  simulatedReviewCount,
+  featuredWowApps,
+  rubroLabel,
+  painPointLabel,
+  EXAMPLE_WOW_APPS,
+  RUBROS,
+  PAIN_POINTS,
+  WOW_APP_TYPES,
+  type WowAppCatalogEntry,
+} from "@/lib/wowApps";
 
 function entry(partial: Partial<WowAppCatalogEntry>): WowAppCatalogEntry {
   return {
@@ -15,6 +30,7 @@ function entry(partial: Partial<WowAppCatalogEntry>): WowAppCatalogEntry {
     basePriceUsd: 0,
     status: "proximamente",
     demoVideoUrl: "",
+    destacado: false,
     ...partial,
   };
 }
@@ -51,10 +67,12 @@ describe("toCatalogEntry", () => {
       basePriceUsd: 9.9,
       status: "activo",
       demoVideoUrl: "",
+      destacado: true,
     });
     expect(result.industryTags).toEqual(["clinica", "despacho"]);
     expect(result.painPointTags).toEqual(["clientes"]);
     expect(result.basePriceUsd).toBe(9.9);
+    expect(result.destacado).toBe(true);
   });
 
   it("Json corrupto (no array) cae a lista vacía, no rompe", () => {
@@ -71,6 +89,7 @@ describe("toCatalogEntry", () => {
       basePriceUsd: 0,
       status: "proximamente",
       demoVideoUrl: "",
+      destacado: false,
     });
     expect(result.industryTags).toEqual([]);
     expect(result.painPointTags).toEqual([]);
@@ -217,5 +236,50 @@ describe("simulatedReviewCount", () => {
 
   it("es determinístico", () => {
     expect(simulatedReviewCount("wowbot-pedidos")).toBe(simulatedReviewCount("wowbot-pedidos"));
+  });
+});
+
+describe("featuredWowApps", () => {
+  it("solo devuelve activo + destacado", () => {
+    const catalog = [
+      entry({ key: "a", status: "activo", destacado: true }),
+      entry({ key: "b", status: "activo", destacado: false }),
+      entry({ key: "c", status: "proximamente", destacado: true }),
+    ];
+    expect(featuredWowApps(catalog).map((a) => a.key)).toEqual(["a"]);
+  });
+
+  it("catálogo vacío -> lista vacía", () => {
+    expect(featuredWowApps([])).toEqual([]);
+  });
+
+  it("aparece sin importar rubro/dolor -- a diferencia de matchWowApps no depende de ningún filtro", () => {
+    const catalog = [entry({ key: "wowawe", status: "activo", destacado: true, industryTags: [] })];
+    expect(featuredWowApps(catalog).map((a) => a.key)).toEqual(["wowawe"]);
+  });
+});
+
+describe("rubroLabel / painPointLabel", () => {
+  it("rubroLabel devuelve el label real para una key conocida", () => {
+    expect(rubroLabel("restaurante")).toBe("Restaurante / Taquería");
+  });
+
+  it("rubroLabel cae a la key cruda si no está en el vocabulario (dato legacy)", () => {
+    expect(rubroLabel("rubro-inventado")).toBe("rubro-inventado");
+  });
+
+  it("painPointLabel devuelve el label real para una key conocida", () => {
+    expect(painPointLabel("vender-mas")).toBe("Pierdo ventas por WhatsApp");
+  });
+
+  it("painPointLabel cae a la key cruda si no está en el vocabulario", () => {
+    expect(painPointLabel("dolor-inventado")).toBe("dolor-inventado");
+  });
+});
+
+describe("EXAMPLE_WOW_APPS -- destacado", () => {
+  it("WowAwe es la única destacada del seed (única con lógica real hoy)", () => {
+    const destacadas = EXAMPLE_WOW_APPS.filter((a) => a.destacado);
+    expect(destacadas.map((a) => a.key)).toEqual(["wowawe"]);
   });
 });

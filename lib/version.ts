@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.58.0";
+export const APP_VERSION = "1.59.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.59.0",
+    date: "2026-09-24",
+    notes:
+      "Rediseño real de WowStore (no solo colores esta vez): cards con más peso visual, precio y botón \"Ver App\" bien marcados, y tags de rubro/dolor reales en cada una. Nueva sección \"Destacadas\" que muestra siempre arriba las WowApps que MasterN0 marca a mano (arranca con WowAwe, la única con lógica real hoy) -- antes podía quedar invisible si no tocabas el filtro exacto. El detalle de cada WowApp suma una Ficha Técnica con sus rubros/dolores reales. Perfil ahora te deja escribirle por WhatsApp real al equipo de tu Programa (si lo cargó) en vez de un asesor inventado.",
+  },
   {
     version: "1.58.0",
     date: "2026-09-24",

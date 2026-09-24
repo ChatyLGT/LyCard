@@ -51,6 +51,7 @@ export default async function WowStorePerfilPage({
 
   const channels = CHANNELS.filter((c) => Boolean(card[c.key]));
   const editorHref = EDITOR_HREF[card.kind] || "/m/dashboard";
+  const supportWa = card.program?.wa || "";
 
   return (
     <div
@@ -72,11 +73,18 @@ export default async function WowStorePerfilPage({
 
         <WowStoreTabs cardId={cardId} cardSlug={card.slug} active="perfil" />
 
-        <section style={{ display: "flex", flexDirection: "column", gap: 10, padding: 18, borderRadius: 16, background: "var(--ws-surf,#201f1f)" }}>
-          <span style={{ font: "500 10px var(--ws-font,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ws-ink2,#9a8f80)" }}>
-            Tu negocio
-          </span>
-          <span style={{ font: "700 17px var(--ws-font,'Plus Jakarta Sans'),sans-serif", color: "var(--ws-ink,#F5F2EB)" }}>{card.name || card.slug}</span>
+        <section style={{ display: "flex", flexDirection: "column", gap: 12, padding: 18, borderRadius: 18, background: "linear-gradient(155deg,var(--ws-surf,#201f1f),var(--ws-surf2,#181818))", border: "1px solid rgba(200,161,90,.2)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ flex: "none", width: 46, height: 46, borderRadius: 13, background: "rgba(200,161,90,.14)", border: "1px solid rgba(200,161,90,.4)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 23, color: "var(--ws-accent,#C8A15A)" }}>storefront</span>
+            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: "block", font: "500 10px var(--ws-font,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ws-ink2,#9a8f80)" }}>
+                Tu negocio
+              </span>
+              <span style={{ font: "700 17px var(--ws-font,'Plus Jakarta Sans'),sans-serif", color: "var(--ws-ink,#F5F2EB)" }}>{card.name || card.slug}</span>
+            </div>
+          </div>
           {card.program?.name && (
             <span style={{ font: "400 11.5px var(--ws-font,'Plus Jakarta Sans'),sans-serif", color: "var(--ws-ink2,#8a8378)" }}>
               Programa: {card.program.name}
@@ -87,7 +95,10 @@ export default async function WowStorePerfilPage({
           )}
           <Link
             href={editorHref}
-            style={{ marginTop: 4, font: "700 9px var(--ws-font,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "var(--ws-accent,#C8A15A)", textDecoration: "none", alignSelf: "flex-start" }}
+            style={{
+              alignSelf: "flex-start", font: "700 9px var(--ws-font,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".06em", textTransform: "uppercase",
+              color: "var(--ws-bg,#0D0D0D)", background: "var(--ws-accent,#C8A15A)", borderRadius: 8, padding: "7px 11px", textDecoration: "none",
+            }}
           >
             Editar tu tarjeta →
           </Link>
@@ -127,7 +138,32 @@ export default async function WowStorePerfilPage({
           </div>
         </section>
 
-        <section style={{ display: "flex", flexDirection: "column", gap: 6, padding: 14, borderRadius: 12, border: "1px dashed rgba(255,255,255,.14)" }}>
+        {supportWa && (
+          <section style={{ display: "flex", flexDirection: "column", gap: 10, padding: 18, borderRadius: 16, background: "var(--ws-surf,#201f1f)" }}>
+            <span style={{ font: "500 10px var(--ws-font,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ws-ink2,#9a8f80)" }}>
+              Soporte
+            </span>
+            <p style={{ margin: 0, font: "400 11.5px/1.6 var(--ws-font,'Plus Jakarta Sans'),sans-serif", color: "var(--ws-ink2,#8a8378)" }}>
+              Dudas sobre una WowApp instalada o una adaptación pedida -- escribile directo al equipo real de{" "}
+              {card.program?.name || "tu Programa"}.
+            </p>
+            <a
+              href={`https://wa.me/${supportWa.replace(/[^\d]/g, "")}`}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8, alignSelf: "flex-start",
+                font: "700 10px var(--ws-font,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".06em", textTransform: "uppercase",
+                color: "var(--ws-bg,#0D0D0D)", background: "var(--ws-accent,#C8A15A)", borderRadius: 10, padding: "10px 16px", textDecoration: "none",
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 16 }}>chat</span>
+              Escribir por WhatsApp
+            </a>
+          </section>
+        )}
+
+        <section style={{ display: "flex", flexDirection: "column", gap: 6, padding: 18, borderRadius: 16, background: "var(--ws-surf,#201f1f)", border: "1px dashed rgba(255,255,255,.16)" }}>
           <span style={{ font: "500 10px var(--ws-font,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ws-ink2,#9a8f80)" }}>
             Facturación
           </span>

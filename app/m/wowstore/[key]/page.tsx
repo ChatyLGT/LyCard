@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireCardHost } from "@/lib/cardHost";
-import { simulatedRating, simulatedReviewCount } from "@/lib/wowApps";
+import { simulatedRating, simulatedReviewCount, parseTags, rubroLabel, painPointLabel } from "@/lib/wowApps";
 import { resolveWowStoreSkin, wowStoreSkinVars } from "@/lib/wowStoreSkin";
 import { installWowAppAction, requestAdaptationAction } from "../actions";
 
@@ -88,6 +88,9 @@ export default async function WowAppDetailPage({
     where: { cardId_wowAppId: { cardId, wowAppId: wowApp.id } },
   });
 
+  const rubros = parseTags(wowApp.industryTags).map(rubroLabel);
+  const dolores = parseTags(wowApp.painPointTags).map(painPointLabel);
+
   return (
     <div
       style={{
@@ -161,6 +164,38 @@ export default async function WowAppDetailPage({
             {wowApp.basePriceUsd > 0 && <span style={{ font: "400 11px var(--ws-font,'Plus Jakarta Sans'),sans-serif", color: "var(--ws-ink2,#8a8378)" }}>pago único</span>}
           </div>
         </div>
+
+        {(rubros.length > 0 || dolores.length > 0) && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 16, borderRadius: 14, background: "var(--ws-surf,#201f1f)" }}>
+            <span style={{ font: "500 10px var(--ws-font,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ws-ink2,#9a8f80)" }}>
+              Ficha Técnica
+            </span>
+            {rubros.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                <span style={{ font: "600 9.5px var(--ws-font,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".05em", textTransform: "uppercase", color: "var(--ws-ink2,#8a8378)" }}>Rubros</span>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {rubros.map((r) => (
+                    <span key={r} style={{ font: "600 10px var(--ws-font,'Plus Jakarta Sans'),sans-serif", color: "var(--ws-ink,#C2BEB5)", background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 999, padding: "3px 9px" }}>
+                      {r}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {dolores.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                <span style={{ font: "600 9.5px var(--ws-font,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".05em", textTransform: "uppercase", color: "var(--ws-ink2,#8a8378)" }}>Resuelve</span>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {dolores.map((d) => (
+                    <span key={d} style={{ font: "600 10px var(--ws-font,'Plus Jakarta Sans'),sans-serif", color: "var(--ws-ink,#C2BEB5)", background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 999, padding: "3px 9px" }}>
+                      {d}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         <span style={{ font: "500 10px var(--ws-font,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ws-ink2,#9a8f80)" }}>
           Elegí cómo la querés

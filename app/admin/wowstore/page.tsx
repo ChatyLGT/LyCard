@@ -151,7 +151,7 @@ export default async function AdminWowStorePage({
             <AccordionRow
               key={app.id}
               title={app.nombre}
-              subtitle={`${app.key} · ${app.status === "activo" ? "activa" : "próximamente"}`}
+              subtitle={`${app.key} · ${app.status === "activo" ? "activa" : "próximamente"}${app.destacado ? " · ★ destacada" : ""}`}
               leading={
                 <span style={{ flex: "none", width: 26, height: 26, borderRadius: 8, background: `${app.color}1F`, border: `1px solid ${app.color}55`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <span className="material-symbols-outlined" style={{ fontSize: 15, color: app.color }}>bolt</span>
@@ -179,6 +179,7 @@ export default async function AdminWowStorePage({
                     basePriceUsd: app.basePriceUsd,
                     status: app.status,
                     demoVideoUrl: app.demoVideoUrl,
+                    destacado: app.destacado,
                   }}
                 />
                 <button type="submit" style={SAVE_BTN}>
@@ -208,6 +209,7 @@ function WowAppFields({
     basePriceUsd: number;
     status: string;
     demoVideoUrl: string;
+    destacado: boolean;
   };
 }) {
   return (
@@ -246,6 +248,10 @@ function WowAppFields({
       </div>
       <input name="iconUrl" defaultValue={defaults?.iconUrl} placeholder="URL de ícono (opcional)" style={INPUT} />
       <input name="demoVideoUrl" defaultValue={defaults?.demoVideoUrl} placeholder="URL de video demo (opcional)" style={INPUT} />
+      <label style={{ display: "flex", alignItems: "center", gap: 8, font: "600 12px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>
+        <input type="checkbox" name="destacado" defaultChecked={defaults?.destacado} />
+        Destacada (aparece siempre arriba de Explorar en WowStore, sin depender de rubro/dolor)
+      </label>
     </>
   );
 }

@@ -753,6 +753,14 @@ model WowApp {
   // lo es, cáscara honesta.
   status        String @default("proximamente")
   demoVideoUrl  String @default("")
+  // Fase W3.1 (2026-09-24, pedido real de Gunnar, 2da vez que lo pide) --
+  // "las que funcionan marcalas como favoritas". Toggle manual de
+  // MasterN0 desde /admin/wowstore -- una WowApp destacada aparece en la
+  // sección "Destacadas" de Explorar SIEMPRE, sin importar qué rubro/dolor
+  // se haya elegido (a diferencia de matchWowApps, que solo devuelve algo
+  // cuando hay un filtro activo). Pensado para WowAwe -- la única con
+  // lógica real hoy -- pero no exclusivo a ella.
+  destacado Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
