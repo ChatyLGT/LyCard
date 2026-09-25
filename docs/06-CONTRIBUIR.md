@@ -17,6 +17,59 @@ al día con la realidad del código.
    **plan primero → aprobación → ejecución por fases**, con una verificación
    real (no solo `tsc`) al final de cada fase. Esto no es burocracia — es lo
    que mantuvo 90+ fases de este proyecto sin romper nada en producción.
+4. **`main` ya no recibe pushes directos** (Fase de Endurecimiento, Paso B,
+   2026-09). Todo cambio se hace/pushea primero contra `staging` — ver la
+   sección de abajo.
+
+## Flujo de ramas: `staging` → `main`
+
+Desde el Paso B de la Fase de Endurecimiento, `main` dejó de ser el lugar
+donde se prueban cosas. El orden real:
+
+1. **Todo trabajo nuevo pushea a `staging`**, no a `main`. `staging` tiene
+   su propio deploy de Vercel, con su propia URL de preview (se genera
+   sola: `lycard-git-staging-<team>.vercel.app` — confirmá la URL exacta
+   en el dashboard de Vercel del proyecto, pestaña Deployments, filtrando
+   por la rama `staging`).
+2. Gunnar (o quien él delegue) prueba en esa URL de staging, no en
+   producción.
+3. Cuando está aprobado, se abre un Pull Request `staging → main` en
+   GitHub. `ci-qa.yml` corre automático en ese PR (lint + unit +
+   cobertura + build + E2E). **`main` solo se actualiza con la aprobación
+   explícita de Gunnar** — hoy eso significa "Gunnar dice que sí" antes
+   de mergear el PR; el Paso C de esta misma fase va a hacer que GitHub
+   lo bloquee solo si el PR no está en verde.
+4. Un merge a `main` dispara el deploy de producción real, igual que
+   siempre.
+
+**Aislamiento de base de datos (pendiente, necesita una acción tuya,
+Gunnar — no de esta sesión):** el objetivo del Paso B es que `staging`
+escriba en una base de datos DISTINTA a la de producción, para que un
+bug ahí nunca toque datos reales. Esta sesión no tiene permiso para leer
+ni escribir las variables de entorno ni los conectores del proyecto en
+Vercel (los llamados a la API de Vercel para eso devuelven 403
+Forbidden) — así que ese cableado no quedó hecho, y hace falta que lo
+resuelvas vos (o alguien con acceso completo al proyecto en Vercel)
+desde el dashboard:
+
+1. En Neon, creá un branch/database nuevo para staging (Neon tiene
+   "database branching" — un clic, parte de un snapshot de la
+   producción o vacío, como prefieras).
+2. En Vercel → Project → Settings → Environment Variables, agregá
+   `DATABASE_URL` con el connection string de ESE branch de Neon, target
+   `Preview`, **con "Git Branch" puesto en `staging`** (no en todas las
+   Preview a la vez — si no, cualquier PR de cualquier feature branch
+   también pegaría contra esa base, que ya sería mejor que producción
+   pero no lo que pediste).
+3. Redeployá `staging` una vez para que tome la variable nueva.
+
+Hasta que ese paso se haga, **no hay garantía de aislamiento real de
+datos** — solo aislamiento de código/URL. Esta sesión no pudo confirmar
+(por el mismo 403) si el Preview de Vercel hoy ya apunta a producción o
+a otra base, así que hay que asumir el peor caso: no probar en
+`staging` nada que escriba datos reales hasta confirmar (vos, con
+acceso al dashboard) qué `DATABASE_URL` está usando ese Preview hoy, y
+después separarla como se explica arriba.
 
 ## Reglas que no son opcionales
 
@@ -48,8 +101,10 @@ al día con la realidad del código.
 5. `lib/version.ts` bumpeado con su entrada de changelog.
 6. `PLAN.md` con una entrada nueva describiendo la fase (bitácora
    cronológica — no reemplaza estos docs, los complementa).
-7. Commit + push. El deploy a Vercel es automático; confirmar `READY` antes
-   de avisar que está listo.
+7. Commit + push **a `staging`** (ver "Flujo de ramas" más arriba — ya no
+   se pushea directo a `main`). El deploy a Vercel de esa rama es
+   automático; confirmar `READY` antes de avisar que está listo. Pasar a
+   `main` es un paso aparte, con PR y aprobación de Gunnar.
 
 ## Testing automático (Vitest + Playwright + CI)
 
