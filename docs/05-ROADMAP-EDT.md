@@ -192,113 +192,122 @@ relevantes del negocio/programa. "Check de Realidad" de E1–E5 ya es ese
 resumen; falta dejarlo explícito como propósito central (jerarquía visual
 propia, no una sección más).
 
-### Modelo de negocio: Programa Legacy y sus planes
+### Modelo de negocio: 3 ejes {#modelo-de-negocio-3-ejes}
 
 **Estado real:** cero clientes hoy — la app no salió al mercado, todo esto
 es tesis de venta (leads/apuestas), no facturación confirmada. MLQR es el
 lead más avanzado y tampoco pagó todavía.
 
-**3 planes reales, no un único umbral:**
+**Cerrado el 2026-09-24** — reemplaza por completo al modelo viejo de
+"4 planes que se eligen" (Freemium/Automatizado/Normal/Enterprise como
+puerta de entrada, con `Program.planTier` bloqueando el acceso). Lo que
+antes se mezclaba en un solo eje son en realidad **3 ejes
+independientes entre sí**:
 
-| Plan | Setup | Mensual | Extra |
-| --- | --- | --- | --- |
-| Automatizado | $100 | $25 | Legacy automatizado, sin Sherpa dedicado |
-| Normal | $500 | $100 | El estándar — 1 Legacy = 3 Agentes Silicio |
-| Plan B / Enterprise | $2.500 | $500 | + comisión sobre ventas |
+#### Eje A — Programa es un umbral que se cruza, no un plan que se elige
 
-Un Negocio se convierte en Programa al entrar a cualquiera de estos 3
-planes.
+Un Chido (persona que pagó y pasó por el proceso Legacy completo) se
+convierte en **N0 de su propio Programa** en el momento exacto en que
+tiene **1+ persona humana real activada bajo él** — no importa cuántos
+agentes IA tenga, eso es indiferente para el umbral.
 
-**El mecanismo, a nivel de Cards (precisado por Gunnar, 2026-09-19):**
-hasta ese momento, una persona tiene como mínimo su Card de **proyecto**
-(su camino CON Legacy) y su Card de **company** (su propio Negocio). Al
-convertirse ese Negocio en Programa (porque ya tiene Agentes de verdad
-trabajando adentro, no solo la tarjeta):
+**✅ Ya construido y shippeado (Fase P1, v1.52.0)** — a diferencia de
+todo lo demás de esta sección, esto no es roadmap, es código real en
+producción:
 
-- La **Card de company se vuelve la raíz de su propio Programa nuevo** —
-  su empresa pasa a ser, para sus propios clientes, lo mismo que Legacy
-  es hoy para los suyos. Mismo fractal, un nivel más abajo.
-- Su vieja Card de proyecto (la relación con Legacy) no se borra ni se
-  oculta — pasa a ser su **"Programa Legado"**: el registro permanente de
-  origen. Es el principio recursivo "todo nace de Legacy" hecho dato
-  concreto, no solo discurso — nadie tiene contexto/acceso legítimo sin
-  un origen trazable (mismo espíritu que Protocolo Dharma).
-- La **Card de company pasa a ser la Card principal** de esa persona de
-  ahí en adelante; la de proyecto queda como su Programa Legado, visible
-  pero ya no la que se muestra por default.
+1. El Chido recluta a un humano (flujo self-service de siempre, o
+   invitación).
+2. Ese humano pasa por su propio proceso de entrevista real bajo
+   Legacy — mismo pipeline que ya existe (`registerInterviewAction` →
+   `completeInterviewAction`), sin estado intermedio de "Programa
+   embrionario".
+3. Al activarse esa membresía, `lib/programPromotion.ts#checkAndPromoteToPrograma`
+   **computa solo** (nadie aprueba un paso aparte) si el referente ya es
+   Chido (`membershipPaidAt` seteado) y ahora tiene 1+ referido activo.
+4. Si el umbral se cruza: nace el Programa nuevo (la Card de Empresa del
+   Chido se vuelve su raíz), se crea un `Admin` linkeado por
+   `Admin.memberId` (sin password/email propios — su sesión de Member de
+   siempre le da la autoridad), y la membresía+Cards del humano recién
+   activado migran del Programa Legacy al nuevo. La vieja Card de
+   proyecto del Chido (su relación con Legacy) queda intacta, etiquetada
+   **"Programa Legado"**.
+5. La Oficina Virtual de ese humano recién activado, armada según su
+   función (Puesto→Superpoderes específicos) — **este paso 5 sigue sin
+   construir**, fuera de la Fase P1 a propósito.
 
-Sigue siendo roadmap — no hay código de esta promoción todavía; queda
-anotado acá para cuando se implemente el resto de "Negocio→Programa".
+Los dos disparadores reales (activar una entrevista con referente ya
+pago, o marcar pagada una membresía que ya tenía un referido activo) y
+el detalle completo de verificación están en `PLAN.md`, entrada "Fase
+P1: detección + promoción automática Chido→Programa".
 
-**Regla de acceso, confirmada por Gunnar (2026-09-19):** la persona dueña
-de ese Negocio se vuelve N0 de su Programa nuevo con el **mismo mecanismo
-que ya existe hoy** — MasterN0 la da de alta a mano vía
-`/admin/programs`, nunca automático. Ver
-[02-ARQUITECTURA.md#regla-dura-quién-puede-volverse-adminn0](./02-ARQUITECTURA.md#regla-dura-quién-puede-volverse-adminn0)
-para el detalle verificado contra el código.
+**Nota que corrige una regla vieja**: esto reemplaza la "regla dura" que
+decía que un N0 de Programa nuevo siempre lo da de alta MasterN0 a mano
+vía `/admin/programs` — eso sigue siendo cierto para un Programa creado
+desde cero por MasterN0, pero un Programa que nace de este umbral se
+crea solo, sin ese paso manual. Ver
+[02-ARQUITECTURA.md#regla-dura-quién-puede-volverse-adminn0](./02-ARQUITECTURA.md#regla-dura-quién-puede-volverse-adminn0).
 
-**Qué compra tu plata en cada plan — el nivel de acceso, no solo el precio:**
+**"Programa Legado" es el principio recursivo "todo nace de Legacy" hecho
+dato, no solo discurso** — Irpavi, HeroSuite, Digital Kingdom, MLQR,
+Conce, todos pasaron/pasan por Legacy como si fueran clientes, y de cada
+uno nace lo suyo después. Que la vieja Card de proyecto nunca se borre ni
+se oculte al cruzar el umbral es ese principio aplicado: nadie tiene
+contexto/acceso legítimo sin un origen trazable (mismo espíritu que
+Protocolo Dharma).
 
-- **Freemium ($0):** tarjeta real + Oficina Virtual en modo vidriera — todo
-  bloqueado, cero bot, cero simulación. Ya construido: es exactamente el
-  modo `VisitorOficina` que existe hoy para cualquiera que no es el dueño.
-  Cero código nuevo para dar esto.
-- **Automatizado ($25/mes):** tarjeta + bot simulado. Todo simulado — sirve
-  para "aparentar" una oficina operativa (el equivalente de la demo guiada
-  que ya existe hoy en `OfficeDemoChat.tsx`/`WarrenChat.tsx`). Cero agentes
-  reales, cero resultados reales.
-- **Normal ($100/mes):** equipo de **3 Agentes de Silicio reales**, con
-  resultados reales para el negocio real del cliente — por eso pagó.
-  Vienen **pre-programados con objetivos específicos y acotados**, no de
-  propósito abierto: no es lo mismo un agente que vende de punta a punta
-  que uno que solo postea y saca leads. ⚠️ **Pendiente de definir:** la
-  lista exacta de qué puede y qué no puede hacer cada agente en este tier
-  — sin esa lista, `simulateSkillRunAction` no tiene límites reales que
-  aplicar.
-- **Enterprise ($500/mes + comisión):** ~**10 agentes confeccionados a
-  medida** para ese cliente específico, más **3 Legacys**: 3 empleados
-  propios del cliente convertidos en Agentes Legacy a nivel básico (fusión
-  empleado+agente — transformación organizacional real, no solo una
-  herramienta).
+#### Eje B — el embudo Mirón → Vividor → Chido → Chido+
 
-**El proceso Legacy es obligatorio para todos, sin excepción** (Freemium
-incluido) antes de tener acceso a cualquier plan — lo que cambia es cuánto
-dura:
+Nombres 100% internos (Gunnar: "si sale a la luz nos cuelgan") — nunca en
+la app ni en marketing.
 
-- **Mínimo, 3 días → Freemium.**
-- **Máximo, 3 meses → recién ahí arranca la promesa de producto real**
-  (Enterprise/empresas tipo JP Suárez):
-  1. Mes 1: entrevistas / entendimiento y diagnóstico
-  2. Mes 2: armado de Oficina Virtual / propuesta de solución
-  3. Mes 3: entrenamiento de bots / pruebas y ajustes
+1. **Mirón** — visitante sin cuenta al que le comparten una LyCard. Solo
+   ve esa tarjeta puntual. Ya construido: es el `VisitorOficina` de hoy.
+2. **Vividor** — se registra self-service, **sin que nadie apruebe
+   nada**. **✅ Ya construido (v1.49.0)**: `ensureLegacyMembershipAndCards`
+   le da sus 3 Cards al toque, con Oficina Virtual real desde el día
+   uno — Superpoderes, WowStore, Modo Foco, todo lo construido hasta hoy
+   en este repo es, en los hechos, el nivel Freemium/Vividor. **No pasa
+   por ninguna entrevista** — corrige una ambigüedad vieja de este mismo
+   documento (que sugería lo contrario).
+3. **Chido** — paga, pasa por la entrevista Legacy real, arma su Oficina
+   Virtual. El nivel de personalización depende de qué compró.
+4. **Chido+** — variantes de escalamiento sobre Chido. **Sin definir en
+   detalle todavía** (palabras de Gunnar).
 
-Esto mapea directo al `crmStage` del Módulo CRM — los pasos
-`sesion1..sesion5` de ese pipeline son estas mismas etapas, con duración
-variable según el plan.
+Un Chido con solo agentes IA bajo él (cero humanos reales) sigue siendo
+Chido para siempre — nunca cruza al Eje A.
 
-### El "nacimiento", definido con precisión
+#### Eje C — precio a la carta por WowApp/Superpoder
 
-Principio recursivo confirmado por Gunnar: **todo nace de Legacy** —
-Irpavi, HeroSuite, Digital Kingdom, MLQR, Conce, todos pasaron/pasan por
-Legacy como si fueran clientes, y de cada uno nace lo suyo después. Es
-fractal de verdad, no solo de nombre — mismo espíritu que el Protocolo
-Dharma interno de EinarOS: nada tiene contexto/acceso legítimo sin pasar
-por un origen definido.
+Cada Skill tiene su propio precio (suscripción o pago único),
+independiente de si sos Vividor o Chido. Un Vividor puede comprar una
+WowApp puntual sin pagar membresía. **✅ Ya construido y shippeado**:
+WowStore (desde v1.53.0) — ver la sección
+[Modelo de precio a la carta](#modelo-de-precio-a-la-carta-nueva-capa-de-monetización)
+más abajo, que es la implementación real de este eje.
 
-El "nacimiento" (paso de prospecto a usuario real) sigue siempre esta
-secuencia: **N0 recibe el programa → lo explora → crea sus tarjetas → las
-juega en Freemium → crea un usuario real**, por uno de 2 caminos:
+#### Qué queda de los $ de infraestructura (Automatizado/Normal/Enterprise)
 
-- **Personal** (nivel más bajo de membresía): solo el Gemelo Digital,
-  ningún bot.
-- **Full**: 3 bots especialistas + infraestructura Einar completa (1 N0,
-  3 N1, 12 N2s × 4 dominios).
+Los montos que antes eran "el plan que alguien elige para entrar" no
+desaparecen — cambian de rol. Pasan a describir el costo de
+infraestructura de agentes que un Programa **ya formado** (ya cruzó el
+Eje A) sigue pagando según cuánto necesite: sin Sherpa dedicado, 3
+Agentes de Silicio con objetivos acotados, o ~10 agentes a medida + 3
+empleados convertidos en Agentes Legacy. **Sin campo `planTier` real en
+el schema todavía** — el draft de abajo queda como referencia de forma,
+no como bloqueador de acceso (eso ya no existe, ver Eje A).
 
-Esto es independiente de los 4 planes de precio (Freemium/Automatizado/
-Normal/Enterprise) — es el eje de "¿sos una persona o una organización?",
-no de "¿cuánto pagás?".
+```prisma
+model Program {
+  // ...existentes...
+  infraTier              String  @default("normal") // "automatizado" | "normal" | "enterprise"
+  setupFeeUsd            Int     @default(0)
+  monthlySubscriptionUsd Int     @default(0)
+  commissionOnSalesPct   Float?  // solo Enterprise
+}
+```
 
-**3 motores de venta (GTM):**
+**3 motores de venta (GTM), sin cambios por este modelo:**
 1. **Legacy personal → descubrimiento institucional.** La propia entrevista
    Legacy (sesiones del Módulo CRM) es el mecanismo de discovery para
    proyectos grandes (gobierno, corporativo) — sin forma todavía de
@@ -313,27 +322,6 @@ no de "¿cuánto pagás?".
    cuentas. *Riesgo a vigilar:* el WHITEPAPER prohíbe usar iglesias/
    pastores como **canal** de reclutamiento — este caso es la iglesia como
    **cliente**, no como canal; no cruzar esa línea.
-
-**Schema:**
-```prisma
-model Program {
-  // ...existentes...
-  planTier              String  @default("normal") // "automatizado" | "normal" | "enterprise"
-  setupFeeUsd           Int     @default(0)
-  monthlySubscriptionUsd Int    @default(0)
-  commissionOnSalesPct  Float?  // solo Enterprise
-}
-```
-Default en la migración: los Programas ya existentes quedan en
-`planTier:"normal", setupFeeUsd:500, monthlySubscriptionUsd:100` para no
-desactivar nada que ya está andando.
-
-`upgradeToProgramAction(programId, planTier, setupFeeUsd, monthlySubscriptionUsd, commissionOnSalesPct?)`
-en `app/admin/programs/actions.ts` — valida el plan antes de togglear
-`Program.active`.
-- Gate en `app/c/[slug]/oficina/page.tsx`: sin activar, mostrar el aviso
-  honesto ya establecido ("todavía sin activar — próximamente") en vez de
-  Superpoderes/bot.
 
 ### Bot Warren en la Oficina
 
@@ -483,12 +471,24 @@ entrada de `officeSkills`.
 
 ### Modelo de precio a la carta (nueva capa de monetización)
 
-Además de los 4 planes base (Freemium/Automatizado/Normal/Enterprise),
-**cada Skill puede tener su propio precio por profundidad de uso** —
-ejemplo real de Gunnar: Brief de las últimas 3 reuniones = $1/mes; sumás
-recordatorios + tareas + agenda + calendario integrado = sube el precio.
-Es independiente del plan del Programa — un add-on por Skill, no un
-cambio de plan completo.
+Esta sección es el **Eje C** del [modelo de negocio de 3 ejes](#modelo-de-negocio-3-ejes)
+de arriba — **cada Skill puede tener su propio precio por profundidad de
+uso**, independiente de si sos Vividor o Chido — ejemplo real de Gunnar:
+Brief de las últimas 3 reuniones = $1/mes; sumás recordatorios + tareas +
+agenda + calendario integrado = sube el precio. Es un add-on por Skill,
+nunca depende de un plan de Programa completo.
+
+**Ya construido y shippeado como WowStore** (desde v1.53.0): catálogo
+navegado por rubro+dolor de negocio (`lib/wowApps.ts`,
+`app/m/wowstore/*`), con instalación directa o pedido de adaptación a
+medida por WowApp, precio propio por cada una (`WowApp.basePriceUsd`).
+El plan original de abajo (extender `Program.officeSkills` con
+`pricing`) quedó superado en la práctica por el modelo Catálogo (`WowApp`)
++ Instalación (`WowAppInstall`), que vive fuera de `Program` a propósito
+— ver PLAN.md, "WowStore — Fase W1", sección "Hallazgo de arquitectura",
+para el porqué (un Vividor sin Programa también puede instalar WowApps).
+Lo que sigue documentado abajo es el plan histórico, útil como contexto
+de cómo se llegó al diseño real.
 
 **Paso 1** — reusa `Program.officeSkills` (ya existe, `Json`), sumando
 `category`, `status:'activo'|'proximamente'|'beta'`, `demoVideoUrl`, y

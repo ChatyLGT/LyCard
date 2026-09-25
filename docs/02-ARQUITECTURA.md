@@ -59,26 +59,33 @@ conectada esa tarjeta").
 
 ### Regla dura: quién puede volverse Admin/N0
 
-**Ninguna cuenta de Admin se crea sola — ni por login de Google, ni por
-ningún flujo self-service.** Verificado en el código (no solo documentado
-de palabra): en todo el repo hay un único lugar que hace
-`prisma.admin.create` — `createProgramAdminAction` en
-`app/admin/programs/actions.ts` — y está detrás de `requireMasterN0()`,
-que redirige a cualquiera que no sea el propio MasterN0
-(`Admin.programId === null`, esa cuenta es exclusivamente de Gunnar).
-Ni el login de Google de un Member (`app/m/auth/google/callback`) ni la
-conexión de Google de una Card (Fase F, `app/m/auth/google/connect-*`)
-tocan jamás el modelo `Admin` — ambos solo leen/escriben `Member`.
+**Ninguna cuenta de Admin se crea por login — nunca por Google, nunca por
+ningún flujo self-service en el sentido de "el propio usuario se la
+otorga".** Verificado en el código: ni el login de Google de un Member
+(`app/m/auth/google/callback`) ni la conexión de Google de una Card
+(Fase F, `app/m/auth/google/connect-*`) tocan jamás el modelo `Admin` —
+ambos solo leen/escriben `Member`. `Admin.programId === null` sigue
+siendo, en todo momento, una sola cuenta: la de Gunnar.
 
-Esto también aplica hacia adelante, para "Negocio→Programa"
-(ver [05-ROADMAP-EDT.md](./05-ROADMAP-EDT.md#modelo-de-negocio-programa-legacy-y-sus-planes)):
-cuando el Negocio de alguien se convierte en su propio Programa, esa
-persona se vuelve N0 **de ese Programa** con el mismo mecanismo de
-siempre — MasterN0 la da de alta a mano vía `/admin/programs`, nunca de
-forma automática por haberse conectado con Google ni por ningún otro
-gatillo del sistema. Sigue siendo, en todo momento, un Admin con
-`programId` seteado — nunca `null`. `programId: null` es y será siempre
-una sola cuenta: la de Gunnar.
+**Dos caminos reales para que nazca un `Admin` con `programId` seteado
+(nunca `null`), los dos verificados contra el código:**
+
+1. **De alta a mano por MasterN0** — `createProgramAdminAction` en
+   `app/admin/programs/actions.ts`, detrás de `requireMasterN0()`. El
+   camino de siempre, para un Programa que MasterN0 crea directo desde
+   `/admin/programs`.
+2. **Promoción automática Chido→Programa** (Fase P1, v1.52.0,
+   ✅ shippeado — ver
+   [05-ROADMAP-EDT.md#modelo-de-negocio-3-ejes](./05-ROADMAP-EDT.md#modelo-de-negocio-3-ejes),
+   Eje A). `lib/programPromotion.ts#checkAndPromoteToPrograma` crea el
+   `Admin` con `Admin.memberId` seteado (FK a `Member`, `email`/
+   `passwordHash` en `null`) cuando un Chido cruza el umbral — **sin que
+   MasterN0 apruebe ese caso puntual a mano**. No es un login de Google
+   creando el Admin: es la sesión de Member ya autenticada de ese Chido
+   la que, vía `currentAdminScope()`, hereda autoridad sobre el Programa
+   nuevo. El invariante de fondo sigue intacto — sigue habiendo un único
+   lugar que hace cada tipo de creación, los dos auditables, ninguno
+   disparado por un simple login externo.
 
 ## El patrón que se repite en todo el repo
 

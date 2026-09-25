@@ -48,31 +48,58 @@ falta en
 todo lo de abajo es tesis de venta (leads y apuestas), no facturación
 confirmada. MLQR es el lead más avanzado y tampoco pagó todavía.
 
-Un Negocio pasa a ser **Programa** al entrar a uno de 3 planes (documentado,
-todavía sin codificar — detalle completo en
-[05-ROADMAP-EDT.md](./05-ROADMAP-EDT.md#modelo-de-negocio-programa-legacy-y-sus-planes)):
+El modelo de monetización quedó cerrado el 2026-09-24 en **3 ejes
+independientes entre sí** — reemplaza al modelo viejo de "4 planes que se
+eligen" (Freemium/Automatizado/Normal/Enterprise como puerta de entrada).
+Detalle completo de cada eje en
+[05-ROADMAP-EDT.md](./05-ROADMAP-EDT.md#modelo-de-negocio-3-ejes).
 
-| Plan | Setup | Mensual | Extra |
-| --- | --- | --- | --- |
-| Freemium | $0 | $0 | Tarjeta real + Oficina en modo vidriera, todo bloqueado |
-| Automatizado | $100 | $25 | Legacy automatizado, sin Sherpa dedicado |
-| Normal | $500 | $100 | El estándar — 1 Legacy = 3 Agentes Silicio |
-| Plan B / Enterprise | $2.500 | $500 | + comisión sobre ventas |
+**Eje A — Programa no es un plan que se elige, es un umbral estructural
+que se cruza.** Un Chido (alguien que pagó y pasó por el proceso Legacy
+completo) se convierte en **N0 de su propio Programa** en el momento
+exacto en que tiene 1+ persona humana real activada bajo él — no importa
+cuántos agentes IA tenga, eso es indiferente para el umbral. **Ya
+construido y shippeado (Fase P1, v1.52.0)**: la detección y la promoción
+son automáticas — el sistema las dispara solo cuando el umbral se cruza
+(al activarse la membresía de un referido, o al marcar pagada la del
+referente si el referido ya estaba activo), sin que MasterN0 tenga que
+dar de alta nada a mano para ESE caso puntual. Su Card de Empresa se
+vuelve la raíz del Programa nuevo; su vieja Card de Legacy queda intacta,
+etiquetada "Programa Legado".
 
-Entrar a cualquiera de estos 4 requiere completar el proceso Legacy
-(entrevistas + armado) — mínimo 3 días (Freemium), máximo 3 meses
-(Enterprise, recién ahí arranca la entrega real del producto).
+**Eje B — el embudo Mirón → Vividor → Chido → Chido+** (nombres 100%
+internos, nunca en la app ni en marketing):
 
-Sin estar en alguno de estos 3, la Oficina Virtual de sus tarjetas muestra
-el aviso honesto de "todavía sin activar" en vez de Superpoderes o bot —
-nunca acceso simulado.
+1. **Mirón** — visitante sin cuenta al que alguien le comparte su LyCard.
+   Solo ve esa tarjeta puntual, nada de registrarse ni crear.
+2. **Vividor** — se registra self-service, **sin que nadie apruebe nada**
+   (ya construido, v1.49.0: `ensureLegacyMembershipAndCards`). Tiene sus
+   3 Cards y una Oficina Virtual real desde el día uno — no una versión
+   "de mentira": Superpoderes, WowStore, Modo Foco, todo lo que ya está
+   construido en este repo es, hoy, para el Vividor.
+3. **Chido** — pasa por la entrevista Legacy real y paga. El nivel de
+   personalización de su Oficina depende de qué compró.
+4. **Chido+** — variantes de escalamiento sobre Chido, todavía sin
+   definir en detalle.
 
-El precio compra **nivel de acceso**, no solo funcionalidad: Automatizado
-es todo simulado (aparentar una oficina), Normal son 3 agentes reales pero
-con objetivos acotados (aún sin definir con precisión — ver roadmap),
-Enterprise son ~10 agentes a medida más 3 empleados del cliente convertidos
-en Agentes Legacy. Detalle completo en
-[05-ROADMAP-EDT.md](./05-ROADMAP-EDT.md#modelo-de-negocio-programa-legacy-y-sus-planes).
+Un Chido con solo agentes IA bajo él (cero humanos reales) sigue siendo
+Chido para siempre — nunca cruza al Eje A, sin importar cuántos agentes
+tenga.
+
+**Eje C — precio a la carta por WowApp/Superpoder.** Cada Skill tiene su
+propio precio (suscripción o pago único), independiente de si sos
+Vividor o Chido — un Vividor puede comprar una WowApp puntual sin
+necesidad de pagar membresía. **Ya construido y shippeado**: WowStore
+(desde v1.53.0), el catálogo navegado por rubro+dolor de negocio, con
+instalación directa o adaptación a medida.
+
+**Lo que este modelo dejó atrás**: los $ de infraestructura de agentes
+que antes eran "el plan que alguien elige para entrar" (Automatizado
+$25/Normal $100/Enterprise $500) pasan a describir el costo de
+infraestructura que un Programa YA formado sigue pagando — nunca la
+puerta de entrada, y nunca "simulado para aparentar": si algo no está
+conectado de verdad, la Oficina lo dice explícito, sin excepción (cáscara
+honesta, ver [06-CONTRIBUIR.md](./06-CONTRIBUIR.md)).
 
 **3 motores de venta reales, no un solo canal:** (1) la propia entrevista
 Legacy como mecanismo de discovery para proyectos institucionales grandes,
