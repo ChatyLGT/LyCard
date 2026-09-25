@@ -6,6 +6,17 @@ desarrollo encontró trabajando, se edita este archivo en el mismo commit
 que el cambio. No hace falta pedir permiso para mantener la documentación
 al día con la realidad del código.
 
+## Flujo de trabajo (simple, mientras seguimos en diseño)
+
+Push directo a `main` está bien — todavía no hay usuarios reales.
+Existe una rama `staging` con su propio deploy de Vercel, armada y
+esperando para cuando la necesitemos, pero hoy no está en uso activo.
+Ver [09-CHECKLIST-LANZAMIENTO-PUBLICO.md](./09-CHECKLIST-LANZAMIENTO-PUBLICO.md)
+para lo que falta endurecer antes de recibir tráfico real (staging con
+su propia base, tests obligatorios, respaldos/alarmas, métrica de
+distribución) — nada de eso es urgente ahora, es la lista para cuando
+llegue el momento.
+
 ## Antes de escribir código
 
 1. Leé [02-ARQUITECTURA.md](./02-ARQUITECTURA.md) — especialmente el patrón
