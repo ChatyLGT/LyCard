@@ -6732,6 +6732,290 @@ son 3 cosas distintas, todas fuera del alcance del pedido:
    (`buildMemberFractalGraph`), nunca Einar/Chaty/Warren -- ese trío
    nunca se le atribuye a un cliente como si fuera su propio agente.
 
+## Ronda de endurecimiento (2026-09-29) -- Fase 4: DISEÑO -- Especialistas y Expertos
+
+**Solo diseño, cero código en esta fase.** Seguimos en FASE DE DISEÑO:
+todo lo que sigue es propuesta, espera el OK de Gunnar antes de que la
+Fase 5 escriba una sola línea.
+
+### El giro: de "apps" a "gente que contratás"
+
+WowStore hoy (Fase W1-W3, ya shippeado) vende WowApps -- funciones. El
+pedido de esta fase es reformular esa vidriera para vender DOS TIPOS DE
+INTEGRANTES DE EQUIPO, no funciones sueltas:
+
+- **ESPECIALISTA**: un agente puro, con UN trabajo (no una lista de
+  features). Las WowApps que hoy existen (WowAwe, Modo Foco, Notas de
+  Voz, Agenda) pasan a ser las HERRAMIENTAS que un Especialista usa para
+  hacer su trabajo -- no se venden solas, se venden como parte del
+  paquete de un rol. El diferencial real frente a "instalar una app": un
+  Especialista SUGIERE de forma proactiva (te avisa cuando ve algo, sin
+  que lo abras vos), una app pasiva espera que vos la abras.
+- **EXPERTO**: el Gemelo Digital de una PERSONA REAL, construido con el
+  mismo proceso de alta de Legacy (entrevista → Programa → Card) que ya
+  usa cualquier miembro. Reglas duras, no negociables:
+  1. Solo existe con consentimiento explícito y revocable de esa
+     persona. Revocar = se borra el contenido que ese consentimiento
+     autorizaba, no solo se desactiva.
+  2. Nunca se publica hasta que la persona lo aprueba a mano -- el
+     "Bautizo". Ni por default, ni por accidente, ni porque ya cargó
+     contenido.
+  3. Siempre rotulado "Gemelo digital de [nombre]" -- nunca se presenta
+     como si fuera la persona misma.
+  4. Si la profesión es regulada (salud, legal, finanzas...): orienta y
+     refiere, nunca diagnostica, y escala a la persona humana cuando la
+     pregunta lo requiere.
+  5. El Códice (la base de conocimiento de esa persona) NUNCA sale --
+     el usuario recibe respuestas, nunca el conocimiento crudo detrás.
+
+**Nota de nombres**: "Bautizo" es vocabulario de diseño/EinarOS para
+esta charla, no un texto que va a aparecer en la interfaz (regla de la
+Fase 3: nombres internos nunca en la UI). Cuando se construya en Fase 5,
+el botón real que dispara ese estado dirá algo como "Publicar mi Gemelo
+Digital" o "Confirmar y publicar" -- a definir con el mismo criterio de
+"proponer antes de tocar" que usamos en la Fase 2.
+
+### (a) Modelo de datos propuesto
+
+```prisma
+// Un Especialista es un ROL con un trabajo, no una feature. Las WowApps
+// que ya existen se referencian como sus herramientas (toolKeys), mismo
+// patrón string[] serializado que industryTags/painPointTags en WowApp
+// -- sin FK dura, para no atar el ciclo de vida de una WowApp al de
+// cada Especialista que la usa.
+model Especialista {
+  id            String   @id @default(cuid())
+  key           String   @unique
+  nombre        String
+  trabajo       String   // el ÚNICO objetivo de este rol, en una frase -- no una lista de features
+  descripcion   String
+  iconUrl       String   @default("")
+  color         String   @default("#C8A15A")
+  toolKeys      Json     @default("[]") // WowApp.key[] -- las herramientas que usa
+  // Graduado, no binario -- hasta dónde actúa sin que el dueño confirme
+  // cada vez. Arranca siempre en "sugiere" para cualquier Especialista
+  // nuevo (cáscara honesta: nunca actuar solo por default).
+  autonomyLevel String   @default("sugiere") // "sugiere" | "actua_con_ok" | "actua_solo"
+  industryTags  Json     @default("[]")
+  painPointTags Json     @default("[]")
+  basePriceUsd  Float    @default(0)
+  status        String   @default("proximamente")
+  destacado     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  installs EspecialistaInstall[]
+}
+
+model EspecialistaInstall {
+  id             String   @id @default(cuid())
+  cardId         String
+  card           Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  especialistaId String
+  especialista   Especialista @relation(fields: [especialistaId], references: [id], onDelete: Cascade)
+  installedAt    DateTime @default(now())
+  // Referido flow (ver (c)): si esta contratación vino de la
+  // recomendación de un Experto, queda esa trazabilidad -- de acá sale
+  // la comisión, nunca de "traer gente".
+  referredByExpertoId String?
+  referredByExperto   Experto? @relation(fields: [referredByExpertoId], references: [id])
+
+  @@unique([cardId, especialistaId])
+}
+
+// Un Experto SIEMPRE cuelga de un Member real que ya pasó por el alta
+// de Legacy -- nunca un perfil inventado suelto. memberId único: una
+// persona tiene un solo Gemelo Digital experto, no varios.
+model Experto {
+  id        String @id @default(cuid())
+  key       String @unique
+  memberId  String @unique
+  member    Member @relation(fields: [memberId], references: [id])
+
+  nombrePublico    String  // puede diferir de Member.name (alias público), nunca se usa para simular ser la persona
+  profesion        String
+  esProfesionRegulada Boolean @default(false) // dispara la regla dura de "orienta y refiere, nunca diagnostica"
+  descripcion      String
+  iconUrl          String  @default("")
+  color            String  @default("#C8A15A")
+
+  // Consentimiento -- obligatorio, explícito, revocable. Sin
+  // consentGivenAt, este Experto no puede tener bautizoStatus
+  // "bautizado" (constraint a nivel de código, no de DB).
+  consentGivenAt   DateTime?
+  consentScope     Json     @default("[]") // qué autorizó usar: "transcripciones" | "documentos" | "voz" | ...
+  consentRevokedAt DateTime?
+
+  // Nunca se publica sin aprobación a mano de la persona -- ver reglas
+  // duras arriba. "sin_bautizar" es el default de TODO Experto nuevo,
+  // sin excepción.
+  bautizoStatus String @default("sin_bautizar") // "sin_bautizar" | "bautizado"
+
+  // Los 3 niveles de consulta, ver (d) -- precios placeholder, sin
+  // pasarela real (mismo criterio honesto que basePriceUsd en WowApp).
+  priceGemeloSoloUsd     Float @default(0)
+  priceGemeloRevisadoUsd Float @default(0)
+  priceSesionUsd         Float @default(0)
+
+  industryTags  Json    @default("[]")
+  painPointTags Json    @default("[]")
+  status        String  @default("proximamente")
+  destacado     Boolean @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  codice               CodiceEntry[]
+  consultas            Consulta[]
+  especialistasReferidos EspecialistaInstall[]
+}
+
+// El Códice real de un Experto -- nunca se expone entero a nadie más
+// que a la propia persona (regla dura 5). Solo entran acá preguntas que
+// la persona misma aprobó a mano desde el inbox (ver (c)).
+model CodiceEntry {
+  id         String    @id @default(cuid())
+  expertoId  String
+  experto    Experto   @relation(fields: [expertoId], references: [id], onDelete: Cascade)
+  pregunta   String
+  respuesta  String
+  aprobadaAt DateTime? // null = todavía en revisión, no se usa para responder de verdad
+  createdAt  DateTime  @default(now())
+}
+
+// Cada intercambio con el Gemelo Digital de un Experto -- de acá salen
+// tanto el conteo de las 3 preguntas gratis (visitorToken, sin
+// registrar) como el inbox de "no supo responder" que ve la persona en
+// su propia Oficina.
+model Consulta {
+  id           String    @id @default(cuid())
+  expertoId    String
+  experto      Experto   @relation(fields: [expertoId], references: [id], onDelete: Cascade)
+  // Anónimo (las primeras 3 gratis, token de sesión/cookie) o ya
+  // registrado -- nunca ambos.
+  visitorToken String?
+  memberId     String?
+  member       Member?   @relation(fields: [memberId], references: [id])
+
+  pregunta  String
+  respuesta String?  // null = el Gemelo no supo responder -- entra al inbox
+  nivel     String   @default("gemelo_solo") // "gemelo_solo" | "gemelo_revisado" | "sesion", ver (d)
+  revisadaPorExpertoAt DateTime?
+  createdAt DateTime @default(now())
+}
+```
+
+### (b) Qué se reusa vs. qué es nuevo
+
+**Se reusa tal cual:**
+- `lib/wowApps.ts` -- `RUBROS`/`PAIN_POINTS` (los 2 selectores) y
+  `matchWowApps` (el algoritmo de match) se generalizan para
+  Especialistas y Expertos también, mismo patrón función pura + tests
+  100% sin tocar Postgres.
+- `components/WowAppsBlock.tsx` -- el patrón visual (grilla + bottom-
+  sheet, cara "Qué es esto" primero) se clona para el bloque de
+  Especialistas contratados en la Oficina, leyendo de
+  `EspecialistaInstall` en vez de `WowAppInstall`.
+- `components/OfficeSkillsBlock.tsx` -- precedente directo de "una
+  herramienta adentro de un rol más grande", mismo criterio para cómo un
+  Especialista muestra sus `toolKeys`.
+- `components/FocusModeBlock.tsx` / `components/VoiceNotesBlock.tsx` --
+  sin cambios en sí mismas: pasan a ser referenciadas como herramientas
+  reales de un Especialista (ej. el Especialista "Enfoque" usa Modo Foco
+  + Notas de Voz), no se reescriben.
+- `lib/gemeloDigitalScript.ts` / `components/OfficeDemoChat.tsx` -- hoy
+  es una demo simulada SOLO para el dueño de una Card. El patrón visual
+  del chat (burbujas, el "Soy tu Gemelo Digital...") es lo que se reusa
+  para el chat real de consulta a un Experto -- la lógica de respuesta
+  en sí es nueva (Fase 5 construye la primera versión, siempre marcada
+  simulada mientras no haya IA entrenada con un Códice real).
+
+**Es nuevo:**
+- Los 4 modelos de arriba (`Especialista`/`EspecialistaInstall`/
+  `Experto`/`CodiceEntry`/`Consulta`).
+- La máquina de estados de consentimiento + Bautizo (nada parecido
+  existe hoy -- lo más cercano es `googleConnectedAt`/
+  `googleRefreshToken` en `Member`, que es consentimiento para UNA
+  integración, no para publicar un Gemelo Digital de la persona).
+- La pantalla de inbox "preguntas que tu gemelo no supo responder" en la
+  Oficina del propio Experto.
+- El split de WowStore en 2 secciones (Especialistas/Expertos).
+- El flow de referido con contratación en un toque.
+
+### (c) Cambios de interfaz
+
+1. **Sección de la Oficina renombrada.** Hoy el bloque de WowApps
+   instaladas no tiene un título propio (confirmado en el código, sin
+   kicker). Con Especialistas/Expertos adentro, necesita nombrarse como
+   "tu equipo". Propuesta (a elegir, mismo criterio de la Fase 2 -- no
+   lo cambio sin tu OK):
+   - **"Tu Equipo"** (mi recomendación -- corto, y es literalmente lo
+     que es: gente/agentes trabajando para vos).
+   - "Tu Plantilla" (más formal/corporativo).
+   - "Quién te ayuda" (más conversacional, menos "corporate").
+2. **WowStore se divide en 2 secciones**: Especialistas y Expertos,
+   cada una con su propio "Explorar" (mismo patrón de
+   rubro+dolor de hoy). Las WowApps sueltas actuales (WowAwe, etc.) NO
+   desaparecen de golpe -- se re-empaquetan como herramientas dentro de
+   al menos un Especialista cada una, para no perder lo que ya funciona
+   (WowAwe real).
+3. **Card de un Experto**: botón "Consulta a mi gemelo digital" -- 3
+   preguntas gratis sin registrarte (via `visitorToken`), a la cuarta
+   pide registro real (mismo flujo de alta que ya existe para
+   cualquiera que quiera ser Member).
+4. **Oficina del propio Experto**: nueva sección, inbox de "preguntas
+   que tu gemelo no supo responder" -- la persona las responde a mano, y
+   puede aprobar cada una para que entre de verdad al Códice
+   (`CodiceEntry.aprobadaAt`). Suma un resumen corto de consultas
+   (cuántas, qué nivel, cuántas sin responder) -- sin inventar métricas
+   que no salgan de `Consulta` real.
+5. **Referido**: un Experto puede recomendar un Especialista dentro de
+   su propia respuesta/perfil. Contratación en un toque
+   (`EspecialistaInstall.referredByExpertoId` queda seteado solo). La
+   comisión (si la hay) se paga por USO real del Especialista contratado
+   -- nunca por el solo hecho de haber referido a alguien (regla
+   explícita de Gunnar). Sin pasarela real todavía: el criterio es el
+   mismo flag-manual honesto que ya usa `adaptationPaidAt`.
+
+### (d) Niveles de consulta (precios placeholder, sin cobro real)
+
+1. **Gemelo solo** -- responde el Gemelo Digital sin que la persona
+   intervenga. El más barato, el más rápido.
+2. **Gemelo con revisión de la persona** -- el Gemelo responde, pero la
+   persona la revisa/ajusta antes de que llegue (o después, con
+   seguimiento) -- nivel intermedio.
+3. **Sesión con la persona** -- la consulta se convierte en un contacto
+   real con el humano, no una respuesta de agente. El más caro, sin
+   sustituto de agente ahí.
+
+Los 3 campos `priceGemeloSoloUsd`/`priceGemeloRevisadoUsd`/
+`priceSesionUsd` en `Experto` son placeholders que cada persona
+completa a mano -- ningún número inventado por el sistema, mismo
+criterio que `basePriceUsd` en `WowApp` hoy.
+
+### (e) Explícitamente fuera de este MVP
+
+- Cualquier IA real entrenada sobre un Códice -- la respuesta de un
+  Experto sigue siendo simulada/guionada hasta que exista esa pieza,
+  igual que el Gemelo Digital del dueño hoy.
+- Pasarela de pago real para cualquiera de los 3 niveles de consulta o
+  la comisión de referido -- mismo límite honesto que el resto de
+  WowStore (`membershipPaidAt`, `adaptationPaidAt`).
+- Verificación de identidad/credencial real para "profesión regulada"
+  (`esProfesionRegulada`) -- por ahora es un flag que carga la propia
+  persona o MasterN0 a mano, no una validación contra un colegio
+  profesional real.
+- Notificaciones push/email automáticas cuando llega una pregunta al
+  inbox de un Experto -- se revisa entrando a la Oficina, como todo lo
+  demás en LyCard hoy.
+- Cualquier lógica real de "actua_solo" para un Especialista con
+  `autonomyLevel` alto -- en este MVP ese campo existe en el modelo pero
+  ningún Especialista real lo usa todavía (cáscara honesta, mismo
+  criterio que `WowApp.status:"proximamente"`).
+
+**Esperando tu OK para recién ahí arrancar la Fase 5** (un Especialista
+de ejemplo, un Experto de ejemplo, y los E2E del flujo pregunta→
+registro→inbox) -- sin tocar código hasta entonces.
+
 Sin cambios que verificar/shippear -- no hubo diff de código, se deja
 documentado el criterio para no repetir la auditoría.
 
