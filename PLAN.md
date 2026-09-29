@@ -6697,4 +6697,42 @@ aria-label en inglés del punto 5, y `oficina-extras-editor.spec.ts`
 esperaba el nombre viejo del acordeón del punto 6), 212/212 unit, 100%
 coverage, tsc/lint/build limpios.
 
+## Ronda de endurecimiento (2026-09-29) -- Fase 3: Nombre del agente
+
+Auditoría de todo `docs/`, `PLAN.md` y la interfaz buscando "Einar",
+"Carbono" y "Silicio" usados para nombrar el agente del propio usuario
+(el pedido: "donde se hable del agente del usuario ... reemplazalo por
+'Gemelo Digital'"). **Resultado: cero cambios de código** -- la única
+feature que ES "el agente del usuario" (el Gemelo Digital, la demo de
+chat de `lib/gemeloDigitalScript.ts`/`components/OfficeDemoChat.tsx`) ya
+usa "Gemelo Digital" / "Tu Gemelo Digital" en el 100% de sus strings,
+sin una sola mención a Einar/Carbono/Silicio -- se construyó bien desde
+el vamos (Fase D, ya shippeada).
+
+El resto de las apariciones encontradas no son "el agente del usuario",
+son 3 cosas distintas, todas fuera del alcance del pedido:
+1. `docs/*.md` y `PLAN.md` -- vocabulario interno de EinarOS para
+   contribuidores (`docs/06-CONTRIBUIR.md` tiene directamente una
+   sección "Dudas sobre el vocabulario del ecosistema"). No es
+   interfaz, es documentación de equipo.
+2. `/admin/equipo` (`EquipoTasksBlock.tsx`, `lib/hr.ts`) -- el módulo HR
+   interno, gateado a MasterN0 y con el rótulo "EinarOS · Interno"
+   escrito en la propia pantalla. Es la taxonomía real del EQUIPO de
+   Gunnar (quién es persona, quién es agente puro), no el agente de un
+   cliente.
+3. `lib/mallaReal.ts` (`N1_TRIADA`: Einar/Chaty/Warren) -- son los 3
+   nodos fijos del organismo RAÍZ (el propio equipo N1 de Legacy, WHITEPAPER
+   §4.4), que se ve en la Malla de un visitante o en la Card Origen de
+   Gunnar. No es "tu agente": son 3 roles reales y distintos
+   (Estrategia/Coordinación/Ejecución) del organigrama del ecosistema,
+   mostrados como contenido informativo -- mismo criterio que la
+   descripción de la insignia O.D. en `lib/i18n.ts`, que ya nombra
+   "EinarOS" en texto visible a cualquier visitante. Cada cliente real
+   (Programa) sigue viendo su PROPIO equipo con nombres reales
+   (`buildMemberFractalGraph`), nunca Einar/Chaty/Warren -- ese trío
+   nunca se le atribuye a un cliente como si fuera su propio agente.
+
+Sin cambios que verificar/shippear -- no hubo diff de código, se deja
+documentado el criterio para no repetir la auditoría.
+
 Shippeado como v1.59.2.
