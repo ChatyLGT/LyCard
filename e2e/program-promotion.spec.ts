@@ -153,6 +153,12 @@ test.describe("Promoción Chido→Programa", () => {
     expect(adminRow.rows).toHaveLength(1);
     expect(adminRow.rows[0].email).toBeNull();
     expect(adminRow.rows[0].passwordHash).toBeNull();
+    // Regla dura (2026-09-29, ver docs/02-ARQUITECTURA.md "Regla dura:
+    // quién puede volverse Admin/N0"): una promoción automática nunca
+    // puede producir un MasterN0 -- afirmación explícita e independiente
+    // de la de abajo, para que este test falle fuerte si algún día ese
+    // invariante se rompe.
+    expect(adminRow.rows[0].programId).not.toBeNull();
     expect(adminRow.rows[0].programId).toBe(newProgramId);
 
     // El reclutado -- membresía Y su Card de proyecto -- migró de Legacy
@@ -355,6 +361,9 @@ test.describe("Promoción Chido→Programa -- vía marcar como pagada", () => {
     expect(adminRow.rows).toHaveLength(1);
     expect(adminRow.rows[0].email).toBeNull();
     expect(adminRow.rows[0].passwordHash).toBeNull();
+    // Regla dura (2026-09-29) -- mismo chequeo explícito que el escenario
+    // de arriba, para este segundo disparador ("marcar como pagada").
+    expect(adminRow.rows[0].programId).not.toBeNull();
     expect(adminRow.rows[0].programId).toBe(newProgramId);
 
     const recruitMembershipRow = await e2eDb.query<{ programId: string }>(

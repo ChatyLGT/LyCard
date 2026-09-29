@@ -59,33 +59,56 @@ conectada esa tarjeta").
 
 ### Regla dura: quién puede volverse Admin/N0
 
-**Ninguna cuenta de Admin se crea por login — nunca por Google, nunca por
-ningún flujo self-service en el sentido de "el propio usuario se la
-otorga".** Verificado en el código: ni el login de Google de un Member
-(`app/m/auth/google/callback`) ni la conexión de Google de una Card
-(Fase F, `app/m/auth/google/connect-*`) tocan jamás el modelo `Admin` —
-ambos solo leen/escriben `Member`. `Admin.programId === null` sigue
-siendo, en todo momento, una sola cuenta: la de Gunnar.
+**MasterN0 es solo Gunnar. Dar permisos de MasterN0 (`Admin.programId ===
+null`) lo hace únicamente él, a mano — nunca el código, nunca un flujo
+automático, nunca una promoción.** Esta es la regla de más alto riesgo de
+todo el panel — si alguna vez un camino automático pudiera dejar
+`programId` en `null`, esa persona tendría acceso global a cada Programa,
+cada Member, cada Card de la plataforma. Confirmada explícitamente por
+Gunnar (2026-09-29) tras el endurecimiento de Fase P1.
 
-**Dos caminos reales para que nazca un `Admin` con `programId` seteado
-(nunca `null`), los dos verificados contra el código:**
+**El único lugar de todo el repo que puede crear un `Admin` con
+`programId: null` es `prisma/seed.ts`** — un script que se corre a mano,
+una sola vez, y que además exige `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD`
+por variable de entorno (sin default hardcodeado, a propósito: este repo
+es público). No es un endpoint, no responde a ninguna request, no lo
+dispara ninguna acción de un usuario — es infraestructura de bootstrap,
+del mismo tipo que crear la base de datos. Nadie más que quien tiene
+acceso al servidor/CI puede ejecutarlo.
+
+**Todo lo demás que crea un `Admin` — verificado línea por línea en el
+código, los 4 lugares de todo el repo que hacen `prisma.admin.create` o
+`prisma.admin.update`, ninguno más — está forzado a poner un
+`programId` real, nunca `null`:**
 
 1. **De alta a mano por MasterN0** — `createProgramAdminAction` en
-   `app/admin/programs/actions.ts`, detrás de `requireMasterN0()`. El
-   camino de siempre, para un Programa que MasterN0 crea directo desde
-   `/admin/programs`.
+   `app/admin/programs/actions.ts`, detrás de `requireMasterN0()`, valida
+   que `programId` venga no vacío y que ese Programa exista antes de
+   crear la fila. El camino de siempre, para un Programa que MasterN0
+   crea directo desde `/admin/programs`.
 2. **Promoción automática Chido→Programa** (Fase P1, v1.52.0,
    ✅ shippeado — ver
    [05-ROADMAP-EDT.md#modelo-de-negocio-3-ejes](./05-ROADMAP-EDT.md#modelo-de-negocio-3-ejes),
-   Eje A). `lib/programPromotion.ts#checkAndPromoteToPrograma` crea el
-   `Admin` con `Admin.memberId` seteado (FK a `Member`, `email`/
-   `passwordHash` en `null`) cuando un Chido cruza el umbral — **sin que
-   MasterN0 apruebe ese caso puntual a mano**. No es un login de Google
-   creando el Admin: es la sesión de Member ya autenticada de ese Chido
-   la que, vía `currentAdminScope()`, hereda autoridad sobre el Programa
-   nuevo. El invariante de fondo sigue intacto — sigue habiendo un único
-   lugar que hace cada tipo de creación, los dos auditables, ninguno
-   disparado por un simple login externo.
+   Eje A). `lib/programPromotion.ts#promoteToPrograma` **siempre crea el
+   `Program` nuevo primero** (`prisma.program.create`, que nunca puede
+   devolver un id vacío) y recién con ese id real crea el `Admin`
+   (`Admin.memberId` seteado, FK a `Member`; `email`/`passwordHash` en
+   `null` porque nunca tuvo login propio — su sesión de Member ya
+   autenticada hereda la autoridad vía `currentAdminScope()`). No es un
+   login de Google creando el Admin — Google nunca toca este modelo (ver
+   arriba). El helper `buildPromotedAdminData(memberId, programId:
+   string)` tipa `programId` como no-nullable a propósito: el compilador
+   ya rechaza cualquier intento de llamarlo con `null`.
+3. **Cambio de password de un Admin ya existente**
+   (`app/admin/actions.ts`) — nunca toca `programId`, solo
+   `passwordHash`. No puede crear ni promover a nadie.
+
+**Verificado con tests, no solo documentado de palabra**:
+`lib/__tests__/programPromotion.test.ts` (unitario, sobre
+`buildPromotedAdminData`) y `e2e/program-promotion.spec.ts` (contra
+Postgres real, los 2 escenarios de promoción) — ambos afirman
+explícitamente `programId !== null` sobre el `Admin` recién creado por la
+promoción automática.
 
 ## El patrón que se repite en todo el repo
 

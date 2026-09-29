@@ -4,6 +4,17 @@ import { slugify, uniqueSlug } from "@/lib/slug";
 const programSlugTaken = (slug: string) =>
   prisma.program.findUnique({ where: { slug }, select: { id: true } }).then(Boolean);
 
+// Regla dura (2026-09-29, pedido explícito de Gunnar, ver
+// docs/02-ARQUITECTURA.md "Regla dura: quién puede volverse Admin/N0"):
+// una promoción automática NUNCA puede dejar `Admin.programId` en null --
+// eso convertiría a alguien en MasterN0 sin que Gunnar lo haya dado de
+// alta a mano. `programId` es `string`, no `string | null`, a propósito:
+// el compilador ya rechaza cualquier intento de pasarle `null` acá, y
+// lib/__tests__/programPromotion.test.ts lo deja explícito también.
+export function buildPromotedAdminData(memberId: string, programId: string): { memberId: string; programId: string } {
+  return { memberId, programId };
+}
+
 // Promoción automática Chido→Programa (2026-09-24, ver PLAN.md "Modelo de
 // monetización cerrado"). Un Chido (Member con `membershipPaidAt` seteado
 // en alguna ProgramMembership) se convierte en N0 de su propio Programa en
@@ -67,7 +78,7 @@ async function promoteToPrograma(
 
   await prisma.$transaction([
     prisma.card.update({ where: { id: companyCardId }, data: { programId: newProgram.id } }),
-    prisma.admin.create({ data: { memberId: candidateMemberId, programId: newProgram.id } }),
+    prisma.admin.create({ data: buildPromotedAdminData(candidateMemberId, newProgram.id) }),
     ...referredActive.flatMap((membership) => {
       const projectCard = membership.member.cards.find((c) => c.kind === "project");
       return [

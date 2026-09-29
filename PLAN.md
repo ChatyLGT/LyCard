@@ -6590,3 +6590,58 @@ mostrar" que ya se usó una vez antes en esta misma Fase.
 **Recordatorio de la regla permanente de arriba**: esto sigue sin ser
 luz verde de producción. Fase P1 y Fase W1 están listas para que Sergio
 y Fabricio las auditen -- no para que un cliente real las use.
+
+## Ronda de endurecimiento (2026-09-29) -- Fase 1: Regla dura de MasterN0
+
+Gunnar abrió una ronda nueva de 5 fases (seguimos en FASE DE DISEÑO,
+datos de prueba, nombres internos nunca en la interfaz -- "Gemelo
+Digital" es el único nombre que el usuario ve para su agente). Fase 1,
+la única cerrada por ahora: **MasterN0 soy solo yo. La promoción
+automática (Fase P1) crea un Admin con programId de ese Programa, nunca
+un Admin con programId null.**
+
+**Auditoría de código, los 4 lugares de todo el repo que tocan el modelo
+`Admin` (`prisma.admin.create`/`update`/`upsert`), ninguno más:**
+1. `prisma/seed.ts` -- el ÚNICO lugar que puede dejar `programId: null`.
+   Script manual, una sola vez, exige `SEED_ADMIN_EMAIL`/
+   `SEED_ADMIN_PASSWORD` por env var, sin default hardcodeado. No
+   responde a ninguna request, nadie más que quien tiene acceso al
+   servidor lo puede correr.
+2. `createProgramAdminAction` (`app/admin/programs/actions.ts`) --
+   detrás de `requireMasterN0()`, valida `programId` no vacío + que el
+   Programa exista antes de crear. Ya era seguro.
+3. `app/admin/actions.ts` (cambio de password) -- nunca toca
+   `programId`.
+4. `lib/programPromotion.ts#promoteToPrograma` (la promoción
+   automática) -- ya creaba el `Program` primero y usaba SU id real para
+   el `Admin`, nunca podía ser null en la práctica. **Ya era seguro
+   antes de esta ronda** -- lo que faltaba era la garantía explícita +
+   el test que lo demuestre, no un bug que corregir.
+
+**Lo que se construyó, para que ese invariante no dependa solo de que
+nadie se equivoque leyendo el código:**
+- `lib/programPromotion.ts#buildPromotedAdminData(memberId, programId:
+  string)` -- extrae el payload del `Admin` promovido a una función
+  pura, con `programId` tipado `string` (no `string | null`) a
+  propósito: el compilador ya rechaza pasarle `null`.
+- `lib/__tests__/programPromotion.test.ts` (nuevo, 3 tests) -- confirma
+  en runtime que el resultado nunca es null, que el `memberId` viaja
+  intacto, y que nunca se cuelan `email`/`passwordHash`.
+- `e2e/program-promotion.spec.ts` -- los 2 escenarios reales (vía
+  entrevista, vía "marcar como pagada") ahora afirman explícitamente
+  `expect(adminRow.rows[0].programId).not.toBeNull()`, con un comentario
+  que nombra la regla dura, además del chequeo de igualdad que ya
+  existía.
+- `docs/02-ARQUITECTURA.md`, sección "Regla dura: quién puede volverse
+  Admin/N0" -- reescrita para decir explícito, primero que nada: dar
+  permisos de MasterN0 lo hace solo Gunnar, a mano, y el único lugar del
+  código que puede hacerlo es el seed script.
+
+**Verificado**: 35/36 E2E (el único que no pasa,
+`interview-slots.spec.ts`, es un test viejo con fechas fijas
+hardcodeadas por Gunnar -- "Jueves 24 de Septiembre" ya quedó en el
+pasado real, 2026-09-29 -- código funcionando como debe, sin relación
+con esta fase, no se tocó), 212/212 unit, 100% coverage en los archivos
+del ratchet, tsc/lint/build limpios.
+
+Shippeado como v1.59.1.

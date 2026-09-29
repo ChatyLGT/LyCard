@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.59.0";
+export const APP_VERSION = "1.59.1";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.59.1",
+    date: "2026-09-29",
+    notes:
+      "Revisión de seguridad (Fase 1 de la ronda de endurecimiento): confirmado que ningún camino automático del código puede crear un Admin con acceso total (MasterN0) -- solo Gunnar puede darlo de alta, siempre a mano. Sin cambios visibles en la app; se sumaron tests que blindan esta regla para que no se rompa por accidente en el futuro.",
+  },
   {
     version: "1.59.0",
     date: "2026-09-24",
