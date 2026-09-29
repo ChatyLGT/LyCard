@@ -26,7 +26,7 @@ function Sweep() {
   );
 }
 
-// Fase E3 — "Keep in Flow": el objetivo del día (texto libre del dueño,
+// Fase E3 — "Objetivo del Día": el objetivo del día (texto libre del dueño,
 // sin fallback inventado: vacío es vacío, cáscara honesta) + la frase
 // motivacional del día (lib/oficinaExtras.ts#pickPhraseOfTheDay, rotación
 // determinística, nunca un modelo en vivo). isDefaultPhrase marca cuando
@@ -47,8 +47,7 @@ export default function KeepInFlowBlock({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-        <span style={kicker}>Keep in Flow</span>
-        {objetivo && <span style={{ font: "400 10px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>Objetivo del día</span>}
+        <span style={kicker}>Objetivo del Día</span>
       </div>
 
       {objetivo ? (

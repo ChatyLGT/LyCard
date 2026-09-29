@@ -236,7 +236,7 @@ export default function EditorForm({
                 <input
                   name="islandLabel"
                   defaultValue={card.islandLabel}
-                  placeholder={isCompany ? "My Business Card" : "My Personal Card"}
+                  placeholder={isCompany ? "Mi Tarjeta de Empresa" : "Mi Tarjeta Personal"}
                   style={FIELD_INPUT}
                 />
               </div>

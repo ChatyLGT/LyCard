@@ -6645,3 +6645,56 @@ con esta fase, no se tocó), 212/212 unit, 100% coverage en los archivos
 del ratchet, tsc/lint/build limpios.
 
 Shippeado como v1.59.1.
+
+## Ronda de endurecimiento (2026-09-29) -- Fase 2: Pulido visual (sin funcionalidades nuevas)
+
+6 items, todos de pulido, cero funcionalidad nueva:
+
+1. **Islita de versión y lápiz de editar, solo para el dueño real**:
+   `isHost` (acceso funcional -- edición, WowStore, Malla completa) no se
+   tocó, sigue dando acceso a cualquiera que abra la Card Origen, con o
+   sin sesión, tal cual documentado desde v1.1.0. Se sumó
+   `isAuthenticatedOwner` (`isAdmin || memberId === card.memberId`, sin
+   el bypass de `card.isOrigin`), usado solo para gatear estos 2
+   elementos cosméticos en `LyCardView.tsx` y `oficina/page.tsx`.
+2. **Hueco visual entre las redes sociales y la frase**: bug real de
+   flexbox en `LyCardView.tsx` -- el wrapper de la foto (`flex:1 1 auto`
+   sin tope) absorbía todo el espacio sobrante de la columna y lo dejaba
+   varado después de la fila de redes. Se le puso al wrapper el mismo
+   tope que ya tenía su foto (+70px para la fila que se superpone).
+   Verificado con capturas reales antes/después (4 iteraciones, 2
+   intentos previos causaron regresiones distintas y se descartaron).
+3. **Colores de los íconos de contacto**: el jade/rubí (verde/rojo) no
+   está en el brandbook (#0D0D0D/#C8A15A/#F5F2EB/#5A5A5A). Unificados al
+   dorado de marca, usando la variable `--accentRgb` ya existente para
+   que un Programa con su propio Skin lo siga viendo con su color.
+4. **Acento faltante**: `"certificacion"` → `"certificación"` en
+   `lib/tags.ts` (categoría sugerida de Janus, se renderiza en un
+   `<datalist>` real).
+5. **Textos en inglés sin ambigüedad**: `aria-label="Virtual Office"` →
+   `"Oficina Virtual"`, 3x `aria-label="Close"` → `"Cerrar"`, `"My
+   Business/Personal Card"` → `"Mi Tarjeta de Empresa/Personal"`
+   (`LyCardView.tsx` + `EditorForm.tsx`).
+6. **"Keep in Flow" y "Check de Realidad"**: únicos 2 términos donde se
+   le propusieron opciones a Gunnar antes de tocarlos (pedido explícito
+   suyo). Eligió los más literales: **Objetivo del Día** y **Chequeo de
+   Realidad** -- renombrados en el texto real de la Oficina
+   (`KeepInFlowBlock.tsx`/`CheckDeRealidadBlock.tsx`), el editor N0
+   (`OficinaExtrasEditor.tsx`), el admin de frases
+   (`app/admin/programs/[id]/page.tsx`), el diálogo del Gemelo Digital
+   (`lib/gemeloDigitalScript.ts`), y los comentarios de código
+   relacionados. De paso se sacó una etiqueta "Objetivo del día" que
+   quedaba duplicada al lado del kicker una vez que el kicker mismo pasó
+   a decir eso (antes no chocaban porque el kicker estaba en inglés). El
+   historial del CHANGELOG (`lib/version.ts`) se dejó sin tocar --
+   registro de lo que se shippeó en su momento, no se reescribe.
+
+**Verificado**: mismo 35/36 E2E que la Fase 1 (el único que no pasa
+sigue siendo `interview-slots.spec.ts` por fechas vencidas, no una
+regresión -- se encontraron y corrigieron de paso 2 tests que sí
+apuntaban a texto viejo real: `card-size-panel.spec.ts` esperaba el
+aria-label en inglés del punto 5, y `oficina-extras-editor.spec.ts`
+esperaba el nombre viejo del acordeón del punto 6), 212/212 unit, 100%
+coverage, tsc/lint/build limpios.
+
+Shippeado como v1.59.2.

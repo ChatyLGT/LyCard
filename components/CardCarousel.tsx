@@ -29,11 +29,13 @@ export default function CardCarousel({
   initialSlug,
   isAdmin,
   isHost,
+  isAuthenticatedOwner,
 }: {
   cards: CarouselBundle[];
   initialSlug: string;
   isAdmin: boolean;
   isHost: boolean;
+  isAuthenticatedOwner: boolean;
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const initialIndex = Math.max(
@@ -89,6 +91,7 @@ export default function CardCarousel({
               qrSvg={c.qrSvg}
               isAdmin={isAdmin}
               isHost={isHost}
+              isAuthenticatedOwner={isAuthenticatedOwner}
               badge={c.badge}
               originMemento={c.originMemento}
               program={c.program}

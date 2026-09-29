@@ -295,7 +295,7 @@ export async function updateOfficeSkillsAction(programId: string, formData: Form
   redirect(`/admin/programs/${programId}?officeSkillsSaved=1`);
 }
 
-// Pool de frases motivacionales para "Keep in Flow" (Fase E2) — mismo
+// Pool de frases motivacionales para "Objetivo del Día" (Fase E2) — mismo
 // patrón que updateOfficeSkillsAction: el editor client-side manda el
 // array completo como un solo JSON. Vacío = cae a
 // DEFAULT_MOTIVATIONAL_PHRASES (lib/oficinaExtras.ts).

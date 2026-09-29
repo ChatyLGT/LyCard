@@ -151,6 +151,15 @@ type OficinaData = {
   // sigue siendo solo Superpoderes internos de Legacy.
   installedWowApps: (WowAppInstall & { wowApp: WowApp })[];
   aweEntries: AweWalkEntrySummary[];
+  // Pulido visual (2026-09-29, pedido de Gunnar): `isHost` de abajo sigue
+  // dando acceso funcional completo a cualquiera que abra la Card Origen
+  // (isOrigin), con o sin sesión -- eso no cambia acá, sigue siendo lo
+  // que ya usan Malla/WowStore/etc. Pero el saludo "Hola, {nombre}" + el
+  // lápiz de editar son para el DUEÑO real, no para cualquiera que entre
+  // a esa Card puntual. `isAuthenticatedOwner` es más angosto: true solo
+  // con sesión real (Admin o Member dueño de esta Card), false para un
+  // visitante anónimo aunque `isOrigin` lo trate como host funcional.
+  isAuthenticatedOwner: boolean;
 };
 
 // ---------------- Piezas compartidas ----------------
@@ -583,7 +592,7 @@ function VisitorOficina({ data }: { data: OficinaData }) {
 
 // ==================== Vista privada — lo único que ve el dueño (isHost) ====================
 function OwnerOficina({ data }: { data: OficinaData }) {
-  const { card, program, badge, accent, dashboardHref } = data;
+  const { card, program, badge, accent, dashboardHref, isAuthenticatedOwner } = data;
 
   return (
     <div style={{ minHeight: "100vh", background: "#0B0B0A", color: "#F3F0E9", fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
@@ -604,24 +613,28 @@ function OwnerOficina({ data }: { data: OficinaData }) {
             </div>
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ font: "700 15px 'Plus Jakarta Sans',sans-serif" }}>Hola, {card.name}</div>
+            <div style={{ font: "700 15px 'Plus Jakarta Sans',sans-serif" }}>
+              {isAuthenticatedOwner ? `Hola, ${card.name}` : `Oficina de ${card.name}`}
+            </div>
             <span style={{ font: "400 10.5px 'Plus Jakarta Sans',sans-serif", color: "#756c5e" }}>{program?.name || "Legacy"} · {badge}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
             <Link href={`/c/${card.slug}`} aria-label="Volver a la tarjeta" style={navIconStyle}>
               <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_back</span>
             </Link>
-            <Link href={dashboardHref} aria-label="Editar Oficina" style={navIconStyle}>
-              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>edit</span>
-            </Link>
+            {isAuthenticatedOwner && (
+              <Link href={dashboardHref} aria-label="Editar Oficina" style={navIconStyle}>
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>edit</span>
+              </Link>
+            )}
           </div>
         </div>
 
-        {/* Orden pedido por Gunnar (2026-09-23): Keep in Flow → Gemelo
-            Digital → Check de Realidad → Seguimiento → Superpoderes →
+        {/* Orden pedido por Gunnar (2026-09-23): Objetivo del Día → Gemelo
+            Digital → Chequeo de Realidad → Seguimiento → Superpoderes →
             Noticias → BrainNet (Cerebro Malla) al final. Se sacaron dos
             bloques de acá: KpiRow (Portafolio/Malla/Cartera) era cáscara
-            vestigial de antes de que existiera Check de Realidad — el
+            vestigial de antes de que existiera Chequeo de Realidad — el
             "Portafolio" duplicaba PortfolioBlock de abajo, "Malla" en
             realidad mostraba el badge O.D. (nada que ver con el grafo real)
             y "Cartera" era un placeholder deshabilitado; y el Calendario
@@ -857,7 +870,7 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
     }));
   }
 
-  // Fase E3 — Keep in Flow / Check de Realidad, solo para el dueño (mismo
+  // Fase E3 — Objetivo del Día / Chequeo de Realidad, solo para el dueño (mismo
   // criterio que Notas de Voz/Seguimiento arriba: nada de esto es público).
   // El objetivo (texto libre) no tiene fallback inventado — vacío es
   // vacío. Los KPIs y la frase del día sí caen a un ejemplo fijo cuando
@@ -989,6 +1002,7 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
     // OfficeSkillsBlock (Superpoderes internos del equipo de Legacy).
     installedWowApps: card.wowAppInstalls,
     aweEntries,
+    isAuthenticatedOwner: isAdmin || (memberId !== null && memberId === card.memberId),
   };
 
   return isHost ? <OwnerOficina data={data} /> : <VisitorOficina data={data} />;

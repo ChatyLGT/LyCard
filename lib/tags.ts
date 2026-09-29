@@ -16,7 +16,7 @@ export const TAG_POLARITY_LABEL: Record<TagPolarity, string> = {
 
 // Sugeridas en la UI (chips), nunca exhaustivas — category sigue siendo
 // texto libre, esto es solo para no arrancar de una caja vacía.
-export const TAG_CATEGORY_SUGGESTIONS = ["producto", "servicio", "certificacion", "talento", "oportunidad"];
+export const TAG_CATEGORY_SUGGESTIONS = ["producto", "servicio", "certificación", "talento", "oportunidad"];
 
 export function normalizeTagPolarity(value: unknown): TagPolarity {
   return value === "busco" ? "busco" : "ofrezco";

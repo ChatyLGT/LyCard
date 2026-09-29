@@ -107,7 +107,7 @@ export function buildGemeloScript(ctx: GemeloContext): Record<GemeloNodeId, Geme
           ]
         : [
             `Todavía no tenés KPIs cargados para ${ctx.programName}, así que no tengo con qué armar un análisis de verdad.`,
-            "Simulación — cargá tus primeros KPIs en Check de Realidad y volvé a pedirme esto.",
+            "Simulación — cargá tus primeros KPIs en Chequeo de Realidad y volvé a pedirme esto.",
           ],
       options: BACK_OPTIONS,
     },
@@ -134,7 +134,7 @@ export function buildGemeloScript(ctx: GemeloContext): Record<GemeloNodeId, Geme
           ]
         : [
             `Sin KPIs cargados todavía para ${ctx.programName}, no tengo una serie real de la que pronosticar nada.`,
-            "Simulación — cargá tus primeros KPIs en Check de Realidad y volvé a pedirme esto.",
+            "Simulación — cargá tus primeros KPIs en Chequeo de Realidad y volvé a pedirme esto.",
           ],
       options: BACK_OPTIONS,
     },

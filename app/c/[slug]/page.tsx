@@ -93,6 +93,12 @@ export default async function CardPage({
   // mode requires the viewer's own Member session to match the card's owner
   // (PLAN.md Fase 2).
   const isHost = isAdmin || card.isOrigin || (memberId !== null && memberId === card.memberId);
+  // Pulido visual (2026-09-29, pedido de Gunnar): el número de versión es
+  // solo para el dueño real con sesión -- `isHost` de arriba sigue dando
+  // acceso funcional completo a cualquiera que abra la Card Origen, con o
+  // sin sesión (no se toca), pero un visitante anónimo de esa Card no
+  // debería ver la islita de versión.
+  const isAuthenticatedOwner = isAdmin || (memberId !== null && memberId === card.memberId);
 
   // Swipeable Programa/Business/Personal carousel — pero solo hasta donde
   // ESTA tarjeta puntual lo permite (2026-09-19, pedido de Gunnar): un
@@ -120,6 +126,7 @@ export default async function CardPage({
         qrSvg={b.qrSvg}
         isAdmin={isAdmin}
         isHost={isHost}
+        isAuthenticatedOwner={isAuthenticatedOwner}
         badge={b.badge}
         originMemento={b.originMemento}
         program={b.program}
@@ -129,5 +136,5 @@ export default async function CardPage({
     );
   }
 
-  return <CardCarousel cards={bundles} initialSlug={slug} isAdmin={isAdmin} isHost={isHost} />;
+  return <CardCarousel cards={bundles} initialSlug={slug} isAdmin={isAdmin} isHost={isHost} isAuthenticatedOwner={isAuthenticatedOwner} />;
 }

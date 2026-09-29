@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.59.1";
+export const APP_VERSION = "1.59.2";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.59.2",
+    date: "2026-09-29",
+    notes:
+      "Fase 2 de la ronda de endurecimiento -- pulido visual, sin funciones nuevas. El número de versión y el lápiz de editar en la tarjeta ya no se muestran a un visitante anónimo que entra por la tarjeta Origen, solo al dueño con sesión. Se corrigió un hueco visual que aparecía entre las redes sociales y la frase, en pantallas altas o con poco contenido. Se unificaron los colores de los íconos de contacto al dorado de marca (antes había un verde/rojo que no correspondía). Se corrigió un acento faltante en una de las categorías de tags. Y se tradujeron al español los últimos textos en inglés que quedaban sueltos: \"Oficina Virtual\", \"Cerrar\", \"Mi Tarjeta de Empresa/Personal\", y \"Keep in Flow\"/\"Check de Realidad\" ahora se llaman \"Objetivo del Día\" y \"Chequeo de Realidad\" en toda la app.",
+  },
   {
     version: "1.59.1",
     date: "2026-09-29",

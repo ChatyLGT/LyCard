@@ -4,12 +4,12 @@ import { createE2eDb, mintAdminCookie } from "./helpers/adminSession";
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
 
-// Fase E3 de Oficina Virtual: Keep in Flow (objetivo + frase del día) y
-// Check de Realidad (KPIs + sparkline) por fin se VEN en la Oficina real
+// Fase E3 de Oficina Virtual: Objetivo del Día (objetivo + frase del día) y
+// Chequeo de Realidad (KPIs + sparkline) por fin se VEN en la Oficina real
 // del dueño — antes (E1/E2) solo existían el schema y el editor. Esta
 // prueba confirma que lo que se guarda desde OficinaExtrasEditor
 // (e2e/oficina-extras-editor.spec.ts) efectivamente se renderiza acá.
-test.describe("Oficina Virtual — Fase E3 (Keep in Flow + Check de Realidad)", () => {
+test.describe("Oficina Virtual — Fase E3 (Objetivo del Día + Chequeo de Realidad)", () => {
   const e2eDb = createE2eDb();
   let cardSlug: string;
   let programId: string;
@@ -62,25 +62,25 @@ test.describe("Oficina Virtual — Fase E3 (Keep in Flow + Check de Realidad)", 
 
     await page.goto(`${BASE_URL}/c/${cardSlug}/oficina`, { waitUntil: "networkidle" });
 
-    await expect(page.getByText("Keep in Flow")).toBeVisible();
+    await expect(page.getByText("Objetivo del Día")).toBeVisible();
     await expect(page.getByText("Objetivo de prueba E2E")).toBeVisible();
     await expect(page.getByText("Frase de prueba del día para Fase E3.")).toBeVisible();
 
-    await expect(page.getByText("Check de Realidad")).toBeVisible();
+    await expect(page.getByText("Chequeo de Realidad")).toBeVisible();
     await expect(page.getByText("KPI de prueba")).toBeVisible();
     // El sparkline es un <svg> a mano (components/Sparkline.tsx) — confirma
     // que efectivamente se dibujó algo, no solo el texto del KPI.
     await expect(page.locator("svg polyline")).toHaveCount(1);
   });
 
-  test("un visitante (sin sesión) NO ve Keep in Flow ni Check de Realidad — son privados del dueño", async ({ browser }) => {
+  test("un visitante (sin sesión) NO ve Objetivo del Día ni Chequeo de Realidad — son privados del dueño", async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
 
     await page.goto(`${BASE_URL}/c/${cardSlug}/oficina`, { waitUntil: "networkidle" });
 
-    await expect(page.getByText("Keep in Flow")).toHaveCount(0);
-    await expect(page.getByText("Check de Realidad")).toHaveCount(0);
+    await expect(page.getByText("Objetivo del Día")).toHaveCount(0);
+    await expect(page.getByText("Chequeo de Realidad")).toHaveCount(0);
 
     await context.close();
   });

@@ -9,7 +9,7 @@ const kicker: CSSProperties = {
   color: "#756c5e",
 };
 
-// Fase E3 — "Check de Realidad": los KPIs del día que el dueño (o el
+// Fase E3 — "Chequeo de Realidad": los KPIs del día que el dueño (o el
 // botón "Generar con IA (simulado)" del editor) inventó, cada uno con su
 // sparkline de lib/sparkline.ts/components/Sparkline.tsx si tiene
 // suficiente trend para dibujar una línea. isDefault marca cuando son los
@@ -21,7 +21,7 @@ export default function CheckDeRealidadBlock({ kpis, isDefault, accent }: { kpis
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <span style={kicker}>Check de Realidad</span>
+      <span style={kicker}>Chequeo de Realidad</span>
       <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(kpis.length, 3)},1fr)`, gap: 8 }}>
         {kpis.slice(0, 3).map((kpi) => (
           <div

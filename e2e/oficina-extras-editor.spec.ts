@@ -4,13 +4,13 @@ import { createE2eDb, mintAdminCookie } from "./helpers/adminSession";
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
 
-// Fase E2 de Oficina Virtual: el editor de "Keep in Flow" (objetivo del
+// Fase E2 de Oficina Virtual: el editor de "Objetivo del Día" (objetivo del
 // día) vive adentro del form grande de EditorForm.tsx (OficinaExtrasEditor,
 // sin <form> propio — ver el comentario en ese archivo sobre por qué). Esta
 // prueba cierra el círculo end-to-end: escribir el objetivo en el navegador
 // de verdad, guardar, y confirmar que quedó en la DB — no solo que el
 // parser (lib/__tests__/oficinaExtras.test.ts) sabe leerlo.
-test.describe("OficinaExtrasEditor — Keep in Flow (objetivo del día)", () => {
+test.describe("OficinaExtrasEditor — Objetivo del Día (objetivo del día)", () => {
   const e2eDb = createE2eDb();
   let cardSlug: string;
   let adminId: string;
@@ -49,7 +49,7 @@ test.describe("OficinaExtrasEditor — Keep in Flow (objetivo del día)", () => 
 
     // La sección arranca colapsada (AccordionSection defaultOpen=false) —
     // hay que abrirla antes de que el input sea interactuable.
-    await page.getByRole("button", { name: /keep in flow/i }).click();
+    await page.getByRole("button", { name: /objetivo del día/i }).click();
     await page.getByPlaceholder("Ej. Cerrar 3 Legacys nuevos esta semana").fill("Cerrar 3 Legacys esta semana");
 
     await page.getByRole("button", { name: "Guardar Tarjeta" }).click();

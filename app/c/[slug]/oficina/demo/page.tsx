@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 // Demo guiada del "Gemelo Digital" para el dueño de la Oficina — Bot
 // Warren (pedido de Gunnar, 2026-09-23): la puerta simulada a tu Gemelo
 // Digital, el "CEO" de tu Oficina. Privada del dueño (mismo criterio que
-// Check de Realidad/Notas de Voz): las respuestas simuladas usan
+// Chequeo de Realidad/Notas de Voz): las respuestas simuladas usan
 // oficinaObjetivo/realityCheckKpis, que son datos privados — nunca deben
 // quedar expuestos a un visitante que entre directo a esta URL.
 export default async function OfficeDemoPage({ params }: { params: Promise<{ slug: string }> }) {

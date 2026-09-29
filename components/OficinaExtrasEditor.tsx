@@ -50,7 +50,7 @@ type EditableNews = NewsItem & { _uid: string };
 type EditableEvent = CalendarEvent & { _uid: string };
 
 // Contenido de la Oficina Virtual por Card — Fase E2 del plan (Keep in
-// Flow / Check de Realidad / Noticias / Calendario, todo inventado por el
+// Flow / Chequeo de Realidad / Noticias / Calendario, todo inventado por el
 // N0/dueño y editable). Deliberadamente SIN su propio <form>: se monta
 // adentro del form grande de EditorForm.tsx/MemberCardEditor.tsx (mismo
 // patrón que officeItems ya usa ahí) para que se guarde junto con el
@@ -112,7 +112,7 @@ export default function OficinaExtrasEditor({ card }: { card: Card }) {
       <input type="hidden" name="newsItems" value={JSON.stringify(news.filter((n) => n.title.trim()).map(({ _uid, ...rest }) => rest))} />
       <input type="hidden" name="calendarEvents" value={JSON.stringify(events.filter((e) => e.title.trim() && e.date).map(({ _uid, ...rest }) => rest))} />
 
-      <AccordionSection title="Keep in Flow" subtitle="Tu objetivo o posición del día — se muestra arriba en tu Oficina, junto a una frase motivacional que rota sola (la carga tu Programa).">
+      <AccordionSection title="Objetivo del Día" subtitle="Tu objetivo o posición del día — se muestra arriba en tu Oficina, junto a una frase motivacional que rota sola (la carga tu Programa).">
         <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
           <span style={LABEL}>Objetivo del día</span>
           <div style={{ background: "#0D0D0D", borderRadius: 10, padding: "11px 14px" }}>
@@ -126,7 +126,7 @@ export default function OficinaExtrasEditor({ card }: { card: Card }) {
         </label>
       </AccordionSection>
 
-      <AccordionSection title="Check de Realidad" subtitle="Tus KPIs del día — inventalos vos, o tocá el botón para que se llenen solos con un ejemplo y los ajustás después.">
+      <AccordionSection title="Chequeo de Realidad" subtitle="Tus KPIs del día — inventalos vos, o tocá el botón para que se llenen solos con un ejemplo y los ajustás después.">
         <button type="button" onClick={simulateKpis} style={ADD_BTN}>
           <span className="material-symbols-outlined" style={{ fontSize: 16 }}>auto_awesome</span>
           Generar con IA (simulado)

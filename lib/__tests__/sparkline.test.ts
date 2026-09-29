@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { sparklinePoints, sparklineLastPoint } from "@/lib/sparkline";
 
-// components/Sparkline.tsx (Fase E3, "Check de Realidad") dibuja el trend
+// components/Sparkline.tsx (Fase E3, "Chequeo de Realidad") dibuja el trend
 // de un KPI a mano en SVG — esta es la geometría pura detrás, separada
 // para poder testearla sin JSX. Los casos borde importan de verdad acá:
 // un trend vacío o de un solo punto no debería nunca tirar (dividir por

@@ -189,8 +189,17 @@ const SOCIAL_ICON: CSSProperties = {
 
 // The plate each side's icon cluster sits on — gives 1-3 icons a defined,
 // "mounted" shape instead of floating loose dots when a card only has a
-// couple of channels filled in. Tinted like a cut gemstone: jade on the
-// left, ruby on the right.
+// couple of channels filled in.
+//
+// Pulido visual (2026-09-29, pedido de Gunnar): antes tenía dos tonos de
+// piedra distintos -- jade (verde) a la izquierda, ruby (rojo/rosa) a la
+// derecha. Ninguno de los dos existe en la paleta del brandbook (#0D0D0D,
+// #C8A15A, #F5F2EB, #5A5A5A) -- verde y rojo/rosa saturados quedaban
+// fuera de marca. Los dos lados usan ahora el mismo tono dorado (la
+// variable --accentRgb, que ya respeta el skin de marca del Programa si
+// tiene uno activo, en vez de un hex fijo) -- mismo "engaste" visual, dos
+// lados iguales, sin inventar un color secundario que el brandbook nunca
+// definió.
 const SOCIAL_DOCK: CSSProperties = {
   display: "flex",
   alignItems: "center",
@@ -200,17 +209,15 @@ const SOCIAL_DOCK: CSSProperties = {
   backdropFilter: "blur(6px)",
 };
 
+const GOLD_GEM: CSSProperties = {
+  background: "linear-gradient(165deg,rgba(var(--accentRgb,200,161,90),.42) 0%,rgba(13,13,13,.7) 100%)",
+  border: "1px solid rgba(var(--accentRgb,200,161,90),.55)",
+  boxShadow: "0 0 16px rgba(var(--accentRgb,200,161,90),.35), inset 0 1px 1px rgba(255,255,255,.15)",
+};
+
 const GEM_TONE: Record<"jade" | "ruby", CSSProperties> = {
-  jade: {
-    background: "linear-gradient(165deg,rgba(84,214,158,.42) 0%,rgba(10,64,46,.7) 100%)",
-    border: "1px solid rgba(120,232,178,.55)",
-    boxShadow: "0 0 16px rgba(72,206,148,.35), inset 0 1px 1px rgba(255,255,255,.15)",
-  },
-  ruby: {
-    background: "linear-gradient(165deg,rgba(236,96,116,.42) 0%,rgba(94,14,30,.7) 100%)",
-    border: "1px solid rgba(244,130,146,.55)",
-    boxShadow: "0 0 16px rgba(224,80,100,.35), inset 0 1px 1px rgba(255,255,255,.15)",
-  },
+  jade: GOLD_GEM,
+  ruby: GOLD_GEM,
 };
 
 function Sweep() {
@@ -368,6 +375,7 @@ export default function LyCardView({
   qrSvg,
   isAdmin,
   isHost,
+  isAuthenticatedOwner,
   badge,
   originMemento,
   program,
@@ -381,6 +389,12 @@ export default function LyCardView({
   // but isn't an Admin and /admin would just bounce them to a login screen.
   isAdmin: boolean;
   isHost: boolean;
+  // Pulido visual (2026-09-29): más angosto que `isHost` -- true solo con
+  // sesión real (Admin o Member dueño de esta Card). `isHost` sigue dando
+  // acceso funcional completo a cualquiera que abra la Card Origen aunque
+  // sea sin sesión; esto es solo para gatear detalles que son "para el
+  // dueño real", como la islita de versión.
+  isAuthenticatedOwner: boolean;
   // Viewer-relative N0/N1/.../NA (2026-09-16) — replaces the old
   // isAdmin-only "N0" badge; see lib/badge.ts for how it's computed.
   badge: string;
@@ -418,10 +432,10 @@ export default function LyCardView({
   // Name island (2026-09-16), same slot as the version island below it —
   // a project card's name comes from its Program (already the one place
   // the N0 names their brand); Business/Personal get their own editable
-  // label from the Card editor, defaulting to "My Business/Personal Card".
+  // label from the Card editor, defaulting to "Mi Tarjeta de Empresa/Personal".
   const cardIslandLabel = isProject
     ? `${program?.name || "Legacy"} Card`
-    : card.islandLabel || (isCompany ? "My Business Card" : "My Personal Card");
+    : card.islandLabel || (isCompany ? "Mi Tarjeta de Empresa" : "Mi Tarjeta Personal");
   const [theme, setTheme] = useState<"dark" | "light">(
     (card.defaultTheme as "dark" | "light") || "dark"
   );
@@ -859,7 +873,31 @@ export default function LyCardView({
           }}
         >
           {/* Portrait */}
-          <div style={{ position: "relative", flex: "1 1 auto", minHeight: 0, display: "flex", flexDirection: "column", alignItems: "center" }}>
+          {/* Pulido visual (2026-09-29, pedido de Gunnar): este wrapper
+              tenía flex:1 1 auto sin tope -- crecía para absorber TODO el
+              espacio sobrante de la columna principal, pero su único hijo
+              que de verdad crece (la foto, abajo) tiene un maxHeight fijo
+              (357px*scale). En pantallas altas o con tarjetas con poco
+              contenido, una vez la foto tocaba su tope, el resto del
+              espacio quedaba varado ADENTRO de este wrapper, después de la
+              fila de redes sociales -- el hueco grande reportado, entre
+              redes y la frase. Ponerle a este wrapper el MISMO tope que su
+              foto (+70px de margen para la fila de redes que se superpone
+              -28px sobre la foto) evita que crezca de más -- si sobra
+              espacio real, ahora queda al final de la tarjeta (debajo del
+              botón "Agendar"), nunca partiendo el medio. Verificado con
+              capturas reales antes/después, no a ojo. */}
+          <div
+            style={{
+              position: "relative",
+              flex: "1 1 auto",
+              minHeight: 0,
+              maxHeight: "calc(357px*var(--scale-photo,1) + 70px)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
             <div
               style={{
                 position: "relative",
@@ -963,14 +1001,16 @@ export default function LyCardView({
                   >
                     {cardIslandLabel}
                   </button>
-                  <button
-                    type="button"
-                    aria-label="Versión de la app"
-                    onClick={() => setModal("versionInfo")}
-                    style={ISLAND_BADGE}
-                  >
-                    V. {APP_VERSION}
-                  </button>
+                  {isAuthenticatedOwner && (
+                    <button
+                      type="button"
+                      aria-label="Versión de la app"
+                      onClick={() => setModal("versionInfo")}
+                      style={ISLAND_BADGE}
+                    >
+                      V. {APP_VERSION}
+                    </button>
+                  )}
                 </div>
 
                 <div style={{ flex: 1 }} />
@@ -1136,7 +1176,7 @@ export default function LyCardView({
               <button
                 type="button"
                 onClick={enterOffice}
-                aria-label="Virtual Office"
+                aria-label="Oficina Virtual"
                 style={{
                   position: "relative",
                   flex: "none",
@@ -1456,7 +1496,7 @@ export default function LyCardView({
                 <button
                   type="button"
                   onClick={closeModal}
-                  aria-label="Close"
+                  aria-label="Cerrar"
                   style={{ width: 32, height: 32, borderRadius: 999, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "var(--ink2,#C2BEB5)", cursor: "pointer", flex: "none" }}
                 >
                   ✕
@@ -1784,7 +1824,7 @@ export default function LyCardView({
                 <button
                   type="button"
                   onClick={closeSchedule}
-                  aria-label="Close"
+                  aria-label="Cerrar"
                   style={{ width: 32, height: 32, borderRadius: 999, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "var(--ink2,#C2BEB5)", cursor: "pointer", flex: "none" }}
                 >
                   ✕
@@ -1955,7 +1995,7 @@ export default function LyCardView({
                 <button
                   type="button"
                   onClick={closeQrSend}
-                  aria-label="Close"
+                  aria-label="Cerrar"
                   style={{ width: 32, height: 32, borderRadius: 999, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "var(--ink2,#C2BEB5)", cursor: "pointer", flex: "none" }}
                 >
                   ✕

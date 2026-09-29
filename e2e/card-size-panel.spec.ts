@@ -100,7 +100,7 @@ test.describe("Panel de tamaños ajustables — long-press en la LyCard", () => 
     await expect(page.getByText("Agendar entrevista", { exact: true })).toBeVisible();
     await expect(page.getByText("Logo", { exact: true })).toBeVisible();
 
-    const officeBtn = page.getByRole("button", { name: "Virtual Office" });
+    const officeBtn = page.getByRole("button", { name: "Oficina Virtual" });
     const beforeBox = await officeBtn.boundingBox();
 
     // "Logo" es el último de los 7 sliders (orden de CARD_SIZE_KEYS)

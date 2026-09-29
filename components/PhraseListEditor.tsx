@@ -19,7 +19,7 @@ const FIELD: CSSProperties = {
 
 type EditablePhrase = { _uid: string; text: string };
 
-// Pool de frases motivacionales de un Programa (Fase E2, "Keep in Flow")
+// Pool de frases motivacionales de un Programa (Fase E2, "Objetivo del Día")
 // — el N0 las escribe a mano, el sistema rota una distinta por día
 // (lib/oficinaExtras.ts#pickPhraseOfTheDay), nunca un modelo en vivo.
 // Editor más simple que EscalaEditor/OfficeSkillsEditor porque acá cada

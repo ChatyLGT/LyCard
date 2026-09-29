@@ -21,7 +21,7 @@ function formatDate(iso: string): string {
 }
 
 // Fase E4 — "Noticias", privado del dueño (mismo criterio que Keep in
-// Flow/Check de Realidad): novedades cortas inventadas/editables desde
+// Flow/Chequeo de Realidad): novedades cortas inventadas/editables desde
 // OficinaExtrasEditor. isDefault marca cuando son los ejemplos fijos de
 // DEFAULT_NEWS_ITEMS, nadie cargó las propias todavía.
 export default function NewsTasksBlock({ items, isDefault }: { items: NewsItem[]; isDefault: boolean }) {

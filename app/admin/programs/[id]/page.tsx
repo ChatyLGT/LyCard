@@ -689,12 +689,12 @@ export default async function AdminProgramDetailPage({
           )}
         </AccordionSection>
 
-        {/* Pool de frases para "Keep in Flow" (Fase E2) — el N0 las escribe
+        {/* Pool de frases para "Objetivo del Día" (Fase E2) — el N0 las escribe
             a mano, lib/oficinaExtras.ts#pickPhraseOfTheDay rota una
             distinta por día en la Oficina de cada Card. Sin nada acá, se
             usan las 3 de ejemplo de DEFAULT_MOTIVATIONAL_PHRASES. */}
         <AccordionSection
-          title="Frases motivacionales (Keep in Flow)"
+          title="Frases motivacionales (Objetivo del Día)"
           subtitle="Una distinta rota sola cada día en la Oficina Virtual de tus Cards. Sin nada acá, se muestran 3 de ejemplo."
           meta={<span style={PILL}>{motivationalPhrases.length || "3 de ejemplo"}</span>}
           defaultOpen={!!motivationalPhrasesSaved || focus === "motivationalPhrases"}
