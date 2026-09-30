@@ -16,6 +16,9 @@ import { getFathomBrief, type FathomBrief } from "@/lib/fathom";
 import { parseOfficeSkills, DEFAULT_OFFICE_SKILLS, type OfficeSkill } from "@/lib/officeSkills";
 import OfficeSkillsBlock from "@/components/OfficeSkillsBlock";
 import WowAppsBlock from "@/components/WowAppsBlock";
+import EspecialistasBlock from "@/components/EspecialistasBlock";
+import ExpertoInboxBlock from "@/components/ExpertoInboxBlock";
+import { answerConsultaAction } from "./experto-actions";
 import type { AweWalkEntrySummary } from "@/components/WowAweBlock";
 import type { VoiceNoteSummary } from "@/components/VoiceNotesBlock";
 import CardLeadsBlock, { type CardLeadSummary } from "@/components/CardLeadsBlock";
@@ -40,7 +43,7 @@ import NewsTasksBlock from "@/components/NewsTasksBlock";
 import { fetchLiveAgenda, defaultAgendaWindow, type AgendaEventItem, type AgendaTaskItem } from "@/lib/agenda";
 import { refreshGoogleAccessToken } from "@/lib/googleOAuth";
 import { buildCardMetadata } from "@/lib/cardMetadata";
-import type { Card, OriginMemento, Program, Puesto, WowApp, WowAppInstall } from "@/generated/prisma/client";
+import type { Card, OriginMemento, Program, Puesto, WowApp, WowAppInstall, Especialista, EspecialistaInstall, Experto, CodiceEntry, Consulta } from "@/generated/prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -151,6 +154,13 @@ type OficinaData = {
   // sigue siendo solo Superpoderes internos de Legacy.
   installedWowApps: (WowAppInstall & { wowApp: WowApp })[];
   aweEntries: AweWalkEntrySummary[];
+  // Especialistas y Expertos (Fase 5, 2026-09-30) -- ver PLAN.md "Fase 4:
+  // DISEÑO -- Especialistas y Expertos".
+  installedEspecialistas: (EspecialistaInstall & { especialista: Especialista })[];
+  wowAppNames: Record<string, string>;
+  // null si esta Card no es la Card de un Member que publicó su propio
+  // Experto -- el inbox solo se renderiza cuando existe.
+  expertoPerfil: (Experto & { codice: CodiceEntry[]; consultas: Consulta[] }) | null;
   // Pulido visual (2026-09-29, pedido de Gunnar): `isHost` de abajo sigue
   // dando acceso funcional completo a cualquiera que abra la Card Origen
   // (isOrigin), con o sin sesión -- eso no cambia acá, sigue siendo lo
@@ -585,6 +595,12 @@ function VisitorOficina({ data }: { data: OficinaData }) {
         {data.installedWowApps.length > 0 && (
           <WowAppsBlock installs={data.installedWowApps} isHost={false} cardId={data.card.id} aweEntries={[]} />
         )}
+        {data.installedEspecialistas.length > 0 && (
+          <>
+            <p style={kickerStyle}>Tu Equipo</p>
+            <EspecialistasBlock installs={data.installedEspecialistas} wowAppNames={data.wowAppNames} />
+          </>
+        )}
       </div>
     </div>
   );
@@ -703,6 +719,12 @@ function OwnerOficina({ data }: { data: OficinaData }) {
         )}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <WowAppsBlock installs={data.installedWowApps} isHost browseHref={`/m/wowstore?cardId=${card.id}`} cardId={card.id} aweEntries={data.aweEntries} />
+          {data.installedEspecialistas.length > 0 && (
+            <>
+              <span style={kickerStyle}>Tu Equipo</span>
+              <EspecialistasBlock installs={data.installedEspecialistas} wowAppNames={data.wowAppNames} />
+            </>
+          )}
           {card.kind === "company" && (
             <Link
               href="/m/dashboard/company/network"
@@ -716,6 +738,23 @@ function OwnerOficina({ data }: { data: OficinaData }) {
         <div style={hr} />
 
         <NewsTasksBlock items={data.newsItems} isDefault={data.newsAreDefault} />
+
+        {data.expertoPerfil && (
+          <>
+            <div style={hr} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <span style={kickerStyle}>Preguntas que tu gemelo no supo responder</span>
+              <ExpertoInboxBlock
+                pending={data.expertoPerfil.consultas.filter((c) => c.respuesta === null)}
+                answerAction={answerConsultaAction.bind(null, card.slug)}
+              />
+              <p style={{ margin: 0, font: "400 10.5px 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>
+                {data.expertoPerfil.consultas.length} consulta{data.expertoPerfil.consultas.length === 1 ? "" : "s"} en total ·{" "}
+                {data.expertoPerfil.codice.length} en tu Códice.
+              </p>
+            </div>
+          </>
+        )}
 
         <div style={hr} />
 
@@ -746,7 +785,12 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
   const { slug } = await params;
   const card = await prisma.card.findUnique({
     where: { slug },
-    include: { program: true, puesto: true, wowAppInstalls: { include: { wowApp: true }, orderBy: { installedAt: "asc" } } },
+    include: {
+      program: true,
+      puesto: true,
+      wowAppInstalls: { include: { wowApp: true }, orderBy: { installedAt: "asc" } },
+      especialistaInstalls: { include: { especialista: true }, orderBy: { installedAt: "asc" } },
+    },
   });
   if (!card) notFound();
 
@@ -758,6 +802,22 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
   const isAdmin = adminScope !== null;
   const isHost = isAdmin || card.isOrigin || (memberId !== null && memberId === card.memberId);
   const badge = await computeBadge(card, adminScope, memberId);
+
+  // Especialistas y Expertos (Fase 5, 2026-09-30) -- nombres reales de
+  // WowApp para resolver los toolKeys de un Especialista instalado
+  // (ver lib/especialistas.ts#labelForToolKey), y el propio perfil de
+  // Experto de ESTA Card si su dueño llegó a publicar uno (inbox, solo
+  // visible para el dueño real, ver OwnerOficina).
+  const [wowAppRows, expertoPerfil] = await Promise.all([
+    prisma.wowApp.findMany({ select: { key: true, nombre: true } }),
+    card.memberId
+      ? prisma.experto.findUnique({
+          where: { memberId: card.memberId },
+          include: { codice: { orderBy: { createdAt: "desc" } }, consultas: { orderBy: { createdAt: "desc" } } },
+        })
+      : Promise.resolve(null),
+  ]);
+  const wowAppNames: Record<string, string> = Object.fromEntries(wowAppRows.map((a) => [a.key, a.nombre]));
 
   const baseDashboardHref = card.kind === "project" ? "/m/dashboard/project" : card.kind === "company" ? "/m/dashboard/company" : "/m/dashboard/personal";
 
@@ -1002,6 +1062,9 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
     // OfficeSkillsBlock (Superpoderes internos del equipo de Legacy).
     installedWowApps: card.wowAppInstalls,
     aweEntries,
+    installedEspecialistas: card.especialistaInstalls,
+    wowAppNames,
+    expertoPerfil,
     isAuthenticatedOwner: isAdmin || (memberId !== null && memberId === card.memberId),
   };
 

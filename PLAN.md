@@ -6732,6 +6732,9 @@ son 3 cosas distintas, todas fuera del alcance del pedido:
    (`buildMemberFractalGraph`), nunca Einar/Chaty/Warren -- ese trío
    nunca se le atribuye a un cliente como si fuera su propio agente.
 
+Sin cambios que verificar/shippear -- no hubo diff de código, se deja
+documentado el criterio para no repetir la auditoría.
+
 ## Ronda de endurecimiento (2026-09-29) -- Fase 4: DISEÑO -- Especialistas y Expertos
 
 **Solo diseño, cero código en esta fase.** Seguimos en FASE DE DISEÑO:
@@ -7016,7 +7019,72 @@ criterio que `basePriceUsd` en `WowApp` hoy.
 de ejemplo, un Experto de ejemplo, y los E2E del flujo pregunta→
 registro→inbox) -- sin tocar código hasta entonces.
 
-Sin cambios que verificar/shippear -- no hubo diff de código, se deja
-documentado el criterio para no repetir la auditoría.
+## Ronda de endurecimiento (2026-09-30) -- Fase 5: MVP con datos de prueba -- Especialistas y Expertos
 
-Shippeado como v1.59.2.
+Con el OK de Gunnar al diseño de la Fase 4, se construyó el primer
+ejemplo real de cada uno (datos de prueba, todo marcado como tal) más
+el flujo de consulta de punta a punta, exactamente el modelo de datos
+diseñado en esa fase, sin cambios de forma.
+
+**Schema**: los 5 modelos nuevos (`Especialista`, `EspecialistaInstall`,
+`Experto`, `CodiceEntry`, `Consulta`) tal como se diseñaron, migración
+`20260930152135_especialistas_expertos`.
+
+**`lib/especialistas.ts` / `lib/expertos.ts`** (nuevos, 100% cobertura
+en el ratchet de `vitest.config.mts`): parsers, `canPublishExperto`
+(las 3 condiciones de la regla dura de consentimiento+Bautizo juntas),
+`shouldRequireRegistration` (las 3 preguntas gratis), y
+`matchCodiceEntry` -- match determinístico por palabra compartida (4+
+letras) contra entradas YA aprobadas del Códice, nunca un modelo en
+vivo, mismo criterio que `gemeloDigitalScript.ts`.
+
+**`/admin/wowstore`** (MasterN0-only) suma 2 secciones nuevas:
+- **Especialistas**: botón "Sembrar ejemplo (Calma)" -- Especialista
+  real con WowAwe + Modo Foco como `toolKeys` y una sugerencia de
+  ejemplo fija. Instalarlo en una Card real es a mano, por slug (todavía
+  no hay una vidriera pública de "explorar Especialistas" -- eso, y el
+  split completo de WowStore en 2 secciones, queda para una fase
+  futura, fuera del alcance de este MVP con un solo ejemplo).
+- **Expertos**: botón "Sembrar ejemplo (Experto)" -- crea un Member +
+  Card + perfil de Experto INVENTADOS, marcados "(ejemplo)" en su propio
+  nombre, con consentimiento y Bautizo ya dados (para poder probar el
+  flujo de consulta de punta a punta) y una entrada de Códice
+  pre-aprobada. Botón para revocar el consentimiento a mano (deja de
+  publicar de inmediato, `canPublishExperto` lo bloquea).
+
+**`components/EspecialistasBlock.tsx`**: "Tu Equipo" en la Oficina
+(mismo patrón visual que `WowAppsBlock.tsx`) -- grilla + bottom-sheet
+con trabajo/descripción/herramientas (resueltas por
+`labelForToolKey` -- WowApp real o Superpoder fijo) y la sugerencia,
+siempre con el rótulo "Sugerencia de ejemplo (simulada)".
+
+**`/experto/[key]`** (nuevo, página pública): "Gemelo digital de
+[nombre]" -- nunca se presenta como la persona (regla dura 3). Banner
+fijo de "orienta, no diagnostica" si `esProfesionRegulada`. Un
+visitante sin sesión hace 3 preguntas gratis (cookie
+`lycard_experto_visitor`, solo cuenta, no es una sesión real); a la
+4ta, un botón lo manda a `/m/login`. Registrado (`memberId` real), sin
+límite. Cada pregunta sin match en el Códice queda con
+`respuesta:null` y el texto "todavía no supo responder esto".
+
+**Inbox del Experto** (`components/ExpertoInboxBlock.tsx`, en la propia
+Oficina del dueño del perfil, gateado a que esa Card sea la de ese
+Member): lista las `Consulta` con `respuesta:null`, las responde a
+mano, y un checkbox "sumar a mi Códice" crea la `CodiceEntry` real
+(`experto-actions.ts#answerConsultaAction`, verifica que quien contesta
+sea el dueño real o MasterN0 antes de nada).
+
+**Verificado**: `e2e/especialistas-expertos.spec.ts` (nuevo) -- (1) el
+Especialista instalado se ve en "Tu Equipo" con la sugerencia marcada
+simulada, y (2) el flujo completo: un visitante anónimo le pregunta al
+Experto de ejemplo (sin match, queda pendiente), un Member registrado
+pregunta de nuevo, el Experto entra a su propia Oficina y ve ambas en
+el inbox, responde y aprueba una -- confirmado que la `CodiceEntry`
+real se crea en DB. 37/39 E2E de la suite completa (los 2 que no
+pasaron: `interview-slots.spec.ts` por fechas vencidas, ya documentado
+en la Fase 1 -- no es de esta ronda; `wowstore.spec.ts` fue un timeout
+de red bajo carga corriendo la suite entera, confirmado como flake al
+correrlo solo, pasa limpio). 237/237 unit, 100% coverage, tsc/lint/build
+limpios.
+
+Shippeado como v1.60.0.

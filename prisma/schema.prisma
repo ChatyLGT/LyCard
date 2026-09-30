@@ -215,6 +215,10 @@ model Card {
 
   // WowAwe (2026-09-24) — entradas de la caminata de asombro semanal.
   aweWalkEntries AweWalkEntry[]
+
+  // Especialistas y Expertos (Fase 5, 2026-09-30) — ver PLAN.md "Fase 4:
+  // DISEÑO -- Especialistas y Expertos" para el porqué del modelo.
+  especialistaInstalls EspecialistaInstall[]
 }
 
 // Sistema de Tags — pedido de Gunnar (2026-09-23), base de "Janus", el
@@ -610,6 +614,12 @@ model Member {
   // Message.senderMemberId) y como destinatario de cualquier envío.
   sentMessages      Message[]
   messageDeliveries MessageDelivery[]
+
+  // Especialistas y Expertos (Fase 5, 2026-09-30) — un Member puede SER
+  // el Experto (su propio Gemelo Digital publicado, ver Experto.memberId
+  // único abajo) y/o consultar a Expertos ajenos (Consulta.memberId).
+  expertoPerfil Experto?
+  consultas     Consulta[]
 }
 
 // A simulated WhatsApp OTP (PLAN.md Fase 1 — real sending is Fase 8).
@@ -785,6 +795,145 @@ model WowAppInstall {
   adaptationPaidAt DateTime?
 
   @@unique([cardId, wowAppId])
+}
+
+// --- Especialistas y Expertos (Fase 5, 2026-09-30) ---
+// Ver PLAN.md "Fase 4: DISEÑO -- Especialistas y Expertos" para el
+// porqué completo. Resumen: WowStore deja de vender solo "apps" (WowApp
+// arriba) y suma DOS tipos de integrante de equipo que se contratan --
+// un Especialista (agente puro, un trabajo) y un Experto (el Gemelo
+// Digital publicado de una persona real, con consentimiento).
+
+// Un Especialista es un ROL con un trabajo, no una lista de features.
+// Las WowApps/Superpoderes que ya existen se referencian como sus
+// herramientas por key (toolKeys) -- sin FK dura a propósito: un
+// toolKey puede apuntar a un WowApp.key (catálogo externo) o a un
+// OfficeSkillAppType fijo (lib/officeSkills.ts, ej. "modo-foco"), y el
+// componente que las renderiza decide cuál es cuál, mismo criterio
+// "cáscara honesta" que el resto del proyecto.
+model Especialista {
+  id            String   @id @default(cuid())
+  key           String   @unique
+  nombre        String
+  trabajo       String // el ÚNICO objetivo de este rol, en una frase
+  descripcion   String
+  iconUrl       String   @default("")
+  color         String   @default("#C8A15A")
+  toolKeys      Json     @default("[]") // string[]
+  // Sugerencia proactiva de ejemplo que se muestra en la Oficina,
+  // siempre marcada "(simulada)" en la UI -- no hay IA real sugiriendo
+  // nada todavía (Fase 4 (e), fuera de este MVP).
+  suggestion    String   @default("")
+  // Graduado, no binario -- hasta dónde actúa sin que el dueño confirme
+  // cada vez. Arranca en "sugiere" siempre; "actua_con_ok"/"actua_solo"
+  // existen en el modelo pero ningún Especialista real los usa todavía.
+  autonomyLevel String   @default("sugiere") // "sugiere" | "actua_con_ok" | "actua_solo"
+  industryTags  Json     @default("[]")
+  painPointTags Json     @default("[]")
+  basePriceUsd  Float    @default(0)
+  status        String   @default("proximamente")
+  destacado     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  installs EspecialistaInstall[]
+}
+
+model EspecialistaInstall {
+  id             String       @id @default(cuid())
+  cardId         String
+  card           Card         @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  especialistaId String
+  especialista   Especialista @relation(fields: [especialistaId], references: [id], onDelete: Cascade)
+  installedAt    DateTime     @default(now())
+
+  // Referido (ver Experto.especialistasReferidos abajo): si esta
+  // contratación vino de la recomendación de un Experto, queda esa
+  // trazabilidad -- la comisión (si la hay) se paga por USO real, nunca
+  // por el solo hecho de haber referido.
+  referredByExpertoId String?
+  referredByExperto   Experto? @relation(fields: [referredByExpertoId], references: [id])
+
+  @@unique([cardId, especialistaId])
+}
+
+// Un Experto SIEMPRE cuelga de un Member real que ya pasó por el alta
+// de Legacy -- memberId único: una persona tiene un solo Gemelo Digital
+// experto, no varios.
+model Experto {
+  id       String @id @default(cuid())
+  key      String @unique
+  memberId String @unique
+  member   Member @relation(fields: [memberId], references: [id])
+
+  nombrePublico       String // puede diferir de Member.name (alias público) -- nunca se usa para simular ser la persona
+  profesion           String
+  esProfesionRegulada Boolean @default(false) // dispara la regla dura de "orienta y refiere, nunca diagnostica"
+  descripcion         String
+  iconUrl             String  @default("")
+  color               String  @default("#C8A15A")
+
+  // Consentimiento -- obligatorio, explícito, revocable. bautizoStatus
+  // no puede pasar a "bautizado" sin consentGivenAt seteado (constraint
+  // a nivel de código en lib/expertos.ts, no de DB).
+  consentGivenAt   DateTime?
+  consentScope     Json      @default("[]") // "transcripciones" | "documentos" | "voz" | ...
+  consentRevokedAt DateTime?
+
+  // Nunca se publica sin aprobación a mano de la persona -- default
+  // "sin_bautizar" para TODO Experto nuevo, sin excepción.
+  bautizoStatus String @default("sin_bautizar") // "sin_bautizar" | "bautizado"
+
+  // Los 3 niveles de consulta -- precios placeholder, sin pasarela real,
+  // mismo criterio honesto que WowApp.basePriceUsd.
+  priceGemeloSoloUsd     Float @default(0)
+  priceGemeloRevisadoUsd Float @default(0)
+  priceSesionUsd         Float @default(0)
+
+  industryTags  Json     @default("[]")
+  painPointTags Json     @default("[]")
+  status        String   @default("proximamente")
+  destacado     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  codice                 CodiceEntry[]
+  consultas              Consulta[]
+  especialistasReferidos EspecialistaInstall[]
+}
+
+// El Códice real de un Experto -- nunca se expone entero a nadie más
+// que a la propia persona. Solo entran acá preguntas que la persona
+// misma aprobó a mano desde su inbox (Consulta sin responder → acá).
+model CodiceEntry {
+  id         String    @id @default(cuid())
+  expertoId  String
+  experto    Experto   @relation(fields: [expertoId], references: [id], onDelete: Cascade)
+  pregunta   String
+  respuesta  String
+  aprobadaAt DateTime? // null = todavía en revisión, no se usa para responder de verdad
+  createdAt  DateTime  @default(now())
+}
+
+// Cada intercambio con el Gemelo Digital de un Experto -- de acá salen
+// tanto el conteo de las 3 preguntas gratis (visitorToken, sin
+// registrar) como el inbox de "no supo responder" que ve la persona en
+// su propia Oficina.
+model Consulta {
+  id        String  @id @default(cuid())
+  expertoId String
+  experto   Experto @relation(fields: [expertoId], references: [id], onDelete: Cascade)
+  // Anónimo (las primeras 3 gratis, token de sesión/cookie) o ya
+  // registrado -- nunca ambos.
+  visitorToken String?
+  memberId     String?
+  member       Member? @relation(fields: [memberId], references: [id])
+
+  pregunta             String
+  respuesta            String? // null = el Gemelo no supo responder -- entra al inbox
+  nivel                String  @default("gemelo_solo") // "gemelo_solo" | "gemelo_revisado" | "sesion"
+  revisadaPorExpertoAt DateTime?
+  createdAt            DateTime @default(now())
 }
 
 // --- Módulo HR/PM (docs/05-ROADMAP-EDT.md) ---

@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.59.2";
+export const APP_VERSION = "1.60.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.60.0",
+    date: "2026-09-30",
+    notes:
+      "Fase 5 de la ronda de endurecimiento -- MVP con datos de prueba de Especialistas y Expertos (todavía datos de ejemplo, marcados como tal). Nuevo: WowStore ahora tiene un Especialista de ejemplo (\"Calma\", que usa WowAwe y Modo Foco como herramientas) que se instala en una Card y aparece en la Oficina bajo \"Tu Equipo\", con una sugerencia de ejemplo siempre marcada \"(simulada)\". También un Experto de ejemplo -- el Gemelo Digital de una persona inventada, con su propia página pública de consulta (3 preguntas gratis, después pide registrarte) y un inbox en su Oficina para responder lo que su Gemelo no supo contestar y sumarlo a su Códice. Todo gestionado desde /admin/wowstore, MasterN0-only.",
+  },
   {
     version: "1.59.2",
     date: "2026-09-29",

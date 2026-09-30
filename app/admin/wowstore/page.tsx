@@ -3,7 +3,17 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { currentAdminScope, isMasterN0Scope } from "@/lib/auth";
 import { createWowAppAction, updateWowAppAction, deleteWowAppAction, seedExampleWowAppsAction } from "./actions";
+import {
+  seedExampleEspecialistaAction,
+  installEspecialistaAction,
+  deleteEspecialistaAction,
+  seedExampleExpertoAction,
+  revokeExpertoConsentAction,
+  deleteExpertoAction,
+} from "./actions-equipo";
 import { RUBROS, PAIN_POINTS, WOW_APP_TYPES } from "@/lib/wowApps";
+import { labelForToolKey } from "@/lib/especialistas";
+import { canPublishExperto } from "@/lib/expertos";
 import { AccordionSection, AccordionRow, AccordionAddRow } from "@/components/Accordion";
 
 export const dynamic = "force-dynamic";
@@ -60,14 +70,43 @@ const ERROR_COPY: Record<string, string> = {
 export default async function AdminWowStorePage({
   searchParams,
 }: {
-  searchParams: Promise<{ wowAppCreated?: string; wowAppSaved?: string; wowAppDeleted?: string; wowAppError?: string; wowAppsSeeded?: string }>;
+  searchParams: Promise<{
+    wowAppCreated?: string;
+    wowAppSaved?: string;
+    wowAppDeleted?: string;
+    wowAppError?: string;
+    wowAppsSeeded?: string;
+    especialistasSeeded?: string;
+    especialistaInstalled?: string;
+    especialistaDeleted?: string;
+    especialistaError?: string;
+    expertosSeeded?: string;
+    expertoRevoked?: string;
+    expertoDeleted?: string;
+  }>;
 }) {
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
   if (!isMasterN0Scope(scope)) redirect("/admin");
 
-  const { wowAppCreated, wowAppSaved, wowAppDeleted, wowAppError, wowAppsSeeded } = await searchParams;
+  const {
+    wowAppCreated,
+    wowAppSaved,
+    wowAppDeleted,
+    wowAppError,
+    wowAppsSeeded,
+    especialistasSeeded,
+    especialistaInstalled,
+    especialistaDeleted,
+    especialistaError,
+    expertosSeeded,
+    expertoRevoked,
+    expertoDeleted,
+  } = await searchParams;
   const catalog = await prisma.wowApp.findMany({ orderBy: { createdAt: "asc" } });
+  const especialistas = await prisma.especialista.findMany({ orderBy: { createdAt: "asc" }, include: { installs: true } });
+  const expertos = await prisma.experto.findMany({ orderBy: { createdAt: "asc" }, include: { member: true, consultas: true } });
+  const wowAppNames: Record<string, string> = Object.fromEntries(catalog.map((a) => [a.key, a.nombre]));
 
   return (
     <div style={{ minHeight: "100vh", background: "#131313", color: "#e5e2e1", fontFamily: "'Plus Jakarta Sans',sans-serif", padding: "0 0 60px" }}>
@@ -188,6 +227,119 @@ export default async function AdminWowStorePage({
               </form>
             </AccordionRow>
           ))}
+        </AccordionSection>
+
+        <AccordionSection
+          title="Especialistas"
+          subtitle="Agentes con un trabajo -- usan WowApps/Superpoderes ya existentes como herramientas."
+          meta={<span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", color: "#8a8378", background: "rgba(255,255,255,.05)", borderRadius: 999, padding: "3px 9px" }}>{especialistas.length}</span>}
+        >
+          {especialistaInstalled && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Instalado en la Card.</p>}
+          {especialistaDeleted && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Especialista eliminado.</p>}
+          {especialistaError === "cardNotFound" && (
+            <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>No existe ninguna Card con ese slug.</p>
+          )}
+
+          <form action={seedExampleEspecialistaAction}>
+            <button type="submit" style={{ alignSelf: "flex-start", padding: "10px 16px", border: "1px dashed rgba(200,161,90,.4)", borderRadius: 10, background: "none", color: "#C8A15A", font: "700 10.5px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", cursor: "pointer" }}>
+              Sembrar ejemplo (Calma)
+            </button>
+          </form>
+          {especialistasSeeded !== undefined && (
+            <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>
+              {Number(especialistasSeeded) > 0 ? `✓ ${especialistasSeeded} Especialista de ejemplo agregado.` : "Ya estaba -- no había ninguno nuevo para agregar."}
+            </p>
+          )}
+
+          {especialistas.map((esp) => (
+            <AccordionRow
+              key={esp.id}
+              title={esp.nombre}
+              subtitle={`${esp.trabajo} · ${esp.installs.length} instalación${esp.installs.length === 1 ? "" : "es"}`}
+              leading={
+                <span style={{ flex: "none", width: 26, height: 26, borderRadius: 8, background: `${esp.color}1F`, border: `1px solid ${esp.color}55`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 15, color: esp.color }}>support_agent</span>
+                </span>
+              }
+              trailing={
+                <form action={deleteEspecialistaAction.bind(null, esp.id)}>
+                  <button type="submit" aria-label="Borrar" style={DELETE_ICON_BTN}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 15 }}>delete</span>
+                  </button>
+                </form>
+              }
+            >
+              <p style={{ margin: 0, font: "400 11.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{esp.descripcion}</p>
+              <p style={{ margin: 0, font: "600 10.5px 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>
+                Herramientas: {(esp.toolKeys as string[]).map((k) => labelForToolKey(k, wowAppNames)).join(" · ")}
+              </p>
+              <p style={{ margin: 0, font: "italic 400 11px/1.5 'Plus Jakarta Sans',sans-serif", color: "#7FB0C4" }}>
+                Sugerencia de ejemplo (simulada): &ldquo;{esp.suggestion}&rdquo;
+              </p>
+              <form action={installEspecialistaAction.bind(null, esp.id)} style={{ display: "flex", gap: 8 }}>
+                <input name="cardSlug" placeholder="Slug de la Card donde instalarlo" style={{ ...INPUT, flex: 1, minWidth: 0 }} />
+                <button type="submit" style={SAVE_BTN}>Instalar</button>
+              </form>
+            </AccordionRow>
+          ))}
+        </AccordionSection>
+
+        <AccordionSection
+          title="Expertos"
+          subtitle="El Gemelo Digital publicado de una persona real -- con consentimiento y Bautizo."
+          meta={<span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", color: "#8a8378", background: "rgba(255,255,255,.05)", borderRadius: 999, padding: "3px 9px" }}>{expertos.length}</span>}
+        >
+          {expertoRevoked && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Consentimiento revocado -- ya no publica.</p>}
+          {expertoDeleted && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Experto eliminado.</p>}
+
+          <form action={seedExampleExpertoAction}>
+            <button type="submit" style={{ alignSelf: "flex-start", padding: "10px 16px", border: "1px dashed rgba(200,161,90,.4)", borderRadius: 10, background: "none", color: "#C8A15A", font: "700 10.5px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", cursor: "pointer" }}>
+              Sembrar ejemplo (Experto)
+            </button>
+          </form>
+          {expertosSeeded !== undefined && (
+            <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>
+              {Number(expertosSeeded) > 0 ? "✓ Experto de ejemplo agregado (con su propio Member/Card de prueba)." : "Ya estaba -- no había ninguno nuevo para agregar."}
+            </p>
+          )}
+
+          {expertos.map((exp) => {
+            const published = canPublishExperto(exp);
+            return (
+              <AccordionRow
+                key={exp.id}
+                title={exp.nombrePublico}
+                subtitle={`${exp.profesion} · ${published ? "publicado" : "no publica"} · ${exp.consultas.length} consulta${exp.consultas.length === 1 ? "" : "s"}`}
+                leading={
+                  <span style={{ flex: "none", width: 26, height: 26, borderRadius: 8, background: `${exp.color}1F`, border: `1px solid ${exp.color}55`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 15, color: exp.color }}>psychology</span>
+                  </span>
+                }
+                trailing={
+                  <form action={deleteExpertoAction.bind(null, exp.id)}>
+                    <button type="submit" aria-label="Borrar" style={DELETE_ICON_BTN}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 15 }}>delete</span>
+                    </button>
+                  </form>
+                }
+              >
+                <p style={{ margin: 0, font: "400 11.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{exp.descripcion}</p>
+                <p style={{ margin: 0, font: "600 10.5px 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>
+                  {exp.esProfesionRegulada ? "Profesión regulada -- solo orienta y refiere, nunca diagnostica." : "Profesión no regulada."}
+                </p>
+                <Link href={`/experto/${exp.key}`} style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", color: "#C8A15A", textDecoration: "none" }}>
+                  Ver página pública →
+                </Link>
+                {published && (
+                  <form action={revokeExpertoConsentAction.bind(null, exp.id)}>
+                    <button type="submit" style={{ ...SAVE_BTN, background: "rgba(229,146,138,.12)", color: "#e5928a" }}>
+                      Revocar consentimiento
+                    </button>
+                  </form>
+                )}
+              </AccordionRow>
+            );
+          })}
         </AccordionSection>
       </div>
     </div>
