@@ -7088,3 +7088,214 @@ correrlo solo, pasa limpio). 237/237 unit, 100% coverage, tsc/lint/build
 limpios.
 
 Shippeado como v1.60.0.
+
+## Ronda de endurecimiento (2026-10-01) -- Fase 6: DISEÑO -- WowHead, el HeadHunter de Agentes
+
+**Solo diseño, cero código en esta fase.** Pedido directo de Gunnar,
+más profundo que un cambio de nombre: la Oficina Virtual deja de
+mostrar WowApps sueltas y pasa a tener una pantalla completa propia,
+el **WowHead**, donde el cliente recluta **Agentes** para su equipo.
+
+### El giro, en una frase
+
+WowStore (vidriera de apps) se retira DE LA OFICINA -- su código, su
+modelo de datos y `/admin/wowstore` quedan intactos, nada se borra,
+se recicla después -- y en su lugar nace WowHead: un HeadHunter donde
+se reclutan Agentes, no se instalan apps.
+
+### Los dos ejes (no son el mismo eje, error que cometí en la primera
+### pasada del diseño y Gunnar corrigió en el momento)
+
+**Eje 1 -- Origen del Agente** (de dónde viene):
+- **Legacy** -- persona real que completó su propio proceso de Legacy.
+  Es el modelo `Experto` que ya existe desde la Fase 5 (memberId,
+  consentimiento, Bautizo) -- esa pieza NO cambia de forma, solo se le
+  suman campos nuevos abajo.
+- **Silicio** -- IA pura, con un perfil específico. Es el modelo
+  `Especialista` que ya existe desde la Fase 5 (toolKeys, trabajo,
+  descripción) -- tampoco cambia de forma, solo suma CV/reputación.
+
+**Eje 2 -- Rango** (conocimiento y estructura de equipo) -- **solo
+aplica a Legacy, nunca a Silicio** (regla dura, confirmada por
+Gunnar: "el experto solo puede ser humano y haber terminado su
+proceso completo de legacy"):
+- **Especialista** -- el default de TODO Legacy publicado. Trabaja
+  solo, o se apoya en agentes Silicio como herramienta.
+- **Experto** -- un Legacy que armó su propio equipo: otros Legacy
+  (especialistas) reclutados por él. El ascenso de Especialista a
+  Experto **nunca es automático** -- lo aprueba MasterN0 a mano, mismo
+  criterio que la regla dura de la Fase 1 (nadie se auto-otorga más
+  alcance del que tiene).
+
+### (a) Modelo de datos propuesto
+
+**Sobre `Experto` (ya existe, Fase 5) -- se le suman estos campos:**
+
+```prisma
+model Experto {
+  // ...todo lo que ya existe (memberId, consentimiento, Bautizo, etc.)
+  // no se toca...
+
+  // Rango (Fase 6) -- el ascenso a "experto" es manual, aprobado por
+  // MasterN0, nunca automático aunque el Legacy arme un equipo.
+  rango             String    @default("especialista") // "especialista" | "experto"
+  promovidoAExpertoAt DateTime?
+  promovidoPorAdminId String?  // id del Admin (MasterN0) que aprobó el ascenso
+
+  // CV real (Fase 6) -- lo carga la propia persona o MasterN0, nunca
+  // texto inventado por el sistema.
+  experiencia   Json @default("[]") // [{ rol, periodo, descripcion }]
+  especialidades Json @default("[]") // string[] -- tags tipo "Nutrición deportiva"
+
+  // Reputación -- simulada hasta que exista un sistema de reviews real
+  // (mismo criterio que el rating de WowApp en Explorar, Fase W-algo:
+  // "siempre marcado (simulado)"), cargada a mano por ahora.
+  calificacionPromedio Float @default(0)
+  calificacionCantidad Int   @default(0)
+
+  // Equipo -- un Experto recluta a otros Legacy (rango "especialista")
+  // a su propio equipo. Null = no pertenece al equipo de nadie.
+  recruitedById String?
+  recruitedBy   Experto?  @relation("EquipoDeExperto", fields: [recruitedById], references: [id])
+  equipo        Experto[] @relation("EquipoDeExperto")
+
+  invitacionesEnviadas  EquipoInvitacion[] @relation("InvitacionesEnviadas")
+  invitacionRecibida    EquipoInvitacion[] @relation("InvitacionesRecibidas")
+}
+```
+
+**Nuevo -- la invitación con aceptación obligatoria** (confirmado por
+Gunnar: "el experto debe aceptar" -- nadie entra al equipo de otro sin
+su OK, mismo criterio de consentimiento que gobierna todo lo demás en
+Legacy/Experto):
+
+```prisma
+model EquipoInvitacion {
+  id             String   @id @default(cuid())
+  expertoId      String   // quién recluta
+  experto        Experto  @relation("InvitacionesEnviadas", fields: [expertoId], references: [id])
+  especialistaId String   // a quién invita (otro Legacy, rango "especialista")
+  especialista   Experto  @relation("InvitacionesRecibidas", fields: [especialistaId], references: [id])
+  estado         String   @default("pendiente") // "pendiente" | "aceptada" | "rechazada"
+  createdAt      DateTime @default(now())
+  respondidaAt   DateTime?
+
+  @@unique([expertoId, especialistaId])
+}
+```
+
+Al aceptar (`estado:"aceptada"`): se setea
+`especialista.recruitedById = expertoId` en la misma transacción --
+de ahí sale el organigrama, sin tener que recalcular nada.
+
+**Sobre `Especialista`** (Silicio, Fase 5) -- mismos 2 campos de CV/
+reputación que Experto, sin rango (un Silicio es siempre, por
+definición, "especialista" -- nunca tiene equipo propio):
+
+```prisma
+model Especialista {
+  // ...todo lo que ya existe (toolKeys, trabajo, descripción, etc.)...
+  habilidades           Json  @default("[]") // string[] -- tags de CV
+  calificacionPromedio  Float @default(0)
+  calificacionCantidad  Int   @default(0)
+}
+```
+
+### (b) Qué se reusa vs. qué es nuevo
+
+**Se reusa tal cual:**
+- `Experto`/`Especialista`/`CodiceEntry`/`Consulta`/`EspecialistaInstall`
+  (Fase 5) -- siguen siendo exactamente el motor de "contratar a un
+  Agente para tu propio negocio". WowHead los expone con una cara
+  nueva, no los reconstruye.
+- `lib/wowApps.ts` (RUBROS/PAIN_POINTS, el vocabulario de los 2
+  selectores) -- se reusa para filtrar Agentes también.
+- **`lib/mallaReal.ts`/`components/MallaGraph.tsx`/`MallaExplorer.tsx`**
+  -- EXACTAMENTE el pedido original de Gunnar ("el cerebromalla
+  alineado a reclutar agentes"): el organigrama de un Experto (su
+  propio equipo reclutado) se construye con una función nueva,
+  `buildEquipoMallaGraph(expertoRoot, equipo)`, mismo shape
+  `MallaGraphData` que ya usan `buildRootMallaGraph`/
+  `buildMemberFractalGraph` -- el árbol no es "quién refirió a quién"
+  sino "quién reclutó a quién", pero el componente visual que lo
+  dibuja es el mismo, sin tocarlo.
+- `app/admin/wowstore/*` (CRUD de WowApp/Especialista/Experto) --
+  sigue siendo el catálogo real, se le cambia el rótulo visible a
+  "WowHead" en la cabecera de la pantalla, la ruta queda igual
+  (`/admin/wowstore`, herramienta interna de MasterN0 -- nadie de
+  afuera ve esa URL, no vale la pena el riesgo de romper un bookmark
+  tuyo por una cosmética).
+
+**Es nuevo:**
+- Los campos de arriba en `Experto`/`Especialista` + el modelo
+  `EquipoInvitacion`.
+- `promoverAExpertoAction` (MasterN0-only, desde `/admin/wowstore`) --
+  el único lugar del código que puede poner `rango:"experto"`.
+- `app/m/wowhead/` (nuevo, reemplaza la entrada pública que hoy tiene
+  `/m/wowstore`) -- la pantalla completa donde un cliente explora y
+  recluta Agentes para su propia Card. Mismo query param `cardId` que
+  ya usa `/m/wowstore` hoy.
+- `app/c/[slug]/oficina/mi-equipo/` (nuevo) -- solo visible si
+  `isHost && expertoPerfil?.rango === "experto"`: panel del propio
+  Experto para ver su organigrama, invitar nuevos especialistas a su
+  equipo, y ver el estado de sus invitaciones enviadas.
+- `enviarInvitacionEquipoAction`/`responderInvitacionEquipoAction` --
+  el flujo de invitar + aceptar/rechazar.
+
+### (c) Cambios de interfaz
+
+1. **La Oficina deja de mostrar WowApps sueltas.** En
+   `app/c/[slug]/oficina/page.tsx`, tanto `OwnerOficina` como
+   `VisitorOficina` dejan de renderizar `WowAppsBlock` y
+   `EspecialistasBlock` (el bloque "Tu Equipo" de la Fase 5). En su
+   lugar, un único tile/botón "WowHead" que linkea a
+   `/m/wowhead?cardId=...` -- mismo lugar físico donde hoy vive el
+   tile "+ WowStore".
+2. **`/m/wowhead`** -- pantalla completa (el mockup que ya viste,
+   `https://claude.ai/artifact/HKUPNSBwFLWt69JHB5mwDS`): filtro
+   Todos/Legacy/Silicio, "tu equipo" ya contratado arriba, cards de
+   Agentes con badge de origen+rango ("Legacy · Experto", "Legacy ·
+   Especialista", "Silicio"), estrellas + CV resumido.
+3. **Perfil de Agente** -- CV completo (experiencia, especialidades),
+   reseñas (marcadas simulado), botón de consulta/contratación, y
+   -- solo si es un Experto -- la sección "Su equipo" con el
+   organigrama de sus especialistas reclutados.
+4. **`/c/[slug]/oficina/mi-equipo`** (solo el propio Experto) -- su
+   organigrama real (vía `buildEquipoMallaGraph`), un buscador simple
+   para invitar a otro Legacy publicado, y la lista de invitaciones
+   pendientes/aceptadas/rechazadas.
+5. **El Legacy invitado** ve la invitación pendiente en algún punto de
+   su propia Oficina (a definir el lugar exacto en Fase 7 -- lo más
+   simple es sumarla como un ítem más en la misma pantalla
+   `mi-equipo`, visible para CUALQUIER Legacy publicado, no solo
+   Expertos: si tiene invitaciones recibidas pendientes, las ve y
+   responde ahí mismo).
+
+### (d) Los dos flujos de reclutamiento (no son el mismo)
+
+1. **Cliente recluta un Agente** (WowHead) -- para SU propio negocio.
+   Contratar a un Experto no te trae a su equipo de regalo: ves su
+   organigrama en el perfil, pero cada especialista de ese equipo se
+   contrata aparte si querés, por su cuenta.
+2. **Un Experto recluta a sus propios especialistas** (`mi-equipo`) --
+   acción del Experto sobre otros Legacy, para armar SU equipo. Pasa
+   por invitación + aceptación explícita del invitado, nunca
+   unilateral.
+
+### (e) Explícitamente fuera de este MVP
+
+- Sistema de reviews real -- `calificacionPromedio`/`calificacionCantidad`
+  siguen siendo campos cargados a mano, marcados simulado en la UI,
+  mismo límite honesto que el rating de WowApp hoy.
+- Que un Experto pueda reclutar Silicio a su equipo -- por ahora el
+  equipo de un Experto es solo otros Legacy (lo que pidió Gunnar
+  explícitamente); un Silicio sigue siendo una herramienta que un
+  Especialista/Experto USA, nunca un miembro de su organigrama.
+- Comisión/pago por reclutar (ni para WowHead ni para `mi-equipo`) --
+  mismo límite de siempre, sin pasarela real todavía.
+- Borrar o tocar el código de WowApp/WowStore -- se queda exactamente
+  como está, solo deja de ser lo primero que ve un cliente en su
+  Oficina.
+
+**Esperando tu OK para recién ahí arrancar la construcción** (schema +
+las pantallas) -- sin tocar código hasta entonces.
