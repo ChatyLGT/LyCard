@@ -10,10 +10,11 @@ import {
   seedExampleExpertoAction,
   revokeExpertoConsentAction,
   deleteExpertoAction,
+  promoverAExpertoAction,
 } from "./actions-equipo";
 import { RUBROS, PAIN_POINTS, WOW_APP_TYPES } from "@/lib/wowApps";
 import { labelForToolKey } from "@/lib/especialistas";
-import { canPublishExperto } from "@/lib/expertos";
+import { canPublishExperto, parseRango, RANGO_LABEL } from "@/lib/expertos";
 import { AccordionSection, AccordionRow, AccordionAddRow } from "@/components/Accordion";
 
 export const dynamic = "force-dynamic";
@@ -83,6 +84,7 @@ export default async function AdminWowStorePage({
     expertosSeeded?: string;
     expertoRevoked?: string;
     expertoDeleted?: string;
+    expertoPromovido?: string;
   }>;
 }) {
   const scope = await currentAdminScope();
@@ -102,6 +104,7 @@ export default async function AdminWowStorePage({
     expertosSeeded,
     expertoRevoked,
     expertoDeleted,
+    expertoPromovido,
   } = await searchParams;
   const catalog = await prisma.wowApp.findMany({ orderBy: { createdAt: "asc" } });
   const especialistas = await prisma.especialista.findMany({ orderBy: { createdAt: "asc" }, include: { installs: true } });
@@ -127,7 +130,7 @@ export default async function AdminWowStorePage({
         <Link href="/admin/programs" style={{ color: "#C8A15A", font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".18em", textTransform: "uppercase" }}>
           ← Programas
         </Link>
-        <h1 style={{ margin: 0, font: "500 18px 'Playfair Display',serif", color: "#F5F2EB" }}>WowStore</h1>
+        <h1 style={{ margin: 0, font: "500 18px 'Playfair Display',serif", color: "#F5F2EB" }}>WowHead</h1>
         <span />
       </div>
 
@@ -291,6 +294,7 @@ export default async function AdminWowStorePage({
         >
           {expertoRevoked && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Consentimiento revocado -- ya no publica.</p>}
           {expertoDeleted && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Experto eliminado.</p>}
+          {expertoPromovido === "1" && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Ascendido a Experto -- ya puede armar su equipo.</p>}
 
           <form action={seedExampleExpertoAction}>
             <button type="submit" style={{ alignSelf: "flex-start", padding: "10px 16px", border: "1px dashed rgba(200,161,90,.4)", borderRadius: 10, background: "none", color: "#C8A15A", font: "700 10.5px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", cursor: "pointer" }}>
@@ -305,11 +309,12 @@ export default async function AdminWowStorePage({
 
           {expertos.map((exp) => {
             const published = canPublishExperto(exp);
+            const rango = parseRango(exp.rango);
             return (
               <AccordionRow
                 key={exp.id}
                 title={exp.nombrePublico}
-                subtitle={`${exp.profesion} · ${published ? "publicado" : "no publica"} · ${exp.consultas.length} consulta${exp.consultas.length === 1 ? "" : "s"}`}
+                subtitle={`${exp.profesion} · ${RANGO_LABEL[rango]} · ${published ? "publicado" : "no publica"} · ${exp.consultas.length} consulta${exp.consultas.length === 1 ? "" : "s"}`}
                 leading={
                   <span style={{ flex: "none", width: 26, height: 26, borderRadius: 8, background: `${exp.color}1F`, border: `1px solid ${exp.color}55`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <span className="material-symbols-outlined" style={{ fontSize: 15, color: exp.color }}>psychology</span>
@@ -330,10 +335,20 @@ export default async function AdminWowStorePage({
                 <Link href={`/experto/${exp.key}`} style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", color: "#C8A15A", textDecoration: "none" }}>
                   Ver página pública →
                 </Link>
+                <Link href={`/m/wowhead/legacy/${exp.key}`} style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", color: "#C8A15A", textDecoration: "none" }}>
+                  Ver perfil en WowHead →
+                </Link>
                 {published && (
                   <form action={revokeExpertoConsentAction.bind(null, exp.id)}>
                     <button type="submit" style={{ ...SAVE_BTN, background: "rgba(229,146,138,.12)", color: "#e5928a" }}>
                       Revocar consentimiento
+                    </button>
+                  </form>
+                )}
+                {rango === "especialista" && (
+                  <form action={promoverAExpertoAction.bind(null, exp.id)}>
+                    <button type="submit" style={{ ...SAVE_BTN, background: "rgba(200,161,90,.16)", color: "#C8A15A" }}>
+                      Promover a Experto (arma su propio equipo)
                     </button>
                   </form>
                 )}

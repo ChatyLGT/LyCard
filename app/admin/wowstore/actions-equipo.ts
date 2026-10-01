@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { currentAdminScope, isMasterN0Scope } from "@/lib/auth";
 import { slugify, uniqueSlug } from "@/lib/slug";
 import { EXAMPLE_ESPECIALISTAS } from "@/lib/especialistas";
-import { EXAMPLE_EXPERTO } from "@/lib/expertos";
+import { EXAMPLE_EXPERTO, EXAMPLE_EXPERTO_EQUIPO, parseRango } from "@/lib/expertos";
 
 // Fase 5 (2026-09-30) -- CRUD de Especialistas/Expertos, MasterN0-only,
 // mismo patrón que app/admin/wowstore/actions.ts. Separado en su propio
@@ -15,6 +15,7 @@ async function requireMasterN0() {
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
   if (!isMasterN0Scope(scope)) redirect("/admin");
+  return scope;
 }
 
 // Sembrar "Calma" -- idempotente por key, mismo criterio que
@@ -41,6 +42,7 @@ export async function seedExampleEspecialistaAction() {
         basePriceUsd: example.basePriceUsd,
         status: example.status,
         destacado: example.destacado,
+        habilidades: example.habilidades,
       },
     });
     created++;
@@ -99,9 +101,13 @@ export async function deleteEspecialistaAction(id: string) {
 // su Card, marcados como ejemplo en su propio nombre/descripción
 // (nunca con datos que puedan confundirse con una persona real).
 // Idempotente por key del Experto -- no crea un segundo Member/Card si
-// ya corrió antes.
+// ya corrió antes. Fase 6: además nace YA en rango "experto" con su
+// CV y 3 especialistas de ejemplo reclutados a su equipo -- sembrar el
+// ejemplo no pasa por el ascenso manual real (eso sigue siendo
+// promoverAExpertoAction, MasterN0-only), es solo para que WowHead no
+// arranque vacío.
 export async function seedExampleExpertoAction() {
-  await requireMasterN0();
+  const scope = await requireMasterN0();
 
   const existing = await prisma.experto.findUnique({ where: { key: EXAMPLE_EXPERTO.key } });
   if (existing) {
@@ -110,15 +116,51 @@ export async function seedExampleExpertoAction() {
   }
 
   const suffix = Date.now().toString(36);
-  const baseSlug = slugify(`experto-${EXAMPLE_EXPERTO.key}-${suffix}`);
   const cardSlugTaken = (slug: string) => prisma.card.findUnique({ where: { slug }, select: { id: true } }).then(Boolean);
+
+  async function crearLegacyPublicado(
+    tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+    nombre: string,
+    profesion: string,
+    key: string
+  ) {
+    const member = await tx.member.create({ data: { name: nombre } });
+    await tx.card.create({
+      data: {
+        slug: await uniqueSlug(slugify(`experto-${key}-${suffix}`), cardSlugTaken),
+        name: nombre,
+        title: profesion,
+        quote: "Perfil de ejemplo para probar WowHead.",
+        kind: "personal",
+        memberId: member.id,
+        isDemo: true,
+      },
+    });
+    const now = new Date();
+    return tx.experto.create({
+      data: {
+        key,
+        memberId: member.id,
+        nombrePublico: nombre,
+        profesion,
+        descripcion: `Perfil de EJEMPLO -- especialista del equipo de ${EXAMPLE_EXPERTO.nombrePublico}.`,
+        color: EXAMPLE_EXPERTO.color,
+        // Pre-consentido y pre-bautizado a propósito, mismo criterio que
+        // el Experto principal: el ejemplo existe para probar el FLUJO
+        // de punta a punta, no el alta de consentimiento en sí.
+        consentGivenAt: now,
+        consentScope: ["transcripciones"],
+        bautizoStatus: "bautizado",
+      },
+    });
+  }
 
   await prisma.$transaction(async (tx) => {
     const member = await tx.member.create({ data: { name: EXAMPLE_EXPERTO.demoMemberName } });
 
     await tx.card.create({
       data: {
-        slug: await uniqueSlug(baseSlug, cardSlugTaken),
+        slug: await uniqueSlug(slugify(`experto-${EXAMPLE_EXPERTO.key}-${suffix}`), cardSlugTaken),
         name: EXAMPLE_EXPERTO.demoMemberName,
         title: EXAMPLE_EXPERTO.profesion,
         quote: "Perfil de ejemplo para probar el flujo de consulta a un Experto.",
@@ -138,13 +180,14 @@ export async function seedExampleExpertoAction() {
         esProfesionRegulada: EXAMPLE_EXPERTO.esProfesionRegulada,
         descripcion: EXAMPLE_EXPERTO.descripcion,
         color: EXAMPLE_EXPERTO.color,
-        // Pre-consentido y pre-bautizado a propósito: el ejemplo existe
-        // para probar el FLUJO de consulta de punta a punta, no el
-        // flujo de alta de consentimiento en sí (eso es un toggle
-        // manual aparte, ver los botones de abajo en la lista).
         consentGivenAt: now,
         consentScope: ["transcripciones"],
         bautizoStatus: "bautizado",
+        rango: "experto",
+        promovidoAExpertoAt: now,
+        promovidoPorAdminId: scope.id,
+        experiencia: EXAMPLE_EXPERTO.experiencia,
+        especialidades: EXAMPLE_EXPERTO.especialidades,
       },
     });
 
@@ -152,6 +195,12 @@ export async function seedExampleExpertoAction() {
       await tx.codiceEntry.create({
         data: { expertoId: experto.id, pregunta: entry.pregunta, respuesta: entry.respuesta, aprobadaAt: now },
       });
+    }
+
+    for (let i = 0; i < EXAMPLE_EXPERTO_EQUIPO.length; i++) {
+      const miembro = EXAMPLE_EXPERTO_EQUIPO[i];
+      const especialista = await crearLegacyPublicado(tx, miembro.demoMemberName, miembro.profesion, `${EXAMPLE_EXPERTO.key}-equipo-${i}-${suffix}`);
+      await tx.experto.update({ where: { id: especialista.id }, data: { recruitedById: experto.id } });
     }
   });
 
@@ -163,6 +212,29 @@ async function requireExperto(id: string) {
   const experto = await prisma.experto.findUnique({ where: { id } });
   if (!experto) redirect("/admin/wowstore");
   return experto;
+}
+
+// Ascenso a Experto (Fase 6, WowHead) -- NUNCA automático, aunque el
+// Legacy arme un equipo por su cuenta. Solo MasterN0 puede aprobarlo,
+// mismo criterio que la regla dura de la Fase 1 (nadie se auto-otorga
+// más alcance del que tiene). Un Silicio nunca llega acá -- este
+// archivo solo opera sobre `Experto` (Legacy), el modelo `Especialista`
+// (Silicio) ni siquiera tiene el campo `rango`.
+export async function promoverAExpertoAction(id: string) {
+  const scope = await requireMasterN0();
+  const experto = await requireExperto(id);
+
+  if (parseRango(experto.rango) === "experto") {
+    redirect("/admin/wowstore?expertoPromovido=0");
+  }
+
+  await prisma.experto.update({
+    where: { id },
+    data: { rango: "experto", promovidoAExpertoAt: new Date(), promovidoPorAdminId: scope.id },
+  });
+
+  revalidatePath("/admin/wowstore");
+  redirect("/admin/wowstore?expertoPromovido=1");
 }
 
 // Revocar consentimiento -- regla dura de la Fase 4: revocar vuelve el

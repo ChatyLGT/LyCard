@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseAutonomyLevel, parseToolKeys, labelForToolKey, EXAMPLE_ESPECIALISTAS } from "@/lib/especialistas";
+import { parseAutonomyLevel, parseToolKeys, labelForToolKey, parseHabilidades, EXAMPLE_ESPECIALISTAS } from "@/lib/especialistas";
 
 describe("parseAutonomyLevel", () => {
   it("acepta los 3 niveles válidos", () => {
@@ -47,5 +47,20 @@ describe("EXAMPLE_ESPECIALISTAS", () => {
     expect(calma).toBeDefined();
     expect(calma!.toolKeys).toEqual(["wowawe", "modo-foco"]);
     expect(calma!.suggestion.length).toBeGreaterThan(0);
+  });
+
+  it("tiene su CV -- habilidades", () => {
+    const calma = EXAMPLE_ESPECIALISTAS.find((e) => e.key === "calma");
+    expect(calma!.habilidades.length).toBeGreaterThan(0);
+  });
+});
+
+describe("parseHabilidades", () => {
+  it("filtra solo strings no vacíos", () => {
+    expect(parseHabilidades(["Enfoque", "", 1, "Bienestar"])).toEqual(["Enfoque", "Bienestar"]);
+  });
+
+  it("algo que no es array da lista vacía", () => {
+    expect(parseHabilidades(undefined)).toEqual([]);
   });
 });

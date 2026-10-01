@@ -26,6 +26,45 @@ export function parseConsultaNivel(value: unknown): ConsultaNivel {
   return CONSULTA_NIVELES.includes(value as ConsultaNivel) ? (value as ConsultaNivel) : "gemelo_solo";
 }
 
+// Rango (Fase 6, WowHead, 2026-10-01) -- eje distinto del origen
+// (Legacy/Silicio, ver lib/especialistas.ts). Solo un Legacy puede
+// llegar a "experto" -- un Silicio nunca tiene equipo propio, regla
+// dura confirmada por Gunnar. El ascenso NUNCA es automático, lo
+// aprueba MasterN0 a mano (ver app/admin/wowstore/actions-equipo.ts
+// #promoverAExpertoAction) -- este archivo solo sabe leer el campo, no
+// decide cuándo alguien puede ascender.
+export type Rango = "especialista" | "experto";
+
+export const RANGOS: Rango[] = ["especialista", "experto"];
+
+export function parseRango(value: unknown): Rango {
+  return RANGOS.includes(value as Rango) ? (value as Rango) : "especialista";
+}
+
+export const RANGO_LABEL: Record<Rango, string> = {
+  especialista: "Especialista",
+  experto: "Experto",
+};
+
+export type ExperienciaItem = { rol: string; periodo: string; descripcion: string };
+
+export function parseExperiencia(value: unknown): ExperienciaItem[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((v): v is Record<string, unknown> => typeof v === "object" && v !== null)
+    .map((v) => ({
+      rol: typeof v.rol === "string" ? v.rol : "",
+      periodo: typeof v.periodo === "string" ? v.periodo : "",
+      descripcion: typeof v.descripcion === "string" ? v.descripcion : "",
+    }))
+    .filter((item) => item.rol.trim().length > 0);
+}
+
+export function parseEspecialidades(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((v): v is string => typeof v === "string" && v.trim().length > 0);
+}
+
 // Regla dura 1 y 2 (consentimiento + Bautizo): un Experto solo puede
 // recibir consultas reales si dio consentimiento, no lo revocó después,
 // y la propia persona aprobó publicarse -- nunca por default.
@@ -92,6 +131,8 @@ export type ExpertoExample = {
   color: string;
   demoMemberName: string;
   seedCodice: { pregunta: string; respuesta: string }[];
+  experiencia: ExperienciaItem[];
+  especialidades: string[];
 };
 
 // El único ejemplo de esta ronda (Fase 5, pedido explícito de Gunnar):
@@ -100,7 +141,11 @@ export type ExpertoExample = {
 // consentimiento + Bautizo ya dados (para poder probar el flujo de
 // consulta de punta a punta sin tener que operar esos 2 pasos a mano
 // primero) y una entrada de Códice pre-aprobada, para que el match real
-// tenga algo con qué comparar.
+// tenga algo con qué comparar. Fase 6: además arranca YA promovida a
+// "experto" (con su CV cargado) para poder mostrar de entrada el
+// organigrama con EXAMPLE_EXPERTO_EQUIPO -- sembrar el ejemplo no pasa
+// por el ascenso manual a propósito, es solo para que se vea poblado;
+// un Experto real sigue necesitando la aprobación de MasterN0.
 export const EXAMPLE_EXPERTO: ExpertoExample = {
   key: "ejemplo-nutricion",
   nombrePublico: "Dra. Valentina Ríos (ejemplo)",
@@ -117,4 +162,20 @@ export const EXAMPLE_EXPERTO: ExpertoExample = {
         "Simulación -- esta es una respuesta de ejemplo del Códice, no una recomendación real: algo liviano en carbohidratos 60-90 minutos antes suele andar bien para la mayoría, pero esto varía mucho persona a persona.",
     },
   ],
+  experiencia: [
+    { rol: "Nutricionista clínica -- consultorio propio", periodo: "2019 -- hoy", descripcion: "Planes alimentarios para deportistas amateurs y readaptación nutricional post-lesión." },
+    { rol: "Nutrición deportiva -- Club Atlético Baires", periodo: "2015 -- 2019", descripcion: "" },
+  ],
+  especialidades: ["Nutrición deportiva", "Plan alimentario", "Readaptación post-lesión", "Hidratación"],
 };
+
+// Equipo de ejemplo del Experto de arriba -- Legacy inventados,
+// marcados "(ejemplo)" igual que el propio Experto, para poblar el
+// organigrama de WowHead desde el primer seed. Cada uno nace con
+// rango "especialista" y queda unido vía recruitedById una vez
+// sembrado (ver seedExampleExpertoAction).
+export const EXAMPLE_EXPERTO_EQUIPO: { demoMemberName: string; profesion: string }[] = [
+  { demoMemberName: "Sofía Lem (ejemplo)", profesion: "Nutrición deportiva" },
+  { demoMemberName: "Diego Paz (ejemplo)", profesion: "Nutrición clínica" },
+  { demoMemberName: "Rocío Vera (ejemplo)", profesion: "Nutrición infantil" },
+];

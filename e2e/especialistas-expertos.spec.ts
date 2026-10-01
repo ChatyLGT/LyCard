@@ -14,6 +14,8 @@ test.describe("Especialistas y Expertos (Fase 5)", () => {
   const suffix = Date.now();
 
   let cardSlug: string;
+  let cardId: string;
+  let especialistaKey: string;
   let especialistaId: string;
   let adminId: string;
 
@@ -33,12 +35,13 @@ test.describe("Especialistas y Expertos (Fase 5)", () => {
       [cardSlug, "E2E Dueño Especialista", "Test Title", "Test Quote"]
     );
     const cardRow = await e2eDb.query<{ id: string }>(`select id from "Card" where slug = $1`, [cardSlug]);
-    const cardId = cardRow.rows[0].id;
+    cardId = cardRow.rows[0].id;
 
+    especialistaKey = `e2e-calma-${suffix}`;
     const especialista = await e2eDb.query<{ id: string }>(
       `insert into "Especialista" (id, key, nombre, trabajo, descripcion, color, "toolKeys", suggestion, "updatedAt") values (gen_random_uuid()::text, $1, $2, $3, $4, $5, $6, $7, now()) returning id`,
       [
-        `e2e-calma-${suffix}`,
+        especialistaKey,
         "Calma",
         "Cuidar que no te quemes",
         "Mira tu Caminata de Asombro y tus rachas de Modo Foco.",
@@ -94,19 +97,21 @@ test.describe("Especialistas y Expertos (Fase 5)", () => {
     await e2eDb.end();
   });
 
-  test("un Especialista instalado se ve en 'Tu Equipo' con su sugerencia marcada simulada", async ({ browser }) => {
+  test("un Especialista instalado se ve en su perfil de WowHead con su sugerencia marcada simulada", async ({ browser }) => {
+    // Fase 6 (WowHead, 2026-10-01): "Tu Equipo" dentro de la Oficina se
+    // retiró -- el perfil de un Agente Silicio ahora vive en
+    // /m/wowhead/silicio/[key]. Mismo dato, nueva pantalla.
     const context = await browser.newContext();
     const cookie = await mintAdminCookie(adminId);
     await context.addCookies([{ ...cookie, url: BASE_URL }]);
     const page = await context.newPage();
 
-    await page.goto(`${BASE_URL}/c/${cardSlug}/oficina`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE_URL}/m/wowhead/silicio/${especialistaKey}?cardId=${cardId}`, { waitUntil: "networkidle" });
 
-    await expect(page.getByText("Tu Equipo", { exact: true })).toBeVisible();
-    await page.getByText("Calma", { exact: true }).click();
+    await expect(page.getByText("Calma", { exact: true })).toBeVisible();
     await expect(page.getByText("arrancamos una de 15 minutos", { exact: false })).toBeVisible();
     await expect(page.getByText("Sugerencia de ejemplo (simulada)", { exact: false })).toBeVisible();
-    await expect(page.getByText("Herramientas: wowawe · Modo Foco", { exact: false })).toBeVisible();
+    await expect(page.getByText("Modo Foco", { exact: true })).toBeVisible();
 
     await context.close();
   });

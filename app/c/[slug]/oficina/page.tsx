@@ -15,11 +15,10 @@ import MallaExplorer from "@/components/MallaExplorer";
 import { getFathomBrief, type FathomBrief } from "@/lib/fathom";
 import { parseOfficeSkills, DEFAULT_OFFICE_SKILLS, type OfficeSkill } from "@/lib/officeSkills";
 import OfficeSkillsBlock from "@/components/OfficeSkillsBlock";
-import WowAppsBlock from "@/components/WowAppsBlock";
-import EspecialistasBlock from "@/components/EspecialistasBlock";
 import ExpertoInboxBlock from "@/components/ExpertoInboxBlock";
 import { answerConsultaAction } from "./experto-actions";
-import type { AweWalkEntrySummary } from "@/components/WowAweBlock";
+import WowAweBlock, { type AweWalkEntrySummary } from "@/components/WowAweBlock";
+import { AccordionRow } from "@/components/Accordion";
 import type { VoiceNoteSummary } from "@/components/VoiceNotesBlock";
 import CardLeadsBlock, { type CardLeadSummary } from "@/components/CardLeadsBlock";
 import TagsBlock from "@/components/TagsBlock";
@@ -574,31 +573,27 @@ function VisitorOficina({ data }: { data: OficinaData }) {
             instaladas -- antes eran 2 secciones con títulos distintos
             ("WowApps" arriba, "WowApps · WowStore" abajo), confuso y
             enterraba la marca WowStore en un subtítulo. */}
-        {(card.kind === "project" || data.installedWowApps.length > 0) && (
-          <span style={kickerStyle}>{card.kind === "project" ? data.officeSkillsKicker : "WowStore"}</span>
-        )}
+        {/* Fase 6 (WowHead, 2026-10-01): WowApps/Especialistas ya no se
+            muestran en la Oficina -- ese catálogo pasó a vivir solo en
+            WowHead (/m/wowhead), y reclutar Agentes es una acción del
+            DUEÑO, no algo que un visitante vea en una Card ajena. El
+            código/modelo de WowApp sigue intacto, solo se oculta acá. */}
         {card.kind === "project" && (
-          <OfficeSkillsBlock
-            skills={data.officeSkills}
-            kicker=""
-            isHost={false}
-            fathomBrief={{ enabled: false }}
-            companyNetworkHref={null}
-            cardId={data.card.id}
-            voiceNotes={[]}
-            agendaEvents={[]}
-            agendaTasks={[]}
-            googleConnected={false}
-            connectUrl={data.connectUrl}
-          />
-        )}
-        {data.installedWowApps.length > 0 && (
-          <WowAppsBlock installs={data.installedWowApps} isHost={false} cardId={data.card.id} aweEntries={[]} />
-        )}
-        {data.installedEspecialistas.length > 0 && (
           <>
-            <p style={kickerStyle}>Tu Equipo</p>
-            <EspecialistasBlock installs={data.installedEspecialistas} wowAppNames={data.wowAppNames} />
+            <span style={kickerStyle}>{data.officeSkillsKicker}</span>
+            <OfficeSkillsBlock
+              skills={data.officeSkills}
+              kicker=""
+              isHost={false}
+              fathomBrief={{ enabled: false }}
+              companyNetworkHref={null}
+              cardId={data.card.id}
+              voiceNotes={[]}
+              agendaEvents={[]}
+              agendaTasks={[]}
+              googleConnected={false}
+              connectUrl={data.connectUrl}
+            />
           </>
         )}
       </div>
@@ -718,12 +713,33 @@ function OwnerOficina({ data }: { data: OficinaData }) {
           />
         )}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <WowAppsBlock installs={data.installedWowApps} isHost browseHref={`/m/wowstore?cardId=${card.id}`} cardId={card.id} aweEntries={data.aweEntries} />
-          {data.installedEspecialistas.length > 0 && (
-            <>
-              <span style={kickerStyle}>Tu Equipo</span>
-              <EspecialistasBlock installs={data.installedEspecialistas} wowAppNames={data.wowAppNames} />
-            </>
+          {/* Fase 6 (WowHead, 2026-10-01): WowAppsBlock/EspecialistasBlock
+              (el "Tu Equipo" de instalados, Fase 5) se retiran de acá --
+              código/modelo de WowApp intactos, solo dejan de mostrarse.
+              Un único acceso a WowHead, el HeadHunter de Agentes. */}
+          <Link
+            href={`/m/wowhead?cardId=${card.id}`}
+            style={{
+              display: "flex", alignItems: "center", gap: 12, padding: 14, borderRadius: 14,
+              background: "linear-gradient(155deg,rgba(200,161,90,.1),rgba(200,161,90,.03))",
+              border: "1px solid rgba(200,161,90,.3)", textDecoration: "none", color: "#F5F2EB",
+            }}
+          >
+            <span style={{ flex: "none", width: 38, height: 38, borderRadius: 11, background: "rgba(200,161,90,.16)", border: "1px solid rgba(200,161,90,.4)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 19, color: "#C8A15A" }}>groups</span>
+            </span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <span style={{ font: "700 13px 'Playfair Display',serif" }}>WowHead</span>
+              <span style={{ font: "400 10.5px 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>Reclutá Agentes Legacy y Silicio para tu equipo</span>
+            </div>
+          </Link>
+          {data.expertoPerfil && (
+            <Link
+              href={`/c/${card.slug}/oficina/mi-equipo`}
+              style={{ font: "700 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#C8A15A", textDecoration: "none", alignSelf: "flex-start" }}
+            >
+              Ver mi equipo →
+            </Link>
           )}
           {card.kind === "company" && (
             <Link
@@ -732,6 +748,23 @@ function OwnerOficina({ data }: { data: OficinaData }) {
             >
               Ver mi Red de Clientes →
             </Link>
+          )}
+          {/* WowAwe (real, no es cáscara de WowStore) sigue accesible acá
+              aparte del retiro general de WowAppsBlock -- Fase 6 pidió
+              ocultar el marketplace/placeholders, no romper una
+              funcionalidad ya shippeada que Gunnar usa de verdad. */}
+          {data.installedWowApps.some((i) => i.wowApp.appType === "awe") && (
+            <AccordionRow
+              title="Caminata de Asombro"
+              subtitle="WowAwe -- 3 selfies + nota de voz opcional"
+              leading={
+                <span style={{ flex: "none", width: 34, height: 34, borderRadius: 10, background: "rgba(200,161,90,.1)", border: "1px solid rgba(200,161,90,.35)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 17, color: "#C8A15A" }}>directions_walk</span>
+                </span>
+              }
+            >
+              <WowAweBlock cardId={card.id} initialEntries={data.aweEntries} />
+            </AccordionRow>
           )}
         </div>
 

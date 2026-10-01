@@ -73,9 +73,11 @@ test.describe("WowAwe", () => {
     const page = await context.newPage();
 
     await page.goto(`${BASE_URL}/c/${cardSlug}/oficina`, { waitUntil: "networkidle" });
-    // Fix W2.1 (2026-09-24): la sección se renombró "WowApps" -> "WowStore".
-    await expect(page.getByText("WowStore", { exact: true }).first()).toBeVisible();
-    await page.getByRole("button", { name: /WowAwe E2E/ }).click();
+    // Fase 6 (WowHead, 2026-10-01): WowAppsBlock (la grilla genérica) se
+    // retiró de la Oficina, pero WowAwe -- la única WowApp con lógica
+    // real conectada -- sigue accesible como su propia fila de
+    // acordeón ("Caminata de Asombro"), ver app/c/[slug]/oficina/page.tsx.
+    await page.getByRole("button", { name: /Caminata de Asombro/ }).click();
 
     await expect(page.getByText(/Salí a caminar 15 minutos/)).toBeVisible();
 

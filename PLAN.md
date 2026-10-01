@@ -7299,3 +7299,48 @@ model Especialista {
 
 **Esperando tu OK para recién ahí arrancar la construcción** (schema +
 las pantallas) -- sin tocar código hasta entonces.
+
+## Ronda de endurecimiento (2026-10-01) -- Fase 6: MVP -- WowHead construido (v1.61.0)
+
+Confirmado "dale, armalo" -- esto es lo que se shippeó, de punta a
+punta, verificado con E2E real (no solo en el navegador a mano).
+
+### (a) Schema (migración `20261001120451_wowhead_rango_equipo`)
+
+- `Experto.rango` ("especialista" | "experto", default "especialista")
+  + `promovidoAExpertoAt`/`promovidoPorAdminId` (auditoría del ascenso).
+- `Experto.experiencia`/`especialidades` (CV, Json) -- `Especialista.habilidades` (Json) análogo para Silicio.
+- Self-relation `Experto.recruitedById`/`equipo` -- el equipo propio de un Experto.
+- Nuevo modelo `EquipoInvitacion` (expertoId, especialistaId, estado "pendiente"|"aceptada"|"rechazada") -- el invitado SIEMPRE tiene que aceptar, nunca se setea `recruitedById` sin esa aceptación explícita.
+
+### (b) `/admin/wowstore` (ahora rotulado "WowHead")
+
+- `promoverAExpertoAction` (MasterN0-only) -- el único camino para que un Especialista pase a Experto, nunca automático.
+- El seed de ejemplo ("Sembrar ejemplo (Experto)") ahora arma un Experto YA ascendido con 3 especialistas de ejemplo reclutados en su equipo, más CV de ejemplo (experiencia/especialidades) -- para que Gunnar vea el flujo completo poblado con un click, sin tener que armarlo a mano.
+
+### (c) `/m/wowhead` -- el HeadHunter
+
+- Browse con filtro por tipo (Todos / Legacy / Silicio), mezclando `Especialista` (Silicio) y `Experto` publicado (Legacy) en una sola grilla con rating simulado (reusa `simulatedRating`/`simulatedReviewCount` de `lib/wowApps.ts` -- no se sumaron columnas nuevas de rating, ya existía la pieza).
+- `/m/wowhead/silicio/[key]`: perfil con CV, herramientas, habilidades, y "Contratar" self-service real (`contratarSilicioAction`, crea el `EspecialistaInstall`).
+- `/m/wowhead/legacy/[key]`: perfil con CV, link a consultar al Gemelo Digital (reusa la pantalla pública de Fase 5 sin tocarla), y -- si es rango "experto" -- su equipo reclutado en tarjetas clicables.
+
+### (d) `/c/[slug]/oficina/mi-equipo` -- el propio equipo de un Experto
+
+- Invitaciones recibidas (cualquier Legacy publicado, sea o no Experto) con Aceptar/Rechazar.
+- Si es rango "experto": organigrama real de su equipo -- reusa `buildMemberFractalGraph` (`lib/mallaReal.ts`, ya existía, no se escribió una función nueva) + el componente `MallaGraph` de siempre, no una visualización aparte. Formulario para invitar por clave, lista de invitaciones enviadas con su estado.
+
+### (e) Oficina Virtual: WowStore/Especialistas se retiran, no se borran
+
+- `WowAppsBlock`/`EspecialistasBlock` dejan de renderizarse en `/c/[slug]/oficina` -- reemplazados por un único tile "WowHead". Todo el código/modelo de WowApp sigue intacto, reciclable a futuro.
+- **Excepción deliberada**: WowAwe (la única WowApp con lógica real conectada, no una cáscara) sigue teniendo su propia fila de acordeón ("Caminata de Asombro") en la Oficina -- Gunnar pidió ocultar el marketplace/placeholders, no romper algo que ya funciona de verdad y usa.
+
+### (f) Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos, `pnpm test:unit:coverage` 250/250 con 100% de cobertura, `pnpm build` limpio con las 4 rutas nuevas, y `e2e/wowhead.spec.ts` (3 tests, flujo completo: ascenso, explorar+filtrar+contratar Silicio, reclutar+aceptar+organigrama) + la suite completa (41 specs, 40 passed -- el único fallo es el drift de fechas ya conocido de `interview-slots.spec.ts`, no relacionado). Se actualizaron además 3 specs de fases previas (`especialistas-expertos.spec.ts`, `wowawe.spec.ts`, `wowstore.spec.ts`) cuyas aserciones apuntaban a la UI vieja de la Oficina que esta fase retiró a propósito.
+
+### (g) Pendiente para Gunnar, en producción
+
+Igual que con Fase 5: el seed de ejemplo hay que tocarlo A MANO desde
+la sesión real de producción (`/admin/wowstore` → "Sembrar ejemplo
+(Experto)" / "Sembrar ejemplo (Calma)") -- este ambiente de desarrollo
+nunca escribe en la base de datos real.

@@ -46,6 +46,11 @@ export function labelForToolKey(key: string, wowAppNames: Record<string, string>
   return wowAppNames[key] || OFFICE_SKILL_TOOL_LABEL[key] || key;
 }
 
+export function parseHabilidades(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((v): v is string => typeof v === "string" && v.trim().length > 0);
+}
+
 export type EspecialistaExample = {
   key: string;
   nombre: string;
@@ -59,6 +64,7 @@ export type EspecialistaExample = {
   basePriceUsd: number;
   status: "activo" | "proximamente";
   destacado: boolean;
+  habilidades: string[];
 };
 
 // El único ejemplo de esta ronda (Fase 5, pedido explícito de Gunnar):
@@ -80,5 +86,6 @@ export const EXAMPLE_ESPECIALISTAS: EspecialistaExample[] = [
     basePriceUsd: 0,
     status: "activo",
     destacado: true,
+    habilidades: ["Seguimiento de hábitos", "Bienestar del fundador", "Rachas de enfoque"],
   },
 ];

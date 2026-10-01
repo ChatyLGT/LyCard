@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.60.0";
+export const APP_VERSION = "1.61.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.61.0",
+    date: "2026-10-01",
+    notes:
+      "Nace WowHead, el HeadHunter de Agentes: la WowStore (la grilla de WowApps/\"Tu Equipo\" instalado) deja de verse en tu Oficina Virtual -- en su lugar, un único acceso a WowHead, donde explorás y filtrás por tipo (Legacy -- el Gemelo Digital de una persona real, o Silicio -- un Agente IA) para reclutar. Cada Agente tiene su propio perfil con CV (experiencia, especialidades/habilidades, herramientas) y calificación. Contratar un Silicio es inmediato; un Legacy te lleva a consultarlo de verdad. Nuevo: un Legacy publicado puede ser ascendido a \"Experto\" (MasterN0-only, nunca automático) -- a partir de ahí arma su propio equipo desde \"Mi Equipo\" en su Oficina, invitando a otros Legacy, que tienen que aceptar la invitación para sumarse (nunca es unilateral). El equipo reclutado se ve en un organigrama real (el mismo Cerebro Malla de siempre) y en el perfil público de ese Experto en WowHead. WowAwe, la única WowApp con lógica real conectada, sigue accesible desde tu Oficina como su propia fila -- todo lo demás de WowStore queda intacto en el código pero se recicla para una fase futura.",
+  },
   {
     version: "1.60.0",
     date: "2026-09-30",

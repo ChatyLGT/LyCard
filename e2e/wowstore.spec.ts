@@ -160,32 +160,24 @@ test.describe("WowStore", () => {
     );
     expect(installRow.rows).toHaveLength(1);
 
-    // Aparece de verdad en la Oficina Virtual de esa Card.
-    await memberPage.goto(`${BASE_URL}/c/${cardSlug}/oficina`, { waitUntil: "networkidle" });
-    // Fix W2.1 (2026-09-24): el kicker de la sección y el tile "+
-    // WowStore" ahora dicen los dos "WowStore" -- exact:true matchea
-    // ambos a propósito (es el mismo rebranding, no una ambigüedad
-    // real), .first() alcanza para confirmar que el rename se ve.
-    await expect(memberPage.getByText("WowStore", { exact: true }).first()).toBeVisible();
-    await memberPage.getByText("WowBot Pedidos E2E").click();
-    await expect(memberPage.getByText("Toma pedidos por WhatsApp.")).toBeVisible();
+    // Fase 6 (WowHead, 2026-10-01): WowAppsBlock se retiró de la
+    // Oficina Virtual (reemplazado por el tile único "WowHead") -- una
+    // WowApp "próximamente" como esta ya no se renderiza ahí, solo
+    // queda accesible desde /m/wowstore/mias. Ver
+    // app/c/[slug]/oficina/page.tsx.
 
-    // --- Tab "Mis WowApps" (Fase W2): reusa el mismo dato que ya lee
-    // WowAppsBlock en la Oficina, no lo duplica. ---
+    // --- Tab "Mis WowApps" (Fase W2): reusa el mismo dato que antes
+    // leía WowAppsBlock en la Oficina, no lo duplica. ---
     await memberPage.goto(`${BASE_URL}/m/wowstore/mias?cardId=${cardId}`, { waitUntil: "networkidle" });
     await expect(memberPage.getByRole("link", { name: "Mis WowApps" })).toBeVisible();
     await expect(memberPage.getByText("WowBot Pedidos E2E")).toBeVisible();
     await expect(memberPage.getByText("WowCobranza E2E")).not.toBeVisible();
 
-    // --- El acceso a WowStore también vive en la Oficina de la Card
-    // "project" (Legacy) del mismo dueño -- reportado por Gunnar como
-    // faltante, ahora cubierto de punta a punta. ---
-    await memberPage.goto(`${BASE_URL}/c/${projectCardSlug}/oficina`, { waitUntil: "networkidle" });
-    const wowStoreTile = memberPage.getByRole("link", { name: /WowStore/ });
-    await expect(wowStoreTile).toBeVisible();
-    await wowStoreTile.click();
-    await memberPage.waitForURL(new RegExp(`/m/wowstore\\?cardId=${projectCardId}`));
-
+    // --- WowStore también instala bien en la Card "project" (Legacy)
+    // del mismo dueño -- ya no tiene tile propio en su Oficina (Fase 6,
+    // WowHead, 2026-10-01: el acceso a WowStore se retiró de la Oficina
+    // Virtual entera, "se queda pero no se muestra" -- queda reciclado
+    // para una fase futura), así que se navega directo a /m/wowstore. ---
     await memberPage.goto(`${BASE_URL}/m/wowstore?cardId=${projectCardId}&rubro=restaurante&dolor=vender-mas`, { waitUntil: "networkidle" });
     await memberPage.getByText("WowBot Pedidos E2E").click();
     await memberPage.waitForURL(new RegExp(`/m/wowstore/${keyMatch}`));
@@ -197,10 +189,6 @@ test.describe("WowStore", () => {
       [projectCardId, keyMatch]
     );
     expect(projectInstallRow.rows).toHaveLength(1);
-
-    await memberPage.goto(`${BASE_URL}/c/${projectCardSlug}/oficina`, { waitUntil: "networkidle" });
-    await expect(memberPage.getByText("WowStore", { exact: true }).first()).toBeVisible();
-    await expect(memberPage.getByText("WowBot Pedidos E2E")).toBeVisible();
 
     // --- Fix W2.1 (2026-09-24, reportado por Gunnar): "Brief E2E" es
     // una herramienta real del equipo (Program.officeSkills), no una

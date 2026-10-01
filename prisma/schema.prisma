@@ -836,6 +836,13 @@ model Especialista {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  // CV (Fase 6, WowHead, 2026-10-01) -- un Silicio siempre es rango
+  // "especialista" (nunca tiene equipo propio, regla dura), así que no
+  // suma campos de rango -- solo tags de habilidades para su CV. La
+  // reputación reusa lib/wowApps.ts#simulatedRating(key), sin campo
+  // propio en DB.
+  habilidades Json @default("[]") // string[]
+
   installs EspecialistaInstall[]
 }
 
@@ -897,9 +904,56 @@ model Experto {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  // Rango (Fase 6, WowHead, 2026-10-01) -- eje distinto del origen
+  // (Legacy/Silicio). Solo un Legacy puede ser "experto" -- un Silicio
+  // (model Especialista) nunca tiene equipo propio, regla dura
+  // confirmada por Gunnar. El ascenso NUNCA es automático, aunque este
+  // Legacy arme un equipo -- lo aprueba MasterN0 a mano, mismo criterio
+  // que la regla dura de la Fase 1 (nadie se auto-otorga más alcance).
+  rango               String    @default("especialista") // "especialista" | "experto"
+  promovidoAExpertoAt DateTime?
+  promovidoPorAdminId String? // id del Admin (MasterN0) que aprobó el ascenso
+
+  // CV real (Fase 6) -- lo carga la propia persona o MasterN0, nunca
+  // texto inventado por el sistema. La reputación (estrellas) se
+  // calcula con lib/wowApps.ts#simulatedRating(key) -- mismo criterio
+  // ya usado en WowStore, sin campo propio en DB.
+  experiencia    Json @default("[]") // [{ rol, periodo, descripcion }]
+  especialidades Json @default("[]") // string[] -- tags de CV
+
+  // Equipo propio de un Experto (Fase 6) -- otros Legacy (rango
+  // "especialista") reclutados por él. Se llega acá solo después de
+  // que el reclutado ACEPTA la invitación (ver EquipoInvitacion) --
+  // nunca unilateral.
+  recruitedById String?
+  recruitedBy   Experto?  @relation("EquipoDeExperto", fields: [recruitedById], references: [id])
+  equipo        Experto[] @relation("EquipoDeExperto")
+
+  invitacionesEnviadas  EquipoInvitacion[] @relation("InvitacionesEnviadas")
+  invitacionesRecibidas EquipoInvitacion[] @relation("InvitacionesRecibidas")
+
   codice                 CodiceEntry[]
   consultas              Consulta[]
   especialistasReferidos EspecialistaInstall[]
+}
+
+// Invitación a sumarse al equipo de un Experto (Fase 6, WowHead,
+// 2026-10-01) -- el reclutado SIEMPRE tiene que aceptar, confirmado
+// por Gunnar ("el experto debe aceptar"). Al aceptar, se setea
+// Experto.recruitedById en la misma transacción -- el organigrama sale
+// de ahí directo, sin recalcular nada.
+model EquipoInvitacion {
+  id             String  @id @default(cuid())
+  expertoId      String // quién recluta
+  experto        Experto @relation("InvitacionesEnviadas", fields: [expertoId], references: [id], onDelete: Cascade)
+  especialistaId String // a quién invita -- otro Legacy, rango "especialista"
+  especialista   Experto @relation("InvitacionesRecibidas", fields: [especialistaId], references: [id], onDelete: Cascade)
+
+  estado       String    @default("pendiente") // "pendiente" | "aceptada" | "rechazada"
+  createdAt    DateTime  @default(now())
+  respondidaAt DateTime?
+
+  @@unique([expertoId, especialistaId])
 }
 
 // El Códice real de un Experto -- nunca se expone entero a nadie más

@@ -2,11 +2,15 @@ import { describe, it, expect } from "vitest";
 import {
   parseBautizoStatus,
   parseConsultaNivel,
+  parseRango,
+  parseExperiencia,
+  parseEspecialidades,
   canPublishExperto,
   shouldRequireRegistration,
   matchCodiceEntry,
   FREE_TRIAL_LIMIT,
   EXAMPLE_EXPERTO,
+  EXAMPLE_EXPERTO_EQUIPO,
 } from "@/lib/expertos";
 
 describe("parseBautizoStatus", () => {
@@ -102,5 +106,69 @@ describe("EXAMPLE_EXPERTO", () => {
   it("es una profesión regulada, con al menos una entrada de Códice sembrada", () => {
     expect(EXAMPLE_EXPERTO.esProfesionRegulada).toBe(true);
     expect(EXAMPLE_EXPERTO.seedCodice.length).toBeGreaterThan(0);
+  });
+
+  it("tiene CV real -- experiencia y especialidades", () => {
+    expect(EXAMPLE_EXPERTO.experiencia.length).toBeGreaterThan(0);
+    expect(EXAMPLE_EXPERTO.especialidades.length).toBeGreaterThan(0);
+  });
+});
+
+describe("EXAMPLE_EXPERTO_EQUIPO", () => {
+  it("son 3 Legacy de ejemplo, marcados como tal", () => {
+    expect(EXAMPLE_EXPERTO_EQUIPO.length).toBe(3);
+    for (const miembro of EXAMPLE_EXPERTO_EQUIPO) {
+      expect(miembro.demoMemberName).toContain("ejemplo");
+    }
+  });
+});
+
+describe("parseRango", () => {
+  it("acepta los 2 rangos válidos", () => {
+    expect(parseRango("especialista")).toBe("especialista");
+    expect(parseRango("experto")).toBe("experto");
+  });
+
+  it("cualquier otra cosa cae a 'especialista' -- default seguro, nunca experto por accidente", () => {
+    expect(parseRango("jefe")).toBe("especialista");
+    expect(parseRango(undefined)).toBe("especialista");
+  });
+});
+
+describe("parseExperiencia", () => {
+  it("filtra items con rol vacío y descarta lo que no sea objeto", () => {
+    expect(
+      parseExperiencia([
+        { rol: "Nutricionista", periodo: "2019-hoy", descripcion: "x" },
+        { rol: "", periodo: "2015", descripcion: "sin rol, se descarta" },
+        "no es objeto",
+        null,
+      ])
+    ).toEqual([{ rol: "Nutricionista", periodo: "2019-hoy", descripcion: "x" }]);
+  });
+
+  it("completa periodo/descripcion vacíos cuando faltan o no son strings", () => {
+    expect(parseExperiencia([{ rol: "Nutricionista", periodo: 2019, descripcion: null }])).toEqual([
+      { rol: "Nutricionista", periodo: "", descripcion: "" },
+    ]);
+  });
+
+  it("un rol que no es string cae a vacío, y se descarta igual que un rol realmente vacío", () => {
+    expect(parseExperiencia([{ rol: 123, periodo: "2019", descripcion: "x" }])).toEqual([]);
+  });
+
+  it("algo que no es array da lista vacía", () => {
+    expect(parseExperiencia(undefined)).toEqual([]);
+    expect(parseExperiencia("texto")).toEqual([]);
+  });
+});
+
+describe("parseEspecialidades", () => {
+  it("filtra solo strings no vacíos", () => {
+    expect(parseEspecialidades(["Nutrición", "", 42, "Hidratación"])).toEqual(["Nutrición", "Hidratación"]);
+  });
+
+  it("algo que no es array da lista vacía", () => {
+    expect(parseEspecialidades(null)).toEqual([]);
   });
 });
