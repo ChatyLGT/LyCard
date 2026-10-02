@@ -214,8 +214,10 @@ function AgentButton({ data, href, label, sublabel, disabled }: { data: OficinaD
         }}
       >
         {agentLogoUrl ? (
+          // objectFit:"contain" (2026-10-02, reportado por Gunnar) -- mismo
+          // fix que LyCardView.tsx: nunca recorta un logo rectangular.
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={agentLogoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: disabled ? 0.5 : 1 }} />
+          <img src={agentLogoUrl} alt="" style={{ width: "78%", height: "78%", objectFit: "contain", opacity: disabled ? 0.5 : 1 }} />
         ) : (
           <span style={{ font: "700 24px 'Playfair Display',serif", color: disabled ? "#5A5A5A" : accent }}>{card.name.charAt(0)}</span>
         )}
@@ -236,6 +238,74 @@ function AgentButton({ data, href, label, sublabel, disabled }: { data: OficinaD
     </div>
   );
   return disabled || !href ? inner : <Link href={href} style={{ display: "block" }}>{inner}</Link>;
+}
+
+// Fila de 3 accesos (2026-10-02, mockup aprobado --
+// https://claude.ai/artifact/9Ud1qY714sABZuCyks8z61): Gemelo Digital
+// como esfera central (reusa el mismo logo real del Programa que ya
+// resolvía AgentButton, data.agentLogoUrl -- antes era una fila
+// horizontal "Tu Gemelo Digital", acá pasa a ser el centro de los 3) +
+// WowHead y BirdBrain como cajas a los lados. BirdBrain: todavía no
+// está definido qué hace -- queda "Próximamente" (disabled) hasta
+// confirmarlo, nunca se inventa un destino.
+function TripleAccessRow({ data }: { data: OficinaData }) {
+  const { card, accent, agentLogoUrl } = data;
+
+  const sideBox = (opts: { icon: string; label: string; href?: string }) => {
+    const box = (
+      <div
+        style={{
+          width: 74, height: 74, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center",
+          background: "rgba(255,255,255,.03)", border: `1px solid ${opts.href ? "rgba(200,161,90,.22)" : "rgba(255,255,255,.08)"}`,
+          color: opts.href ? accent : "#5A5A5A",
+        }}
+      >
+        <span className="material-symbols-outlined" style={{ fontSize: 26 }}>{opts.icon}</span>
+      </div>
+    );
+    return (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 7, width: 82 }}>
+        {opts.href ? (
+          <Link href={opts.href} style={{ textDecoration: "none" }}>
+            {box}
+          </Link>
+        ) : (
+          box
+        )}
+        <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", color: opts.href ? "#F3F0E9" : "#5A5A5A", textAlign: "center" }}>{opts.label}</span>
+      </div>
+    );
+  };
+
+  const sphere = (
+    <Link href={`/c/${card.slug}/oficina/demo`} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 7, textDecoration: "none", flex: "none" }}>
+      <div
+        style={{
+          width: 88, height: 88, borderRadius: 999, padding: 2.5, flex: "none",
+          background: `linear-gradient(160deg,#E5C378,${accent})`,
+          boxShadow: "0 10px 28px rgba(0,0,0,.7)",
+        }}
+      >
+        <div style={{ width: "100%", height: "100%", borderRadius: 999, overflow: "hidden", background: "linear-gradient(160deg,#1C1C1C,#141414 55%,#0D0D0D)", border: "1px solid rgba(255,255,255,.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {agentLogoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={agentLogoUrl} alt="" style={{ width: "72%", height: "72%", objectFit: "contain" }} />
+          ) : (
+            <span style={{ font: "700 30px 'Playfair Display',serif", color: accent }}>{card.name.charAt(0)}</span>
+          )}
+        </div>
+      </div>
+      <span style={{ font: "700 10.5px 'Plus Jakarta Sans',sans-serif", color: "#F3F0E9", textAlign: "center" }}>Gemelo Digital</span>
+    </Link>
+  );
+
+  return (
+    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "center", gap: 16, padding: "4px 0 10px" }}>
+      {sideBox({ icon: "groups", label: "WowHead", href: `/m/wowhead?cardId=${card.id}` })}
+      {sphere}
+      {sideBox({ icon: "hub", label: "BirdBrain" })}
+    </div>
+  );
 }
 
 function IdentityBlock({ data }: { data: OficinaData }) {
@@ -661,7 +731,35 @@ function OwnerOficina({ data }: { data: OficinaData }) {
 
         <div style={hr} />
 
-        <AgentButton data={data} href={`/c/${card.slug}/oficina/demo`} label="Tu Gemelo Digital" sublabel="Demo del flujo — todavía no hay backend real" />
+        {/* Rediseño Oficina Virtual (2026-10-02, mockup aprobado --
+            https://claude.ai/artifact/9Ud1qY714sABZuCyks8z61): los KPIs
+            pasan a verse ANTES de los 3 accesos principales (antes
+            quedaban más abajo, después de Portafolio). */}
+        <CheckDeRealidadBlock kpis={data.realityCheckKpis} isDefault={data.kpisAreDefault} accent={accent} />
+
+        <div style={hr} />
+
+        <TripleAccessRow data={data} />
+        {(data.expertoPerfil || card.kind === "company") && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: -4 }}>
+            {data.expertoPerfil && (
+              <Link
+                href={`/c/${card.slug}/oficina/mi-equipo`}
+                style={{ font: "700 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#C8A15A", textDecoration: "none", textAlign: "center" }}
+              >
+                Ver mi equipo →
+              </Link>
+            )}
+            {card.kind === "company" && (
+              <Link
+                href="/m/dashboard/company/network"
+                style={{ font: "700 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#C8A15A", textDecoration: "none", textAlign: "center" }}
+              >
+                Ver mi Red de Clientes →
+              </Link>
+            )}
+          </div>
+        )}
 
         {/* Para la Card raíz (sin referente, ex-"Fundador de la Red") no hay
             nada real que mostrar acá — se salta el bloque entero en vez de
@@ -674,10 +772,6 @@ function OwnerOficina({ data }: { data: OficinaData }) {
             <PortfolioBlock data={data} />
           </>
         )}
-
-        <div style={hr} />
-
-        <CheckDeRealidadBlock kpis={data.realityCheckKpis} isDefault={data.kpisAreDefault} accent={accent} />
 
         <div style={hr} />
 
@@ -713,46 +807,12 @@ function OwnerOficina({ data }: { data: OficinaData }) {
           />
         )}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {/* Fase 6 (WowHead, 2026-10-01): WowAppsBlock/EspecialistasBlock
-              (el "Tu Equipo" de instalados, Fase 5) se retiran de acá --
-              código/modelo de WowApp intactos, solo dejan de mostrarse.
-              Un único acceso a WowHead, el HeadHunter de Agentes. */}
-          <Link
-            href={`/m/wowhead?cardId=${card.id}`}
-            style={{
-              display: "flex", alignItems: "center", gap: 12, padding: 14, borderRadius: 14,
-              background: "linear-gradient(155deg,rgba(200,161,90,.1),rgba(200,161,90,.03))",
-              border: "1px solid rgba(200,161,90,.3)", textDecoration: "none", color: "#F5F2EB",
-            }}
-          >
-            <span style={{ flex: "none", width: 38, height: 38, borderRadius: 11, background: "rgba(200,161,90,.16)", border: "1px solid rgba(200,161,90,.4)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span className="material-symbols-outlined" style={{ fontSize: 19, color: "#C8A15A" }}>groups</span>
-            </span>
-            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <span style={{ font: "700 13px 'Playfair Display',serif" }}>WowHead</span>
-              <span style={{ font: "400 10.5px 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>Reclutá Agentes Legacy y Silicio para tu equipo</span>
-            </div>
-          </Link>
-          {data.expertoPerfil && (
-            <Link
-              href={`/c/${card.slug}/oficina/mi-equipo`}
-              style={{ font: "700 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#C8A15A", textDecoration: "none", alignSelf: "flex-start" }}
-            >
-              Ver mi equipo →
-            </Link>
-          )}
-          {card.kind === "company" && (
-            <Link
-              href="/m/dashboard/company/network"
-              style={{ font: "700 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#C8A15A", textDecoration: "none", alignSelf: "flex-start" }}
-            >
-              Ver mi Red de Clientes →
-            </Link>
-          )}
           {/* WowAwe (real, no es cáscara de WowStore) sigue accesible acá
               aparte del retiro general de WowAppsBlock -- Fase 6 pidió
               ocultar el marketplace/placeholders, no romper una
-              funcionalidad ya shippeada que Gunnar usa de verdad. */}
+              funcionalidad ya shippeada que Gunnar usa de verdad. El
+              tile de WowHead que vivía acá se fusionó (2026-10-02) en
+              TripleAccessRow, junto a Gemelo Digital. */}
           {data.installedWowApps.some((i) => i.wowApp.appType === "awe") && (
             <AccordionRow
               title="Caminata de Asombro"

@@ -166,8 +166,13 @@ export default function MemberCardEditor({
           zIndex: 40,
           background: "rgba(20,20,20,.96)",
           borderBottom: "1px solid rgba(200,161,90,.22)",
-          padding: "0 16px",
-          height: 64,
+          // Fix (2026-10-02, reportado por Gunnar: "el menú superior se
+          // esconde detrás del límite de la pantalla y no puedo
+          // alcanzarlo") -- este header es sticky top:0 sin compensar la
+          // isla dinámica/notch, así que quedaba literalmente debajo del
+          // hardware en iPhone, intocable. Mismo patrón que ya usa Oficina
+          // Virtual (env(safe-area-inset-top)).
+          padding: "calc(env(safe-area-inset-top,0px) + 14px) 16px 14px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",

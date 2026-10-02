@@ -1206,8 +1206,13 @@ export default function LyCardView({
                   }}
                 >
                   {officeLogoUrl ? (
+                    // objectFit:"contain" (2026-10-02, reportado por Gunnar: "se
+                    // ve cortado, como que quedó muy grande") -- un logo
+                    // rectangular/wordmark con "cover" se recorta a la fuerza
+                    // contra este círculo; "contain" + un respiro interno
+                    // siempre muestra el logo completo, nunca lo corta.
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={officeLogoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <img src={officeLogoUrl} alt="" style={{ width: "78%", height: "78%", objectFit: "contain" }} />
                   ) : (
                     <>
                       <Sweep />
@@ -1401,7 +1406,16 @@ export default function LyCardView({
               personal books a coffee. Used to skip personal entirely; now on
               all 3 kinds (2026-09-16), each with its own copy. */}
           {/* -30% (2026-09-17, pedido de Gunnar) */}
-          <div style={{ flex: "0 0 auto", width: "100%" }}>
+          {/* marginTop:"auto" (2026-10-02, reportado por Gunnar en iPhone 13:
+              "la tarjeta en la parte de abajo tiene un espacio considerable")
+              -- confirmado con screenshot real a 390x844: el tope de altura
+              de la foto (línea ~895, fix del 2026-09-29) evita que el hueco
+              parta el medio de la tarjeta, como quería ese fix, pero deja
+              el sobrante VACÍO después de este botón. Siendo el último
+              elemento de la columna, marginTop:"auto" absorbe ese sobrante
+              empujando el botón al borde real de abajo -- el CTA principal
+              queda siempre anclado ahí, nunca flotando sobre un vacío. */}
+          <div style={{ flex: "0 0 auto", width: "100%", marginTop: "auto" }}>
             <button
               type="button"
               onClick={() => setScheduleOpen(true)}

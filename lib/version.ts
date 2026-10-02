@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.61.0";
+export const APP_VERSION = "1.62.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.62.0",
+    date: "2026-10-02",
+    notes:
+      "4 arreglos reales reportados por Gunnar: el logo del Programa ya no se recorta (en la tarjeta, en el botón de Oficina, y en el preview del editor) -- antes un logo rectangular se forzaba contra un círculo y perdía los bordes; el menú superior del Dashboard (tus 3 tarjetas, Mensajes, Mi Red de Clientes) ya no queda tapado por la isla dinámica/notch del celular; y el espacio vacío que podía quedar abajo de tu tarjeta en pantallas como la del iPhone 13 ahora lo absorbe el botón de Agendar, que queda siempre anclado al borde de abajo. Además, rediseño de la Oficina Virtual: el Chequeo de Realidad ahora muestra 6 KPIs en vez de 3 (los primeros 3 con su gráfico de tendencia, los otros 3 como cifra o comparativa -- ej. \"Metas del mes: 3/10\"), y arriba de todo, 3 accesos principales en una fila: tu Gemelo Digital al centro (con el logo real de tu Programa), WowHead a un lado para reclutar Agentes, y un tercer acceso nuevo (BirdBrain) que por ahora queda marcado \"Próximamente\" hasta terminar de definir qué hace.",
+  },
   {
     version: "1.61.0",
     date: "2026-10-01",

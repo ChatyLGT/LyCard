@@ -7344,3 +7344,80 @@ Igual que con Fase 5: el seed de ejemplo hay que tocarlo A MANO desde
 la sesión real de producción (`/admin/wowstore` → "Sembrar ejemplo
 (Experto)" / "Sembrar ejemplo (Calma)") -- este ambiente de desarrollo
 nunca escribe en la base de datos real.
+
+## 2026-10-02 -- 4 fixes reales + rediseño del arranque de la Oficina Virtual (v1.62.0)
+
+Reportado por Gunnar sobre el mockup aprobado de Oficina Virtual
+(https://claude.ai/artifact/9Ud1qY714sABZuCyks8z61). Diagnóstico de cada
+bug confirmado con capturas reales (Playwright a 390x844, iPhone 13),
+nunca a ojo.
+
+### (a) Logo del Programa recortado
+
+`officeLogoUrl` (LyCardView.tsx), `agentLogoUrl` (AgentButton,
+oficina/page.tsx) y el preview de `/admin/programs/[id]` usaban
+`objectFit:"cover"` contra un círculo -- un logo rectangular/wordmark
+perdía los bordes. Los 3 pasan a `"contain"` con un poco de aire
+interno: el logo completo siempre se ve, nunca se corta. (El
+multiplicador de tamaño del logo YA existe -- "Ajustar tamaños",
+long-press en la tarjeta, `lib/cardSizeConfig.ts` -- Gunnar puede
+usarlo hoy; no hacía falta construir nada para eso.)
+
+### (b) Menú superior del Dashboard tapado por el notch/isla dinámica
+
+`MemberCardEditor.tsx` (afecta `/m/dashboard/project`, `/company`,
+`/personal`), `app/m/dashboard/page.tsx`, `/messages`, y el sticky
+header de `/company/network` -- ninguno compensaba
+`env(safe-area-inset-top)`. En un iPhone con notch, el "← Mi cuenta"
+quedaba literalmente debajo del hardware, intocable. Mismo patrón que
+ya usa Oficina Virtual, aplicado a los 5.
+
+### (c) Hueco vacío abajo de la tarjeta en iPhone 13
+
+Confirmado con captura real: el tope de altura de la foto (fix del
+2026-09-29, evita que el hueco parta el medio de la tarjeta) dejaba el
+sobrante vacío DESPUÉS del botón "Agendar". Siendo el último elemento
+de la columna, `marginTop:"auto"` en su wrapper absorbe ese sobrante
+empujando el botón al borde real de abajo -- verificado con captura
+antes/después, el CTA principal queda siempre anclado ahí.
+
+### (d) Oficina Virtual: 6 KPIs + fila de 3 accesos
+
+`CheckDeRealidadBlock` subía de 3 a 6 KPIs -- el único tope era un
+`.slice(0,3)` hardcodeado, el editor (`OficinaExtrasEditor.tsx`) nunca
+tuvo límite. Los primeros 3 muestran su sparkline de siempre; los
+otros 3 son el mismo shape (`RealityCheckKpi`) con un solo punto de
+trend, así que salen como cifra/comparativa plana sin gráfico (ej.
+"Metas del mes: 3/10") -- no fue necesario un tipo de KPI nuevo.
+
+Los KPIs pasan a verse ANTES de los accesos principales (antes
+quedaban más abajo). Nueva `TripleAccessRow`: Gemelo Digital como
+esfera central (mismo `agentLogoUrl` real de AgentButton, ahora
+`contain`) + WowHead y BirdBrain como cajas a los lados -- fusiona el
+viejo botón horizontal "Tu Gemelo Digital" y el viejo tile de WowHead
+en un solo bloque. **BirdBrain queda "Próximamente" (deshabilitado)**
+-- Gunnar lo mencionó sin explicar qué es; se le preguntó en vez de
+inventarle un destino, pendiente su respuesta.
+
+### (e) Pendiente, sin construir esta ronda
+
+- El chip "MasterN0 · Rango · Estatus" en el encabezado (pedido en la
+  ronda anterior de feedback) -- Gunnar nunca confirmó el texto exacto
+  ("Fundador" era un placeholder mío), sigue sin tocarse.
+- El bloque CRM (Mirón → Vividor → Chido → Chido+) pedido para
+  después de los 3 accesos -- genuinamente ambiguo cómo mapea a los
+  datos reales que ya existen (`CardLead`/Seguimiento,
+  `CardNetworkMembership`, `ProgramMembership.membershipPaidAt`,
+  `lib/programPromotion.ts`) sobre todo porque "Chido"/"Chido+" hoy
+  solo tienen sentido para Cards `project` (el funnel de reclutamiento
+  del propio Programa), no para `company`/`personal`. Se le pidió a
+  Gunnar que confirme el mapeo antes de construir nada, para no tener
+  que rehacerlo.
+- BirdBrain -- ver (d).
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos,
+`pnpm test:unit:coverage` 250/250 al 100%, `pnpm build` limpio, y la
+suite E2E completa: 41 specs, 40 passed (el único fallo es el drift de
+fechas ya conocido de `interview-slots.spec.ts`, sin relación).

@@ -284,8 +284,12 @@ export default async function AdminProgramDetailPage({
               </span>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 {program.logoUrl ? (
+                  // objectFit:"contain" + padding (2026-10-02, reportado por
+                  // Gunnar: "se ve cortado") -- el preview tiene que mostrar
+                  // lo mismo que de verdad se ve en la tarjeta, nunca un
+                  // logo rectangular recortado a la fuerza en un círculo.
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={program.logoUrl} alt="" style={{ width: 44, height: 44, borderRadius: 999, objectFit: "cover", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)" }} />
+                  <img src={program.logoUrl} alt="" style={{ width: 44, height: 44, padding: 5, boxSizing: "border-box", borderRadius: 999, objectFit: "contain", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)" }} />
                 ) : (
                   <span style={{ width: 44, height: 44, borderRadius: 999, background: "#0D0D0D", border: "1px dashed rgba(200,161,90,.3)", flex: "none" }} />
                 )}

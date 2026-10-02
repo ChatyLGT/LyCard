@@ -96,10 +96,19 @@ export function pickPhraseOfTheDay(phrases: string[], date: Date = new Date()): 
 // Ejemplo inventado real para el negocio de Legacy (Gemelos Digitales +
 // Oficinas Virtuales 100% operativas) — nunca queda vacío el primer día,
 // pero la UI lo marca como ejemplo para editar, no como dato real.
+//
+// 6, no 3 (2026-10-02, pedido de Gunnar): los primeros 3 tienen trend
+// real (CheckDeRealidadBlock dibuja su sparkline); los últimos 3 tienen
+// un solo punto de trend -- mismo shape, CheckDeRealidadBlock los
+// muestra como cifra/comparativa plana en vez de gráfico, sin que haga
+// falta un tipo de KPI aparte.
 export const DEFAULT_REALITY_CHECK_KPIS: RealityCheckKpi[] = [
   { key: "legacys-activos", label: "Legacys activos", value: "12", unit: "", trend: [6, 7, 8, 9, 10, 11, 12] },
   { key: "oficinas-operativas", label: "Oficinas 100% operativas", value: "8", unit: "", trend: [3, 4, 5, 6, 6, 7, 8] },
   { key: "entrevistas-semana", label: "Entrevistas esta semana", value: "5", unit: "", trend: [2, 3, 1, 4, 3, 5, 5] },
+  { key: "metas-del-mes", label: "Metas del mes", value: "3", unit: " / 10", trend: [3] },
+  { key: "leads-nuevos", label: "Leads nuevos esta semana", value: "+18", unit: "", trend: [18] },
+  { key: "nps", label: "NPS · vs semana pasada", value: "8.4", unit: "", trend: [8.4] },
 ];
 
 export const DEFAULT_NEWS_ITEMS: NewsItem[] = [

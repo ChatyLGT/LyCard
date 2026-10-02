@@ -32,7 +32,9 @@ export default async function MemberDashboardPage() {
         background: "#131313",
         color: "#e5e2e1",
         fontFamily: "'Plus Jakarta Sans',sans-serif",
-        padding: "40px 20px",
+        // Fix (2026-10-02, reportado por Gunnar): sin esto el contenido
+        // arranca debajo de la isla dinámica/notch en iPhone.
+        padding: "calc(env(safe-area-inset-top,0px) + 40px) 20px 40px",
       }}
     >
       <div style={{ maxWidth: 480, margin: "0 auto", display: "flex", flexDirection: "column", gap: 20 }}>

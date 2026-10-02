@@ -39,7 +39,9 @@ export default async function CompanyNetworkPage({ searchParams }: { searchParam
           zIndex: 10,
           background: "rgba(20,20,20,.96)",
           borderBottom: "1px solid rgba(200,161,90,.22)",
-          padding: "16px 20px",
+          // Fix (2026-10-02, reportado por Gunnar): mismo bug del notch que
+          // el resto del Dashboard -- ver MemberCardEditor.tsx.
+          padding: "calc(env(safe-area-inset-top,0px) + 16px) 20px 16px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
