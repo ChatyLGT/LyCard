@@ -247,7 +247,33 @@ model CardRecipient {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // El dossier de este destinatario (2026-10-02) -- links, archivos y
+  // notas de texto que después se usan para armar su NotebookLM (PASO 4
+  // del pedido: "Qué información usamos"). Se cargan desde "Enviar
+  // Invitación" en la propia tarjeta, o desde el editor en /admin.
+  sources CardRecipientSource[]
+
   @@unique([cardId, slug])
+}
+
+// Una fuente del dossier de un CardRecipient -- "cualquier cosa" (pedido
+// textual de Gunnar): un link, un archivo subido (PDF, doc, imagen de un
+// documento, lo que sea), o una nota de texto libre. `value` guarda la
+// URL (link/archivo subido vía lib/storage.ts) o el contenido (texto) --
+// un solo campo porque solo uno de los dos tiene sentido según `type`,
+// nunca ambos a la vez.
+model CardRecipientSource {
+  id              String        @id @default(cuid())
+  cardRecipientId String
+  cardRecipient   CardRecipient @relation(fields: [cardRecipientId], references: [id], onDelete: Cascade)
+
+  type  String // "link" | "archivo" | "texto"
+  label String @default("") // qué es esta fuente -- "LinkedIn de Rogelio", "CV.pdf", "Notas de la llamada"
+  value String @db.Text // la URL (link/archivo) o el contenido (texto)
+
+  createdAt DateTime @default(now())
+
+  @@index([cardRecipientId])
 }
 
 // Sistema de Tags — pedido de Gunnar (2026-09-23), base de "Janus", el

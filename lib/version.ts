@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.63.1";
+export const APP_VERSION = "1.64.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.64.0",
+    date: "2026-10-02",
+    notes:
+      "\"Enviar Invitación\" ahora es el panel de Destinatarios: creás uno por nombre, lo abrís directo a su tarjeta personalizada con un toque (\"Abrir\"), y le sumás fuentes -- links, archivos (cualquier tipo) o notas de texto -- que se van a usar para armar su perfil más adelante.",
+  },
   {
     version: "1.63.1",
     date: "2026-10-02",

@@ -7476,3 +7476,59 @@ Pasos 2-7 (redes del Programa, botón "Programa Legacy", botón "Info
 [nombre]" con palabra secreta, "Deja tu Legado", funnel de Agendar,
 QR + E2E completo) -- cada uno con su propio reporte antes de seguir
 al siguiente, por pedido explícito de Gunnar.
+
+## 2026-10-02 -- Destinatarios: acceso directo + dossier de fuentes (v1.64.0)
+
+Pedido de Gunnar: "una forma directa de ingresar a las tarjetas
+dirigidas a destinatarios en concreto", y que "Enviar Invitación" sea
+el lugar donde se crea un destinatario, se le suma información
+(links, archivos, notas -- "cualquier cosa") y se ve el listado de los
+ya creados -- esa información es la que después arma el NotebookLM de
+cada destinatario (PASO 4 del pedido original).
+
+### Modelo nuevo: `CardRecipientSource`
+
+Un destinatario (`CardRecipient`, del Paso 1) ahora tiene `sources
+CardRecipientSource[]` -- cada fuente es `type` ("link" | "archivo" |
+"texto"), `label` (qué es) y `value` (la URL/contenido, un solo campo
+porque según el tipo solo uno tiene sentido). `lib/storage.ts` suma un
+tercer `kind: "document"` a `saveUpload` (antes solo "image"/"audio"),
+con una lista de extensiones más permisiva -- "cualquier cosa" que
+suba Gunnar como fuente.
+
+### "Enviar Invitación" rediseñado
+
+El viejo formulario de un solo campo de email (nunca llegó a usarse
+de verdad -- `RESEND_API_KEY` sigue sin configurar) se reemplaza
+entero por el panel de Destinatarios, 100% dentro de LyCardView.tsx
+(client component, sin `<form>`, mismo patrón que ya usaba
+`sendInvitationAction` -- llamadas directas a server actions nuevas
+en `app/c/recipient-actions.ts`, carga perezosa al abrir el modal):
+
+- Lista de destinatarios ya creados, cada uno con un botón **Abrir**
+  que lleva directo a `/c/[slug]?para=[slug]` -- el acceso directo
+  pedido.
+- Crear un destinatario nuevo (nombre -- el slug sale solo).
+- Por destinatario: agregar fuentes -- selector Link/Archivo/Texto,
+  label opcional, y el input que corresponda (URL, selector de
+  archivo, o textarea). Cada fuente agregada se ve en una lista chica
+  con su ícono de tipo y un botón para borrarla.
+
+### Hallazgo real armando esto
+
+El Prisma Client del dev server quedó desactualizado después de
+migrar (`prisma generate` regenera el código pero un proceso de Node
+ya arrancado sigue con el módulo viejo en memoria) -- síntoma: `Unknown
+field \`sources\`` y después `Cannot read properties of undefined
+(reading 'create')`. Se resuelve reiniciando el dev server después de
+cada `prisma generate`, no alcanza con solo regenerar.
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos,
+`pnpm test:unit:coverage` 250/250 al 100%, `pnpm build` limpio, y
+flujo real de punta a punta con Playwright: crear "Rogelio" desde
+"Enviar Invitación", agregarle 3 fuentes (link, texto, y un archivo
+subido de verdad -- confirmado en `public/uploads/` y en la base),
+tocar "Abrir" y confirmar que aterriza en `/c/mastern0?para=rogelio`
+con el mensaje de bienvenida.

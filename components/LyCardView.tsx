@@ -7,7 +7,17 @@ import type { Card, OriginMemento, Program, ProgramSkin, Puesto } from "@/genera
 import { t, type Lang } from "@/lib/i18n";
 import { rankById, medalById } from "@/lib/data";
 import { parseEscala } from "@/lib/escalas";
-import { registerInterviewAction, sendInvitationAction, sendContactMessageAction, sendQrByWhatsappAction } from "@/app/c/actions";
+import { registerInterviewAction, sendContactMessageAction, sendQrByWhatsappAction } from "@/app/c/actions";
+import {
+  listRecipientsAction,
+  createRecipientQuickAction,
+  deleteRecipientAction2,
+  addRecipientLinkSourceAction,
+  addRecipientTextSourceAction,
+  addRecipientFileSourceAction,
+  deleteRecipientSourceAction,
+  type RecipientWithSources,
+} from "@/app/c/recipient-actions";
 import { APP_VERSION, CHANGELOG } from "@/lib/version";
 import { isSkinColors, KNOWN_FONTS } from "@/lib/designMd";
 import { googleFontHref } from "@/lib/googleFont";
@@ -559,23 +569,81 @@ export default function LyCardView({
     });
   }
 
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteError, setInviteError] = useState<string | null>(null);
-  const [inviteSent, setInviteSent] = useState(false);
-  const [inviting, startInviting] = useTransition();
+  // Destinatarios (2026-10-02) -- "Enviar Invitación" pasa de ser un
+  // simple formulario de email a ser el lugar donde se crea un
+  // destinatario con nombre, se le arma su dossier de fuentes (links,
+  // archivos, notas -- "cualquier cosa", pedido textual de Gunnar, para
+  // armar el NotebookLM después), y se entra directo a su link
+  // personalizado (/c/[slug]?para=[slug]). Se carga perezoso la primera
+  // vez que se abre el modal, no en cada render de la tarjeta.
+  const [recipients, setRecipients] = useState<RecipientWithSources[]>([]);
+  const [recipientsLoaded, setRecipientsLoaded] = useState(false);
+  const [newRecipientName, setNewRecipientName] = useState("");
+  const [recipientError, setRecipientError] = useState<string | null>(null);
+  const [creatingRecipient, startCreatingRecipient] = useTransition();
+  const [openRecipientId, setOpenRecipientId] = useState<string | null>(null);
+  const [sourceType, setSourceType] = useState<"link" | "archivo" | "texto">("link");
+  const [sourceLabel, setSourceLabel] = useState("");
+  const [sourceLinkValue, setSourceLinkValue] = useState("");
+  const [sourceTextValue, setSourceTextValue] = useState("");
+  const [addingSource, startAddingSource] = useTransition();
+  const sourceFileInputRef = useRef<HTMLInputElement>(null);
 
-  function submitInvite() {
-    setInviteError(null);
-    startInviting(async () => {
-      const res = await sendInvitationAction({ cardSlug: card.slug, inviteeEmail: inviteEmail });
+  useEffect(() => {
+    if (modal === "invite" && !recipientsLoaded) {
+      listRecipientsAction(card.slug).then((rows) => {
+        setRecipients(rows);
+        setRecipientsLoaded(true);
+      });
+    }
+  }, [modal, recipientsLoaded, card.slug]);
+
+  function submitCreateRecipient() {
+    setRecipientError(null);
+    startCreatingRecipient(async () => {
+      const res = await createRecipientQuickAction(card.slug, newRecipientName);
       if (res.ok) {
-        setInviteSent(true);
-      } else if (res.error === "not_configured") {
-        setInviteError(t(lang, "inviteErrNotConfigured"));
+        setRecipients((rs) => [...rs, res.recipient]);
+        setNewRecipientName("");
+        setOpenRecipientId(res.recipient.id);
       } else {
-        setInviteError(t(lang, "inviteErrEmail"));
+        setRecipientError(res.error === "empty" ? "Escribí un nombre." : "No se pudo crear -- probá de nuevo.");
       }
     });
+  }
+
+  async function removeRecipient(id: string) {
+    setRecipients((rs) => rs.filter((r) => r.id !== id));
+    await deleteRecipientAction2(id);
+  }
+
+  function submitAddSource(recipientId: string) {
+    startAddingSource(async () => {
+      let res: Awaited<ReturnType<typeof addRecipientLinkSourceAction>>;
+      if (sourceType === "link") {
+        if (!sourceLinkValue.trim()) return;
+        res = await addRecipientLinkSourceAction(recipientId, sourceLabel, sourceLinkValue);
+      } else if (sourceType === "texto") {
+        if (!sourceTextValue.trim()) return;
+        res = await addRecipientTextSourceAction(recipientId, sourceLabel, sourceTextValue);
+      } else {
+        const file = sourceFileInputRef.current?.files?.[0];
+        if (!file) return;
+        res = await addRecipientFileSourceAction(recipientId, sourceLabel, file);
+      }
+      if (res.ok) {
+        setRecipients((rs) => rs.map((r) => (r.id === recipientId ? { ...r, sources: [...r.sources, res.source] } : r)));
+        setSourceLabel("");
+        setSourceLinkValue("");
+        setSourceTextValue("");
+        if (sourceFileInputRef.current) sourceFileInputRef.current.value = "";
+      }
+    });
+  }
+
+  async function removeSource(recipientId: string, sourceId: string) {
+    setRecipients((rs) => rs.map((r) => (r.id === recipientId ? { ...r, sources: r.sources.filter((s) => s.id !== sourceId) } : r)));
+    await deleteRecipientSourceAction(sourceId);
   }
 
   const [senderName, setSenderName] = useState("");
@@ -827,9 +895,9 @@ export default function LyCardView({
 
   function closeModal() {
     setModal(null);
-    setInviteEmail("");
-    setInviteError(null);
-    setInviteSent(false);
+    setOpenRecipientId(null);
+    setNewRecipientName("");
+    setRecipientError(null);
     setSenderName("");
     setSenderEmail("");
     setMessageText("");
@@ -1608,60 +1676,180 @@ export default function LyCardView({
                   </a>
                 </>
               ) : modal === "invite" ? (
-                <>
-                  <p style={{ margin: 0, font: "400 12.5px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
-                    {t(lang, isCompany ? "inviteSubCompany" : "inviteSub")}
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  <p style={{ margin: 0, font: "400 12px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
+                    Cada destinatario tiene su propio link personalizado -- tocá &quot;Abrir&quot; para entrar directo a su tarjeta. Sumale fuentes (links, archivos, notas) para armar su perfil después.
                   </p>
-                  {inviteSent ? (
-                    <div style={{ padding: 18, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
-                      <Icon name="mark_email_read" size={28} style={{ color: "var(--accentMid,#C8A15A)" }} />
-                      <span style={{ font: "700 13px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink,#F5F2EB)" }}>{t(lang, "inviteSuccess")}</span>
+
+                  {recipients.length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {recipients.map((r) => {
+                        const open = openRecipientId === r.id;
+                        return (
+                          <div key={r.id} style={{ borderRadius: 12, background: "rgba(255,255,255,.04)", border: "1px solid rgba(var(--accentRgb,200,161,90),.2)", overflow: "hidden" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px" }}>
+                              <button
+                                type="button"
+                                onClick={() => setOpenRecipientId(open ? null : r.id)}
+                                style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2, background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left" }}
+                              >
+                                <span style={{ font: "700 13px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink,#F5F2EB)" }}>{r.nombre}</span>
+                                <span style={{ font: "400 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#8a8378)" }}>
+                                  {r.sources.length} fuente{r.sources.length === 1 ? "" : "s"}
+                                </span>
+                              </button>
+                              <a
+                                href={`/c/${card.slug}?para=${r.slug}`}
+                                style={{ flex: "none", padding: "7px 11px", borderRadius: 8, background: "var(--accentMid,#C8A15A)", color: "var(--deepBg,#0D0D0D)", font: "700 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".04em", textTransform: "uppercase", textDecoration: "none" }}
+                              >
+                                Abrir
+                              </a>
+                              <button
+                                type="button"
+                                onClick={() => removeRecipient(r.id)}
+                                aria-label={`Borrar a ${r.nombre}`}
+                                style={{ flex: "none", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", border: "none", borderRadius: 8, background: "none", color: "#e5928a", cursor: "pointer" }}
+                              >
+                                <Icon name="delete" size={15} />
+                              </button>
+                            </div>
+
+                            {open && (
+                              <div style={{ padding: "10px 12px 12px", display: "flex", flexDirection: "column", gap: 10, borderTop: "1px solid rgba(255,255,255,.06)" }}>
+                                {r.sources.length > 0 && (
+                                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                    {r.sources.map((s) => (
+                                      <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 8, background: "rgba(0,0,0,.25)" }}>
+                                        <Icon name={s.type === "link" ? "link" : s.type === "archivo" ? "attach_file" : "notes"} size={14} style={{ color: "var(--accentMid,#C8A15A)", flexShrink: 0 }} />
+                                        <span style={{ flex: 1, minWidth: 0, font: "400 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                          {s.label || (s.type === "texto" ? s.value.slice(0, 40) : s.value)}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={() => removeSource(r.id, s.id)}
+                                          aria-label="Borrar fuente"
+                                          style={{ flex: "none", background: "none", border: "none", color: "#e5928a", cursor: "pointer", padding: 2, display: "flex" }}
+                                        >
+                                          <Icon name="close" size={13} />
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                <div style={{ display: "flex", gap: 6 }}>
+                                  {(["link", "archivo", "texto"] as const).map((ty) => (
+                                    <button
+                                      key={ty}
+                                      type="button"
+                                      onClick={() => setSourceType(ty)}
+                                      style={{
+                                        flex: 1,
+                                        padding: "6px 0",
+                                        borderRadius: 8,
+                                        border: `1px solid ${sourceType === ty ? "var(--accentMid,#C8A15A)" : "rgba(255,255,255,.1)"}`,
+                                        background: sourceType === ty ? "rgba(var(--accentRgb,200,161,90),.15)" : "none",
+                                        color: sourceType === ty ? "var(--accentMid,#C8A15A)" : "var(--ink2,#8a8378)",
+                                        font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
+                                        textTransform: "uppercase",
+                                        letterSpacing: ".04em",
+                                        cursor: "pointer",
+                                      }}
+                                    >
+                                      {ty === "link" ? "Link" : ty === "archivo" ? "Archivo" : "Texto"}
+                                    </button>
+                                  ))}
+                                </div>
+
+                                <input
+                                  value={sourceLabel}
+                                  onChange={(e) => setSourceLabel(e.target.value)}
+                                  placeholder="¿Qué es esto? (opcional)"
+                                  style={{ background: "var(--deepBg,#0D0D0D)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, padding: "9px 11px", color: "var(--ink,#F5F2EB)", font: "400 12px var(--brandFont,'Plus Jakarta Sans'),sans-serif", outline: "none" }}
+                                />
+
+                                {sourceType === "link" && (
+                                  <input
+                                    value={sourceLinkValue}
+                                    onChange={(e) => setSourceLinkValue(e.target.value)}
+                                    placeholder="https://..."
+                                    style={{ background: "var(--deepBg,#0D0D0D)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, padding: "9px 11px", color: "var(--ink,#F5F2EB)", font: "400 12px var(--brandFont,'Plus Jakarta Sans'),sans-serif", outline: "none" }}
+                                  />
+                                )}
+                                {sourceType === "texto" && (
+                                  <textarea
+                                    value={sourceTextValue}
+                                    onChange={(e) => setSourceTextValue(e.target.value)}
+                                    placeholder="Escribí la nota acá..."
+                                    rows={3}
+                                    style={{ background: "var(--deepBg,#0D0D0D)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, padding: "9px 11px", color: "var(--ink,#F5F2EB)", font: "400 12px var(--brandFont,'Plus Jakarta Sans'),sans-serif", outline: "none", resize: "vertical" }}
+                                  />
+                                )}
+                                {sourceType === "archivo" && (
+                                  <input ref={sourceFileInputRef} type="file" style={{ font: "400 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }} />
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() => submitAddSource(r.id)}
+                                  disabled={addingSource}
+                                  style={{
+                                    padding: 10,
+                                    border: "none",
+                                    borderRadius: 8,
+                                    background: "rgba(var(--accentRgb,200,161,90),.18)",
+                                    color: "var(--accentMid,#C8A15A)",
+                                    font: "700 10.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
+                                    letterSpacing: ".06em",
+                                    textTransform: "uppercase",
+                                    cursor: addingSource ? "default" : "pointer",
+                                    opacity: addingSource ? 0.6 : 1,
+                                  }}
+                                >
+                                  {addingSource ? "..." : "+ Agregar fuente"}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-                  ) : (
-                    <>
-                      <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                        <span style={{ font: "500 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--ink2,#C2BEB5)" }}>
-                          {t(lang, "fInviteeEmail")}
-                        </span>
-                        <input
-                          type="email"
-                          value={inviteEmail}
-                          onChange={(e) => setInviteEmail(e.target.value)}
-                          placeholder="nombre@correo.com"
-                          style={{ background: "var(--deepBg,#0D0D0D)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", borderRadius: 10, padding: "11px 14px", color: "var(--ink,#F5F2EB)", font: "400 14px var(--brandFont,'Plus Jakarta Sans'),sans-serif", outline: "none" }}
-                        />
-                      </label>
-                      {inviteError && (
-                        <span style={{ font: "600 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "#e5928a" }}>{inviteError}</span>
-                      )}
+                  )}
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: recipients.length > 0 ? 6 : 0, borderTop: recipients.length > 0 ? "1px solid rgba(255,255,255,.08)" : "none" }}>
+                    <span style={{ font: "500 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--ink2,#C2BEB5)" }}>
+                      Nuevo destinatario
+                    </span>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <input
+                        value={newRecipientName}
+                        onChange={(e) => setNewRecipientName(e.target.value)}
+                        placeholder="Nombre (ej. Rogelio)"
+                        style={{ flex: 1, minWidth: 0, background: "var(--deepBg,#0D0D0D)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", borderRadius: 10, padding: "11px 14px", color: "var(--ink,#F5F2EB)", font: "400 14px var(--brandFont,'Plus Jakarta Sans'),sans-serif", outline: "none" }}
+                      />
                       <button
                         type="button"
-                        onClick={submitInvite}
-                        disabled={inviting}
+                        onClick={submitCreateRecipient}
+                        disabled={creatingRecipient}
                         style={{
-                          width: "100%",
-                          padding: 14,
+                          flex: "none",
+                          padding: "0 16px",
                           border: "none",
-                          borderRadius: 12,
+                          borderRadius: 10,
                           background: "linear-gradient(90deg,var(--accentLight,#E5C378),var(--accentMid,#C8A15A) 50%,var(--accentDeep,#99732B))",
                           color: "var(--deepBg,#0D0D0D)",
-                          font: "700 12.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
-                          letterSpacing: ".12em",
+                          font: "700 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
+                          letterSpacing: ".06em",
                           textTransform: "uppercase",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 8,
-                          cursor: inviting ? "default" : "pointer",
-                          opacity: inviting ? 0.7 : 1,
+                          cursor: creatingRecipient ? "default" : "pointer",
                         }}
                       >
-                        <Icon name="send" size={18} />
-                        <span>{inviting ? "..." : t(lang, "inviteSend")}</span>
+                        {creatingRecipient ? "..." : "Crear"}
                       </button>
-                    </>
-                  )}
-                </>
+                    </div>
+                    {recipientError && <span style={{ font: "600 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "#e5928a" }}>{recipientError}</span>}
+                  </div>
+                </div>
               ) : modal === "contactMessage" ? (
                 <>
                   <p style={{ margin: 0, font: "400 12.5px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
