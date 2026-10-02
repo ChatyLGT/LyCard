@@ -381,6 +381,7 @@ export default function LyCardView({
   program,
   puesto,
   interviewSlots,
+  recipient,
 }: {
   card: Card;
   qrSvg: string;
@@ -407,6 +408,10 @@ export default function LyCardView({
   // ya resueltos server-side, sin fechas vencidas: InterviewSlot real del
   // Programa si tiene, si no el fallback fijo de lib/interviewSlots.ts.
   interviewSlots: { id: string; label: string; labelEn: string; time: string }[];
+  // Tarjeta personalizada por destinatario (2026-10-02, PASO 1) --
+  // `?para=<slug>` resuelto server-side en app/c/[slug]/page.tsx. null
+  // = link genérico, la tarjeta se ve exactamente como siempre.
+  recipient?: { nombre: string } | null;
 }) {
   const router = useRouter();
   const isProject = card.kind === "project";
@@ -872,6 +877,27 @@ export default function LyCardView({
             transition: "background-color .3s ease",
           }}
         >
+          {/* Bienvenida personalizada por destinatario (2026-10-02, PASO 1)
+              -- solo con ?para=<slug> resuelto a un CardRecipient real.
+              Sin destinatario, recipient es null y este bloque no
+              renderiza nada: la tarjeta se ve exactamente como siempre. */}
+          {recipient && (
+            <div
+              style={{
+                flex: "none",
+                padding: "10px 12px",
+                borderRadius: 12,
+                background: "linear-gradient(135deg, rgba(var(--accentRgb,200,161,90),.16), rgba(255,255,255,.02))",
+                border: "1px solid rgba(var(--accentRgb,200,161,90),.35)",
+              }}
+            >
+              <p style={{ margin: 0, font: "500 11.5px/1.5 'Plus Jakarta Sans',sans-serif", color: "var(--text,#F3F0E9)" }}>
+                Hola, {recipient.nombre}. Gracias por tu interés en el Programa Legacy. Esta tarjeta está personalizada
+                para ti, a partir de la información que compartiste con nosotros. Bienvenido.
+              </p>
+            </div>
+          )}
+
           {/* Portrait */}
           {/* Pulido visual (2026-09-29, pedido de Gunnar): este wrapper
               tenía flex:1 1 auto sin tope -- crecía para absorber TODO el

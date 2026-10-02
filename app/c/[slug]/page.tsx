@@ -74,12 +74,22 @@ async function buildCardBundle(
 
 export default async function CardPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ para?: string }>;
 }) {
   const { slug } = await params;
+  const { para } = await searchParams;
   const card = await prisma.card.findUnique({ where: { slug }, include: { program: { include: PROGRAM_INCLUDE }, puesto: true } });
   if (!card) notFound();
+
+  // Tarjeta personalizada por destinatario (2026-10-02, PASO 1) --
+  // `?para=<slug>` identifica a la persona para la que se armó este
+  // link puntual de ESTA Card. Solo aplica a la Card realmente pedida
+  // en la URL, no se propaga al carrusel de hermanas (project/company/
+  // personal) -- ver el comentario sobre `bundles` más abajo.
+  const recipient = para ? await prisma.cardRecipient.findUnique({ where: { cardId_slug: { cardId: card.id, slug: para } } }) : null;
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
   const [adminScope, memberId] = await Promise.all([currentAdminScope(), currentMemberId()]);
@@ -132,6 +142,7 @@ export default async function CardPage({
         program={b.program}
         puesto={b.puesto}
         interviewSlots={b.interviewSlots}
+        recipient={recipient}
       />
     );
   }

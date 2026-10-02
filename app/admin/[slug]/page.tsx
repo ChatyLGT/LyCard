@@ -11,15 +11,25 @@ export default async function AdminCardEditorPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ saved?: string; siblingsCreated?: string; siblingError?: string }>;
+  searchParams: Promise<{
+    saved?: string;
+    siblingsCreated?: string;
+    siblingError?: string;
+    recipientCreated?: string;
+    recipientDeleted?: string;
+    recipientError?: string;
+  }>;
 }) {
   const { slug } = await params;
-  const { saved, siblingsCreated, siblingError } = await searchParams;
+  const { saved, siblingsCreated, siblingError, recipientCreated, recipientDeleted, recipientError } = await searchParams;
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
   const card = await prisma.card.findUnique({
     where: { slug },
-    include: { program: { include: { puestos: { orderBy: { order: "asc" } } } } },
+    include: {
+      program: { include: { puestos: { orderBy: { order: "asc" } } } },
+      recipients: { orderBy: { createdAt: "asc" } },
+    },
   });
   if (!card) notFound();
 
@@ -40,6 +50,10 @@ export default async function AdminCardEditorPage({
       saved={saved === "1"}
       siblingsCreated={siblingsCreated}
       siblingError={siblingError}
+      recipients={card.recipients}
+      recipientCreated={recipientCreated === "1"}
+      recipientDeleted={recipientDeleted === "1"}
+      recipientError={recipientError}
     />
   );
 }

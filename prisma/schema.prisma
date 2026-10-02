@@ -219,6 +219,35 @@ model Card {
   // Especialistas y Expertos (Fase 5, 2026-09-30) — ver PLAN.md "Fase 4:
   // DISEÑO -- Especialistas y Expertos" para el porqué del modelo.
   especialistaInstalls EspecialistaInstall[]
+
+  // Tarjeta personalizada por destinatario (2026-10-02) — ver modelo
+  // CardRecipient más abajo.
+  recipients CardRecipient[]
+}
+
+// Tarjeta personalizada por destinatario (2026-10-02, pedido de Gunnar:
+// "tarjeta personalizada para Rogelio", fase de diseño). Un
+// CardRecipient es un link PUNTUAL de ESTA Card para UNA persona --
+// `/c/<card.slug>?para=<slug>` -- editable por el dueño de la Card
+// (PASO 1 del pedido). Todo el contenido que varía por destinatario
+// (palabra secreta, link del cuaderno, Documento de Bienvenida, etc.)
+// vive en este mismo modelo, no en Cards separadas -- la Card de
+// origen sigue siendo UNA sola, el destinatario es un overlay sobre
+// ella, nunca una copia.
+model CardRecipient {
+  id     String @id @default(cuid())
+  cardId String
+  card   Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  // Clave de la URL (?para=<slug>) -- única por Card, no global (dos
+  // Cards distintas pueden tener cada una su propio "rogelio").
+  slug   String
+  nombre String // Nombre tal como se muestra en el mensaje de bienvenida ("Rogelio")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cardId, slug])
 }
 
 // Sistema de Tags — pedido de Gunnar (2026-09-23), base de "Janus", el

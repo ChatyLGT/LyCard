@@ -2,12 +2,13 @@
 
 import { useState, type CSSProperties } from "react";
 import Link from "next/link";
-import type { Card, Program, Puesto } from "@/generated/prisma/client";
+import type { Card, Program, Puesto, CardRecipient } from "@/generated/prisma/client";
 import { updateCardAction, deleteCardAction } from "@/app/admin/actions";
 import { createSiblingCardsAction } from "@/app/admin/siblings-actions";
+import { createRecipientAction, deleteRecipientAction } from "@/app/admin/recipients-actions";
 import { MEDALS, RANKS, CHANNELS } from "@/lib/data";
 import type { EscalaItem } from "@/lib/escalas";
-import { AccordionSection } from "@/components/Accordion";
+import { AccordionSection, AccordionRow, AccordionAddRow } from "@/components/Accordion";
 import { CARD_KINDS, CARD_KIND_LABEL, parseShareScope } from "@/lib/shareScope";
 import OficinaExtrasEditor from "@/components/OficinaExtrasEditor";
 
@@ -54,6 +55,10 @@ export default function EditorForm({
   saved,
   siblingsCreated,
   siblingError,
+  recipients,
+  recipientCreated,
+  recipientDeleted,
+  recipientError,
 }: {
   card: Card;
   isMasterN0: boolean;
@@ -65,6 +70,10 @@ export default function EditorForm({
   saved: boolean;
   siblingsCreated?: string;
   siblingError?: string;
+  recipients: CardRecipient[];
+  recipientCreated?: boolean;
+  recipientDeleted?: boolean;
+  recipientError?: string;
 }) {
   const [medal, setMedal] = useState(card.medal);
   const [rank, setRank] = useState(card.rank);
@@ -524,6 +533,60 @@ export default function EditorForm({
           </button>
         </div>
       </form>
+
+      {/* Tarjeta personalizada por destinatario (2026-10-02, PASO 1) --
+          cada fila es un link puntual `/c/<slug>?para=<destinatario.slug>`
+          para UNA persona. Afuera del <form> de arriba a propósito (mismo
+          criterio que "Business y Personal"/"Eliminar esta LyCard" abajo):
+          un <form> anidado dentro de otro se rompe en el parser HTML real
+          -- el navegador descarta el interno al primer parseo del lado del
+          servidor, así que el submit termina yendo al <form> de afuera en
+          vez del propio (bug real encontrado armando esto). El resto del
+          contenido que varía por destinatario (palabra secreta, Documento
+          de Bienvenida, etc.) se suma en los próximos pasos sobre este
+          mismo modelo. */}
+      <div style={{ maxWidth: 520, margin: "0 auto", padding: "0 16px" }}>
+        <AccordionSection title="Destinatarios" subtitle="Links personalizados de esta tarjeta -- uno por persona, cada uno con su propia bienvenida.">
+          {recipientError === "empty" && (
+            <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>Escribí un nombre.</p>
+          )}
+          {recipientCreated && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Destinatario creado.</p>}
+          {recipientDeleted && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Destinatario eliminado.</p>}
+
+          {recipients.length === 0 && (
+            <p style={{ margin: 0, font: "400 12px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>Todavía no hay ningún destinatario.</p>
+          )}
+          {recipients.map((r) => (
+            <AccordionRow key={r.id} title={r.nombre} subtitle={`/c/${card.slug}?para=${r.slug}`}>
+              <p style={{ margin: 0, font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
+                Link completo: <code>{`/c/${card.slug}?para=${r.slug}`}</code>
+              </p>
+              <form action={deleteRecipientAction.bind(null, card.slug, r.id)}>
+                <button
+                  type="submit"
+                  style={{ padding: "8px 14px", border: "1px solid rgba(229,146,138,.4)", borderRadius: 8, background: "none", color: "#e5928a", font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", cursor: "pointer" }}
+                >
+                  Eliminar destinatario
+                </button>
+              </form>
+            </AccordionRow>
+          ))}
+
+          <AccordionAddRow label="Agregar destinatario">
+            <form action={createRecipientAction.bind(null, card.slug)} style={{ display: "flex", gap: 8 }}>
+              <div style={{ ...FIELD_WRAP, flex: 1 }}>
+                <input name="nombre" placeholder="Nombre (ej. Rogelio)" style={FIELD_INPUT} />
+              </div>
+              <button
+                type="submit"
+                style={{ padding: "10px 16px", border: "none", borderRadius: 10, background: "#C8A15A", color: "#0D0D0D", font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", cursor: "pointer", flex: "none" }}
+              >
+                Crear
+              </button>
+            </form>
+          </AccordionAddRow>
+        </AccordionSection>
+      </div>
 
       {isProject && (
         <div style={{ maxWidth: 520, margin: "0 auto 12px", padding: "0 16px" }}>

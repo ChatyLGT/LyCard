@@ -7421,3 +7421,58 @@ inventarle un destino, pendiente su respuesta.
 `pnpm test:unit:coverage` 250/250 al 100%, `pnpm build` limpio, y la
 suite E2E completa: 41 specs, 40 passed (el único fallo es el drift de
 fechas ya conocido de `interview-slots.spec.ts`, sin relación).
+
+## 2026-10-02 -- Tarjeta personalizada para Rogelio, PASO 1: link con destinatario (v1.63.0)
+
+Fase de diseño, 7 pasos, pedido explícito de Gunnar -- reporte y
+confirmación después de cada paso, nunca todos de un saque. Este es
+el primero.
+
+### Modelo nuevo: `CardRecipient`
+
+Un overlay por persona sobre una Card ya existente (nunca una copia de
+la Card) -- `cardId` + `slug` único por Card (no global, dos Cards
+distintas pueden tener cada una su "rogelio") + `nombre`. Todo lo que
+varía por destinatario en los próximos 6 pasos (palabra secreta, link
+del cuaderno, Documento de Bienvenida, programa de entrevista elegido,
+etc.) se suma como campos de este mismo modelo -- un destinatario, un
+registro, nunca una Card nueva por persona.
+
+### `/c/[slug]?para=<destinatario>`
+
+`app/c/[slug]/page.tsx` resuelve el `CardRecipient` (si existe) y se
+lo pasa a `LyCardView`, que muestra el mensaje de bienvenida arriba de
+todo, antes del retrato. Sin `?para=` o con un slug que no matchea
+ningún destinatario, `recipient` es `null` y la tarjeta se ve
+exactamente igual que siempre -- cero cambio de comportamiento para
+cualquier link que ya existe.
+
+### CRUD real desde el editor (`/admin/<slug>`)
+
+Nueva sección "Destinatarios" en `EditorForm.tsx` -- crear/eliminar,
+el slug de la URL sale solo del nombre (`lib/slug.ts`, ya existía,
+reusado). **Hallazgo real armando esto**: la puse primero ADENTRO del
+`<form>` grande de la página -- un `<form>` anidado dentro de otro se
+rompe en el parser HTML real (el navegador descarta el interno al
+primer parseo del lado del servidor), así que el submit terminaba
+yendo al form de afuera (`updateCardAction`) en vez del propio, sin
+error visible, simplemente no pasaba nada. La saqué afuera del form
+grande, mismo patrón que ya usan "Business y Personal" y "Eliminar
+esta LyCard" más abajo en el mismo archivo -- confirmado con
+Playwright real (crear "Rogelio", verificar la fila en la base, after
+visitar `/c/mastern0?para=rogelio` y ver el mensaje), no a ojo.
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos,
+`pnpm test:unit:coverage` 250/250 al 100%, `pnpm build` limpio, y
+captura real de `/c/mastern0?para=rogelio` (con bienvenida) vs
+`/c/mastern0` (sin cambios) confirmando el comportamiento exacto
+pedido.
+
+### Pendiente
+
+Pasos 2-7 (redes del Programa, botón "Programa Legacy", botón "Info
+[nombre]" con palabra secreta, "Deja tu Legado", funnel de Agendar,
+QR + E2E completo) -- cada uno con su propio reporte antes de seguir
+al siguiente, por pedido explícito de Gunnar.
