@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.66.0";
+export const APP_VERSION = "1.67.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.67.0",
+    date: "2026-10-02",
+    notes:
+      "PASO 6 de la tarjeta personalizada: con destinatario, el botón \"Agendar una entrevista\" abre un funnel nuevo -- sin código de acceso (el link personalizado ya identifica a la persona), nombre precargado, confirma email y WhatsApp, elige su programa (3 días a 3 meses, sin precios todavía), acepta el aviso de privacidad, y al confirmar le creamos su propia tarjeta oficial de LyCard Y le agendamos su entrevista inicial de Legacy en el próximo turno disponible -- todo junto, un solo paso. La pantalla final muestra \"Tu tarjeta ya existe\" con su link y la fecha de la entrevista. Arreglo de paso, necesario para que esto funcione: los horarios de \"Agendar tu Entrevista\" eran 4 fechas fijas que ya habían quedado en el pasado (el botón estaba roto hace rato para cualquier tarjeta sin horarios reales cargados) -- ahora se generan siempre a futuro, relativos a hoy, nunca vencen.",
+  },
   {
     version: "1.66.0",
     date: "2026-10-02",

@@ -6,30 +6,83 @@ export type InterviewSlot = {
   date: string; // ISO yyyy-mm-dd -- ver upcomingSlots(), lo que faltaba antes
 };
 
-// Fixed for now — Gunnar loads these by hand until there's an admin
-// screen for managing them. Keep dates in the future.
-export const INTERVIEW_SLOTS: InterviewSlot[] = [
-  { id: "s1", label: "Martes 22 de Septiembre", labelEn: "Tuesday, September 22", time: "18:00 hs (GMT-6)", date: "2026-09-22" },
-  { id: "s2", label: "Jueves 24 de Septiembre", labelEn: "Thursday, September 24", time: "10:00 hs (GMT-6)", date: "2026-09-24" },
-  { id: "s3", label: "Sábado 26 de Septiembre", labelEn: "Saturday, September 26", time: "12:00 hs (GMT-6)", date: "2026-09-26" },
-  { id: "s4", label: "Martes 29 de Septiembre", labelEn: "Tuesday, September 29", time: "18:00 hs (GMT-6)", date: "2026-09-29" },
+const WEEKDAY_ES = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+const MONTH_ES = [
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+];
+const WEEKDAY_EN = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const MONTH_EN = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
 ];
 
-export function slotById(id: string) {
-  return INTERVIEW_SLOTS.find((s) => s.id === id) ?? null;
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-// Auditoría 2026-09-23, hallazgo 2.1: un array hardcodeado sin lógica de
-// vencimiento es una fecha de caducidad garantizada, no una posibilidad --
-// "Martes 22" ya había pasado y seguía siendo reservable. `slotById` sigue
-// resolviendo slots vencidos a propósito (una Registration vieja tiene que
-// poder seguir mostrando el nombre de su slot); esto solo filtra qué se
-// OFRECE para reservar de acá en adelante. `now` es inyectable para poder
-// testear sin mockear el reloj del sistema.
+function nextWeekdayOnOrAfter(from: Date, targetDow: number): Date {
+  const d = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate()));
+  const diff = (targetDow - d.getUTCDay() + 7) % 7;
+  d.setUTCDate(d.getUTCDate() + diff);
+  return d;
+}
+
+function toISO(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+// Horarios de "Agendar tu Entrevista" -- antes una lista fija de 4 fechas
+// de calendario (ver PLAN.md, hallazgo real 2026-10-02: las 4 quedaron en
+// el pasado a las dos semanas y `upcomingSlots()` empezó a devolver un
+// array vacío en producción, dejando el botón roto para cualquier Card sin
+// Program con InterviewSlot reales cargados -- el caso de mastern0 mismo).
+// Ahora se generan relativos a `now`, siempre a futuro, con el mismo
+// patrón de siempre (martes 18hs, jueves 10hs, sábado 12hs, el martes
+// siguiente 18hs) -- nunca vencen porque nunca son fechas fijas.
+export function generateLegacySlots(now: Date = new Date()): InterviewSlot[] {
+  const tue1 = nextWeekdayOnOrAfter(now, 2);
+  const thu = nextWeekdayOnOrAfter(now, 4);
+  const sat = nextWeekdayOnOrAfter(now, 6);
+  const tue2 = new Date(tue1);
+  tue2.setUTCDate(tue2.getUTCDate() + 7);
+
+  const specs = [
+    { d: tue1, time: "18:00 hs (GMT-6)" },
+    { d: thu, time: "10:00 hs (GMT-6)" },
+    { d: sat, time: "12:00 hs (GMT-6)" },
+    { d: tue2, time: "18:00 hs (GMT-6)" },
+  ];
+
+  // Ordenados por fecha (no por el orden fijo martes/jueves/sábado/martes
+  // de arriba) -- según qué día de la semana sea `now`, el sábado puede
+  // caer antes que el martes o el jueves siguientes, y la lista tiene que
+  // reflejar el orden real en el que van a pasar, no el orden en que se
+  // calcularon. `slots[0]` es siempre el próximo turno disponible de
+  // verdad -- de eso depende el auto-booking de PASO 6.
+  return specs
+    .map((s) => ({
+      label: `${capitalize(WEEKDAY_ES[s.d.getUTCDay()])} ${s.d.getUTCDate()} de ${MONTH_ES[s.d.getUTCMonth()]}`,
+      labelEn: `${WEEKDAY_EN[s.d.getUTCDay()]}, ${MONTH_EN[s.d.getUTCMonth()]} ${s.d.getUTCDate()}`,
+      time: s.time,
+      date: toISO(s.d),
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((s, i) => ({ id: `s${i + 1}`, ...s }));
+}
+
+export function slotById(id: string, now: Date = new Date()): InterviewSlot | null {
+  return generateLegacySlots(now).find((s) => s.id === id) ?? null;
+}
+
+// `isSlotUpcoming` ya no puede dar false para nada que salga de
+// `generateLegacySlots` (siempre genera a futuro) -- queda igual de
+// todas formas: es la misma validación defensiva del lado del servidor
+// que ya existía (un slot real de un Program sí puede volverse viejo).
 export function isSlotUpcoming(slot: InterviewSlot, now: Date = new Date()): boolean {
   return slot.date >= now.toISOString().slice(0, 10);
 }
 
 export function upcomingSlots(now: Date = new Date()): InterviewSlot[] {
-  return INTERVIEW_SLOTS.filter((s) => isSlotUpcoming(s, now));
+  return generateLegacySlots(now).filter((s) => isSlotUpcoming(s, now));
 }

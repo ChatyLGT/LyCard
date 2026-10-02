@@ -8,6 +8,8 @@ import { t, type Lang } from "@/lib/i18n";
 import { rankById, medalById } from "@/lib/data";
 import { parseEscala } from "@/lib/escalas";
 import { registerInterviewAction, sendContactMessageAction, sendQrByWhatsappAction } from "@/app/c/actions";
+import { startLegacyFunnelAction } from "@/app/c/legacy-funnel-actions";
+import { PROGRAM_DURATIONS } from "@/lib/legacyProgramDurations";
 import {
   listRecipientsAction,
   createRecipientQuickAction,
@@ -737,6 +739,22 @@ export default function LyCardView({
   const [scheduleResult, setScheduleResult] = useState<{ slotLabel: string } | null>(null);
   const [scheduling, startScheduling] = useTransition();
 
+  // PASO 6 (2026-10-02) -- con destinatario, el mismo botón "Agendar"
+  // abre este funnel nuevo en vez del de siempre (ver más abajo, dentro
+  // de scheduleOpen): sin código de acceso (el link ya identifica a la
+  // persona), nombre precargado, confirma email/WhatsApp, elige duración
+  // de programa, acepta privacidad. Reusa el alta Freemium self-service y
+  // el sistema de entrevistas que ya existen -- nada de MayanCity ni
+  // billeteras blockchain, pedido explícito de Gunnar.
+  const [legacyName, setLegacyName] = useState(recipient?.nombre ?? "");
+  const [legacyEmail, setLegacyEmail] = useState("");
+  const [legacyWa, setLegacyWa] = useState("");
+  const [legacyDuracion, setLegacyDuracion] = useState<string | null>(null);
+  const [legacyPrivacy, setLegacyPrivacy] = useState(false);
+  const [legacyError, setLegacyError] = useState<string | null>(null);
+  const [legacyResult, setLegacyResult] = useState<{ cardSlug: string; interviewLabel: string } | null>(null);
+  const [legacySubmitting, startLegacySubmitting] = useTransition();
+
   function closeSchedule() {
     setScheduleOpen(false);
     setSelectedSlot(null);
@@ -745,6 +763,43 @@ export default function LyCardView({
     setScheduleEmail("");
     setScheduleError(null);
     setScheduleResult(null);
+    setLegacyName(recipient?.nombre ?? "");
+    setLegacyEmail("");
+    setLegacyWa("");
+    setLegacyDuracion(null);
+    setLegacyPrivacy(false);
+    setLegacyError(null);
+    setLegacyResult(null);
+  }
+
+  function submitLegacyFunnel() {
+    setLegacyError(null);
+    if (!legacyName.trim()) return setLegacyError("Escribí tu nombre.");
+    if (!legacyEmail.trim()) return setLegacyError("Escribí tu email.");
+    if (!legacyWa.trim()) return setLegacyError("Escribí tu WhatsApp.");
+    if (!legacyDuracion) return setLegacyError("Elegí un programa.");
+    if (!legacyPrivacy) return setLegacyError("Tenés que aceptar el aviso de privacidad para seguir.");
+    startLegacySubmitting(async () => {
+      const res = await startLegacyFunnelAction({
+        referrerCardSlug: card.slug,
+        nombre: legacyName,
+        email: legacyEmail,
+        whatsapp: legacyWa,
+        programDuracion: legacyDuracion,
+        aceptaPrivacidad: legacyPrivacy,
+      });
+      if (res.ok) {
+        setLegacyResult({ cardSlug: res.cardSlug, interviewLabel: res.interviewLabel });
+      } else if (res.error === "email") {
+        setLegacyError("Ese email no parece válido.");
+      } else if (res.error === "nombre") {
+        setLegacyError("Escribí tu nombre.");
+      } else if (res.error === "whatsapp") {
+        setLegacyError("Escribí tu WhatsApp.");
+      } else {
+        setLegacyError("No se pudo crear tu tarjeta -- probá de nuevo.");
+      }
+    });
   }
 
   function submitSchedule() {
@@ -2636,10 +2691,169 @@ export default function LyCardView({
               </div>
 
               <h3 style={{ margin: 0, font: "600 17px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>
-                {L(isProject ? "scheduleTitle" : isCompany ? "meetingTitle" : "coffeeTitle")}
+                {recipient && isProject ? `Bienvenido, ${recipient.nombre}` : L(isProject ? "scheduleTitle" : isCompany ? "meetingTitle" : "coffeeTitle")}
               </h3>
 
-              {scheduleResult ? (
+              {recipient && isProject ? (
+                // PASO 6 (2026-10-02) -- funnel propio para el
+                // destinatario: sin código de acceso, nombre precargado,
+                // confirma email/WhatsApp, elige duración de programa,
+                // acepta privacidad. Reusa el alta Freemium self-service y
+                // el sistema de entrevistas ya existentes (ver
+                // app/c/legacy-funnel-actions.ts) -- nunca el slot-picker
+                // de abajo, que sigue intacto para cuando NO hay
+                // destinatario.
+                legacyResult ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    <div style={{ padding: 18, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
+                      <Icon name="event_available" size={28} style={{ color: "var(--accentMid,#C8A15A)" }} />
+                      <span style={{ font: "700 13px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink,#F5F2EB)" }}>Tu tarjeta ya existe</span>
+                      <span style={{ font: "400 12px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
+                        Tu entrevista inicial de Legacy queda para el {legacyResult.interviewLabel}.
+                      </span>
+                    </div>
+                    {legacyResult.cardSlug && (
+                      <Link
+                        href={`/c/${legacyResult.cardSlug}`}
+                        style={{
+                          width: "100%",
+                          padding: 14,
+                          borderRadius: 12,
+                          background: "linear-gradient(90deg,var(--accentLight,#E5C378),var(--accentMid,#C8A15A) 50%,var(--accentDeep,#99732B))",
+                          color: "var(--deepBg,#0D0D0D)",
+                          font: "700 12.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
+                          letterSpacing: ".12em",
+                          textTransform: "uppercase",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 8,
+                          textDecoration: "none",
+                        }}
+                      >
+                        <Icon name="badge" size={18} />
+                        Ver mi tarjeta
+                      </Link>
+                    )}
+                    {legacyResult.cardSlug && (
+                      <span style={{ font: "400 10.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#8a8378)", textAlign: "center", wordBreak: "break-all" }}>
+                        {typeof window !== "undefined" ? window.location.origin : ""}/c/{legacyResult.cardSlug}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    <p style={{ margin: 0, font: "400 12.5px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
+                      Confirmá tus datos, elegí tu programa, y arrancamos. Tu link personalizado ya te identifica -- no hace falta ningún código.
+                    </p>
+
+                    <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                      <span style={{ font: "500 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--ink2,#C2BEB5)" }}>
+                        Nombre completo
+                      </span>
+                      <input
+                        value={legacyName}
+                        onChange={(e) => setLegacyName(e.target.value)}
+                        style={{ background: "var(--deepBg,#0D0D0D)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", borderRadius: 10, padding: "11px 14px", color: "var(--ink,#F5F2EB)", font: "400 14px var(--brandFont,'Plus Jakarta Sans'),sans-serif", outline: "none" }}
+                      />
+                    </label>
+                    <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                      <span style={{ font: "500 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--ink2,#C2BEB5)" }}>
+                        Email
+                      </span>
+                      <input
+                        type="email"
+                        value={legacyEmail}
+                        onChange={(e) => setLegacyEmail(e.target.value)}
+                        placeholder="nombre@correo.com"
+                        style={{ background: "var(--deepBg,#0D0D0D)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", borderRadius: 10, padding: "11px 14px", color: "var(--ink,#F5F2EB)", font: "400 14px var(--brandFont,'Plus Jakarta Sans'),sans-serif", outline: "none" }}
+                      />
+                    </label>
+                    <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                      <span style={{ font: "500 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--ink2,#C2BEB5)" }}>
+                        WhatsApp
+                      </span>
+                      <input
+                        value={legacyWa}
+                        onChange={(e) => setLegacyWa(e.target.value)}
+                        placeholder="+52 998 000 0000"
+                        style={{ background: "var(--deepBg,#0D0D0D)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", borderRadius: 10, padding: "11px 14px", color: "var(--ink,#F5F2EB)", font: "400 14px var(--brandFont,'Plus Jakarta Sans'),sans-serif", outline: "none" }}
+                      />
+                    </label>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <span style={{ font: "500 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--ink2,#C2BEB5)" }}>
+                        Elegí tu programa
+                      </span>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 6 }}>
+                        {PROGRAM_DURATIONS.map((d) => {
+                          const on = legacyDuracion === d.id;
+                          return (
+                            <button
+                              key={d.id}
+                              type="button"
+                              onClick={() => setLegacyDuracion(d.id)}
+                              style={{
+                                padding: "9px 4px",
+                                borderRadius: 10,
+                                border: `1px solid ${on ? "var(--accentMid,#C8A15A)" : "rgba(255,255,255,.1)"}`,
+                                background: on ? "rgba(var(--accentRgb,200,161,90),.16)" : "var(--surf,#141414)",
+                                color: on ? "var(--accentLight,#E5C378)" : "var(--ink2,#C2BEB5)",
+                                font: "700 10.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
+                                cursor: "pointer",
+                              }}
+                            >
+                              {d.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer" }}>
+                      <input
+                        type="checkbox"
+                        checked={legacyPrivacy}
+                        onChange={(e) => setLegacyPrivacy(e.target.checked)}
+                        style={{ marginTop: 2, flex: "none" }}
+                      />
+                      <span style={{ font: "400 10.5px/1.5 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#8a8378)" }}>
+                        [PLACEHOLDER] Leí y acepto el aviso de privacidad de Legacy by EinarOS: cómo se usa mi información y mis derechos sobre ella.
+                      </span>
+                    </label>
+
+                    {legacyError && (
+                      <span style={{ font: "600 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "#e5928a" }}>{legacyError}</span>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={submitLegacyFunnel}
+                      disabled={legacySubmitting}
+                      style={{
+                        width: "100%",
+                        padding: 14,
+                        border: "none",
+                        borderRadius: 12,
+                        background: "linear-gradient(90deg,var(--accentLight,#E5C378),var(--accentMid,#C8A15A) 50%,var(--accentDeep,#99732B))",
+                        color: "var(--deepBg,#0D0D0D)",
+                        font: "700 12.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
+                        letterSpacing: ".12em",
+                        textTransform: "uppercase",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                        cursor: legacySubmitting ? "default" : "pointer",
+                        opacity: legacySubmitting ? 0.7 : 1,
+                      }}
+                    >
+                      <Icon name="check_circle" size={18} />
+                      <span>{legacySubmitting ? "..." : "Confirmar mi lugar"}</span>
+                    </button>
+                  </div>
+                )
+              ) : scheduleResult ? (
                 <div style={{ padding: 18, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
                   <Icon name="event_available" size={28} style={{ color: "var(--accentMid,#C8A15A)" }} />
                   <span style={{ font: "700 13px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink,#F5F2EB)" }}>

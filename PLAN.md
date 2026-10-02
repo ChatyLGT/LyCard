@@ -7686,3 +7686,82 @@ placeholder, Capítulo VI con "Dirección -- Rogelio", Capítulo VII, y
 el cierre "Edición Rogelio"). Un segundo test confirma que sin
 destinatario el botón "Deja tu Legado" no existe y el dueño sigue
 viendo "Enviar Invitación" como siempre.
+
+## 2026-10-02 -- Tarjeta Rogelio PASO 6: funnel de Agendar (v1.67.0)
+
+Último paso elegido por Gunnar ("paso 6"): el botón "Agendar una
+entrevista", con destinatario, deja de abrir el slot-picker de siempre
+y abre un funnel propio que, en un solo paso, le crea su tarjeta
+oficial de LyCard Y le agenda su entrevista inicial -- pedido textual:
+reusar el registro automático y el sistema de entrevistas que ya
+existen, nada de MayanCity ni billeteras blockchain.
+
+### Hallazgo real bloqueante: "Agendar tu Entrevista" estaba roto en producción
+
+Antes de poder construir nada de esto, confirmé contra la base que
+`lib/interviewSlots.ts` -- los 4 horarios fijos de "Agendar tu
+Entrevista" -- tenían las 4 fechas en el pasado (22 al 29 de
+septiembre; hoy es 2 de octubre). `upcomingSlots()` devolvía un array
+vacío: el botón de agendar ya estaba roto HOY en producción para
+cualquier Card sin `InterviewSlot` reales cargados -- el caso de
+mastern0 mismo. No era un bug nuevo mío, era una fecha de caducidad
+que ya se había cumplido sola (ver el comentario de la propia
+Auditoría 2026-09-23 que ya lo advertía).
+
+Arreglado en la raíz: los 4 slots ahora se generan relativos a "ahora"
+(`generateLegacySlots`, mismo patrón de siempre -- martes 18hs, jueves
+10hs, sábado 12hs, el martes siguiente 18hs -- pero nunca con fecha
+fija, siempre ordenados por fecha real). `isSlotUpcoming`/
+`upcomingSlots` quedan igual de defensivos que antes. Reescribí
+`lib/__tests__/interviewSlots.test.ts` y `e2e/interview-slots.spec.ts`
+para inyectar un `now` de referencia en vez de comparar contra labels
+en español hardcodeados -- esto también arregla de taquito el test E2E
+que venía fallando solo por el paso del calendario real, sin tocarlo
+a mano.
+
+### El funnel nuevo
+
+`app/c/legacy-funnel-actions.ts`, `startLegacyFunnelAction`: sin
+código de acceso (el Member se encuentra/crea directo por whatsapp,
+mismo find-or-create que usa `verifyOtpAction` de `/m/login` pero sin
+el paso de OTP -- "el link personalizado ya identifica a la persona",
+pedido textual), reusa `ensureLegacyMembershipAndCards`
+(`lib/legacyMembership.ts`, el mismo alta Freemium self-service del
+login real) para crear sus 3 Cards, guarda la duración de programa
+elegida en un campo nuevo (`ProgramMembership.programDuracion`,
+migración `20261002194734_program_duracion`), y agenda la entrevista
+inicial en el próximo turno disponible (auto-asignado -- el pedido no
+incluye un paso de elegir horario a mano) reusando directamente el
+mismo modelo `Registration` que ya usa `registerInterviewAction`.
+
+En `components/LyCardView.tsx`, el modal de "Agendar" (mismo
+`scheduleOpen` de siempre) rama por `recipient`: sin destinatario, el
+slot-picker de toda la vida sigue exactamente igual; con destinatario,
+el formulario nuevo -- nombre precargado desde el destinatario, email,
+WhatsApp, 5 pastillas de duración de programa, checkbox de privacidad
+(`[PLACEHOLDER]`, texto real pendiente de Gunnar) -- y al confirmar,
+pantalla final "Tu tarjeta ya existe" con el link real a la Card recién
+creada y la fecha de la entrevista.
+
+### Hallazgo real de implementación (no architectural, un error de runtime)
+
+`PROGRAM_DURATIONS` vivía originalmente en el mismo archivo
+`"use server"` -- un archivo con esa directiva solo puede exportar
+funciones async hacia el cliente; cualquier otro export (una
+constante, un array) se rompe en el bundle de cliente (`.map is not a
+function` en runtime, confirmado con Playwright real antes de
+corregirlo). Se movió a `lib/legacyProgramDurations.ts`, un módulo
+plano sin `"use server"`, importado por los dos lados.
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos,
+`pnpm test:unit:coverage` 251/251 al 100% (251, no 250 -- el test
+reescrito de interviewSlots suma uno), `pnpm build` limpio. Playwright
+real de punta a punta contra `/c/mastern0?para=rogelio`: nombre
+precargado "Rogelio", validación de email/WhatsApp, bloqueo real sin
+aceptar privacidad, confirmar crea de verdad el Member + sus 3 Cards +
+la ProgramMembership con `programDuracion` guardada + la Registration
+con el próximo slot -- confirmado directo contra la base, no solo en
+pantalla --, pantalla de éxito con el link real, y click en "Ver mi
+tarjeta" aterriza en la Card nueva de Rogelio de verdad.
