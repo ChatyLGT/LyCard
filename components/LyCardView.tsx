@@ -33,6 +33,7 @@ type ModalKey =
   | "story"
   | "info"
   | "invite"
+  | "legado"
   | "contactMessage"
   | "cardInfo"
   | "versionInfo"
@@ -363,6 +364,192 @@ const CODICE_METHODOLOGY_TEXT = `Tu gemelo digital no se arma con un formulario.
 Esta tarjeta es el tiempo cero de ese proceso: el primer reflejo de lo que entendimos de ti.`;
 
 const CODICE_PRIVACY_TEXT = "Tu Códice es privado y te pertenece. Puedes pedirnos que lo borremos cuando quieras.";
+
+// PASO 5 (2026-10-02) -- "Deja tu Legado" abre este Documento de
+// Bienvenida. Calcado de la estructura REAL del de Rafael Rico
+// Carrascosa (edición agosto 2026, el único que existe hasta ahora),
+// leído de la fuente que pasó Gunnar. Los capítulos I, II, III, IV,
+// VII y "Antes de empezar" son boilerplate del programa -- quedan
+// fijos, con el único cambio de sacarles las referencias específicas
+// de Rafael (su trasfondo bíblico, Mayordomo 4.0) para que sirvan
+// para cualquier destinatario. La Carta de Apertura y las 3 primeras
+// sesiones del Capítulo V SÍ son 100% específicas de Rafael en el
+// original -- ahí van marcadas [PLACEHOLDER], porque son el único
+// contenido que de verdad cambia por persona.
+type LegadoSection = { num?: string; kicker: string; title: string; paragraphs: string[] };
+
+const LEGADO_CAP_1: LegadoSection = {
+  num: "I",
+  kicker: "Capítulo I",
+  title: "¿Qué es EinarOS?",
+  paragraphs: [
+    "Un sistema operativo de inteligencia diseñado para que el conocimiento humano no se degrade al pasar por una máquina -- ni al pasar de una generación a otra.",
+    "EinarOS nació de una observación incómoda: cuando una inteligencia artificial pierde el contexto, inventa. Cuando un ser humano pierde el contexto -- por el paso del tiempo, por el ruido, por el dolor -- también inventa. El mecanismo es el mismo. Y el resultado, también: una realidad distorsionada que se transmite como si fuera verdad.",
+    "Toda nuestra arquitectura existe para resolver ese problema. Un sistema que preserva el contexto completo de una persona -- su criterio, su método, sus razones -- para que lo que se transmita sea fiel al original y no una copia empobrecida.",
+    "LOS CUATRO DOMINIOS\nI CARBONO -- El dominio humano. Su historia, sus convicciones, su criterio, sus decisiones. Todo lo que no puede ser generado -- solo escuchado.\nII SILICIO -- El dominio de la máquina. Capacidad de procesar, estructurar y sostener conocimiento a una escala que una agenda humana no alcanza.\nIII BRIDGE -- La capa de traducción entre ambos mundos. Donde su experiencia se convierte en estructura sin perder su voz.\nIV HORUS EYE -- La auditoría. Un dominio dedicado exclusivamente a verificar que nada se distorsione, se invente o se contamine en el camino.",
+    "Nota práctica: usted no necesita entender la arquitectura para beneficiarse de ella. Es el motor, no el tablero. Su trabajo durante estas cuatro semanas será, simplemente, hablar con honestidad.",
+  ],
+};
+
+const LEGADO_CAP_2: LegadoSection = {
+  num: "II",
+  kicker: "Capítulo II",
+  title: "El programa Legacy",
+  paragraphs: [
+    "Legacy es la aplicación de EinarOS a una sola vida. La suya. Tres movimientos, un resultado: que su conocimiento deje de depender de su tiempo.",
+    "01 PRESERVA -- Protegemos la experiencia, la visión y el aprendizaje de una vida entera antes de que el tiempo los erosione.\n02 TRANSMITE -- Convertimos esa trayectoria en algo que otros pueden leer, aplicar y continuar sin necesidad de que usted esté presente.\n03 MULTIPLICA -- Montamos el equipo y la operación que toman ese material y lo convierten en impacto y en ingreso sostenido.",
+    "LOS CUATRO MOVIMIENTOS DEL PROCESO\n1 CAPTURA -- Escuchamos. Grabamos. Sin filtro y sin apuro.\n2 ESTRUCTURA -- Ordenamos su criterio hasta volverlo un sistema aplicable.\n3 ACTIVA -- Su criterio empieza a responder y a operar sin usted presente.\n4 MULTIPLICA -- El equipo lo lleva al mercado, a sus clientes y su comunidad.",
+    "PARA EVITAR MALENTENDIDOS\nLEGACY NO ES: una biografía. Un homenaje. Una entrevista de archivo. Un video institucional. Un ejercicio de nostalgia bien producido.\nLEGACY SÍ ES: un sistema operativo construido sobre su criterio, con un equipo real trabajando encima de él y metas comerciales escritas con fecha.",
+    "Su conocimiento deja de depender solo de su tiempo y se convierte en una guía viva, aplicable y trascendente.",
+  ],
+};
+
+const LEGADO_CAP_3: LegadoSection = {
+  num: "III",
+  kicker: "Capítulo III",
+  title: "El Códice",
+  paragraphs: [
+    "El entregable central del programa. No es un resumen de sus entrevistas: es el documento maestro donde su criterio queda escrito con precisión suficiente para que otro lo aplique sin traicionarlo.",
+    "Un manual explica qué hacer. El Códice explica por qué -- y esa diferencia es todo. Cuando su equipo enfrente una decisión que usted nunca anticipó, un manual se queda mudo. El Códice responde, porque contiene el razonamiento y no solo la conclusión.",
+    "Se construye por capas. Cada sesión agrega una. Al final de la cuarta semana usted recibe el documento completo, verificado y en su poder.",
+    "LAS CINCO CAPAS\nI ORIGEN -- De dónde viene su llamado, qué lo formó y por qué eligió este camino y no otro.\nII DOCTRINA -- Sus principios no negociables y los fundamentos que sostienen cada uno.\nIII MÉTODO -- Cómo trabaja usted. Su proceso explícito: qué funciona, qué no, y por qué razón.\nIV ACTIVOS -- Sus productos, sus contenidos, su comunidad y todo lo comercializable que ya existe.\nV PROYECCIÓN -- Hacia dónde va esto en cinco y diez años, y qué estructura hace falta para llegar.",
+    "«El Códice es su criterio, escrito con la precisión suficiente para que otro pueda decidir como usted decidiría.»",
+  ],
+};
+
+const LEGADO_CAP_4: LegadoSection = {
+  num: "IV",
+  kicker: "Capítulo IV",
+  title: "El camino: cuatro semanas",
+  paragraphs: [
+    "Cinco sesiones de 45 minutos. Dos por semana durante las dos primeras. Una semana de producción. Y una entrega final.",
+    "Sobre el ritmo: cuatro semanas es el plazo que nos permite entregar con confianza plena y sin atajos. Si su agenda lo exige, las sesiones se reagendan -- lo que no se negocia es que cada capa quede cerrada antes de abrir la siguiente.",
+    "SEMANA 1 · FUNDACIÓN -- Sesiones 1 y 2, Origen y Doctrina. Abrimos el Códice. Recorremos su historia, su formación y los principios que gobiernan todo lo que hace. Es la semana en la que más se habla y menos se decide.\nSEMANA 2 · SISTEMA -- Sesiones 3 y 4, Método y Activos. Convertimos su forma de trabajar en un método explícito y hacemos el inventario real de lo que ya existe.\nSEMANA 3 · PRODUCCIÓN -- Sin sesión, trabajamos nosotros. Redactamos el Códice, diseñamos la oficina virtual y armamos la propuesta de equipo. Usted solo entrega los documentos pendientes. Recibirá un avance a mitad de semana.\nSEMANA 4 · ACTIVACIÓN -- Sesión 5, entrega y puesta en marcha. Le entregamos el Códice completo, el plan de la oficina virtual y los primeros roles definidos. Salimos de esa sesión con tareas asignadas y fechas, no con buenas intenciones.",
+    "CALENDARIO SUGERIDO\nSemana 1 -- Sesión 1 · Origen → Sesión 2 · Doctrina (2 encuentros)\nSemana 2 -- Sesión 3 · Método → Sesión 4 · Activos (2 encuentros)\nSemana 3 -- Producción del Códice y diseño de la oficina virtual (sin sesión)\nSemana 4 -- Sesión 5 · Entrega del Códice y activación del equipo (1 encuentro)",
+    "Formato de cada encuentro: Google Meet · 45 minutos · grabación y transcripción automática con Fathom. Todos los archivos quedan alojados en su carpeta.",
+  ],
+};
+
+const LEGADO_CAP_7: LegadoSection = {
+  num: "VII",
+  kicker: "Capítulo VII",
+  title: "Sus datos, sus reglas",
+  paragraphs: [
+    "Le vamos a pedir que comparta cosas que no se comparten con cualquiera. Por eso el control queda de su lado desde el primer minuto, sin letra chica.",
+    "Usted es el propietario. Todo el material vive en una carpeta a su nombre. Nosotros trabajamos con permiso de acceso, no de posesión.",
+    "Puede revocar el acceso cuando quiera. Sin aviso previo, sin explicación y sin penalidad de ningún tipo.",
+    "Puede pedir que se elimine cualquier pieza. Una grabación, una transcripción o el documento entero. Se ejecuta dentro de las 24 horas.",
+    "Nada se comparte con terceros sin su autorización expresa y por escrito, caso por caso.",
+    "Nada se vende. Sus datos no son un producto de EinarOS y nunca lo serán.",
+    "Si decide retirarse a mitad del proceso, se lleva todo lo producido hasta ese momento. Sin condiciones.",
+    "Nada entra al Códice sin su aprobación. Usted lee y valida cada capa antes de que se considere cerrada.",
+    "Antes de la primera sesión firmaremos juntos el Consentimiento Informado, que deja por escrito cada uno de estos puntos. Léalo con calma. Si algo no le cierra, se cambia antes de empezar -- no después.",
+    "«Un legado que no se controla no es un legado. Es una filtración.»",
+  ],
+};
+
+const LEGADO_ANTES: LegadoSection = {
+  kicker: "Antes de empezar",
+  title: "Lo único que necesita para la primera sesión",
+  paragraphs: [
+    "Leer el Consentimiento Informado y traer sus dudas anotadas.\nUn lugar tranquilo donde pueda hablar 45 minutos sin interrupciones.\nCámara y micrófono probados unos minutos antes de la hora.\nDisposición a hablar sin editarse. Lo que se guarda no entra al Códice, y lo que no entra no se transmite.",
+    "Nada más. No prepare presentaciones ni resúmenes. Del orden nos ocupamos nosotros.",
+    "Empecemos.",
+    "Cuarenta y cinco minutos separan lo que usted sabe de lo que su equipo va a poder hacer con ello.",
+  ],
+};
+
+function legadoCartaParagraphs(nombre: string): string[] {
+  return [
+    `[PLACEHOLDER] Apertura personal para ${nombre} -- quién es, qué construyó, por qué su trayectoria puntual es la base de este programa. Gunnar la escribe a mano por destinatario.`,
+    `[PLACEHOLDER] Segundo párrafo personal -- qué hay detrás del trabajo de ${nombre} que merece convertirse en infraestructura, no solo quedar como un dato de su biografía.`,
+    "Este documento explica qué vamos a hacer juntos durante las próximas cuatro semanas. Le pido que lea una cosa con atención, porque define todo lo demás: no venimos a hacerle un homenaje. No vamos a producir un libro conmemorativo ni un video bonito para el archivo.",
+    "Venimos a extraer su criterio, ordenarlo hasta que sea operable, y montar alrededor de él un equipo y una oficina virtual que empiece a moverlo como negocio real. Su llamado necesita estructura para escalar. La entrega y la visión ya las puso usted. Lo que falta es el sistema -- y esa es nuestra parte del trabajo.",
+    "Trabajamos con una convicción que probablemente le resulte familiar: los talentos no se entierran, se ponen a producir. Este programa existe para que lo que usted construyó siga produciendo cuando usted no esté en la sala.",
+    "No documentamos lo que usted hizo. Construimos lo que usted todavía va a hacer.",
+  ];
+}
+
+// Capítulo V -- las 3 primeras sesiones (Origen/Doctrina/Método) son
+// 100% específicas de la persona en el original de Rafael; las 2
+// últimas (Activos/Proyección) ya eran genéricas ahí, quedan fijas.
+type LegadoSesion = { num: string; semana: string; capa: string; titulo: string; cuerpo: string; trae: string; queda: string };
+
+function legadoSesiones(nombre: string): LegadoSesion[] {
+  return [
+    {
+      num: "01",
+      semana: "Semana 1 · Capa I",
+      capa: "Origen",
+      titulo: "De dónde viene todo esto",
+      cuerpo: `[PLACEHOLDER] La trayectoria de ${nombre}. Cuándo y cómo apareció su camino actual. Los momentos que cambiaron su dirección.`,
+      trae: "[PLACEHOLDER]",
+      queda: "Capa I del Códice y el mapa de su trayectoria.",
+    },
+    {
+      num: "02",
+      semana: "Semana 1 · Capa II",
+      capa: "Doctrina",
+      titulo: "Sus principios no negociables",
+      cuerpo: `[PLACEHOLDER] Los fundamentos que sostienen el trabajo de ${nombre}: qué defiende sin excepción y qué está dispuesto a matizar. Acá se define la línea que su equipo nunca podrá cruzar.`,
+      trae: "[PLACEHOLDER]",
+      queda: "Capa II y el marco de principios del proyecto.",
+    },
+    {
+      num: "03",
+      semana: "Semana 2 · Capa III",
+      capa: "Método",
+      titulo: "Cómo trabaja usted",
+      cuerpo: `[PLACEHOLDER] Desarmamos el trabajo de ${nombre} pieza por pieza: por qué cada parte está donde está y qué principio enseña cada una. Su forma de trabajar deja de ser intuición y pasa a ser método documentado.`,
+      trae: "[PLACEHOLDER]",
+      queda: "Capa III y el método replicable por terceros.",
+    },
+    {
+      num: "04",
+      semana: "Semana 2 · Capa IV",
+      capa: "Activos",
+      titulo: "Inventario de lo que ya tiene",
+      cuerpo: "Hacemos la cuenta real: canales, contenidos, comunidad, contactos clave, materiales, prototipos, versiones de lo que ya construyó. Casi siempre aparece más valor del que la persona recordaba tener.",
+      trae: "Enlaces a sus canales, números de audiencia y lista de contactos clave.",
+      queda: "Capa IV y el inventario comercializable.",
+    },
+    {
+      num: "05",
+      semana: "Semana 4 · Capa V",
+      capa: "Proyección y entrega",
+      titulo: "El Códice y la puesta en marcha",
+      cuerpo: "Le entregamos el Códice completo y la estructura de la oficina virtual. Definimos los primeros roles, las primeras metas y quién hace qué. Es la única sesión donde se toman decisiones operativas y se asignan responsables con fecha.",
+      trae: "Su visión a cinco años, con la ambición sin recortar.",
+      queda: "Códice completo, plan operativo y equipo definido.",
+    },
+  ];
+}
+
+const LEGADO_ENTRE_SESIONES =
+  "No le vamos a pedir tarea. Nosotros procesamos la grabación, redactamos la capa correspondiente y se la enviamos para que la revise antes del siguiente encuentro. Si algo quedó mal escrito, se corrige ahí mismo. Nada entra al Códice sin su visto bueno.";
+
+const LEGADO_TRES_PRIMERAS = "Las tres primeras sesiones responden una sola pregunta: ¿qué sabe usted que nadie más sabe?";
+
+const LEGADO_CAP_6_INTRO =
+  "Aquí está la parte que distingue a Legacy de cualquier ejercicio de memoria: al terminar el Códice, montamos el equipo que lo pone a producir.";
+
+function legadoCap6Placeholder(nombre: string): string {
+  return `[PLACEHOLDER] Qué necesita el proyecto de ${nombre} para operar como negocio -- qué produce, a quién le vende, y qué le come el tiempo hoy que un equipo le puede resolver.`;
+}
+
+const LEGADO_CAP_6_CIERRE =
+  "Eso es una oficina virtual: un equipo distribuido que trabaja sobre su Códice y responde a sus principios, sin que usted tenga que estar en cada decisión.";
+
+const LEGADO_ROLES: { rol: string; desc: string }[] = [
+  { rol: "Contenido y formación", desc: "Produce material a partir del Códice: guías, videos, cursos, dinámicas para grupos y facilitadores." },
+  { rol: "Alianzas y comercial", desc: "Abre relaciones estratégicas. Convierte interés en ventas y licencias." },
+  { rol: "Operación y producción", desc: "Fabricación, inventario, envíos, cobros y soporte. Lo que hoy le come el tiempo, resuelto por otros." },
+  { rol: "Comunidad", desc: "Sostiene y hace crecer la audiencia en sus canales. Convierte espectadores en clientes y clientes en embajadores." },
+  { rol: "Agentes EinarOS", desc: "Inteligencia artificial entrenada con su Códice: responde consultas, prepara borradores y da seguimiento sin descanso." },
+];
+
+const LEGADO_CAP_6_CIERRE_FINAL =
+  "El objetivo de la semana 4 no es entregarle un documento bonito. Es que salga de esa sesión con roles asignados, metas escritas y el primer movimiento comercial en marcha.";
 
 function socialHref(channel: string, value: string) {
   const v = value.trim();
@@ -923,6 +1110,9 @@ export default function LyCardView({
       ? { icon: "storefront", kicker: t(lang, "companyInfoKicker"), head: card.title || card.name, body: card.quote, meta: t(lang, "companyInfoMeta") }
       : { icon: "diamond", kicker: L("infoKicker") },
     invite: { icon: "mail", kicker: L("inviteKicker") },
+    // PASO 5 (2026-10-02): "Deja tu Legado" -- el Documento de
+    // Bienvenida, solo con destinatario.
+    legado: { icon: "auto_stories", kicker: recipient ? `Para ${recipient.nombre}` : "Documento de Bienvenida" },
     contactMessage: { icon: "chat", kicker: t(lang, "contactKicker") },
     // Name island (2026-09-16) — short explainer of what this Card type is
     // for. Fixed copy per kind, not Program-configurable yet.
@@ -1550,10 +1740,26 @@ export default function LyCardView({
                 <Icon name="chat" size={22} />
                 <span style={CUBE_LABEL}>{t(lang, "sendMessageBtn")}</span>
               </button>
-            ) : (
+            ) : recipient ? (
+              // PASO 5 (2026-10-02): con destinatario, este cubo pasa a
+              // ser "Deja tu Legado" -- el Documento de Bienvenida.
+              <button type="button" onClick={() => setModal("legado")} style={CUBE_MEDIUM_ALT} aria-label="Deja tu Legado">
+                <Icon name="auto_stories" size={22} />
+                <span style={CUBE_LABEL}>Deja tu Legado</span>
+              </button>
+            ) : isHost ? (
+              // El panel de Destinatarios (Thread C) es gestión interna
+              // -- antes se veía igual para cualquier visitante anónimo,
+              // ahora queda atrás de isHost (hallazgo al armar PASO 5,
+              // ver PLAN.md).
               <button type="button" onClick={() => setModal("invite")} style={CUBE_MEDIUM_ALT} aria-label={L("inviteBtn")}>
                 <Icon name="mail" size={22} />
                 <span style={CUBE_LABEL}>{L("inviteBtn")}</span>
+              </button>
+            ) : (
+              <button type="button" onClick={() => setModal("contactMessage")} style={CUBE_MEDIUM_ALT} aria-label={t(lang, "sendMessageBtn")}>
+                <Icon name="chat" size={22} />
+                <span style={CUBE_LABEL}>{t(lang, "sendMessageBtn")}</span>
               </button>
             )}
           </div>
@@ -1889,6 +2095,135 @@ export default function LyCardView({
                     <span>{t(lang, "infoCta", { name: card.name })}</span>
                   </a>
                 </>
+              ) : modal === "legado" && recipient ? (
+                // PASO 5 (2026-10-02) -- Documento de Bienvenida, calcado
+                // de la estructura real del de Rafael Rico Carrascosa.
+                // Ver comentario arriba de LEGADO_CAP_1 para qué quedó
+                // fijo y qué quedó [PLACEHOLDER].
+                <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4, textAlign: "center", paddingBottom: 10, borderBottom: "1px solid rgba(var(--accentRgb,200,161,90),.25)" }}>
+                    <span style={{ font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".2em", textTransform: "uppercase", color: "var(--ink2,#8a8378)" }}>
+                      Documento de Bienvenida · Edición Personal
+                    </span>
+                    <h3 style={{ margin: "4px 0 0", font: "600 20px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>
+                      LEGACY <span style={{ opacity: 0.6, fontWeight: 400 }}>by EinarOS</span>
+                    </h3>
+                    <span style={{ font: "400 11.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
+                      Preparado exclusivamente para {recipient.nombre}
+                    </span>
+                    <span style={{ font: "600 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#8a8378)" }}>[PLACEHOLDER: título/rol de {recipient.nombre}]</span>
+                    <span style={{ marginTop: 8, font: "italic 400 12px var(--brandFont,'Playfair Display'),serif", color: "var(--ink2,#C2BEB5)" }}>La experiencia se convierte en legado.</span>
+                    <span style={{ font: "500 9px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ink2,#8a8378)" }}>
+                      EinarOS v3.0 · Programa Legacy · {new Date().toLocaleDateString("es", { month: "long", year: "numeric" }).toUpperCase()}
+                    </span>
+                  </div>
+
+                  <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <span style={{ font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".18em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
+                      Carta de apertura
+                    </span>
+                    <p style={{ margin: 0, font: "600 13px var(--brandFont,'Playfair Display'),serif", color: "var(--ink,#F5F2EB)" }}>{recipient.nombre},</p>
+                    {legadoCartaParagraphs(recipient.nombre).map((p, i) => (
+                      <p key={i} style={{ margin: 0, font: "400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: p.startsWith("[PLACEHOLDER]") ? "var(--ink2,#8a8378)" : "var(--ink2,#C2BEB5)", fontStyle: p.startsWith("[PLACEHOLDER]") ? "italic" : "normal" }}>
+                        {p}
+                      </p>
+                    ))}
+                    <p style={{ margin: "6px 0 0", font: "600 11.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink,#F5F2EB)" }}>
+                      Gunnar Pareja Ballivián
+                      <br />
+                      <span style={{ font: "400 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "var(--ink2,#8a8378)" }}>
+                        Arquitecto de EinarOS · Dirección del Programa Legacy
+                      </span>
+                    </p>
+                  </section>
+
+                  {[LEGADO_CAP_1, LEGADO_CAP_2, LEGADO_CAP_3, LEGADO_CAP_4].map((cap) => (
+                    <section key={cap.num} style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,.08)" }}>
+                      <span style={{ font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".18em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
+                        {cap.kicker}
+                      </span>
+                      <h4 style={{ margin: 0, font: "600 14px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>{cap.title}</h4>
+                      {cap.paragraphs.map((p, i) => (
+                        <p key={i} style={{ margin: 0, whiteSpace: "pre-line", font: "400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
+                          {p}
+                        </p>
+                      ))}
+                    </section>
+                  ))}
+
+                  <section style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,.08)" }}>
+                    <span style={{ font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".18em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
+                      Capítulo V
+                    </span>
+                    <h4 style={{ margin: 0, font: "600 14px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>Qué esperar en cada sesión</h4>
+                    <p style={{ margin: 0, font: "400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
+                      Cada encuentro dura 45 minutos exactos y se graba con transcripción automática. No hay preguntas trampa ni exámenes: es una conversación dirigida con un objetivo definido.
+                    </p>
+                    {legadoSesiones(recipient.nombre).map((s, idx) => (
+                      <div key={s.num} style={{ display: "flex", flexDirection: "column", gap: 4, padding: "10px 12px", borderRadius: 10, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)" }}>
+                        <span style={{ font: "700 9px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
+                          {s.num} · {s.semana} -- {s.capa}
+                        </span>
+                        <span style={{ font: "600 12px var(--brandFont,'Playfair Display'),serif", color: "var(--ink,#F5F2EB)" }}>{s.titulo}</span>
+                        <p style={{ margin: 0, font: `${s.cuerpo.startsWith("[PLACEHOLDER]") ? "italic" : "normal"} 400 11.5px/1.65 var(--brandFont,'Plus Jakarta Sans'),sans-serif`, color: s.cuerpo.startsWith("[PLACEHOLDER]") ? "var(--ink2,#8a8378)" : "var(--ink2,#C2BEB5)" }}>
+                          {s.cuerpo}
+                        </p>
+                        <span style={{ font: "400 10.5px/1.5 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#8a8378)" }}>
+                          <b>Usted trae:</b> {s.trae}
+                        </span>
+                        <span style={{ font: "400 10.5px/1.5 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#8a8378)" }}>
+                          <b>Queda construido:</b> {s.queda}
+                        </span>
+                        {idx === 2 && (
+                          <p style={{ margin: "4px 0 0", font: "italic 400 11px/1.6 var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>{LEGADO_TRES_PRIMERAS}</p>
+                        )}
+                      </div>
+                    ))}
+                    <p style={{ margin: 0, font: "400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>{LEGADO_ENTRE_SESIONES}</p>
+                  </section>
+
+                  <section style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,.08)" }}>
+                    <span style={{ font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".18em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
+                      Capítulo VI
+                    </span>
+                    <h4 style={{ margin: 0, font: "600 14px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>Del Códice al negocio</h4>
+                    <p style={{ margin: 0, font: "400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>{LEGADO_CAP_6_INTRO}</p>
+                    <p style={{ margin: 0, fontStyle: "italic", font: "italic 400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#8a8378)" }}>{legadoCap6Placeholder(recipient.nombre)}</p>
+                    <p style={{ margin: 0, font: "400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>{LEGADO_CAP_6_CIERRE}</p>
+                    <span style={{ marginTop: 4, font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ink2,#8a8378)" }}>Estructura propuesta</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "9px 11px", borderRadius: 10, background: "rgba(var(--accentRgb,200,161,90),.08)", border: "1px solid rgba(var(--accentRgb,200,161,90),.25)" }}>
+                      <span style={{ font: "700 10.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--accentLight,#E5C378)" }}>Dirección -- {recipient.nombre}</span>
+                      <span style={{ font: "400 11px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>Usted define doctrina, aprueba contenido y marca el rumbo. Deja de operar y pasa a dirigir.</span>
+                    </div>
+                    {LEGADO_ROLES.map((r) => (
+                      <div key={r.rol} style={{ display: "flex", flexDirection: "column", gap: 3, padding: "9px 11px", borderRadius: 10, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)" }}>
+                        <span style={{ font: "700 10.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink,#F5F2EB)" }}>{r.rol}</span>
+                        <span style={{ font: "400 11px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>{r.desc}</span>
+                      </div>
+                    ))}
+                    <p style={{ margin: 0, font: "400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>{LEGADO_CAP_6_CIERRE_FINAL}</p>
+                  </section>
+
+                  {[LEGADO_CAP_7, LEGADO_ANTES].map((cap) => (
+                    <section key={cap.kicker} style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,.08)" }}>
+                      <span style={{ font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".18em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
+                        {cap.kicker}
+                      </span>
+                      <h4 style={{ margin: 0, font: "600 14px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>{cap.title}</h4>
+                      {cap.paragraphs.map((p, i) => (
+                        <p key={i} style={{ margin: 0, whiteSpace: "pre-line", font: "400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
+                          {p}
+                        </p>
+                      ))}
+                    </section>
+                  ))}
+
+                  <div style={{ textAlign: "center", paddingTop: 14, borderTop: "1px solid rgba(var(--accentRgb,200,161,90),.25)" }}>
+                    <span style={{ font: "500 9px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--ink2,#8a8378)" }}>
+                      Legacy by EinarOS · EinarOS v3.0 · Documento de Bienvenida · Edición {recipient.nombre}
+                    </span>
+                  </div>
+                </div>
               ) : modal === "invite" ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   <p style={{ margin: 0, font: "400 12px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>

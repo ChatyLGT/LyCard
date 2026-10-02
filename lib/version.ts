@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.65.0";
+export const APP_VERSION = "1.66.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.66.0",
+    date: "2026-10-02",
+    notes:
+      "PASO 5 de la tarjeta personalizada: con destinatario, el botón de siempre pasa a ser \"Deja tu Legado\" y abre el Documento de Bienvenida completo -- calcado de la estructura real del de Rafael Rico (carta de apertura, qué es EinarOS, el programa Legacy, el Códice, el camino de 4 semanas, qué esperar en cada sesión, del Códice al negocio, tus datos y tus reglas), personalizado con el nombre del destinatario y con placeholders marcados donde el contenido es específico de cada persona. De paso, un arreglo: el panel de Destinatarios (antes visible para cualquier visitante de la tarjeta, sin querer) ahora solo lo ve el dueño -- un visitante sin link de destinatario ve el mensaje de contacto de siempre en ese lugar.",
+  },
   {
     version: "1.65.0",
     date: "2026-10-02",

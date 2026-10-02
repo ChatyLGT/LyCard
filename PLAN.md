@@ -7612,3 +7612,77 @@ palabra secreta/cuaderno de prueba de Rogelio (`mayan2066` /
 producción. Para probarlo en prod, Gunnar tiene que cargar su propia
 palabra secreta (o dejarla vacía para que el botón abra directo) y su
 link de cuaderno desde el panel de Destinatarios de su tarjeta real.
+
+## 2026-10-02 -- Tarjeta Rogelio PASO 5: "Deja tu Legado" (Documento de Bienvenida) (v1.66.0)
+
+Gunnar confirmó que el PASO 4 ya funciona ("vi que ya sale el modal de
+Info de Rogelio") y pidió seguir. Entre PASO 2/3/5/6 eligió el 5: el
+botón de siempre pasa a ser "Deja tu Legado" y abre el Documento de
+Bienvenida de Legacy, personalizado con el nombre del destinatario.
+
+### La fuente real
+
+El pedido original decía "el modelo es el de Rafael Rico" sin pasar el
+documento -- no estaba en ningún lado de este repo (ni PLAN.md ni
+WHITEPAPER.md lo tienen completo). Pregunté y Gunnar pasó el link de
+Drive del PDF real (`LEGACY_BIENVENIDA_RAFAEL_RICO.pdf`, edición agosto
+2026). Lo leí entero con el conector de Google Drive antes de escribir
+una sola línea -- nada de esto se inventó a ciegas.
+
+### Qué queda fijo y qué queda [PLACEHOLDER]
+
+El documento real tiene 7 capítulos + carta de apertura + "antes de
+empezar". De esos, el contenido se separa en dos grupos:
+
+- **Fijo, igual para cualquier destinatario** (boilerplate del
+  programa, no depende de la persona): Capítulo I (¿Qué es EinarOS? --
+  los 4 dominios Carbono/Silicio/Bridge/Horus Eye), Capítulo II (El
+  programa Legacy -- Preserva/Transmite/Multiplica), Capítulo III (El
+  Códice -- las 5 capas), Capítulo IV (El camino de 4 semanas),
+  Capítulo VII (Sus datos, sus reglas) y "Antes de empezar" -- todos
+  calcados casi palabra por palabra del original, solo sacándoles las
+  referencias puntuales de Rafael (su trasfondo bíblico, "Mayordomo
+  4.0", "iglesias y ministerios") para que sirvan para cualquier
+  persona sin sonar mal encajados.
+- **[PLACEHOLDER], específico de cada destinatario**: la Carta de
+  Apertura (los 2 primeros párrafos, los que hablan de la trayectoria
+  puntual de Rafael en el original -- los últimos 4 ya eran genéricos y
+  quedan fijos), las primeras 3 sesiones del Capítulo V (Origen,
+  Doctrina, Método -- en el original hablan literal de investigación
+  bíblica y de "Mayordomo 4.0"; las sesiones 4 y 5, Activos y
+  Proyección, ya eran genéricas en el original y quedan fijas), y un
+  párrafo del Capítulo VI sobre qué necesita el negocio puntual del
+  destinatario para operar.
+
+Cada placeholder lleva el nombre del destinatario interpolado donde
+corresponde (ej. "La trayectoria de Rogelio...") para que sea obvio
+qué hay que reemplazar y por quién, no un placeholder genérico suelto.
+
+### Hallazgo real armando esto (fix de seguridad, no pedido explícito)
+
+Al reescribir la rama del tercer cubo para meter "Deja tu Legado" con
+destinatario, encontré que el panel de Destinatarios (Thread C,
+v1.64.0) quedó sin `isHost`-gatear desde que se construyó -- cualquier
+visitante anónimo de la tarjeta (sin ser el dueño, sin link de
+destinatario) podía abrirlo y ver/borrar la lista completa de
+destinatarios y sus dossiers. Como estaba tocando exactamente esa rama
+para el pedido de Gunnar, lo cerré de paso: ahora `isHost` ve
+Destinatarios, un visitante sin destinatario ni sesión de dueño ve el
+mensaje de contacto de siempre (reusa el modal `contactMessage` ya
+construido, cero UI nueva), y con destinatario ve "Deja tu Legado".
+Documentado acá para que quede trazable -- no es scope creep silencioso,
+es una corrección real que surgió tocando este código.
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos,
+`pnpm test:unit:coverage` 250/250 al 100%, `pnpm build` limpio.
+Playwright real contra `/c/mastern0?para=rogelio`: el botón "Deja tu
+Legado" abre el documento completo, con el nombre de Rogelio
+interpolado en la portada, la carta, el rol de dirección del Capítulo
+VI y el cierre; confirmé visualmente cada capítulo con capturas reales
+(portada+carta, Capítulo II, Capítulo V con las 3 sesiones
+placeholder, Capítulo VI con "Dirección -- Rogelio", Capítulo VII, y
+el cierre "Edición Rogelio"). Un segundo test confirma que sin
+destinatario el botón "Deja tu Legado" no existe y el dueño sigue
+viendo "Enviar Invitación" como siempre.
