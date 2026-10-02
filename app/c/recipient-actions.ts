@@ -15,6 +15,8 @@ export type RecipientWithSources = {
   id: string;
   slug: string;
   nombre: string;
+  palabraSecreta: string;
+  cuadernoUrl: string;
   sources: { id: string; type: string; label: string; value: string; createdAt: string }[];
 };
 
@@ -30,8 +32,31 @@ export async function listRecipientsAction(cardSlug: string): Promise<RecipientW
     id: r.id,
     slug: r.slug,
     nombre: r.nombre,
+    palabraSecreta: r.palabraSecreta,
+    cuadernoUrl: r.cuadernoUrl,
     sources: r.sources.map((s) => ({ id: s.id, type: s.type, label: s.label, value: s.value, createdAt: s.createdAt.toISOString() })),
   }));
+}
+
+// PASO 4 (2026-10-02) -- Gunnar define a mano, por destinatario, la
+// palabra secreta que destraba su botón "Info [nombre]" y el link de
+// "Abrir mi cuaderno". Guardado directo por campo (no hay <form>, mismo
+// patrón de todo este archivo), sin validación de formato -- ambos son
+// opcionales y vacío es un valor válido ("todavía sin configurar").
+export async function updateRecipientMetaAction(
+  recipientId: string,
+  data: { palabraSecreta?: string; cuadernoUrl?: string }
+): Promise<{ ok: boolean }> {
+  await prisma.cardRecipient
+    .update({
+      where: { id: recipientId },
+      data: {
+        ...(data.palabraSecreta !== undefined ? { palabraSecreta: data.palabraSecreta.trim() } : {}),
+        ...(data.cuadernoUrl !== undefined ? { cuadernoUrl: data.cuadernoUrl.trim() } : {}),
+      },
+    })
+    .catch(() => {});
+  return { ok: true };
 }
 
 export async function createRecipientQuickAction(
@@ -51,7 +76,10 @@ export async function createRecipientQuickAction(
   });
 
   const created = await prisma.cardRecipient.create({ data: { cardId: card.id, slug, nombre: name } });
-  return { ok: true, recipient: { id: created.id, slug: created.slug, nombre: created.nombre, sources: [] } };
+  return {
+    ok: true,
+    recipient: { id: created.id, slug: created.slug, nombre: created.nombre, palabraSecreta: created.palabraSecreta, cuadernoUrl: created.cuadernoUrl, sources: [] },
+  };
 }
 
 export async function deleteRecipientAction2(recipientId: string): Promise<{ ok: boolean }> {

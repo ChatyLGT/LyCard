@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.64.0";
+export const APP_VERSION = "1.65.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.65.0",
+    date: "2026-10-02",
+    notes:
+      "PASO 4 de la tarjeta personalizada: el botón \"Info Legacy\" pasa a ser \"Info [nombre]\" cuando alguien entra con su link de destinatario (ej. /c/mastern0?para=rogelio). Le podés cargar una palabra secreta por destinatario desde el panel de Destinatarios -- si la cargás, el botón pide esa palabra antes de abrir; si lo dejás vacío, abre directo. Adentro: qué fuentes usamos (las que ya le cargaste), cómo las usamos, nuestra metodología, un PDF de ejemplo de su Códice (descargable, marcado EJEMPLO), el botón \"Abrir mi cuaderno\" (solo si le cargaste el link), el texto \"Tu información es tuya\" con un botón para pedir el borrado, y \"Crear mi Gemelo Digital\" que por ahora lleva a una pantalla de \"Tu onboarding está en preparación\". Sin destinatario, el botón \"Info Legacy\" de siempre no cambió en nada.",
+  },
   {
     version: "1.64.0",
     date: "2026-10-02",

@@ -89,7 +89,25 @@ export default async function CardPage({
   // link puntual de ESTA Card. Solo aplica a la Card realmente pedida
   // en la URL, no se propaga al carrusel de hermanas (project/company/
   // personal) -- ver el comentario sobre `bundles` más abajo.
-  const recipient = para ? await prisma.cardRecipient.findUnique({ where: { cardId_slug: { cardId: card.id, slug: para } } }) : null;
+  // PASO 4 (2026-10-02): el botón "Info [nombre]" necesita el dossier
+  // completo del destinatario (fuentes, palabra secreta, link de
+  // cuaderno), no solo el nombre del saludo de bienvenida de PASO 1.
+  const recipientRow = para
+    ? await prisma.cardRecipient.findUnique({
+        where: { cardId_slug: { cardId: card.id, slug: para } },
+        include: { sources: { orderBy: { createdAt: "asc" } } },
+      })
+    : null;
+  const recipient = recipientRow
+    ? {
+        id: recipientRow.id,
+        slug: recipientRow.slug,
+        nombre: recipientRow.nombre,
+        palabraSecreta: recipientRow.palabraSecreta,
+        cuadernoUrl: recipientRow.cuadernoUrl,
+        sources: recipientRow.sources.map((s) => ({ id: s.id, type: s.type, label: s.label, value: s.value, createdAt: s.createdAt.toISOString() })),
+      }
+    : null;
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
   const [adminScope, memberId] = await Promise.all([currentAdminScope(), currentMemberId()]);

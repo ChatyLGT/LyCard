@@ -16,6 +16,7 @@ import {
   addRecipientTextSourceAction,
   addRecipientFileSourceAction,
   deleteRecipientSourceAction,
+  updateRecipientMetaAction,
   type RecipientWithSources,
 } from "@/app/c/recipient-actions";
 import { APP_VERSION, CHANGELOG } from "@/lib/version";
@@ -350,6 +351,19 @@ function SocialDock({
   );
 }
 
+// PASO 4 (2026-10-02) -- textos exactos pasados por Gunnar para el
+// modal "Info [nombre]", sección "Nuestra metodología" y "Tu
+// información es tuya". No son copy editable por N0 todavía (fijo),
+// a diferencia de otros textos de este archivo.
+const CODICE_METHODOLOGY_TEXT = `Tu gemelo digital no se arma con un formulario. Se construye con conversaciones estructuradas, basadas en la investigación sobre toma de decisiones y la neuropsicología aplicada, que identifican cómo decides, qué priorizas y por qué.
+1. Escuchamos. Partimos de lo que compartiste con nosotros y de tu trayectoria pública.
+2. Ordenamos. Con tu autorización, organizamos esa información en tu Códice: la base de conocimiento privada de tu gemelo.
+3. Validamos. Tú revisas y corriges. Nada queda sin tu aprobación.
+4. Evolucionamos. Durante tres meses de entendimiento, implementación y entrenamiento, tu Códice se perfecciona con cada interacción.
+Esta tarjeta es el tiempo cero de ese proceso: el primer reflejo de lo que entendimos de ti.`;
+
+const CODICE_PRIVACY_TEXT = "Tu Códice es privado y te pertenece. Puedes pedirnos que lo borremos cuando quieras.";
+
 function socialHref(channel: string, value: string) {
   const v = value.trim();
   if (!v) return null;
@@ -421,7 +435,9 @@ export default function LyCardView({
   // Tarjeta personalizada por destinatario (2026-10-02, PASO 1) --
   // `?para=<slug>` resuelto server-side en app/c/[slug]/page.tsx. null
   // = link genérico, la tarjeta se ve exactamente como siempre.
-  recipient?: { nombre: string } | null;
+  // PASO 4 (2026-10-02): el dossier completo del destinatario, no solo
+  // el nombre que ya usaba el saludo de bienvenida de PASO 1.
+  recipient?: RecipientWithSources | null;
 }) {
   const router = useRouter();
   const isProject = card.kind === "project";
@@ -588,6 +604,36 @@ export default function LyCardView({
   const [sourceTextValue, setSourceTextValue] = useState("");
   const [addingSource, startAddingSource] = useTransition();
   const sourceFileInputRef = useRef<HTMLInputElement>(null);
+
+  // PASO 4 (2026-10-02) -- gate de palabra secreta del botón "Info
+  // [nombre]". Sin palabra configurada para este destinatario, el gate
+  // se salta directo (no hay nada que validar todavía, "placeholder").
+  const [infoUnlocked, setInfoUnlocked] = useState(false);
+  const [infoSecretInput, setInfoSecretInput] = useState("");
+  const [infoSecretError, setInfoSecretError] = useState<string | null>(null);
+  const infoNeedsGate = !!recipient?.palabraSecreta.trim();
+  const infoContentVisible = !infoNeedsGate || infoUnlocked;
+
+  function submitInfoSecret() {
+    if (!recipient) return;
+    if (infoSecretInput.trim().toLowerCase() === recipient.palabraSecreta.trim().toLowerCase()) {
+      setInfoUnlocked(true);
+      setInfoSecretError(null);
+    } else {
+      setInfoSecretError("Esa no es la palabra. Probá de nuevo.");
+    }
+  }
+
+  // Edición in-place de palabra secreta / link de cuaderno por
+  // destinatario, desde el mismo panel de Destinatarios (modal
+  // "invite") -- se guarda al salir del campo (onBlur), sin botón
+  // aparte, mismo criterio liviano que el resto de ese panel.
+  function updateRecipientLocal(id: string, patch: Partial<RecipientWithSources>) {
+    setRecipients((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  }
+  function saveRecipientMeta(id: string, patch: { palabraSecreta?: string; cuadernoUrl?: string }) {
+    updateRecipientMetaAction(id, patch);
+  }
 
   useEffect(() => {
     if (modal === "invite" && !recipientsLoaded) {
@@ -868,7 +914,12 @@ export default function LyCardView({
       body: card.storyBody || (isProject ? t(lang, "storyBody") : t(lang, "storyBodyEmpty", { name: card.name })),
       meta: isProject ? t(lang, "storyMeta") : undefined,
     },
-    info: isCompany
+    // PASO 4 (2026-10-02): con destinatario, "Info Legacy" pasa a ser
+    // "Info [nombre]" -- el resto (isCompany/default) sigue exactamente
+    // igual, nunca se toca sin destinatario.
+    info: recipient
+      ? { icon: "diamond", kicker: `Info ${recipient.nombre}` }
+      : isCompany
       ? { icon: "storefront", kicker: t(lang, "companyInfoKicker"), head: card.title || card.name, body: card.quote, meta: t(lang, "companyInfoMeta") }
       : { icon: "diamond", kicker: L("infoKicker") },
     invite: { icon: "mail", kicker: L("inviteKicker") },
@@ -903,6 +954,9 @@ export default function LyCardView({
     setMessageText("");
     setContactError(null);
     setContactSent(false);
+    setInfoUnlocked(false);
+    setInfoSecretInput("");
+    setInfoSecretError(null);
   }
 
   return (
@@ -1398,6 +1452,15 @@ export default function LyCardView({
                 <Icon name="contact_page" size={22} />
                 <span style={CUBE_LABEL}>{t(lang, "vcardBtn")}</span>
               </a>
+            ) : recipient ? (
+              // PASO 4 (2026-10-02): con destinatario, este cubo se
+              // renombra a "Info [nombre]" y abre el contenido nuevo
+              // (gate de palabra secreta + dossier) en vez del de
+              // siempre -- ver modal === "info" && recipient más abajo.
+              <button type="button" onClick={() => setModal("info")} style={CUBE_MEDIUM} aria-label={`Info ${recipient.nombre}`}>
+                <Icon name="diamond" size={22} />
+                <span style={CUBE_LABEL}>{`Info ${recipient.nombre}`}</span>
+              </button>
             ) : (
               <button
                 type="button"
@@ -1610,7 +1673,158 @@ export default function LyCardView({
                 </button>
               </div>
 
-              {modal === "info" && isProject ? (
+              {modal === "info" && recipient ? (
+                // PASO 4 (2026-10-02) -- "Info [nombre]": contenido
+                // nuevo, solo con destinatario. Gate de palabra secreta
+                // primero (si el destinatario tiene una configurada),
+                // dossier + Códice después. Nunca toca el "info"
+                // original de abajo (sin destinatario, no cambia).
+                !infoContentVisible ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    <p style={{ margin: 0, font: "400 12.5px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
+                      Esta sección está protegida. Ingresá la palabra secreta que te compartimos para ver tu información.
+                    </p>
+                    <input
+                      value={infoSecretInput}
+                      onChange={(e) => setInfoSecretInput(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && submitInfoSecret()}
+                      placeholder="Palabra secreta"
+                      style={{ background: "var(--deepBg,#0D0D0D)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", borderRadius: 10, padding: "11px 14px", color: "var(--ink,#F5F2EB)", font: "400 14px var(--brandFont,'Plus Jakarta Sans'),sans-serif", outline: "none" }}
+                    />
+                    {infoSecretError && <span style={{ font: "600 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "#e5928a" }}>{infoSecretError}</span>}
+                    <button
+                      type="button"
+                      onClick={submitInfoSecret}
+                      style={{
+                        width: "100%",
+                        padding: 14,
+                        border: "none",
+                        borderRadius: 12,
+                        background: "linear-gradient(90deg,var(--accentLight,#E5C378),var(--accentMid,#C8A15A) 50%,var(--accentDeep,#99732B))",
+                        color: "var(--deepBg,#0D0D0D)",
+                        font: "700 12.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
+                        letterSpacing: ".12em",
+                        textTransform: "uppercase",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Continuar
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                    <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <h4 style={{ margin: 0, font: "600 13px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>
+                        Qué información usamos
+                      </h4>
+                      {recipient.sources.length === 0 ? (
+                        <p style={{ margin: 0, font: "400 11.5px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#8a8378)" }}>
+                          Todavía no cargamos fuentes para tu perfil.
+                        </p>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          {recipient.sources.map((s) => (
+                            <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 8, background: "rgba(0,0,0,.25)" }}>
+                              <Icon name={s.type === "link" ? "link" : s.type === "archivo" ? "attach_file" : "notes"} size={14} style={{ color: "var(--accentMid,#C8A15A)", flexShrink: 0 }} />
+                              <span style={{ flex: "none", font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".04em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
+                                {s.type === "link" ? "Link" : s.type === "archivo" ? "Archivo" : "Nota"}
+                              </span>
+                              <span style={{ flex: 1, minWidth: 0, font: "400 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {s.label || (s.type === "texto" ? s.value.slice(0, 40) : s.value)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+
+                    <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <h4 style={{ margin: 0, font: "600 13px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>
+                        Cómo la usamos
+                      </h4>
+                      <p style={{ margin: 0, font: "400 12px/1.7 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
+                        [PLACEHOLDER] Usamos esta información únicamente para construir tu Códice -- la base de
+                        conocimiento privada de tu Gemelo Digital. No se comparte con terceros ni se usa para otro fin.
+                      </p>
+                    </section>
+
+                    <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <h4 style={{ margin: 0, font: "600 13px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>
+                        Nuestra metodología
+                      </h4>
+                      <p style={{ margin: 0, whiteSpace: "pre-line", font: "400 12px/1.7 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
+                        {CODICE_METHODOLOGY_TEXT}
+                      </p>
+                    </section>
+
+                    <a
+                      href="/docs/codice-ejemplo.pdf"
+                      target="_blank"
+                      rel="noopener"
+                      style={{ display: "flex", alignItems: "center", gap: 10, padding: 12, borderRadius: 12, background: "var(--surf,#141414)", border: "1px solid rgba(var(--accentRgb,200,161,90),.25)", textDecoration: "none" }}
+                    >
+                      <Icon name="picture_as_pdf" size={20} style={{ color: "var(--accentMid,#C8A15A)" }} />
+                      <span style={{ flex: 1, font: "700 11.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink,#F5F2EB)" }}>Ver PDF de ejemplo de tu Códice</span>
+                      <span style={{ flex: "none", padding: "2px 8px", borderRadius: 5, background: "rgba(0,0,0,.4)", border: "1px solid rgba(255,255,255,.15)", font: "700 9px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ink2,#8a8378)" }}>
+                        Ejemplo
+                      </span>
+                    </a>
+
+                    {recipient.cuadernoUrl && (
+                      <a
+                        href={recipient.cuadernoUrl}
+                        target="_blank"
+                        rel="noopener"
+                        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: 13, borderRadius: 12, border: "1px solid rgba(var(--accentRgb,200,161,90),.4)", color: "var(--accentLight,#E5C378)", font: "700 11.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".06em", textTransform: "uppercase", textDecoration: "none" }}
+                      >
+                        <Icon name="menu_book" size={18} />
+                        Abrir mi cuaderno
+                      </a>
+                    )}
+
+                    <section style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 4, borderTop: "1px solid rgba(255,255,255,.08)" }}>
+                      <h4 style={{ margin: 0, font: "600 13px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>
+                        Tu información es tuya
+                      </h4>
+                      <p style={{ margin: 0, font: "400 12px/1.7 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
+                        {CODICE_PRIVACY_TEXT}
+                      </p>
+                      {socialHref("wa", card.wa) && (
+                        <a
+                          href={`${socialHref("wa", card.wa)}?text=${encodeURIComponent(`Hola, soy ${recipient.nombre}. Quiero pedir que borren mi información del Códice.`)}`}
+                          target="_blank"
+                          rel="noopener"
+                          style={{ font: "700 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "#e5928a", textDecoration: "underline", alignSelf: "flex-start" }}
+                        >
+                          Pedir que borren mi información
+                        </a>
+                      )}
+                    </section>
+
+                    <Link
+                      href="/onboarding"
+                      style={{
+                        width: "100%",
+                        padding: 14,
+                        borderRadius: 12,
+                        background: "linear-gradient(90deg,var(--accentLight,#E5C378),var(--accentMid,#C8A15A) 50%,var(--accentDeep,#99732B))",
+                        color: "var(--deepBg,#0D0D0D)",
+                        font: "700 12.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
+                        letterSpacing: ".12em",
+                        textTransform: "uppercase",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                        textDecoration: "none",
+                      }}
+                    >
+                      <Icon name="auto_awesome" size={18} />
+                      Crear mi Gemelo Digital
+                    </Link>
+                  </div>
+                )
+              ) : modal === "info" && isProject ? (
                 <>
                   <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", borderRadius: 16, overflow: "hidden", border: "1px solid rgba(var(--accentRgb,200,161,90),.4)", background: "#000" }}>
                     {card.videoThumbnailUrl ? (
@@ -1716,6 +1930,34 @@ export default function LyCardView({
 
                             {open && (
                               <div style={{ padding: "10px 12px 12px", display: "flex", flexDirection: "column", gap: 10, borderTop: "1px solid rgba(255,255,255,.06)" }}>
+                                {/* PASO 4 (2026-10-02): palabra secreta del botón "Info
+                                    [nombre]" + link de "Abrir mi cuaderno", editables por
+                                    destinatario. Se guardan al salir del campo. */}
+                                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                  <span style={{ font: "500 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".14em", textTransform: "uppercase", color: "var(--ink2,#8a8378)" }}>
+                                    Palabra secreta (Info {r.nombre})
+                                  </span>
+                                  <input
+                                    value={r.palabraSecreta}
+                                    onChange={(e) => updateRecipientLocal(r.id, { palabraSecreta: e.target.value })}
+                                    onBlur={(e) => saveRecipientMeta(r.id, { palabraSecreta: e.target.value })}
+                                    placeholder="Sin configurar -- se salta el gate"
+                                    style={{ background: "var(--deepBg,#0D0D0D)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, padding: "9px 11px", color: "var(--ink,#F5F2EB)", font: "400 12px var(--brandFont,'Plus Jakarta Sans'),sans-serif", outline: "none" }}
+                                  />
+                                </div>
+                                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                  <span style={{ font: "500 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".14em", textTransform: "uppercase", color: "var(--ink2,#8a8378)" }}>
+                                    Link de su cuaderno
+                                  </span>
+                                  <input
+                                    value={r.cuadernoUrl}
+                                    onChange={(e) => updateRecipientLocal(r.id, { cuadernoUrl: e.target.value })}
+                                    onBlur={(e) => saveRecipientMeta(r.id, { cuadernoUrl: e.target.value })}
+                                    placeholder="https://... (vacío = botón oculto)"
+                                    style={{ background: "var(--deepBg,#0D0D0D)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 8, padding: "9px 11px", color: "var(--ink,#F5F2EB)", font: "400 12px var(--brandFont,'Plus Jakarta Sans'),sans-serif", outline: "none" }}
+                                  />
+                                </div>
+
                                 {r.sources.length > 0 && (
                                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                                     {r.sources.map((s) => (

@@ -244,6 +244,14 @@ model CardRecipient {
   slug   String
   nombre String // Nombre tal como se muestra en el mensaje de bienvenida ("Rogelio")
 
+  // PASO 4 (2026-10-02): el botón "Info [nombre]" se abre con una palabra
+  // secreta definida por destinatario -- vacío significa "sin palabra
+  // configurada todavía", en cuyo caso el gate se salta (no hay nada que
+  // validar). `cuadernoUrl` es el link de "Abrir mi cuaderno" que Gunnar
+  // carga a mano por destinatario; el botón no aparece si está vacío.
+  palabraSecreta String @default("")
+  cuadernoUrl    String @default("")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

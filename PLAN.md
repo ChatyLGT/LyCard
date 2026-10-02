@@ -7532,3 +7532,83 @@ flujo real de punta a punta con Playwright: crear "Rogelio" desde
 subido de verdad -- confirmado en `public/uploads/` y en la base),
 tocar "Abrir" y confirmar que aterriza en `/c/mastern0?para=rogelio`
 con el mensaje de bienvenida.
+
+## 2026-10-02 -- Tarjeta Rogelio PASO 4: botón "Info [nombre]" con palabra secreta (v1.65.0)
+
+Siguiente paso del pedido original de 7 pasos -- Gunnar confirmó Paso
+1 y pidió saltar Pasos 2-3 e ir directo al 4: el botón "Info Legacy"
+se renombra a "Info [nombre]" y cambia de contenido por completo
+cuando hay destinatario, se abre con una palabra secreta definida por
+destinatario, y adentro va el dossier de "qué información usamos" +
+cómo la usamos + metodología + PDF de ejemplo + "Abrir mi cuaderno" +
+"tu información es tuya" + "Crear mi Gemelo Digital".
+
+### Schema
+
+`CardRecipient` suma dos campos (migración
+`20261002184900_card_recipient_secret_cuaderno`): `palabraSecreta`
+(vacío = sin gate, el botón abre directo -- "placeholder" hasta que
+Gunnar le ponga una) y `cuadernoUrl` (vacío = el botón "Abrir mi
+cuaderno" no aparece). Ambos editables por destinatario desde el
+mismo panel de Destinatarios ("Enviar Invitación"), guardado al salir
+del campo.
+
+### El botón y su modal, solo con destinatario
+
+En `components/LyCardView.tsx`, el cubo que siempre abrió "info"
+ahora, con destinatario, se renombra a "Info [nombre]" y el bloque
+`modal === "info" && recipient` reemplaza por completo al contenido
+de siempre -- el original (`modal === "info" && isProject`, video +
+3 indicadores) queda intacto, se sigue mostrando igual que siempre
+cuando NO hay destinatario (confirmado con Playwright: "Info Legacy"
+sin cambios).
+
+Con destinatario, primero el gate (si `palabraSecreta` no está
+vacía): un input, comparación insensible a mayúsculas, error si no
+coincide. Destrabado (o directo si no hay palabra cargada), el
+contenido en el orden pedido:
+1. Qué información usamos -- la lista real de fuentes de ese
+   destinatario (del dossier del Paso de Destinatarios).
+2. Cómo la usamos -- texto marcado `[PLACEHOLDER]`, Gunnar no pasó el
+   texto real todavía.
+3. Nuestra metodología -- el texto exacto que pasó Gunnar, sin
+   cambios.
+4. PDF de ejemplo -- `public/docs/codice-ejemplo.pdf`, generado con
+   reportlab, con la estructura exacta de 6 puntos pedida y marcado
+   "EJEMPLO" visiblemente; descargable/visible desde el modal.
+5. "Abrir mi cuaderno" -- solo si `cuadernoUrl` está cargado.
+6. "Tu información es tuya" -- texto exacto de Gunnar, más un link a
+   WhatsApp pidiendo el borrado (solo si la Card tiene WhatsApp
+   cargado -- mastern0 no lo tiene todavía en el ambiente local, así
+   que ese botón no se ve ahí hasta que lo cargue).
+7. "Crear mi Gemelo Digital" -- lleva a `/onboarding`, página nueva y
+   fija con "Tu onboarding está en preparación".
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos,
+`pnpm test:unit:coverage` 250/250 al 100%, `pnpm build` limpio
+(incluye la ruta nueva `/onboarding`). Playwright real de punta a
+punta contra la base local: con `palabraSecreta="mayan2066"` cargada
+a mano en el destinatario Rogelio, el gate rechaza una palabra
+incorrecta, acepta la correcta, muestra las 3 fuentes reales de
+Rogelio, la metodología completa, el link al PDF, el botón de
+cuaderno (con el `cuadernoUrl` de prueba), y el botón final navega a
+`/onboarding` y lo muestra. Un segundo test confirma que sin
+destinatario "Info Legacy" sigue exactamente igual (el gate y el
+contenido nuevo no aparecen). Un tercer test edita la palabra secreta
+desde el panel de Destinatarios y confirma que se guarda de verdad en
+la base (server action real, no mock). Capturas en
+`/tmp/paso4-gate.png`, `/tmp/paso4-contenido.png`,
+`/tmp/paso4-contenido-final.png`, `/tmp/paso4-onboarding.png`.
+
+### Pendiente
+
+Pasos 2, 3, 5, 6 y 7 -- cada uno con su propio reporte antes de
+seguir, por pedido explícito de Gunnar. Nota para producción: este
+ambiente usa una base local de prueba, separada de la real -- la
+palabra secreta/cuaderno de prueba de Rogelio (`mayan2066` /
+`https://notion.so/ejemplo-cuaderno-rogelio`) solo existe acá, no en
+producción. Para probarlo en prod, Gunnar tiene que cargar su propia
+palabra secreta (o dejarla vacía para que el botón abra directo) y su
+link de cuaderno desde el panel de Destinatarios de su tarjeta real.
