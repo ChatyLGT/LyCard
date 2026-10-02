@@ -877,27 +877,6 @@ export default function LyCardView({
             transition: "background-color .3s ease",
           }}
         >
-          {/* Bienvenida personalizada por destinatario (2026-10-02, PASO 1)
-              -- solo con ?para=<slug> resuelto a un CardRecipient real.
-              Sin destinatario, recipient es null y este bloque no
-              renderiza nada: la tarjeta se ve exactamente como siempre. */}
-          {recipient && (
-            <div
-              style={{
-                flex: "none",
-                padding: "10px 12px",
-                borderRadius: 12,
-                background: "linear-gradient(135deg, rgba(var(--accentRgb,200,161,90),.16), rgba(255,255,255,.02))",
-                border: "1px solid rgba(var(--accentRgb,200,161,90),.35)",
-              }}
-            >
-              <p style={{ margin: 0, font: "500 11.5px/1.5 'Plus Jakarta Sans',sans-serif", color: "var(--text,#F3F0E9)" }}>
-                Hola, {recipient.nombre}. Gracias por tu interés en el Programa Legacy. Esta tarjeta está personalizada
-                para ti, a partir de la información que compartiste con nosotros. Bienvenido.
-              </p>
-            </div>
-          )}
-
           {/* Portrait */}
           {/* Pulido visual (2026-09-29, pedido de Gunnar): este wrapper
               tenía flex:1 1 auto sin tope -- crecía para absorber TODO el
@@ -1281,21 +1260,41 @@ export default function LyCardView({
 
           {/* Quote + story + socials */}
           <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: "clamp(6px,1dvh,12px)" }}>
-            <p
-              style={{
-                margin: 0,
-                padding: "0 16px",
-                font: "italic 400 clamp(12px,2.6dvh,15px)/1.4 var(--brandFont,'Playfair Display'),serif",
-                letterSpacing: ".01em",
-                color: "var(--ink2,var(--ink2,#C2BEB5))",
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-              }}
-            >
-              {card.quote}
-            </p>
+            {/* Tarjeta personalizada por destinatario (2026-10-02, PASO 1,
+                corregido): va acá, en el lugar de la frase/lema -- no un
+                cartel aparte arriba de la foto. Sin line-clamp (a diferencia
+                de card.quote, que sí lo tiene) porque el mensaje de
+                bienvenida es mucho más largo que un lema corto. */}
+            {recipient ? (
+              <p
+                style={{
+                  margin: 0,
+                  padding: "0 16px",
+                  font: "italic 400 clamp(12px,2.6dvh,15px)/1.4 var(--brandFont,'Playfair Display'),serif",
+                  letterSpacing: ".01em",
+                  color: "var(--ink2,var(--ink2,#C2BEB5))",
+                }}
+              >
+                Hola, {recipient.nombre}. Gracias por tu interés en el Programa Legacy. Esta tarjeta está personalizada
+                para ti, a partir de la información que compartiste con nosotros. Bienvenido.
+              </p>
+            ) : (
+              <p
+                style={{
+                  margin: 0,
+                  padding: "0 16px",
+                  font: "italic 400 clamp(12px,2.6dvh,15px)/1.4 var(--brandFont,'Playfair Display'),serif",
+                  letterSpacing: ".01em",
+                  color: "var(--ink2,var(--ink2,#C2BEB5))",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                }}
+              >
+                {card.quote}
+              </p>
+            )}
             {/* -20% (2026-09-17, pedido de Gunnar) */}
             <button
               type="button"

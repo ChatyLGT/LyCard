@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.63.0";
+export const APP_VERSION = "1.63.1";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.63.1",
+    date: "2026-10-02",
+    notes:
+      "Fix al mensaje de bienvenida de un destinatario (v1.63.0): no va en un cartel nuevo arriba de la foto, reemplaza tu frase/lema de marca en su lugar de siempre -- sin destinatario, tu frase se ve exactamente igual que antes.",
+  },
   {
     version: "1.63.0",
     date: "2026-10-02",
