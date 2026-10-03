@@ -60,10 +60,11 @@ export default async function AdminResetPage({
             <li>Mensajería Interna (mensajes y entregas)</li>
             <li>Destinatarios, Janus Tags, Notas de Voz y WowAwe de cada Card</li>
             <li>Red de clientes (CardNetworkMembership) y Leads</li>
+            <li>Panel interno de equipo/HR (Nodos, Proyectos, Tareas, NashMesh — /admin/equipo y /admin/nashmesh)</li>
             <li>Todos los N0 acotados (Admin de Programa) — tu login MasterN0 no se toca</li>
           </ul>
           <p style={{ margin: 0, font: "600 12.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>
-            Tu Card &quot;MasterN0&quot; sobrevive intacta tal cual está (nombre, foto, redes) — solo se le limpia el contenido de prueba colgado (destinatarios, tags, notas de voz, etc.). Tu login de Admin tampoco se toca. Lo demás queda en esqueleto: arrancás de nuevo creando Programas en /admin/programs.
+            Tu login de MasterN0 y la fila de tu Card &quot;MasterN0&quot; siguen existiendo (si no, no podrías ni entrar) — pero su CONTENIDO se blanquea igual que todo lo demás: nombre, foto, frase, redes, todo vuelve vacío. Si entrás a esa tarjeta después de esto, no se ve nada. Arrancás de cero creando Programas en /admin/programs.
           </p>
           {error === "confirm" && (
             <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>

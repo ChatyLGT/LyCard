@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.68.0";
+export const APP_VERSION = "1.68.1";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.68.1",
+    date: "2026-10-03",
+    notes:
+      "Corrección del reset a esqueleto (v1.68.0): Gunnar aclaró que \"conservar mastern0\" significaba conservar la FILA (su login de MasterN0 necesita que exista esa Card), no su contenido -- \"si voy a entrar a una tarjeta no se vea nada\". Ahora, además de quedarse la fila, se le blanquea el contenido (nombre, foto, frase, redes, todo) de vuelta a los valores vacíos de una Card sin personalizar -- al entrar a esa tarjeta después del reset, no se ve nada. También se suma al borrado el panel interno de equipo/HR (Nodos, Proyectos, Tareas, NashMesh en /admin/equipo y /admin/nashmesh) -- Gunnar confirmó que es contenido recreable, no lógica, así que entra en el mismo borrón. Verificado de nuevo antes de shippear: sembré una Card raíz con contenido real de prueba (nombre, foto, redes) más datos en las 4 tablas del panel interno, corrí la transacción completa, y confirmé que la fila sobrevive con el mismo id/slug (el login sigue funcionando) pero con todo el contenido en blanco, y que las 4 tablas del panel interno quedaron en cero.",
+  },
   {
     version: "1.68.0",
     date: "2026-10-03",

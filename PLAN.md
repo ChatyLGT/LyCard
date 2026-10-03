@@ -7938,3 +7938,74 @@ en producción ni tengo el connection string -- el botón lo dispara él.
 Pendiente de su confirmación/corrección: si Node/ProjectNode/Task/
 NashMeshRun (el panel de equipo interno) debían quedar afuera del
 borrado como asumí, o si también los quiere en esqueleto.
+
+## 2026-10-03 -- Corrección: el contenido de mastern0 también se blanquea, y el panel interno entra al borrado (v1.68.1)
+
+Gunnar, el mismo día, segunda vuelta -- dijo no entender a qué me
+refería con Node/ProjectNode/Task/NashMeshRun y corrigió dos cosas de
+una: "no se que es necesito mas explicacion, no quiero que borremos
+condigo ni logica.. si es contenido y lo podemos volver a crear..
+borralo tambien.. de echo ahorita me fije y no se ha borrado la
+tarjeta del Programa Legacy.. sigue hasta la foto puesta.. necesito se
+borre todo el contenido.. que si voy a entrar a una tarjeta no se vea
+nada.."
+
+Dos correcciones reales, no una repregunta inútil:
+
+1. **El panel interno SÍ se borra.** Es contenido (Nodos, Proyectos,
+   Tareas, corridas de NashMesh), no lógica de la plataforma -- se
+   puede recrear a mano después. Entra al mismo borrón.
+2. **"Conservar mastern0" no significaba "conservar su contenido".**
+   La vez anterior interpreté mal su propia confirmación ("Conservar
+   mi Admin y mastern0") como "no tocar nada de esa Card". Lo que
+   Gunnar necesitaba de verdad es que la FILA siga existiendo (su
+   login de MasterN0 depende de que haya una Card con `isOrigin:true`
+   -- eso SÍ es lógica de la app, se rompería el acceso si se borra),
+   pero el CONTENIDO de esa Card (nombre, foto, frase, redes, todo lo
+   que ve un visitante) tiene que quedar vacío igual que cualquier
+   otra. Confirmado por su propia frase: "que si voy a entrar a una
+   tarjeta no se vea nada".
+
+### Cambio en `app/admin/reset-actions.ts`
+
+Sumados 4 `deleteMany()` más (`task`, `projectNode`, `node`,
+`nashMeshRun`) al mismo `$transaction`, en ese orden (aunque cascadean
+solo desde ProjectNode/Node hacia Task, se borran a mano igual que
+todo el resto del archivo, mismo criterio explícito ya establecido).
+
+Después del `card.deleteMany({isOrigin:false})`, un nuevo
+`card.updateMany({where:{isOrigin:true}, data:{...}})` que blanquea
+TODOS los campos de contenido editable de esa Card de vuelta a los
+defaults vacíos del schema (name/title/quote/siglas/tooltip/medal/
+rank/contacts/los 8 canales de contacto/email/location/portraitUrl/
+videoThumbnailUrl/shareScope/logoUrl/sizeConfig/officeItems/
+islandLabel/oficinaObjetivo/realityCheckKpis/newsItems/
+calendarEvents) -- sin tocar `id`/`slug`/`isOrigin`/`kind`/`memberId`/
+`programId`/`puestoId` (ninguno de esos es "contenido visible", son la
+identidad/estructura que mantiene viva la lógica de login y detección
+de host). El resultado: la fila sigue ahí con el mismo id/slug (el
+login de MasterN0 no se rompe), pero al entrar a `/c/mastern0` no se
+ve nada -- exactamente lo pedido.
+
+### `app/admin/reset/page.tsx`
+
+Sumada la fila del panel interno a la lista de lo que se borra, y
+reescrito el párrafo de cierre para que ya no diga "sobrevive intacta
+tal cual está" (falso ahora) sino la verdad: la fila/login sigue
+existiendo porque si no Gunnar ni podría entrar, pero su contenido
+queda tan vacío como todo lo demás.
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos,
+`pnpm test:unit:coverage` 251/251 al 100%, `pnpm build` limpio. Antes
+de shippear, sembré de nuevo las 27 tablas anteriores MÁS las 4 del
+panel interno, y le puse a la Card raíz contenido real de prueba
+(nombre, foto, frase, WhatsApp) simulando una Card ya personalizada de
+verdad -- corrí la transacción completa y confirmé: las 31 tablas
+quedaron en cero, la Card raíz sobrevivió con el MISMO id y slug
+(`mastern0`) pero `name`/`title`/`quote`/`wa` vacíos y `portraitUrl`
+en null, y el Admin de Gunnar siguió siendo el único que queda. Suite
+Playwright completa 41/41 verde (limpié mis propios datos de siembra
+después de verificar, mismo cuidado que la vuelta anterior para no
+contaminar `nashmesh.spec.ts` de nuevo).

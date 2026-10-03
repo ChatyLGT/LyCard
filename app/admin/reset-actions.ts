@@ -13,12 +13,19 @@ const CONFIRM_PHRASE = "BORRAR TODO";
 // para cubrir el schema ACTUAL completo -- la versión original (2026-09)
 // solo cubría lo que existía hasta Fase 6 y quedó corta contra todo lo
 // sumado después (WowStore, Especialistas/Expertos, Destinatarios,
-// Mensajería, Janus, Notas de Voz, WowAwe). A diferencia de la versión
-// original, esta NO borra ni recrea la Card mastern0 -- Gunnar pidió
-// explícitamente conservarla tal cual está (su propia identidad/branding
-// no se toca), solo se le limpia el contenido colgado (destinatarios de
-// prueba, tags, notas de voz, etc., igual que a cualquier otra Card).
-// Su propio login de Admin (quien ejecuta esto) tampoco se toca.
+// Mensajería, Janus, Notas de Voz, WowAwe).
+//
+// Corrección 2026-10-03 (mismo día, segunda vuelta): Gunnar aclaró que
+// "conservar mastern0" significaba conservar la FILA (su login de
+// MasterN0 depende de que exista esa Card con isOrigin:true -- eso es
+// lógica, no se toca), no su contenido -- "si voy a entrar a una
+// tarjeta no se vea nada". Por eso además de no borrar esa fila, se le
+// BLANQUEA el contenido (nombre, foto, frases, redes, todo lo que un
+// visitante vería) de vuelta a los defaults vacíos del schema, igual
+// que cualquier Card nueva sin personalizar. También confirmó que
+// Node/ProjectNode/Task/NashMeshRun (el panel interno de equipo/HR,
+// /admin/equipo y /admin/nashmesh) es contenido recreable, no lógica
+// -- "si es contenido... borralo también" -- así que ahora se incluye.
 //
 // Orden de borrado: hojas primero, raíces al final -- varias relaciones
 // clave (Card.member, Card.program, Experto.member, Admin.program,
@@ -74,9 +81,56 @@ export async function resetPlatformAction(formData: FormData) {
       // Membresías
       prisma.originMemento.deleteMany(),
       prisma.programMembership.deleteMany(),
-      // Cards -- todas menos la raíz (mastern0, isOrigin:true), que
-      // queda intacta con su contenido propio (nombre/foto/redes/etc.)
+      // Panel interno de equipo/HR (/admin/equipo, /admin/nashmesh) --
+      // contenido recreable, no lógica, confirmado por Gunnar. Task
+      // primero (cascada real desde ProjectNode/Node, pero se borra a
+      // mano igual que el resto, mismo criterio explícito de todo este
+      // archivo).
+      prisma.task.deleteMany(),
+      prisma.projectNode.deleteMany(),
+      prisma.node.deleteMany(),
+      prisma.nashMeshRun.deleteMany(),
+      // Cards -- todas menos la raíz (mastern0, isOrigin:true). La FILA
+      // queda (tu login de MasterN0 depende de que exista), pero su
+      // CONTENIDO se blanquea abajo -- no es "conservarla tal cual",
+      // es "que no se vea nada al entrar".
       prisma.card.deleteMany({ where: { isOrigin: false } }),
+      prisma.card.updateMany({
+        where: { isOrigin: true },
+        data: {
+          name: "",
+          title: "",
+          quote: "",
+          siglas: "O.D.",
+          tooltip: "Order of Distinction",
+          storyQuote: "",
+          storyBody: "",
+          medal: "oro",
+          rank: "aprendiz",
+          contacts: "plata",
+          wa: "",
+          ig: "",
+          li: "",
+          x: "",
+          fb: "",
+          tiktok: "",
+          yt: "",
+          web: "",
+          email: "",
+          location: "",
+          portraitUrl: null,
+          videoThumbnailUrl: null,
+          shareScope: [],
+          logoUrl: null,
+          sizeConfig: {},
+          officeItems: [],
+          islandLabel: "",
+          oficinaObjetivo: "",
+          realityCheckKpis: [],
+          newsItems: [],
+          calendarEvents: [],
+        },
+      }),
       // N0 acotados -- tu propio login MasterN0 (quien ejecuta esto) no
       // se toca
       prisma.admin.deleteMany({ where: { id: { not: scope.id } } }),
