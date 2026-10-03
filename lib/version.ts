@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.68.3";
+export const APP_VERSION = "1.68.4";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.68.4",
+    date: "2026-10-03",
+    notes:
+      "Detalle 3 del repaso de Gunnar sobre la tarjeta en esqueleto: el Nombre vacío ya no es un espacio en blanco invisible -- muestra un placeholder atenuado ('Nombre Completo') que marca dónde va. El botón de CV/título (antes desaparecía entero si no había título cargado) ahora siempre se ve, con su propio placeholder ('Ej. PhD en Neuropsicología'), y se agrandó -- a 172px fijo un título real quedaba cortado con puntos suspensivos. Hallazgo real de paso: los 3 modales de distinción (O.D., Rango de Sabiduría, Medallón) caían, sin Programa configurado, al bio personal fijo de Einar ('Diseñador, visionario y creador original del ecosistema Legacy...') como si fuera el default genérico de la plataforma -- se mostraba en CUALQUIER Programa nuevo sin configurar, no solo en mastern0. Reemplazado por texto honesto que explica que cada Programa arma su propia distinción desde /admin/programs, y el renglón de estado del modal ahora dice 'Sin configurar' en vez de pretender que ya está activo y certificado.",
+  },
   {
     version: "1.68.3",
     date: "2026-10-03",

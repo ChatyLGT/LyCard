@@ -1180,7 +1180,11 @@ export default function LyCardView({
       kicker: displaySiglas,
       head: displayDenominacion,
       body: displayDescripcion || t(lang, "odBody"),
-      meta: t(lang, "odMeta"),
+      // meta condicional (2026-10-03): "Sin configurar" mientras el
+      // Programa no definió su propio Puesto -- antes decía siempre
+      // "Activo y Certificado" aunque el body ya avisara que no hay nada
+      // cargado, contradicción dentro del mismo modal.
+      meta: displayDescripcion ? t(lang, "odMeta") : t(lang, "odMetaEmpty"),
     },
     ancient: {
       icon: rankTier.icono || "auto_awesome",
@@ -1189,14 +1193,14 @@ export default function LyCardView({
       // to always say "Ancient Pioneer" regardless of the real rank.
       head: `✦ ${rankTier.nombre} ✦`,
       body: rankTier.descripcion || t(lang, "ancBody"),
-      meta: t(lang, "ancMeta"),
+      meta: rankTier.descripcion ? t(lang, "ancMeta") : t(lang, "ancMetaEmpty"),
     },
     medal: {
       icon: medalTier.icono || "workspace_premium",
       kicker: medalTier.subtitulo || t(lang, "medalKicker"),
       head: medalTier.nombre,
       body: medalTier.descripcion || t(lang, "medalBody"),
-      meta: t(lang, "medalMeta"),
+      meta: medalTier.descripcion ? t(lang, "medalMeta") : t(lang, "medalMetaEmpty"),
     },
     // Tier label/icon are real (Card.contacts + Program.contactsScale,
     // 2026-09-16) — the *count* behind it is still simulated, no real
@@ -1522,13 +1526,18 @@ export default function LyCardView({
                   <h1
                     style={{
                       margin: 0,
-                      font: "600 24px/1.2 var(--brandFont,'Playfair Display'),serif",
+                      font: card.name ? "600 24px/1.2 var(--brandFont,'Playfair Display'),serif" : "italic 600 24px/1.2 var(--brandFont,'Playfair Display'),serif",
                       letterSpacing: "-.01em",
-                      color: "var(--ink,#F5F2EB)",
+                      color: card.name ? "var(--ink,#F5F2EB)" : "var(--ink2,#8A8680)",
                       textShadow: "var(--nameshadow,0 1px 2px rgba(0,0,0,.35))",
                     }}
                   >
-                    {card.name}
+                    {/* Espacio marcado (2026-10-03, pedido de Gunnar) --
+                        tarjeta sin nombre cargado todavía: en vez de un
+                        <h1> vacío (invisible, nadie sabe que ahí va el
+                        nombre), un placeholder atenuado/itálico, mismo
+                        criterio que el placeholder gris de un input. */}
+                    {card.name || t(lang, "namePlaceholder")}
                   </h1>
                   <button
                     type="button"
@@ -1540,42 +1549,52 @@ export default function LyCardView({
                   </button>
                 </div>
 
-                {card.title && (
+                {
                   // +15% (2026-09-17, pedido de Gunnar) sobre el tamaño que
                   // ya había bajado un 30% en v1.11.1 — no es una vuelta al
                   // tamaño original, es un ajuste sobre ese achique.
-                  <button
-                    type="button"
-                    onClick={() => setCvOpen(true)}
-                    aria-label="Ver CV"
+                  //
+                  // Antes este botón entero desaparecía si card.title
+                  // estaba vacío -- invisible, ni rastro de que ahí va el
+                  // CV (2026-10-03, pedido de Gunnar). Ahora siempre se ve,
+                  // con un placeholder atenuado cuando no hay título
+                  // cargado. De paso, ensanchado: a 172px fijo un título
+                  // real tipo "PhD en Neuropsicología" quedaba cortado con
+                  // puntos suspensivos ("se me hace esta muy corto") --
+                  // ahora crece con el contenido hasta un tope más generoso.
+                }
+                <button
+                  type="button"
+                  onClick={() => setCvOpen(true)}
+                  aria-label="Ver CV"
+                  style={{
+                    ...BADGE_BTN,
+                    pointerEvents: "auto",
+                    padding: "4px 14px",
+                    gap: 5,
+                    width: "auto",
+                    minWidth: 172,
+                    maxWidth: "92%",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Sweep />
+                  <Icon name="work" size={9} style={{ flex: "none", color: card.title ? "var(--goldtxt,#E5C378)" : "var(--ink2,#8A8680)" }} />
+                  <span
                     style={{
-                      ...BADGE_BTN,
-                      pointerEvents: "auto",
-                      padding: "4px 11.5px",
-                      gap: 5,
-                      width: 172,
-                      maxWidth: "70%",
-                      justifyContent: "center",
+                      minWidth: 0,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      font: card.title ? "700 8px var(--brandFont,'Plus Jakarta Sans'),sans-serif" : "italic 600 8px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
+                      letterSpacing: ".14em",
+                      textTransform: card.title ? "uppercase" : "none",
+                      color: card.title ? "var(--goldtxt,#E5C378)" : "var(--ink2,#8A8680)",
                     }}
                   >
-                    <Sweep />
-                    <Icon name="work" size={9} style={{ flex: "none", color: "var(--goldtxt,#E5C378)" }} />
-                    <span
-                      style={{
-                        minWidth: 0,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                        font: "700 8px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
-                        letterSpacing: ".14em",
-                        textTransform: "uppercase",
-                        color: "var(--goldtxt,#E5C378)",
-                      }}
-                    >
-                      {card.title}
-                    </span>
-                  </button>
-                )}
+                    {card.title || t(lang, "titlePlaceholder")}
+                  </span>
+                </button>
 
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 8, pointerEvents: "auto" }}>
                   <button type="button" onClick={() => setModal("od")} style={BADGE_BTN}>

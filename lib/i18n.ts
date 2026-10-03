@@ -2,6 +2,14 @@ export type Lang = "es" | "en";
 
 export const STR: Record<Lang, Record<string, string>> = {
   es: {
+    // Placeholders de "espacio marcado" (2026-10-03, pedido de Gunnar al
+    // repasar la tarjeta en esqueleto) -- distinto de los Empty de arriba:
+    // esos avisan "todavía no cargado" con lenguaje honesto; estos dos
+    // marcan visualmente DÓNDE va cada campo (nombre, CV) cuando está
+    // vacío, mismo criterio que el placeholder gris de un input de
+    // formulario -- nunca se guardan como valor real, solo se muestran.
+    namePlaceholder: "Nombre Completo",
+    titlePlaceholder: "Ej. PhD en Neuropsicología",
     storyBtn: "Mi camino con Legacy",
     storyBtnCompany: "Mi camino con la Empresa",
     storyBtnPersonal: "Mi Trayectoria",
@@ -77,17 +85,29 @@ export const STR: Record<Lang, Record<string, string>> = {
     meetingTitle: "Agendá una Reunión",
     meetingSub: "Elegí un horario disponible para conversar con {name}.",
     linkCopied: "Link copiado",
+    // Fallback honesto cuando el Programa no configuró esta distinción
+    // (Puesto/escala vacíos, PLAN.md Fase 9) -- 2026-10-03, pedido de
+    // Gunnar al repasar la tarjeta en esqueleto: antes esto caía al bio
+    // personal fijo de Einar ("Diseñador, visionario y creador original
+    // del ecosistema Legacy..."), que se mostraba en CUALQUIER Programa
+    // nuevo sin configurar -- no es un fallback genérico, es contenido de
+    // una sola persona hecho pasar por default de la plataforma. Ahora
+    // explica honestamente que es un campo programable por Programa, sin
+    // inventar una identidad que no corresponde.
     odBody:
-      "Diseñador, visionario y creador original del ecosistema Legacy, EinarOS y de la arquitectura íntegra del programa. Reconocimiento que certifica la autoría primordial y la dirección conceptual del proyecto.",
+      "Esta distinción todavía no fue configurada. El N0 del Programa define acá su nombre, ícono y descripción desde /admin/programs — cada Programa arma la suya, no hay una fija.",
     odMeta: "Estatus: Activo y Certificado",
+    odMetaEmpty: "Sin configurar",
     ancKicker: "Rango de Sabiduría",
     ancBody:
-      "ANCIENT: rango de sabiduría y mentoría avanzada en Legacy. Distingue a los miembros pioneros cuya experiencia guía a nuevas generaciones hacia la soberanía y el crecimiento sostenido.",
+      "Este rango todavía no fue configurado. El N0 del Programa arma su propia escala de rangos desde /admin/programs — cada Programa define los suyos, no hay uno fijo.",
     ancMeta: "Mentoría & Consejo",
+    ancMetaEmpty: "Sin configurar",
     medalKicker: "Nivel de Medallón",
     medalBody:
-      "Distintivo que certifica el nivel de compromiso patrimonial y trayectoria dentro del ecosistema Legacy.",
+      "Este nivel todavía no fue configurado. El N0 del Programa arma su propia escala de medallones desde /admin/programs — cada Programa define los suyos, no hay uno fijo.",
     medalMeta: "Distintivo Legacy",
+    medalMetaEmpty: "Sin configurar",
     storyKicker: "Mi Camino con Legacy",
     storyHead: "«Descubrí en Legacy una forma de trascender.»",
     storyBody:
@@ -152,6 +172,8 @@ export const STR: Record<Lang, Record<string, string>> = {
     viewCard: "Ver mi LyCard",
   },
   en: {
+    namePlaceholder: "Full Name",
+    titlePlaceholder: "Ej. PhD in Neuropsychology",
     storyBtn: "My path with Legacy",
     storyBtnCompany: "My path with the Business",
     storyBtnPersonal: "My Journey",
@@ -228,16 +250,19 @@ export const STR: Record<Lang, Record<string, string>> = {
     meetingSub: "Pick an available time to talk with {name}.",
     linkCopied: "Link copied",
     odBody:
-      "Designer, visionary and original creator of the Legacy ecosystem, EinarOS and the program architecture. A distinction certifying primordial authorship and conceptual direction of the project.",
+      "This distinction hasn't been configured yet. The Program's N0 sets its name, icon and description from /admin/programs — each Program builds its own, there's no fixed one.",
     odMeta: "Status: Active and Certified",
+    odMetaEmpty: "Not configured",
     ancKicker: "Rank of Wisdom",
     ancBody:
-      "ANCIENT: the rank of wisdom and advanced mentorship within Legacy. It distinguishes pioneering members whose experience guides new generations toward sovereignty and sustained growth.",
+      "This rank hasn't been configured yet. The Program's N0 builds its own rank scale from /admin/programs — each Program defines its own, there's no fixed one.",
     ancMeta: "Mentorship & Council",
+    ancMetaEmpty: "Not configured",
     medalKicker: "Medallion Level",
     medalBody:
-      "A distinction certifying the level of patrimonial commitment and track record within the Legacy ecosystem.",
+      "This level hasn't been configured yet. The Program's N0 builds its own medallion scale from /admin/programs — each Program defines its own, there's no fixed one.",
     medalMeta: "Legacy Distinction",
+    medalMetaEmpty: "Not configured",
     storyKicker: "My Path with Legacy",
     storyHead: "“In Legacy I found a way to transcend.”",
     storyBody:

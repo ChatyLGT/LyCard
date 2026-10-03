@@ -8141,3 +8141,72 @@ comportamiento de caché del navegador real, no algo que el entorno de
 test ejecute) -- confirmado por lectura directa del código contra la
 spec real de Cache API, mismo criterio que cualquier otro hallazgo de
 este tipo en el proyecto.
+
+## 2026-10-03 -- Detalle 3: placeholders de Nombre/CV + bio de Einar como "default" en los 3 modales de distinción (v1.68.4)
+
+Gunnar repasó la tarjeta en esqueleto elemento por elemento, confirmó
+que los 5 íconos superiores y el retrato están bien, y señaló 3 cosas
+concretas sobre lo que queda vacío: el Nombre necesita un placeholder
+marcado ("Nombre Completo"), el segundo distintivo (O.D.) "debería
+decir [en su modal] lo que es realmente programable por Programa, no
+lo que dice ahora", y el CV de abajo también necesita placeholder
+("por cierto se me hace esta muy corto").
+
+### Nombre
+
+El `<h1>` con `card.name` quedaba completamente vacío y sin forma de
+saber que ahí va el nombre. Ahora, si `card.name` está vacío, muestra
+`t(lang,"namePlaceholder")` ("Nombre Completo"/"Full Name") en itálica
+y color atenuado (`--ink2`) -- mismo criterio visual que el placeholder
+gris de un campo de formulario, nunca se guarda como valor real.
+
+### CV / título
+
+El botón entero (ícono "work" + texto de `card.title`) tenía
+`{card.title && (...)}` -- si no había título cargado, el botón NO
+EXISTÍA, ni rastro de que ahí va algo. Ahora siempre se renderiza, con
+`t(lang,"titlePlaceholder")` ("Ej. PhD en Neuropsicología") cuando
+está vacío, mismo tratamiento atenuado/itálico que el nombre. De paso,
+el pedido de "se me hace esta muy corto": el botón tenía `width:172,
+maxWidth:"70%"` fijo con `whiteSpace:"nowrap"` + `textOverflow:
+"ellipsis"` -- un título real como "PhD en Neuropsicología" ya quedaba
+cortado con puntos suspensivos. Ahora `width:"auto", minWidth:172,
+maxWidth:"92%"` -- crece con el contenido real en vez de truncarlo de
+entrada.
+
+### Hallazgo real: el bio personal de Einar como "default" de cualquier Programa nuevo
+
+Al investigar el pedido de Gunnar de corregir el texto del modal O.D.
+encontré algo más grande que un simple typo: los 3 modales de
+distinción (O.D./Puesto, Rango de Sabiduría, Nivel de Medallón) caen,
+cuando el Programa no configuró su propia escala/Puesto (`descripcion`
+vacía, el estado de CUALQUIER Programa recién creado, no solo
+mastern0), a tres textos fijos en `lib/i18n.ts` -- `odBody` era
+literalmente el bio personal de Einar ("Diseñador, visionario y
+creador original del ecosistema Legacy, EinarOS..."), `ancBody`
+describía el rango "ANCIENT" como si fuera universal, `medalBody`
+hablaba de "compromiso patrimonial... del ecosistema Legacy". Ninguno
+de los tres era un fallback genérico -- eran contenido real de una
+persona/marca específica, mostrado como si fuera el comportamiento por
+defecto de la PLATAFORMA para cualquier Programa nuevo sin configurar.
+Reescritos a texto honesto ("Esta distinción/rango/nivel todavía no
+fue configurado. El N0 del Programa [lo define] desde
+/admin/programs..."), ES y EN. De paso, el renglón `meta` de cada
+modal (antes fijo: "Estatus: Activo y Certificado", "Mentoría &
+Consejo", "Distintivo Legacy", SIEMPRE, incluso cuando el body ya
+avisaba que no había nada cargado -- contradicción dentro del mismo
+modal) ahora es condicional: dice "Sin configurar" mientras no haya
+Puesto/escala real, y vuelve al texto original una vez que el N0 carga
+el suyo.
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos,
+`pnpm test:unit:coverage` 251/251 al 100%, `pnpm build` limpio.
+Playwright real contra `/c/mastern0` (vacía): capturas confirmando
+"Nombre Completo" en itálica atenuada, "Ej. PhD en Neuropsicología" en
+el botón ya sin cortarse, y el modal O.D. mostrando el texto honesto
+nuevo -- leído el DOM directamente (no solo la captura) para confirmar
+que el renglón de estado dice "Sin configurar" (en la captura quedaba
+tapado por el botón flotante de MasterN0, que vive fijo en esa misma
+esquina). Suite Playwright completa 41/41 verde.
