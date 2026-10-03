@@ -741,16 +741,21 @@ export default function LyCardView({
 
   // PASO 6 (2026-10-02) -- con destinatario, el mismo botón "Agendar"
   // abre este funnel nuevo en vez del de siempre (ver más abajo, dentro
-  // de scheduleOpen): sin código de acceso (el link ya identifica a la
-  // persona), nombre precargado, confirma email/WhatsApp, elige duración
-  // de programa, acepta privacidad. Reusa el alta Freemium self-service y
-  // el sistema de entrevistas que ya existen -- nada de MayanCity ni
-  // billeteras blockchain, pedido explícito de Gunnar.
+  // de scheduleOpen). Calcado del funnel REAL de MayanCity (captura que
+  // mandó Gunnar): wizard de 4 pantallas con barra de progreso --
+  // 1) video ("Antes de agendar...") 2) tus datos (nombre precargado,
+  // email, WhatsApp, programa, privacidad) 3) elegí tu sesión (horario
+  // real) 4) confirmación. Los datos quedan 100% en LyCard: nunca se
+  // conecta con la app de MayanCity ni se crea ninguna billetera
+  // blockchain -- reusa el alta Freemium self-service y
+  // registerInterviewAction, el mismo sistema de entrevistas de siempre.
+  const [legacyStep, setLegacyStep] = useState<1 | 2 | 3>(1);
   const [legacyName, setLegacyName] = useState(recipient?.nombre ?? "");
   const [legacyEmail, setLegacyEmail] = useState("");
   const [legacyWa, setLegacyWa] = useState("");
   const [legacyDuracion, setLegacyDuracion] = useState<string | null>(null);
   const [legacyPrivacy, setLegacyPrivacy] = useState(false);
+  const [legacySlotId, setLegacySlotId] = useState<string | null>(null);
   const [legacyError, setLegacyError] = useState<string | null>(null);
   const [legacyResult, setLegacyResult] = useState<{ cardSlug: string; interviewLabel: string } | null>(null);
   const [legacySubmitting, startLegacySubmitting] = useTransition();
@@ -763,22 +768,31 @@ export default function LyCardView({
     setScheduleEmail("");
     setScheduleError(null);
     setScheduleResult(null);
+    setLegacyStep(1);
     setLegacyName(recipient?.nombre ?? "");
     setLegacyEmail("");
     setLegacyWa("");
     setLegacyDuracion(null);
     setLegacyPrivacy(false);
+    setLegacySlotId(null);
     setLegacyError(null);
     setLegacyResult(null);
   }
 
-  function submitLegacyFunnel() {
+  function submitLegacyDatos() {
     setLegacyError(null);
     if (!legacyName.trim()) return setLegacyError("Escribí tu nombre.");
     if (!legacyEmail.trim()) return setLegacyError("Escribí tu email.");
     if (!legacyWa.trim()) return setLegacyError("Escribí tu WhatsApp.");
     if (!legacyDuracion) return setLegacyError("Elegí un programa.");
     if (!legacyPrivacy) return setLegacyError("Tenés que aceptar el aviso de privacidad para seguir.");
+    setLegacyStep(3);
+  }
+
+  function submitLegacyFunnel() {
+    setLegacyError(null);
+    if (!legacySlotId) return setLegacyError("Elegí un horario.");
+    if (!legacyDuracion) return setLegacyError("Elegí un programa.");
     startLegacySubmitting(async () => {
       const res = await startLegacyFunnelAction({
         referrerCardSlug: card.slug,
@@ -787,6 +801,7 @@ export default function LyCardView({
         whatsapp: legacyWa,
         programDuracion: legacyDuracion,
         aceptaPrivacidad: legacyPrivacy,
+        slotId: legacySlotId,
       });
       if (res.ok) {
         setLegacyResult({ cardSlug: res.cardSlug, interviewLabel: res.interviewLabel });
@@ -796,6 +811,8 @@ export default function LyCardView({
         setLegacyError("Escribí tu nombre.");
       } else if (res.error === "whatsapp") {
         setLegacyError("Escribí tu WhatsApp.");
+      } else if (res.error === "slot") {
+        setLegacyError("Ese horario ya se llenó -- elegí otro.");
       } else {
         setLegacyError("No se pudo crear tu tarjeta -- probá de nuevo.");
       }
@@ -2691,18 +2708,46 @@ export default function LyCardView({
               </div>
 
               <h3 style={{ margin: 0, font: "600 17px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>
-                {recipient && isProject ? `Bienvenido, ${recipient.nombre}` : L(isProject ? "scheduleTitle" : isCompany ? "meetingTitle" : "coffeeTitle")}
+                {recipient && isProject
+                  ? legacyResult
+                    ? "Tu tarjeta ya existe"
+                    : legacyStep === 1
+                    ? "Antes de agendar..."
+                    : legacyStep === 2
+                    ? "Tus datos"
+                    : "Elegí tu sesión"
+                  : L(isProject ? "scheduleTitle" : isCompany ? "meetingTitle" : "coffeeTitle")}
               </h3>
+
+              {recipient && isProject && !legacyResult && (
+                // Barra de progreso de 3 pasos, calcada del funnel real
+                // de MayanCity (captura que mandó Gunnar) -- el 4to paso
+                // es la pantalla de éxito de arriba, sin barra.
+                <div style={{ display: "flex", gap: 6 }}>
+                  {[1, 2, 3].map((n) => (
+                    <span
+                      key={n}
+                      style={{
+                        flex: 1,
+                        height: 4,
+                        borderRadius: 999,
+                        background: n <= legacyStep ? "var(--accentMid,#C8A15A)" : "rgba(255,255,255,.1)",
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
 
               {recipient && isProject ? (
                 // PASO 6 (2026-10-02) -- funnel propio para el
-                // destinatario: sin código de acceso, nombre precargado,
-                // confirma email/WhatsApp, elige duración de programa,
-                // acepta privacidad. Reusa el alta Freemium self-service y
-                // el sistema de entrevistas ya existentes (ver
-                // app/c/legacy-funnel-actions.ts) -- nunca el slot-picker
-                // de abajo, que sigue intacto para cuando NO hay
-                // destinatario.
+                // destinatario, calcado del funnel REAL de MayanCity:
+                // video → tus datos → elegí tu sesión → confirmación. Los
+                // datos quedan 100% en LyCard (reusa el alta Freemium
+                // self-service y registerInterviewAction, ver
+                // app/c/legacy-funnel-actions.ts) -- nunca se conecta con
+                // MayanCity ni crea billeteras blockchain. Nunca toca el
+                // slot-picker de abajo, que sigue intacto para cuando NO
+                // hay destinatario.
                 legacyResult ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                     <div style={{ padding: 18, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
@@ -2741,10 +2786,61 @@ export default function LyCardView({
                       </span>
                     )}
                   </div>
-                ) : (
+                ) : legacyStep === 1 ? (
+                  // Paso 1/3 -- video, calcado de "Antes de agendar..."
+                  // de MayanCity. Sin un video real cargado todavía
+                  // (Gunnar no pasó uno) -- placeholder honesto marcado,
+                  // mismo criterio que el resto de la app.
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "center", textAlign: "center" }}>
+                    <span style={{ width: 52, height: 52, borderRadius: 999, background: "rgba(var(--accentRgb,200,161,90),.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Icon name="videocam" size={24} style={{ color: "var(--accentMid,#C8A15A)" }} />
+                    </span>
+                    <p style={{ margin: 0, font: "400 12.5px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
+                      Mirá este breve video antes de tu entrevista con Legacy.
+                    </p>
+                    <div
+                      style={{
+                        width: "100%",
+                        aspectRatio: "16/9",
+                        borderRadius: 14,
+                        border: "1px dashed rgba(255,255,255,.18)",
+                        background: "rgba(0,0,0,.4)",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 6,
+                      }}
+                    >
+                      <Icon name="movie" size={24} style={{ color: "#5A5A5A" }} />
+                      <span style={{ font: "700 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".12em", textTransform: "uppercase", color: "#5A5A5A" }}>
+                        Video no configurado
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setLegacyStep(2)}
+                      style={{
+                        width: "100%",
+                        padding: 14,
+                        border: "none",
+                        borderRadius: 12,
+                        background: "linear-gradient(90deg,var(--accentLight,#E5C378),var(--accentMid,#C8A15A) 50%,var(--accentDeep,#99732B))",
+                        color: "var(--deepBg,#0D0D0D)",
+                        font: "700 12.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
+                        letterSpacing: ".12em",
+                        textTransform: "uppercase",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Continuar a la agenda
+                    </button>
+                  </div>
+                ) : legacyStep === 2 ? (
+                  // Paso 2/3 -- tus datos + programa + privacidad.
                   <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                     <p style={{ margin: 0, font: "400 12.5px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
-                      Confirmá tus datos, elegí tu programa, y arrancamos. Tu link personalizado ya te identifica -- no hace falta ningún código.
+                      Confirmá dónde te contactamos. Tu link personalizado ya te identifica -- no hace falta ningún código.
                     </p>
 
                     <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -2828,6 +2924,79 @@ export default function LyCardView({
 
                     <button
                       type="button"
+                      onClick={submitLegacyDatos}
+                      style={{
+                        width: "100%",
+                        padding: 14,
+                        border: "none",
+                        borderRadius: 12,
+                        background: "linear-gradient(90deg,var(--accentLight,#E5C378),var(--accentMid,#C8A15A) 50%,var(--accentDeep,#99732B))",
+                        color: "var(--deepBg,#0D0D0D)",
+                        font: "700 12.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
+                        letterSpacing: ".12em",
+                        textTransform: "uppercase",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Siguiente paso
+                    </button>
+                  </div>
+                ) : (
+                  // Paso 3/3 -- elegí tu sesión, mismo horario real que
+                  // usa el slot-picker de siempre (interviewSlots prop).
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    <p style={{ margin: 0, font: "400 12.5px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
+                      Horarios disponibles para esta semana.
+                    </p>
+
+                    {interviewSlots.length === 0 ? (
+                      <div style={{ padding: 18, borderRadius: 12, border: "1px dashed rgba(255,255,255,.18)", textAlign: "center" }}>
+                        <span style={{ font: "700 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "var(--ink2,#8a8378)" }}>
+                          No hay sesiones disponibles
+                        </span>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {interviewSlots.map((slot) => {
+                          const on = slot.id === legacySlotId;
+                          return (
+                            <button
+                              key={slot.id}
+                              type="button"
+                              onClick={() => setLegacySlotId(slot.id)}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 10,
+                                padding: 12,
+                                borderRadius: 12,
+                                border: `1px solid ${on ? "rgba(var(--accentRgb,200,161,90),.6)" : "rgba(255,255,255,.1)"}`,
+                                background: on ? "rgba(var(--accentRgb,200,161,90),.14)" : "var(--surf,#141414)",
+                                cursor: "pointer",
+                                textAlign: "left",
+                              }}
+                            >
+                              <span style={{ width: 18, height: 18, borderRadius: 999, border: `2px solid ${on ? "var(--accentLight,#E5C378)" : "#5A5A5A"}`, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+                                {on && <span style={{ width: 9, height: 9, borderRadius: 999, background: "var(--accentLight,#E5C378)" }} />}
+                              </span>
+                              <span style={{ display: "flex", flexDirection: "column" }}>
+                                <span style={{ font: "600 12.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: on ? "var(--accentLight,#E5C378)" : "var(--ink,#F5F2EB)" }}>
+                                  {lang === "en" ? slot.labelEn : slot.label}
+                                </span>
+                                <span style={{ font: "400 10.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "#9a8f80" }}>{slot.time}</span>
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {legacyError && (
+                      <span style={{ font: "600 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "#e5928a" }}>{legacyError}</span>
+                    )}
+
+                    <button
+                      type="button"
                       onClick={submitLegacyFunnel}
                       disabled={legacySubmitting}
                       style={{
@@ -2849,7 +3018,7 @@ export default function LyCardView({
                       }}
                     >
                       <Icon name="check_circle" size={18} />
-                      <span>{legacySubmitting ? "..." : "Confirmar mi lugar"}</span>
+                      <span>{legacySubmitting ? "..." : "Confirmar asistencia"}</span>
                     </button>
                   </div>
                 )

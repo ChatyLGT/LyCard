@@ -7765,3 +7765,68 @@ la ProgramMembership con `programDuracion` guardada + la Registration
 con el próximo slot -- confirmado directo contra la base, no solo en
 pantalla --, pantalla de éxito con el link real, y click en "Ver mi
 tarjeta" aterriza en la Card nueva de Rogelio de verdad.
+
+## 2026-10-02 -- Corrección PASO 6: calcar el funnel REAL de MayanCity (v1.67.1)
+
+Gunnar corrigió: "Es que no es así. Te pedí copies el funnel de
+MayanCity.. porque no lo haces." El pedido original ("NO conectar con
+la app de MayanCity ni crear billeteras blockchain") se había
+interpretado como "no uses nada de MayanCity" -- lo que pedía era
+calcar la ESTRUCTURA/UX real del funnel de MayanCity (wizard de 4
+pantallas con barra de progreso), solo que sin conectar con su backend
+real ni crear billeteras blockchain de verdad. Son dos cosas
+distintas. Gunnar mandó 4 capturas reales del funnel de MayanCity para
+que quedara sin ambigüedad.
+
+### Las 4 pantallas reales de MayanCity (de las capturas)
+
+1. **"Antes de agendar..."** -- barra de progreso (3 segmentos), video
+   corto ("Mirá este video para entender el potencial..."), con
+   fallback honesto "VIDEO NO CONFIGURADO" cuando no hay uno cargado
+   (¡coincide con el criterio de placeholders ya usado en toda la app!).
+   Botón "Continuar a la agenda".
+2. **"Tus datos"** -- Nombre Completo, Correo Electrónico, WhatsApp
+   (selector de país + número). Botón "Siguiente paso" (gris/inactivo
+   hasta completar, negro cuando está listo).
+3. **"Elige tu sesión"** -- horarios reales de esa semana, con
+   fallback "NO HAY SESIONES DISPONIBLES" si no hay. Botón "Confirmar
+   asistencia".
+4. (No capturada, pero implícita por la barra de 4 segmentos) --
+   pantalla de confirmación.
+
+### Rehecho en LyCard
+
+`components/LyCardView.tsx`: el formulario de un solo paso se
+convierte en un wizard real de 3 pasos + pantalla de éxito (estado
+`legacyStep`), con barra de progreso de 3 segmentos arriba del título
+(el 4to paso, éxito, no lleva barra -- igual que MayanCity). Paso 1
+video (placeholder honesto, sin video real cargado -- Gunnar no pasó
+uno todavía). Paso 2 tus datos, con "elegí tu programa" y el checkbox
+de privacidad agregados ahí (no estaban en las capturas de MayanCity,
+pero sí en el pedido textual original de Gunnar -- se integran al
+mismo paso en vez de inventar una pantalla de más). Paso 3 elegí tu
+sesión: ahora reusa el MISMO prop `interviewSlots` que ya usa el
+slot-picker de siempre (en vez de auto-asignar el primer horario como
+en la v1.67.0) -- la persona elige su horario a mano, calcado de
+MayanCity.
+
+`app/c/legacy-funnel-actions.ts`: `startLegacyFunnelAction` ahora
+recibe `slotId` (el horario elegido a mano) en vez de auto-asignarlo,
+y en vez de reimplementar la reserva llama directo a
+`registerInterviewAction` (la misma función que usa el slot-picker de
+siempre) -- reuso real, no una copia paralela de la lógica de cupo/
+capacidad.
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos,
+`pnpm test:unit:coverage` 251/251 al 100%, `pnpm build` limpio.
+Playwright real de punta a punta por los 4 pasos contra
+`/c/mastern0?para=rogelio`: capturas de cada pantalla (video con
+badge "Video no configurado" + barra 1/3, tus datos con barra 2/3,
+elegí tu sesión con los 4 horarios reales ordenados cronológicamente +
+barra 3/3 + bloqueo real sin elegir horario, y la pantalla de éxito
+con el link real). Suite completa 41/41 -- incluye una validación
+casual extra: la fecha del sistema cambió de 2026-10-02 a 2026-10-03 a
+mitad de esta sesión y los horarios se recalcularon solos, sin tocar
+nada, confirmando que el fix de slots de la v1.67.0 sigue vivo.

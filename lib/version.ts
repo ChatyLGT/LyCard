@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.67.0";
+export const APP_VERSION = "1.67.1";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.67.1",
+    date: "2026-10-02",
+    notes:
+      "Corrección de PASO 6: Gunnar pidió calcar el funnel REAL de MayanCity, no uno inventado -- ahora el funnel de \"Agendar una entrevista\" con destinatario es un wizard de 4 pantallas con barra de progreso, igual que el de MayanCity: 1) un video corto antes de agendar (sin video real cargado, placeholder marcado), 2) tus datos (nombre, email, WhatsApp, programa, privacidad), 3) elegí tu sesión -- ahora con el horario REAL elegido a mano, ya no auto-asignado, 4) \"Tu tarjeta ya existe\" con el link y la fecha. Los datos siguen quedando 100% en LyCard -- nunca se conecta con la app de MayanCity ni se crea ninguna billetera blockchain.",
+  },
   {
     version: "1.67.0",
     date: "2026-10-02",

@@ -3,16 +3,18 @@
 import { prisma } from "@/lib/prisma";
 import { createMemberSession } from "@/lib/memberAuth";
 import { ensureLegacyMembershipAndCards } from "@/lib/legacyMembership";
-import { generateLegacySlots } from "@/lib/interviewSlots";
-import { upsertLead } from "@/lib/leadsUpsert";
+import { registerInterviewAction } from "@/app/c/actions";
 import { PROGRAM_DURATIONS } from "@/lib/legacyProgramDurations";
 
 // PASO 6 (2026-10-02, pedido de Gunnar): el funnel de "Agendar una
-// entrevista" para un destinatario con link personalizado. Reusa el alta
-// Freemium self-service (lib/legacyMembership.ts, ya construido para el
-// login de /m) y el sistema de entrevistas que ya existe (Registration +
-// lib/interviewSlots.ts) -- no se arma nada de cero, no hay MayanCity ni
-// billeteras blockchain acá, pedido explícito de Gunnar.
+// entrevista" para un destinatario con link personalizado -- calcado del
+// funnel real de MayanCity (video → tus datos → elegí tu sesión →
+// confirmación, ver captura que mandó Gunnar), pero con los datos
+// quedando 100% en LyCard: nunca se conecta con la app de MayanCity ni
+// se crea ninguna billetera blockchain. Reusa el alta Freemium
+// self-service (lib/legacyMembership.ts, el mismo del login de /m) y
+// `registerInterviewAction` -- la MISMA función que ya usa el slot-picker
+// de siempre -- para la reserva del horario, capacidad incluida.
 //
 // "Sin código de acceso: el link personalizado ya identifica a la
 // persona" (pedido textual) -- a diferencia del login real de /m (WhatsApp
@@ -24,7 +26,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export type LegacyFunnelResult =
   | { ok: true; cardSlug: string; interviewLabel: string }
-  | { ok: false; error: "nombre" | "email" | "whatsapp" | "duracion" | "privacidad" | "card" };
+  | { ok: false; error: "nombre" | "email" | "whatsapp" | "duracion" | "privacidad" | "slot" | "card" };
 
 export async function startLegacyFunnelAction(input: {
   referrerCardSlug: string;
@@ -33,6 +35,7 @@ export async function startLegacyFunnelAction(input: {
   whatsapp: string;
   programDuracion: string;
   aceptaPrivacidad: boolean;
+  slotId: string;
 }): Promise<LegacyFunnelResult> {
   const nombre = input.nombre.trim();
   const email = input.email.trim();
@@ -43,6 +46,7 @@ export async function startLegacyFunnelAction(input: {
   if (!whatsapp) return { ok: false, error: "whatsapp" };
   if (!PROGRAM_DURATIONS.some((d) => d.id === input.programDuracion)) return { ok: false, error: "duracion" };
   if (!input.aceptaPrivacidad) return { ok: false, error: "privacidad" };
+  if (!input.slotId) return { ok: false, error: "slot" };
 
   const referrerCard = await prisma.card.findUnique({ where: { slug: input.referrerCardSlug } });
   if (!referrerCard) return { ok: false, error: "card" };
@@ -57,6 +61,10 @@ export async function startLegacyFunnelAction(input: {
     });
   }
 
+  // Sesión creada ANTES de llamar a registerInterviewAction a propósito:
+  // esa función lee currentMemberId() de la cookie para linkear el
+  // Registration a la membresía -- mismo mecanismo que usa el slot-picker
+  // de siempre cuando quien agenda ya tiene sesión.
   await createMemberSession(member.id);
   await ensureLegacyMembershipAndCards(member.id, referrerCard.slug);
 
@@ -80,39 +88,13 @@ export async function startLegacyFunnelAction(input: {
     where: { memberId: member.id, kind: "project" },
     orderBy: { createdAt: "asc" },
   });
+  if (!projectCard) return { ok: false, error: "card" };
 
-  // Entrevista inicial -- próximo turno disponible, auto-asignado (el
-  // pedido de PASO 6 no incluye un paso de elegir horario a mano).
-  const nextSlot = generateLegacySlots()[0];
-  const interviewLabel = `${nextSlot.label} — ${nextSlot.time}`;
+  // El horario elegido en el paso 3 -- misma reserva real que usa el
+  // slot-picker de siempre (resuelve slot real o legacy, capacidad
+  // incluida, y ya se ocupa de su propio upsertLead), nada duplicado.
+  const reg = await registerInterviewAction({ cardSlug: projectCard.slug, slotId: input.slotId, name: nombre, whatsapp, email });
+  if (!reg.ok) return { ok: false, error: "slot" };
 
-  if (projectCard) {
-    const existing = await prisma.registration.findFirst({ where: { cardId: projectCard.id, whatsapp } });
-    const registration = existing
-      ? await prisma.registration.update({
-          where: { id: existing.id },
-          data: { slotId: nextSlot.id, slotLabel: interviewLabel, name: nombre, email, membershipId: membership?.id ?? null },
-        })
-      : await prisma.registration.create({
-          data: {
-            cardId: projectCard.id,
-            slotId: nextSlot.id,
-            slotLabel: interviewLabel,
-            name: nombre,
-            whatsapp,
-            email,
-            membershipId: membership?.id ?? null,
-          },
-        });
-
-    await upsertLead(projectCard.id, {
-      name: nombre,
-      contacts: [whatsapp, email],
-      source: "entrevista",
-      proposedStage: "en_seguimiento",
-      registrationId: registration.id,
-    });
-  }
-
-  return { ok: true, cardSlug: projectCard?.slug ?? "", interviewLabel };
+  return { ok: true, cardSlug: projectCard.slug, interviewLabel: reg.slotLabel };
 }
