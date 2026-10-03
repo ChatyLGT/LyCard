@@ -94,6 +94,29 @@ export const STR: Record<Lang, Record<string, string>> = {
     // una sola persona hecho pasar por default de la plataforma. Ahora
     // explica honestamente que es un campo programable por Programa, sin
     // inventar una identidad que no corresponde.
+    // Explicación GENERAL de cada uno de los 4 badges (2026-10-02, segunda
+    // vuelta, pedido de Gunnar: "necesito que en cada medalla o
+    // distincion.. se explique para que es cada una de forma general..
+    // lo de aprendiz.. O.D. Ancient.. es solo para el legacy"). Van SIEMPRE
+    // primero en el body del modal (configurado o no) -- explican el
+    // CONCEPTO del slot (qué tipo de distinción es, en cualquier Programa),
+    // distinto del fallback de arriba (odBody/ancBody/medalBody), que
+    // explica el ESTADO puntual (configurado o no).
+    //
+    // CORRECCIÓN en vivo (mismo pedido): la primera versión decía "acá ves
+    // las que eligió Legacy" -- Gunnar aclaró que esta Card (mastern0) NO
+    // es la Legacy Card de forma estricta, es una LyCard general sin
+    // Programa asociado (`programId: null` desde siempre) -- "O.D." y
+    // "Aprendiz" son los valores CRUDOS por default del schema, no una
+    // decisión real de Legacy. Corregido para no atribuirle a Legacy algo
+    // que nadie configuró -- ahora dice honestamente que son valores de
+    // ejemplo sin Programa real detrás todavía.
+    odIntro:
+      "Esta es tu posición dentro de la estructura que arma tu Programa (un rol, un título, un puesto) — cada Programa define las suyas. Lo que ves acá (ej. \"O.D.\") es un valor de ejemplo, sin un Programa real detrás todavía.",
+    ancIntro:
+      "Este es tu rango de experiencia o trayectoria dentro del Programa — cada Programa arma su propia escala. Lo que ves acá (ej. \"Aprendiz\") es un valor de ejemplo, sin un Programa real detrás todavía.",
+    medalIntro:
+      "Este es tu nivel de distinción general dentro del Programa — una forma de destacar tu compromiso o trayectoria. Cada Programa define su propia escala de niveles, íconos y colores.",
     odBody:
       "Esta distinción todavía no fue configurada. El N0 del Programa define acá su nombre, ícono y descripción desde /admin/programs — cada Programa arma la suya, no hay una fija.",
     odMeta: "Estatus: Activo y Certificado",
@@ -249,6 +272,12 @@ export const STR: Record<Lang, Record<string, string>> = {
     meetingTitle: "Book a Meeting",
     meetingSub: "Pick an available time to talk with {name}.",
     linkCopied: "Link copied",
+    odIntro:
+      "This is your position within the structure your Program builds (a role, a title, a position) — each Program defines its own. What you see here (e.g. \"O.D.\") is a sample value, with no real Program behind it yet.",
+    ancIntro:
+      "This is your rank of experience or track record within the Program — each Program builds its own scale. What you see here (e.g. \"Apprentice\") is a sample value, with no real Program behind it yet.",
+    medalIntro:
+      "This is your general distinction level within the Program — a way to highlight commitment or track record. Each Program defines its own scale of levels, icons and colors.",
     odBody:
       "This distinction hasn't been configured yet. The Program's N0 sets its name, icon and description from /admin/programs — each Program builds its own, there's no fixed one.",
     odMeta: "Status: Active and Certified",

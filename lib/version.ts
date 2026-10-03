@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.68.4";
+export const APP_VERSION = "1.68.5";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.68.5",
+    date: "2026-10-03",
+    notes:
+      "Detalle 4: los 4 badges de la tarjeta (2 medallas junto al nombre, 2 distinciones debajo del CV) ahora explican SIEMPRE, en lenguaje general, para qué sirve cada tipo de slot -- independientemente de si el Programa ya lo configuró o no. Antes solo se explicaba el estado ('todavía no configurado'), sin decir qué ES conceptualmente cada cosa. Corrección en el camino: la primera versión de este texto decía 'acá ves lo que eligió Legacy' -- pero esta Card (mastern0) nunca estuvo asociada a ningún Programa real, los valores que muestra ('O.D.', 'Aprendiz') son los defaults crudos del sistema, no una decisión de Legacy. Corregido para no atribuirle a Legacy algo que nadie configuró todavía.",
+  },
   {
     version: "1.68.4",
     date: "2026-10-03",

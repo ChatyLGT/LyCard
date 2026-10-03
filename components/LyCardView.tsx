@@ -1179,7 +1179,13 @@ export default function LyCardView({
       // Antes estaba al revés (PLAN.md Fase 9.1).
       kicker: displaySiglas,
       head: displayDenominacion,
-      body: displayDescripcion || t(lang, "odBody"),
+      // Explicación general SIEMPRE primero (2026-10-02, segunda vuelta --
+      // "necesito que en cada medalla o distincion.. se explique para que
+      // es cada una de forma general.. lo de aprendiz.. O.D. Ancient.. es
+      // solo para el legacy"), después el estado puntual (configurado o
+      // no). El viewer entiende el CONCEPTO del slot aunque nunca haya
+      // visto Legacy antes de leerlo.
+      body: `${t(lang, "odIntro")} ${displayDescripcion || t(lang, "odBody")}`,
       // meta condicional (2026-10-03): "Sin configurar" mientras el
       // Programa no definió su propio Puesto -- antes decía siempre
       // "Activo y Certificado" aunque el body ya avisara que no hay nada
@@ -1192,14 +1198,14 @@ export default function LyCardView({
       // Dynamic per the card's actual rank tier (PLAN.md Fase 9.5) — used
       // to always say "Ancient Pioneer" regardless of the real rank.
       head: `✦ ${rankTier.nombre} ✦`,
-      body: rankTier.descripcion || t(lang, "ancBody"),
+      body: `${t(lang, "ancIntro")} ${rankTier.descripcion || t(lang, "ancBody")}`,
       meta: rankTier.descripcion ? t(lang, "ancMeta") : t(lang, "ancMetaEmpty"),
     },
     medal: {
       icon: medalTier.icono || "workspace_premium",
       kicker: medalTier.subtitulo || t(lang, "medalKicker"),
       head: medalTier.nombre,
-      body: medalTier.descripcion || t(lang, "medalBody"),
+      body: `${t(lang, "medalIntro")} ${medalTier.descripcion || t(lang, "medalBody")}`,
       meta: medalTier.descripcion ? t(lang, "medalMeta") : t(lang, "medalMetaEmpty"),
     },
     // Tier label/icon are real (Card.contacts + Program.contactsScale,

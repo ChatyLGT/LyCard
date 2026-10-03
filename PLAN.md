@@ -8210,3 +8210,57 @@ nuevo -- leído el DOM directamente (no solo la captura) para confirmar
 que el renglón de estado dice "Sin configurar" (en la captura quedaba
 tapado por el botón flotante de MasterN0, que vive fijo en esa misma
 esquina). Suite Playwright completa 41/41 verde.
+
+## 2026-10-03 -- Detalle 4: explicar cada badge de forma general, no solo su estado (v1.68.5)
+
+Gunnar: "no entendi lo que me dijiste de los Rangos y demas.. pero al
+final de cuentas lo que quiero comentar es lo siguiente.. en la
+tarjeta tenemos 4 niveles de distinciones o 'medallas' .. dos medallas
+al lado del nombre completo y dos 'distinciones' en la parte de abajo
+del Cv.. estas distinciones Puede Ser Estatus y Rango (por ejemplo)..
+lo que necesito es que en cada medalla o distincion.. se explique para
+que es cada una de forma general.. lo de aprendiz.. O.D. Ancient.. es
+solo para el legacy."
+
+Pedido claro una vez traducido de la jerga técnica que usé antes y que
+no entendió: los 4 badges (las 2 medallas-dot junto al nombre, las 2
+"distinciones" bajo el CV) necesitan, SIEMPRE visible dentro de su
+modal, una explicación de qué representa ese TIPO de badge en general
+-- no solo si está configurado o no (eso ya se arregló la vuelta
+anterior). Un visitante que nunca vio Legacy tiene que entender "esto
+es tu rango de experiencia" o "esto es tu posición dentro del
+Programa" sin necesitar contexto de Legacy.
+
+### Implementación
+
+Sumadas 3 frases nuevas en `lib/i18n.ts` (`odIntro`, `ancIntro`,
+`medalIntro`, ES+EN) que van SIEMPRE primero en el body de cada modal
+-- antes del texto de estado (configurado/no configurado) que ya
+estaba. El cuarto badge (contactos, el dot izquierdo) ya tenía una
+explicación genérica desde antes, no hacía falta tocarlo.
+
+### Corrección en vivo, durante la misma tarea
+
+Gunnar interrumpió con una aclaración clave: "de echo esta no serual
+la Legacy Card de forma estricta.. nomas seria yna Lycard (general)".
+La primera redacción de estas 3 frases decía "acá ves las que eligió
+Legacy (ej. 'O.D.')" -- pero la Card `mastern0` que estamos repasando
+NUNCA estuvo asociada a un Programa real (`programId: null` desde el
+día uno, confirmado en el schema). Los valores que se ven ("O.D.",
+"Aprendiz") son los defaults CRUDOS del modelo `Card` en
+`prisma/schema.prisma` (`siglas: "O.D." @default`, `rank: "aprendiz"
+@default`), no una decisión real de Legacy como Programa configurado.
+Atribuirle esa elección a "Legacy" habría sido inventar una
+personalización que nadie hizo. Corregido antes de shippear: ahora
+dice "Lo que ves acá (ej. 'O.D.') es un valor de ejemplo, sin un
+Programa real detrás todavía" -- honesto en los dos sentidos, general
+Y sin pretender que es contenido real de Legacy.
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos,
+`pnpm test:unit:coverage` 251/251 al 100%, `pnpm build` limpio.
+Playwright real contra `/c/mastern0`: leído el texto completo del
+modal O.D. directo del DOM, confirmado que dice la frase general
+nueva seguida del estado "Sin configurar" (no la versión vieja que
+mencionaba a Legacy). Suite Playwright completa 41/41 verde.
