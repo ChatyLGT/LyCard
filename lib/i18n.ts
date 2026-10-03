@@ -119,12 +119,23 @@ export const STR: Record<Lang, Record<string, string>> = {
     // decisión real de Legacy. Corregido para no atribuirle a Legacy algo
     // que nadie configuró -- ahora dice honestamente que son valores de
     // ejemplo sin Programa real detrás todavía.
+    // Reescrito 2026-10-03 (tercera vuelta, mismo pedido de Gunnar
+    // ampliado): "quiero que cambies el contenido de los modales de
+    // insignia y distintivos y que expliques para que y como funciona
+    // cada uno. Y des ejemplos de algunos iconos y demas" -- no alcanzaba
+    // con decir QUÉ es cada badge (ronda anterior), hacía falta explicar
+    // el MECANISMO (el N0 arma una escala de 3 a N niveles desde
+    // /admin/programs, cada nivel con su propio nombre/ícono/color) y dar
+    // ejemplos concretos de íconos reales de Material Symbols (el set que
+    // ya usa toda la app) para cada tipo de distinción.
     odIntro:
-      "Esta es tu posición dentro de la estructura que arma tu Programa (un rol, un título, un puesto) — cada Programa define las suyas. Lo que ves acá (ej. \"O.D.\") es un valor de ejemplo, sin un Programa real detrás todavía.",
+      "Esta es tu posición dentro de la estructura que arma tu Programa — un rol o título (ej. fundador, guardián, enlace), distinto del Rango de acá abajo (eso mide experiencia, esto mide el puesto que ocupás). El N0 arma su propia escalera de posiciones desde /admin/programs: cada una con su sigla, nombre completo, descripción e ícono -- podés tener 3, 5, las que tu equipo necesite. Ejemplos de íconos típicos: diamond (fundador), shield (guardián), handshake (socio/enlace), groups (líder de equipo), verified (rol certificado).",
     ancIntro:
-      "Este es tu rango de experiencia o trayectoria dentro del Programa — cada Programa arma su propia escala. Lo que ves acá (ej. \"Aprendiz\") es un valor de ejemplo, sin un Programa real detrás todavía.",
+      "Este es tu rango de experiencia y trayectoria dentro del Programa — una escalera de progreso, como un sistema de cinturones: empezás en el primer nivel y subís con el tiempo. El N0 arma su propia escala desde /admin/programs, de 3 hasta N niveles, cada uno con su propio nombre, subtítulo, ícono y color. Ejemplos de íconos típicos: school (en formación), trending_up (en práctica), workspace_premium (con dominio), terrain (guía/mentor), all_inclusive (el nivel más alto).",
     medalIntro:
-      "Este es tu nivel de distinción general dentro del Programa — una forma de destacar tu compromiso o trayectoria. Cada Programa define su propia escala de niveles, íconos y colores.",
+      "Este es tu nivel de distinción general dentro del Programa — un reconocimiento de tu compromiso o trayectoria, tipo bronce/plata/oro/platino/diamante. El N0 arma su propia escala desde /admin/programs, de 3 hasta N niveles, cada uno con su propio ícono y color. Ejemplos de íconos típicos: military_tech, workspace_premium, verified, star, emoji_events.",
+    contactsIntro:
+      "Este indicador muestra tu alcance — cuánta gente contactaste o le compartiste tu LyCard. Mismo mecanismo que el resto de las distinciones: el N0 arma su propia escala de niveles desde /admin/programs, cada uno con su ícono y color. Ejemplos de íconos típicos: groups, forum, diversity_3, contacts.",
     odBody:
       "Esta distinción todavía no fue configurada. El N0 del Programa define acá su nombre, ícono y descripción desde /admin/programs — cada Programa arma la suya, no hay una fija.",
     odMeta: "Estatus: Activo y Certificado",
@@ -281,11 +292,13 @@ export const STR: Record<Lang, Record<string, string>> = {
     meetingSub: "Pick an available time to talk with {name}.",
     linkCopied: "Link copied",
     odIntro:
-      "This is your position within the structure your Program builds (a role, a title, a position) — each Program defines its own. What you see here (e.g. \"O.D.\") is a sample value, with no real Program behind it yet.",
+      "This is your position within the structure your Program builds — a role or title (e.g. founder, guardian, liaison), different from the Rank below (that measures experience, this measures the position you hold). The Program's N0 builds its own ladder of positions from /admin/programs: each with its initials, full name, description and icon — 3, 5, as many as your team needs. Typical icon examples: diamond (founder), shield (guardian), handshake (partner/liaison), groups (team lead), verified (certified role).",
     ancIntro:
-      "This is your rank of experience or track record within the Program — each Program builds its own scale. What you see here (e.g. \"Apprentice\") is a sample value, with no real Program behind it yet.",
+      "This is your rank of experience and track record within the Program — a progress ladder, like a belt system: you start at the first level and move up over time. The Program's N0 builds its own scale from /admin/programs, from 3 to N levels, each with its own name, subtitle, icon and color. Typical icon examples: school (in training), trending_up (in practice), workspace_premium (mastery), terrain (guide/mentor), all_inclusive (the highest level).",
     medalIntro:
-      "This is your general distinction level within the Program — a way to highlight commitment or track record. Each Program defines its own scale of levels, icons and colors.",
+      "This is your general distinction level within the Program — recognition of commitment or track record, like bronze/silver/gold/platinum/diamond. The Program's N0 builds its own scale from /admin/programs, from 3 to N levels, each with its own icon and color. Typical icon examples: military_tech, workspace_premium, verified, star, emoji_events.",
+    contactsIntro:
+      "This indicator shows your reach — how many people you contacted or shared your LyCard with. Same mechanism as the other distinctions: the Program's N0 builds its own scale of levels from /admin/programs, each with its own icon and color. Typical icon examples: groups, forum, diversity_3, contacts.",
     odBody:
       "This distinction hasn't been configured yet. The Program's N0 sets its name, icon and description from /admin/programs — each Program builds its own, there's no fixed one.",
     odMeta: "Status: Active and Certified",

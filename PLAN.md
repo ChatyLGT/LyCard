@@ -8331,3 +8331,52 @@ test.
 `pnpm test:unit:coverage` 251/251 al 100%, `pnpm build` limpio. Suite
 Playwright completa 41/41 verde (incluido el test corregido del panel
 de tamaños).
+
+## 2026-10-03 -- Detalle 6: contenido completo de los 4 modales de insignias/distinciones, con mecanismo y ejemplos de íconos (v1.69.0)
+
+Gunnar: "Quiero que cambies el contenido de los modales de insignia y
+distintivos y que expliques para que y como funciona cada uno. Y des
+ejemplos de algunos iconos y demas." Ampliación directa de lo hecho en
+v1.68.4/1.68.5 (que solo agregaba una frase corta de "para qué sirve
+esto en general") -- esta vez pidió explícitamente el CÓMO funciona
+(mecanismo real) y ejemplos concretos de íconos.
+
+### Contenido nuevo por modal
+
+Reescritos `odIntro`, `ancIntro`, `medalIntro` (ES+EN) en
+`lib/i18n.ts`, y sumado `contactsIntro` (nuevo, el cuarto modal no
+tenía esta capa todavía). Cada uno ahora cubre 3 cosas: QUÉ es (el
+concepto), CÓMO funciona (el N0 arma una escala de 3 a N niveles desde
+`/admin/programs`, cada nivel con su propio nombre/ícono/color -- el
+mismo mecanismo en los 4, solo cambia qué mide), y EJEMPLOS reales de
+íconos de Material Symbols (el set que ya usa toda la app, confirmado
+contra `lib/data.ts` RANKS/MEDALS y los íconos ya usados en el resto
+del código -- no inventados):
+
+- **Puesto** (badge O.D.): diamond (fundador), shield (guardián),
+  handshake (socio/enlace), groups (líder de equipo), verified (rol
+  certificado).
+- **Rango** (badge Ancient/Sabiduría): school (en formación),
+  trending_up (en práctica), workspace_premium (con dominio), terrain
+  (guía/mentor), all_inclusive (el nivel más alto).
+- **Medallón** (dot derecho del nombre): military_tech,
+  workspace_premium, verified, star, emoji_events.
+- **Contactos** (dot izquierdo del nombre): groups, forum,
+  diversity_3, contacts.
+
+De paso, aclarado por primera vez un punto que antes quedaba implícito
+y confuso: Puesto y Rango son DOS EJES DISTINTOS -- Puesto es el ROL
+que ocupás (fundador, guardián, líder), Rango es cuánta EXPERIENCIA
+tenés (principiante → avanzado). El texto de `odIntro` ahora lo dice
+explícitamente ("distinto del Rango de acá abajo").
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos,
+`pnpm test:unit:coverage` 251/251 al 100%, `pnpm build` limpio.
+Playwright real contra `/c/mastern0`: abierto el modal O.D., leído el
+texto completo del DOM (confirmado que trae la explicación nueva
+completa, mecanismo + 5 ejemplos de íconos + el estado "sin
+configurar" al final) y capturada la pantalla para confirmar que se
+ve bien, legible, con scroll natural dentro del modal sin desbordar.
+Suite Playwright completa 41/41 verde.

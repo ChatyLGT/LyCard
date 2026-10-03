@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.68.6";
+export const APP_VERSION = "1.69.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.69.0",
+    date: "2026-10-03",
+    notes:
+      "Detalle 6: reescritos los 4 modales de insignias/distinciones (los dos dots junto al nombre + los dos badges bajo el CV) para explicar de verdad qué son, cómo funcionan y con ejemplos de íconos reales -- antes solo decían \"esto es configurable por tu Programa\" en una frase corta; ahora cada uno explica el MECANISMO completo (el N0 arma una escala de 3 a N niveles desde /admin/programs, cada nivel con su propio nombre/ícono/color) y da 4-5 ejemplos concretos de íconos típicos de Material Symbols para ese tipo de distinción -- el Puesto (diamond, shield, handshake, groups, verified), el Rango (school, trending_up, workspace_premium, terrain, all_inclusive), el Medallón (military_tech, workspace_premium, verified, star, emoji_events) y el de Contactos (groups, forum, diversity_3, contacts). También se aclara por primera vez la diferencia entre Puesto (qué rol ocupás) y Rango (cuánta experiencia tenés) -- antes no quedaba claro que son dos ejes distintos.",
+  },
   {
     version: "1.68.6",
     date: "2026-10-03",

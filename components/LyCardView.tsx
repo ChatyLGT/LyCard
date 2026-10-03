@@ -1223,9 +1223,13 @@ export default function LyCardView({
       icon: contactsTier.icono || "military_tech",
       kicker: contactsTier.subtitulo || t(lang, "medalKicker"),
       head: `${contactsTier.nombre} · Contactados`,
-      body:
+      // Mismo patrón que od/ancient/medal (2026-10-03, tercera vuelta --
+      // "explique para que y como funciona cada uno.. den ejemplos de
+      // algunos iconos"): explicación general siempre primero.
+      body: `${t(lang, "contactsIntro")} ${
         contactsTier.descripcion ||
-        "Personas a las que le enviaste tu QR o contactaste desde tu LyCard. Todavía es un dato simulado — la cuenta real llega con el envío por WhatsApp de verdad.",
+        "Todavía es un dato simulado — la cuenta real llega con el envío por WhatsApp de verdad."
+      }`,
       meta: "Simulado",
     },
     story: {
