@@ -1,19 +1,29 @@
 // Service worker escrito a mano — nada de next-pwa (muerto desde 2024,
 // solo webpack) ni de @serwist/turbopack (todavía en tag "preview" de npm,
 // demasiado nuevo para apostarle a una app que se despliega varias veces
-// por día). Estrategia simple y honesta, dos casos:
+// por día). Estrategia simple y honesta, tres casos:
 //
-// 1. Assets estáticos de Next (/_next/static/*, /icons/*) — el nombre de
-//    archivo ya lleva el hash del build, así que cache-first es siempre
-//    seguro: un deploy nuevo genera URLs nuevas, nunca sirve algo viejo.
-// 2. Navegación (HTML) — SOLO para rutas públicas de bajo riesgo (la
+// 1. Assets de Next con hash (/_next/static/*) — el nombre de archivo ya
+//    lleva el hash del build, así que cache-first es siempre seguro: un
+//    deploy nuevo genera URLs nuevas, nunca sirve algo viejo bajo el
+//    mismo nombre.
+// 2. Íconos (/icons/*) -- CORRECCIÓN 2026-10-03: estos NO llevan hash en
+//    el nombre (`icon-192.png` es siempre `icon-192.png`), a diferencia
+//    de lo que decía el comentario original de este archivo -- un
+//    cache-first acá significa que, una vez cacheado el ícono viejo
+//    (el triángulo, antes de cambiarlo por el logo real de Legacy), el
+//    teléfono lo sigue sirviendo para siempre así el archivo cambie en
+//    el servidor. Mismo criterio que la navegación (caso 3): network
+//    primero, cache solo como respaldo si no hay señal.
+// 3. Navegación (HTML) — SOLO para rutas públicas de bajo riesgo (la
 //    tarjeta pública /c/[slug] y el home). Nunca /admin ni /m/dashboard:
 //    son pantallas autenticadas por cookie, y cachear esa HTML podría
 //    terminar mostrándole a alguien la sesión vieja de otra persona en el
 //    mismo teléfono. Para esas, sin señal simplemente falla como una web
 //    normal — es la degradación correcta, no una que invente datos.
-const CACHE_VERSION = "lycard-v1";
+const CACHE_VERSION = "lycard-v2";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
+const ICONS_CACHE = `${CACHE_VERSION}-icons`;
 const PAGES_CACHE = `${CACHE_VERSION}-pages`;
 const OFFLINE_URL = "/offline";
 
@@ -44,8 +54,13 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  if (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icons/")) {
+  if (url.pathname.startsWith("/_next/static/")) {
     event.respondWith(cacheFirst(request, STATIC_CACHE));
+    return;
+  }
+
+  if (url.pathname.startsWith("/icons/")) {
+    event.respondWith(networkFirst(request, ICONS_CACHE));
     return;
   }
 

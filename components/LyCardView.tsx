@@ -718,22 +718,43 @@ export default function LyCardView({
   // barra inferior que puede aparecer/desaparecer), pero en una PWA
   // standalone (manifest `display:"standalone"`, sin ninguna barra de
   // Safari) ese mismo cálculo deja un espacio muerto abajo del tamaño de
-  // la barra que ya no existe. `window.innerHeight` sí mide el alto real
-  // disponible en los dos modos, así que se usa ese valor en vez de
-  // `100dvh` en cuanto el JS corre -- `100dvh` queda solo de fallback
-  // para el primer pintado server-side, antes de que este efecto corra.
+  // la barra que ya no existe.
+  //
+  // Primera vuelta (v1.68.2) usaba `window.innerHeight` leído una vez al
+  // montar -- Gunnar reportó que seguía igual. Causa más probable: el
+  // ícono del home en iOS cachea el lanzamiento previo a nivel sistema
+  // (aparte del Service Worker), así que el dispositivo puede seguir
+  // mostrando el bundle viejo hasta un relanzamiento real. Pero además
+  // hay un segundo bug documentado de WebKit, más sutil: en standalone,
+  // la primera lectura de `window.innerHeight` al montar puede llegar
+  // ANTES de que WebKit termine de asentar el layout real de pantalla
+  // completa (sin barras), y queda con un valor viejo hasta el próximo
+  // evento de resize real -- que en standalone puede no llegar nunca
+  // solo. Por eso ahora: 1) se prioriza `visualViewport.height` sobre
+  // `window.innerHeight` (la API pensada específicamente para medir el
+  // viewport real, más confiable en iOS que el valor plano), y 2) se
+  // vuelve a medir con un pequeño delay después del primer pintado
+  // (además de en el montaje), para agarrar el valor ya asentado si el
+  // primero vino mal.
   const [appVh, setAppVh] = useState<number | null>(null);
   useEffect(() => {
+    function readVh() {
+      return Math.round(window.visualViewport?.height ?? window.innerHeight);
+    }
     function updateVh() {
-      setAppVh(window.innerHeight);
+      setAppVh(readVh());
     }
     updateVh();
+    const settleTimer = setTimeout(updateVh, 300);
     window.addEventListener("resize", updateVh);
     window.addEventListener("orientationchange", updateVh);
+    window.addEventListener("pageshow", updateVh);
     window.visualViewport?.addEventListener("resize", updateVh);
     return () => {
+      clearTimeout(settleTimer);
       window.removeEventListener("resize", updateVh);
       window.removeEventListener("orientationchange", updateVh);
+      window.removeEventListener("pageshow", updateVh);
       window.visualViewport?.removeEventListener("resize", updateVh);
     };
   }, []);

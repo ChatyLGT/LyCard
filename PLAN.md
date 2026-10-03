@@ -8063,3 +8063,81 @@ emular el motor WebKit real de iOS en standalone desde este sandbox
 que el mecanismo del fix funciona correctamente -- la confirmación
 final en el dispositivo real la hace Gunnar. Suite Playwright completa
 41/41 verde.
+
+## 2026-10-03 -- Detalle 2: favicon real + bug de caché del service worker + refuerzo del fix de altura (v1.68.3)
+
+Gunnar: "sigue igual.. no cambio nada.. de echo el logo del triangulo
+ese ya lo habiamos cambiado por el logo de legacy.. te pido lo
+cambies en el favicon." Mandó la imagen real del logo (el arco dorado
+con la J).
+
+### Favicon: por qué seguía el triángulo
+
+`app/layout.tsx#generateMetadata()` arma el favicon desde
+`origin.program.logoUrl` cuando existe, y cae a `DEFAULT_ICONS` (el
+triángulo en `public/icons/*.png`) cuando no. La Card `mastern0`
+nunca tuvo `programId` (es la raíz, no cuelga de ningún Programa) --
+así que ese mecanismo nunca pudo aplicar, ni antes ni después del
+reset. Lo que Gunnar probablemente recordaba como "ya lo habíamos
+cambiado" era el `logoUrl` de la propia Card (para otro uso, mostrado
+en la Oficina Virtual), no el favicon real del sistema -- dos cosas
+distintas que no están conectadas en el código.
+
+Reemplazados directamente los 4 archivos en `public/icons/` (mismo
+patrón que los originales: fondo `#09090b` sólido, igual que
+`theme_color`/`background_color` del manifest, con el logo centrado)
+con el logo real que mandó Gunnar, recortado a su contenido real
+(324×207 dentro del PNG de 500×500 que llegó) y reescalado a cada
+tamaño: `icon-192.png`, `icon-512.png`, `icon-512-maskable.png` (más
+chico, dentro de la zona segura del 80% central que exige el spec de
+íconos maskable), `apple-touch-icon.png` (180×180). Generado con
+Python/Pillow (`PIL`), sin tocar `app/manifest.ts` ni `layout.tsx` --
+mismas rutas, mismos nombres, solo cambia el contenido del archivo.
+
+### Hallazgo real: el service worker nunca iba a mostrar el ícono nuevo
+
+Al investigar por qué el cambio de ícono no se vería ni con un deploy
+limpio, encontré un bug real en `public/sw.js`: el comentario del
+archivo decía que `/icons/*` tenía nombres con hash de build (como
+`/_next/static/*`) y por eso usaba `cache-first` -- FALSO, los
+nombres de los íconos son fijos (`icon-192.png` es siempre
+`icon-192.png`). Con `cache-first`, el teléfono que ya había cacheado
+el triángulo lo iba a seguir sirviendo para siempre, sin importar
+cuántas veces cambiáramos el archivo en el servidor. Corregido a
+`network-first` (mismo criterio ya usado para la navegación -- prioriza
+estar al día, cae al caché solo sin señal), separado en su propio
+`ICONS_CACHE`, y subida `CACHE_VERSION` de `lycard-v1` a `lycard-v2`
+para que el `activate` del service worker purgue los cachés viejos
+(incluido el triángulo ya cacheado) en el próximo lanzamiento de la
+app en cualquier dispositivo.
+
+### El espacio muerto abajo (v1.68.2) seguía "igual" -- reforzado
+
+Gunnar también reportó que el fix de altura de la vuelta anterior no
+cambió nada. Causa más probable: el ícono del home en iOS cachea el
+lanzamiento previo a nivel sistema operativo, aparte de cualquier
+Service Worker -- un simple refresh de pestaña no alcanza, hace falta
+relanzar la app de verdad (cerrarla del selector de apps, no solo
+dejarla en segundo plano, o directamente borrar y volver a agregar el
+ícono). Pero además, por las dudas de que sea el segundo bug más sutil
+de WebKit (la primera lectura de `window.innerHeight` al montar puede
+llegar antes de que el motor asiente el layout real de standalone), se
+reforzó el fix: ahora prioriza `visualViewport.height` sobre
+`window.innerHeight` (la API pensada específicamente para esto, más
+confiable en iOS) y vuelve a medir con un `setTimeout` de 300ms además
+de al montar, más un listener de `pageshow` (cubre volver a la app
+desde el selector).
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos,
+`pnpm test:unit:coverage` 251/251 al 100%, `pnpm build` limpio, suite
+Playwright completa 41/41 verde. Los íconos nuevos verificados
+visualmente (leídos de vuelta con el tool de lectura de imágenes) --
+el logo se ve completo, centrado, sin recorte, tanto en el tamaño
+normal como en el maskable con su zona de seguridad. El bug del
+service worker no tiene forma de probarse con Playwright (es
+comportamiento de caché del navegador real, no algo que el entorno de
+test ejecute) -- confirmado por lectura directa del código contra la
+spec real de Cache API, mismo criterio que cualquier otro hallazgo de
+este tipo en el proyecto.

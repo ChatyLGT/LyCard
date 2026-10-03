@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.68.2";
+export const APP_VERSION = "1.68.3";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.68.3",
+    date: "2026-10-03",
+    notes:
+      "Favicon/ícono de la PWA: cambiado el triángulo genérico por el logo real de Legacy (el arco dorado con la J, la marca que Gunnar ya usa en otros lados) en los 4 tamaños (192/512/512 maskable/apple-touch-icon). De paso, un bug real encontrado en el service worker: los íconos se servían con estrategia cache-first asumiendo que su nombre de archivo cambia por build (como sí pasa con el JS) -- pero no es así, `icon-192.png` es siempre el mismo nombre, así que una vez cacheado el triángulo viejo en un teléfono, quedaba pegado ahí para siempre aunque el archivo cambiara en el servidor. Corregido a network-first (mismo criterio que la navegación), y subida la versión de caché del service worker para que todo dispositivo con la app instalada tire el caché viejo en el próximo lanzamiento. También se reforzó el fix de altura de pantalla completa de la v1.68.2 (Gunnar reportó que seguía igual): ahora se prioriza `visualViewport.height` sobre `window.innerHeight` y se vuelve a medir con un pequeño delay además de al montar, por si WebKit entrega un valor viejo en la primera lectura dentro de una PWA standalone.",
+  },
   {
     version: "1.68.2",
     date: "2026-10-03",
