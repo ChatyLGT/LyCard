@@ -8264,3 +8264,70 @@ Playwright real contra `/c/mastern0`: leído el texto completo del
 modal O.D. directo del DOM, confirmado que dice la frase general
 nueva seguida del estado "Sin configurar" (no la versión vieja que
 mencionaba a Legacy). Suite Playwright completa 41/41 verde.
+
+## 2026-10-03 -- Detalle 5: "Legacy Card" / "Info Legacy" / "Mi camino con Legacy" por default sin Programa real (v1.68.6)
+
+Gunnar repitió su aclaración ("de echo esta no serual la Legacy Card
+de forma estricta.. nomas seria yna Lycard (general)") apuntando a
+algo más allá de los badges que ya había corregido. Encontré el mismo
+patrón en 3 lugares más, todos visibles en la propia tarjeta:
+
+1. El rótulo de arriba (`cardIslandLabel`) decía "Legacy Card" --
+   `` `${program?.name || "Legacy"} Card` ``, mismo bug que el de los
+   badges (fallback hardcodeado a "Legacy" cuando no hay Programa).
+2. El botón "Info Legacy" -- texto fijo en `lib/i18n.ts`, sin importar
+   si hay Programa o no.
+3. El botón "Mi camino con Legacy" -- mismo caso.
+
+Le pregunté el alcance (corregir solo esto visible ahora, vs. un
+barrido completo de TODAS las frases "Legacy" del sistema -- hay
+bastantes más, en modales de agendar/invitar/etc.) y eligió lo
+primero, dejando el barrido completo para cuando se ponga a diseñar
+específicamente cómo presentar Legacy.
+
+### Hallazgo: el mecanismo para esto YA EXISTÍA
+
+`infoBtn` y `storyBtn` ya estaban en `CARD_LABEL_FIELDS`
+(`lib/cardLabels.ts`) -- la lista de textos que cualquier Programa
+puede sobrescribir desde `/admin/programs` vía `Program.cardLabels`.
+El problema nunca fue la falta de un mecanismo de personalización, fue
+que el DEFAULT de la plataforma (lo que se usa cuando NINGÚN Programa
+cargó su propio texto) hablaba en nombre de Legacy. Confirmado en
+`cardLabel()` (`components/LyCardView.tsx:577`): primero busca el
+override del Programa, y si no hay, cae a `t(lang,key)` -- el string
+fijo de `lib/i18n.ts`.
+
+### Cambios
+
+- `cardIslandLabel`: de `` `${program?.name || "Legacy"} Card` `` a
+  `program?.name ? \`${program.name} Card\` : "LyCard"` -- sin Programa,
+  dice "LyCard" liso, no inventa un nombre.
+- `infoBtn` (ES/EN): "Info Legacy"/"Legacy Info" → "Info".
+- `storyBtn` (ES/EN): "Mi camino con Legacy"/"My path with Legacy" →
+  "Mi camino"/"My path".
+
+Legacy, una vez armado como Programa real en `/admin/programs`, puede
+cargar sus propios "Info Legacy"/"Mi camino con Legacy" en
+`Program.cardLabels` -- el mecanismo sigue intacto, solo cambió qué
+pasa cuando NADIE lo configuró todavía.
+
+### Efecto colateral en un test, corregido
+
+`e2e/card-size-panel.spec.ts` tenía `getByText("Mi camino", {exact:
+true})` esperando un solo match -- el panel de ajuste de tamaños
+también muestra la etiqueta "Mi camino" (fija, de
+`lib/cardSizeConfig.ts`, sin relación con `storyBtn`) para el módulo
+que agregaste al tamaño de la tarjeta. Con el botón real ahora
+diciendo exactamente "Mi camino" también, el locator sin escopar
+matcheaba 2 elementos (violación de modo estricto de Playwright).
+Arreglado agregando `role="dialog"` + `aria-label="Ajustar tamaños"`
+al panel (`components/CardSizePanel.tsx`) y escopando el test a ese
+diálogo -- mejora real de accesibilidad, no solo un parche para el
+test.
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos,
+`pnpm test:unit:coverage` 251/251 al 100%, `pnpm build` limpio. Suite
+Playwright completa 41/41 verde (incluido el test corregido del panel
+de tamaños).

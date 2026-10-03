@@ -653,8 +653,16 @@ export default function LyCardView({
   // a project card's name comes from its Program (already the one place
   // the N0 names their brand); Business/Personal get their own editable
   // label from the Card editor, defaulting to "Mi Tarjeta de Empresa/Personal".
+  // Antes caía a "Legacy Card" cuando no había Programa real conectado
+  // (`program?.name || "Legacy"`) -- 2026-10-03, pedido de Gunnar: "esta
+  // no sería la Legacy Card de forma estricta.. nomás sería una LyCard
+  // (general)". mastern0 nunca tuvo Programa (programId: null), así que
+  // ese fallback mentía sobre ser "la de Legacy" sin que nadie lo haya
+  // configurado así.
   const cardIslandLabel = isProject
-    ? `${program?.name || "Legacy"} Card`
+    ? program?.name
+      ? `${program.name} Card`
+      : "LyCard"
     : card.islandLabel || (isCompany ? "Mi Tarjeta de Empresa" : "Mi Tarjeta Personal");
   const [theme, setTheme] = useState<"dark" | "light">(
     (card.defaultTheme as "dark" | "light") || "dark"

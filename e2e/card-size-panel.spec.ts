@@ -96,9 +96,14 @@ test.describe("Panel de tamaños ajustables — long-press en la LyCard", () => 
     await page.waitForTimeout(700);
     await page.mouse.up();
 
-    await expect(page.getByText("Mi camino", { exact: true })).toBeVisible();
-    await expect(page.getByText("Agendar entrevista", { exact: true })).toBeVisible();
-    await expect(page.getByText("Logo", { exact: true })).toBeVisible();
+    // Escopado al panel (2026-10-03) -- antes "Mi camino" matcheaba 2
+    // elementos (el botón real de la tarjeta Y la etiqueta del panel),
+    // desde que el botón real pasó a decir exactamente "Mi camino" (sin
+    // "con Legacy") en vez de un texto Legacy-específico fijo.
+    const sizePanel = page.getByRole("dialog", { name: "Ajustar tamaños" });
+    await expect(sizePanel.getByText("Mi camino", { exact: true })).toBeVisible();
+    await expect(sizePanel.getByText("Agendar entrevista", { exact: true })).toBeVisible();
+    await expect(sizePanel.getByText("Logo", { exact: true })).toBeVisible();
 
     const officeBtn = page.getByRole("button", { name: "Oficina Virtual" });
     const beforeBox = await officeBtn.boundingBox();

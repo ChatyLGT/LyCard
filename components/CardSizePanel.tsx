@@ -65,6 +65,8 @@ export default function CardSizePanel({
     <div style={OVERLAY}>
       <div onClick={handleCancel} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.15)" }} />
       <div
+        role="dialog"
+        aria-label="Ajustar tamaños"
         style={{
           position: "relative",
           width: "100%",

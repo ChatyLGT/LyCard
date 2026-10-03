@@ -10,14 +10,22 @@ export const STR: Record<Lang, Record<string, string>> = {
     // formulario -- nunca se guardan como valor real, solo se muestran.
     namePlaceholder: "Nombre Completo",
     titlePlaceholder: "Ej. PhD en Neuropsicología",
-    storyBtn: "Mi camino con Legacy",
+    // Defaults de PLATAFORMA (no de Legacy) -- 2026-10-03, pedido de
+    // Gunnar: "esta no sería la Legacy Card de forma estricta.. nomás
+    // sería una LyCard (general)". Estos dos ya son overridables por
+    // Programa (Program.cardLabels, ver lib/cardLabels.ts) -- Legacy,
+    // una vez armado como Programa real en /admin/programs, carga su
+    // propio "Mi camino con Legacy"/"Info Legacy" ahí. El DEFAULT de la
+    // plataforma (lo que ve cualquier Programa nuevo sin configurar) no
+    // debe hablar en nombre de Legacy.
+    storyBtn: "Mi camino",
     storyBtnCompany: "Mi camino con la Empresa",
     storyBtnPersonal: "Mi Trayectoria",
     storyKickerCompany: "Mi camino con la Empresa",
     storyKickerPersonal: "Mi Trayectoria",
     storyHeadEmpty: "{name} todavía no escribió su historia acá.",
     storyBodyEmpty: "Volvé más adelante — todavía no la cargó.",
-    infoBtn: "Info Legacy",
+    infoBtn: "Info",
     customize: "Personalizar mi LyCard",
     loginIcon: "Iniciar sesión",
     scheduleBtn: "Agendar tu Entrevista",
@@ -197,14 +205,14 @@ export const STR: Record<Lang, Record<string, string>> = {
   en: {
     namePlaceholder: "Full Name",
     titlePlaceholder: "Ej. PhD in Neuropsychology",
-    storyBtn: "My path with Legacy",
+    storyBtn: "My path",
     storyBtnCompany: "My path with the Business",
     storyBtnPersonal: "My Journey",
     storyKickerCompany: "My path with the Business",
     storyKickerPersonal: "My Journey",
     storyHeadEmpty: "{name} hasn't written their story here yet.",
     storyBodyEmpty: "Check back later — it hasn't been added yet.",
-    infoBtn: "Legacy Info",
+    infoBtn: "Info",
     customize: "Customize my LyCard",
     loginIcon: "Log in",
     scheduleBtn: "Book your Interview",

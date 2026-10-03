@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.68.5";
+export const APP_VERSION = "1.68.6";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.68.6",
+    date: "2026-10-03",
+    notes:
+      "Detalle 5: el rótulo de arriba de la tarjeta decía 'Legacy Card' y los botones 'Info Legacy'/'Mi camino con Legacy' aunque la Card no tenga ningún Programa real conectado -- mismo patrón que el hallazgo de los badges (v1.68.4/1.68.5), esta vez en el rótulo superior y en dos botones. Estos dos botones ya eran programables por Programa desde hace rato (Program.cardLabels, /admin/programs) -- el problema era el DEFAULT de la plataforma, lo que ve cualquier Programa nuevo sin configurar, que hablaba en nombre de Legacy sin que nadie lo haya puesto así. Corregido a 'LyCard' / 'Info' / 'Mi camino' -- genéricos por default; Legacy, una vez armada como Programa real, carga sus propios textos en /admin/programs igual que antes. Alcance acotado a propósito: Gunnar pidió separar esto de un barrido completo de TODAS las frases con 'Legacy' en el sistema (quedó pendiente para cuando se ponga a diseñar cómo presentar el Programa Legacy específicamente).",
+  },
   {
     version: "1.68.5",
     date: "2026-10-03",
