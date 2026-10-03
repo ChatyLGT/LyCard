@@ -711,6 +711,33 @@ export default function LyCardView({
     };
   }, []);
 
+  // Alto real del viewport (2026-10-03, pedido de Gunnar: "no cubre todo
+  // el tamaño a lo largo.. se queda con un espacio sustancial abajo" al
+  // abrirla como ícono en el home de su iPhone) -- bug real y conocido de
+  // WebKit: `100dvh` mide bien dentro de Safari (donde sí existe una
+  // barra inferior que puede aparecer/desaparecer), pero en una PWA
+  // standalone (manifest `display:"standalone"`, sin ninguna barra de
+  // Safari) ese mismo cálculo deja un espacio muerto abajo del tamaño de
+  // la barra que ya no existe. `window.innerHeight` sí mide el alto real
+  // disponible en los dos modos, así que se usa ese valor en vez de
+  // `100dvh` en cuanto el JS corre -- `100dvh` queda solo de fallback
+  // para el primer pintado server-side, antes de que este efecto corra.
+  const [appVh, setAppVh] = useState<number | null>(null);
+  useEffect(() => {
+    function updateVh() {
+      setAppVh(window.innerHeight);
+    }
+    updateVh();
+    window.addEventListener("resize", updateVh);
+    window.addEventListener("orientationchange", updateVh);
+    window.visualViewport?.addEventListener("resize", updateVh);
+    return () => {
+      window.removeEventListener("resize", updateVh);
+      window.removeEventListener("orientationchange", updateVh);
+      window.visualViewport?.removeEventListener("resize", updateVh);
+    };
+  }, []);
+
   function flash(text: string) {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast(text);
@@ -1229,7 +1256,7 @@ export default function LyCardView({
       onPointerLeave={cancelLongPress}
       onPointerCancel={cancelLongPress}
       style={{
-        height: "100dvh",
+        height: appVh ? `${appVh}px` : "100dvh",
         width: "100%",
         display: "flex",
         justifyContent: "center",

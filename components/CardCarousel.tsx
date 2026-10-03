@@ -44,6 +44,26 @@ export default function CardCarousel({
   );
   const [active, setActive] = useState(initialIndex);
 
+  // Mismo fix que LyCardView.tsx (2026-10-03, bug real de WebKit: `100dvh`
+  // deja un espacio muerto abajo en una PWA standalone en iOS, donde no
+  // existe la barra de Safari que ese cálculo reserva) -- este wrapper
+  // tiene su propio `100dvh` de raíz, mismo problema.
+  const [appVh, setAppVh] = useState<number | null>(null);
+  useEffect(() => {
+    function updateVh() {
+      setAppVh(window.innerHeight);
+    }
+    updateVh();
+    window.addEventListener("resize", updateVh);
+    window.addEventListener("orientationchange", updateVh);
+    window.visualViewport?.addEventListener("resize", updateVh);
+    return () => {
+      window.removeEventListener("resize", updateVh);
+      window.removeEventListener("orientationchange", updateVh);
+      window.visualViewport?.removeEventListener("resize", updateVh);
+    };
+  }, []);
+
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
@@ -71,7 +91,7 @@ export default function CardCarousel({
   }, []);
 
   return (
-    <div style={{ position: "relative", height: "100dvh", width: "100%", overflow: "hidden", background: "#09090b" }}>
+    <div style={{ position: "relative", height: appVh ? `${appVh}px` : "100dvh", width: "100%", overflow: "hidden", background: "#09090b" }}>
       <div
         ref={scrollerRef}
         style={{

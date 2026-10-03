@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.68.1";
+export const APP_VERSION = "1.68.2";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.68.2",
+    date: "2026-10-03",
+    notes:
+      "Fix: al abrir la app desde el ícono del home en iPhone (PWA instalada, 'standalone'), la tarjeta dejaba un espacio muerto sustancial abajo -- bug real y documentado de WebKit: el alto `100dvh` que usa toda la pantalla está pensado para Safari (donde existe una barra inferior que aparece/desaparece), pero una PWA standalone no tiene esa barra y aun así el cálculo deja el hueco como si existiera. Ahora se mide el alto real de la ventana (`window.innerHeight`) en cuanto el JS corre, en vez de depender de `100dvh` -- funciona igual en el navegador normal y ya no deja espacio en modo PWA. Corregido en los dos contenedores de pantalla completa que lo usaban (la tarjeta sola y el carrusel swipeable de las 3 tarjetas de un Member).",
+  },
   {
     version: "1.68.1",
     date: "2026-10-03",

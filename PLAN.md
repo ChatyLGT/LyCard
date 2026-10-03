@@ -8009,3 +8009,57 @@ en null, y el Admin de Gunnar siguió siendo el único que queda. Suite
 Playwright completa 41/41 verde (limpié mis propios datos de siembra
 después de verificar, mismo cuidado que la vuelta anterior para no
 contaminar `nashmesh.spec.ts` de nuevo).
+
+## 2026-10-03 -- Repaso detalle por detalle, item 1: espacio muerto abajo en PWA de iPhone (v1.68.2)
+
+Con la base en esqueleto, Gunnar empieza a repasar la app "detalle por
+detalle" para pensar cómo presentar Legacy de forma más intuitiva.
+Primer hallazgo real: "Abro la app en un icon que baje en mi desktop
+del iphone13. La tarjeta no cubre todo el tamaño a lo largo.. se queda
+con un espacio sustancial abajo."
+
+### Diagnóstico
+
+El manifest (`app/manifest.ts`) declara `display: "standalone"` --
+cuando Gunnar agrega la Card a su home y la abre desde ahí, corre sin
+ninguna barra de Safari (ni superior ni inferior), a diferencia de
+abrirla en una pestaña normal del navegador. El contenedor raíz de
+`LyCardView.tsx` (y de `CardCarousel.tsx`, el wrapper swipeable de las
+3 Cards de un Member) usaba `height: "100dvh"` -- esa unidad está
+diseñada para Safari, donde SÍ existe una barra inferior que puede
+aparecer/desaparecer según el scroll, y el cálculo reserva espacio
+para ese caso. En una PWA standalone esa barra no existe nunca, pero
+WebKit (el motor de iOS) sigue dejando el mismo hueco como si la
+hubiera -- bug real y documentado, no un error de nuestro CSS. El
+padding inferior con `env(safe-area-inset-bottom)` (para el home
+indicator) ya estaba bien puesto desde antes; el hueco reportado es
+aparte, y más grande.
+
+### Fix
+
+En vez de depender de `100dvh`, se mide el alto real de la ventana con
+`window.innerHeight` en cuanto el componente monta (y se reactualiza
+en `resize`/`orientationchange`/`visualViewport.resize`, para rotar el
+teléfono sin romper nada) -- ese valor SÍ es el real disponible tanto
+en Safari como en standalone, porque no depende de ninguna suposición
+sobre barras que puedan o no existir. `100dvh` queda solo de fallback
+para el primer pintado server-side, antes de que el JS corra (un
+instante, imperceptible). Aplicado en los dos contenedores de
+pantalla completa que tenían el mismo `100dvh` de raíz:
+`LyCardView.tsx` (la tarjeta sola) y `CardCarousel.tsx` (el carrusel
+de las 3 Cards) -- mismo bug, mismo fix, por consistencia.
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos,
+`pnpm test:unit:coverage` 251/251 al 100%, `pnpm build` limpio.
+Playwright real contra `/c/mastern0` con viewport 390×844 (las
+dimensiones de iPhone 13): confirmado que el contenedor raíz mide
+exactamente `window.innerHeight` (844px), gap de 0px -- antes de este
+fix, cualquier diferencia entre `100dvh` y el alto real de la ventana
+standalone se habría visto como el hueco reportado. No hay forma de
+emular el motor WebKit real de iOS en standalone desde este sandbox
+(Playwright corre sobre Chromium), así que esta verificación confirma
+que el mecanismo del fix funciona correctamente -- la confirmación
+final en el dispositivo real la hace Gunnar. Suite Playwright completa
+41/41 verde.
