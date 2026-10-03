@@ -8380,3 +8380,52 @@ completa, mecanismo + 5 ejemplos de íconos + el estado "sin
 configurar" al final) y capturada la pantalla para confirmar que se
 ve bien, legible, con scroll natural dentro del modal sin desbordar.
 Suite Playwright completa 41/41 verde.
+
+## 2026-10-03 -- Detalle 6, cuarta vuelta: formato visual real con íconos renderizados, no texto (v1.69.1)
+
+Gunnar rechazó v1.69.0 de plano: "esta horrible.. el unico que
+hiciste es el de Order of Distintion.. y esta muy mal explicado..
+quiero algo mas visual.. utiliza un formato como el del modal Info..
+mostrame logos.. dame imagenes." El problema de fondo: v1.69.0
+describía los íconos como PALABRAS dentro de un párrafo ("diamond
+(fundador)..."), nunca los renderizaba. Los 4 modales de
+insignias/distinciones (`od`/`ancient`/`medal`/`contacts`) compartían
+un único template de fallback genérico (recuadro de título + párrafo
++ pie), estructuralmente distinto del modal Info (que sí tiene hero +
+grilla de tarjetitas con `<Icon>` real -- el patrón `pil1/pil2/pil3`).
+Por eso, para Gunnar, "solo cambió el de O.D." -- en realidad cambió
+el texto de los 4, pero el FORMATO nunca cambió para ninguno.
+
+### Qué se hizo
+
+- Acortadas `odIntro`/`ancIntro`/`medalIntro`/`contactsIntro`
+  (`lib/i18n.ts`, ES+EN) a 2 frases -- QUÉ es + CÓMO lo arma el N0 --
+  sacando el texto de "ejemplos de íconos típicos" (eso ahora se
+  renderiza aparte). Agregada `badgeExamplesLabel` ("Ejemplos de
+  íconos" / "Icon examples").
+- Nueva constante `BADGE_ICON_EXAMPLES` en `components/LyCardView.tsx`
+  -- 4 pares `{icon, label}` reales por tipo de badge (mismos nombres
+  de Material Symbols que v1.69.0, ahora consumidos de verdad en vez
+  de escritos como texto).
+- Nueva rama en el condicional de renderizado del modal
+  (`modal === "od" || "ancient" || "medal" || "contacts"`), insertada
+  antes del fallback genérico (que sigue sirviendo para `story` y
+  cualquier otro tipo no especial-casado): recuadro de título (igual
+  que antes) + intro corta + grilla 2x2 de tarjetitas con `<Icon>`
+  real + etiqueta, mismo estilo de borde/fondo que el modal Info
+  (`var(--surf)`, borde dorado translúcido, esquinas redondeadas) +
+  el párrafo de estado (configurado/sin configurar) + pie con nombre,
+  todo heredado de `activeModal.body`/`.meta` sin tocar esa lógica.
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos (mismos 11
+warnings preexistentes, cero nuevos), `pnpm test:unit:coverage`
+251/251 al 100%, `pnpm build` limpio. Suite Playwright completa
+41/41 verde, cero regresiones. Script Playwright puntual contra
+`/c/mastern0` (390x844, viewport iPhone): abiertos los 4 modales de
+verdad (botones "Personas contactadas"/"Nivel de Medallón" por
+aria-label, O.D./Ancient por selector de botones sin aria-label) y
+capturada cada pantalla -- confirmado visualmente que los 4 muestran
+la grilla de 4 íconos reales (no nombres de texto), sin desbordar,
+legible, mismo lenguaje visual que el modal Info.

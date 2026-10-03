@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.69.0";
+export const APP_VERSION = "1.69.1";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.69.1",
+    date: "2026-10-03",
+    notes:
+      "Detalle 6, cuarta vuelta (Gunnar: \"esta horrible.. el unico que hiciste es el de Order of Distintion.. quiero algo mas visual.. utiliza un formato como el del modal Info.. mostrame logos.. dame imagenes\") -- la v1.69.0 seguía explicando los íconos como texto dentro de un párrafo (\"diamond (fundador)...\"), nunca se veían de verdad. Ahora los 4 modales de insignias/distinciones (Puesto, Rango, Medallón, Contactos) usan el mismo formato visual que el modal Info: recuadro de título, una intro corta, y una grilla de tarjetitas con el ícono real renderizado (Material Symbols) + su nombre, en vez de nombres de ícono escritos como palabras. Se mantiene el mensaje de estado (configurado / sin configurar) debajo de la grilla.",
+  },
   {
     version: "1.69.0",
     date: "2026-10-03",

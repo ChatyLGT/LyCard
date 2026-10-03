@@ -1175,6 +1175,41 @@ export default function LyCardView({
     document.head.appendChild(link);
   }, [activeSkin?.font]);
 
+  // Ejemplos de íconos REALES para los 4 modales de distinción (2026-10-03,
+  // cuarta vuelta -- Gunnar: "quiero algo mas visual.. utiliza un formato
+  // como el del modal Info.. mostrame logos.. dame imagenes"). Antes los
+  // ejemplos eran texto dentro del párrafo ("diamond (fundador)..."); acá
+  // se renderizan de verdad, mismo patrón de tarjetitas que ya usa el
+  // modal Info (pil1/pil2/pil3 con Icon + label). Nombres de Material
+  // Symbols reales, ya usados en otras partes de la app (lib/data.ts
+  // RANKS/MEDALS, este mismo componente) -- no inventados.
+  const BADGE_ICON_EXAMPLES: Record<"od" | "ancient" | "medal" | "contacts", { icon: string; label: string }[]> = {
+    od: [
+      { icon: "diamond", label: lang === "en" ? "Founder" : "Fundador" },
+      { icon: "shield", label: lang === "en" ? "Guardian" : "Guardián" },
+      { icon: "handshake", label: lang === "en" ? "Liaison" : "Enlace" },
+      { icon: "groups", label: lang === "en" ? "Team lead" : "Líder" },
+    ],
+    ancient: [
+      { icon: "school", label: lang === "en" ? "Training" : "Formación" },
+      { icon: "trending_up", label: lang === "en" ? "Practice" : "Práctica" },
+      { icon: "workspace_premium", label: lang === "en" ? "Mastery" : "Dominio" },
+      { icon: "all_inclusive", label: lang === "en" ? "Top level" : "Nivel máx." },
+    ],
+    medal: [
+      { icon: "military_tech", label: lang === "en" ? "Bronze" : "Bronce" },
+      { icon: "workspace_premium", label: lang === "en" ? "Silver" : "Plata" },
+      { icon: "verified", label: lang === "en" ? "Gold" : "Oro" },
+      { icon: "emoji_events", label: lang === "en" ? "Diamond" : "Diamante" },
+    ],
+    contacts: [
+      { icon: "groups", label: lang === "en" ? "Network" : "Red" },
+      { icon: "forum", label: lang === "en" ? "Contacted" : "Contactados" },
+      { icon: "diversity_3", label: lang === "en" ? "Community" : "Comunidad" },
+      { icon: "contacts", label: lang === "en" ? "Address book" : "Agenda" },
+    ],
+  };
+
   const modalMap: Record<
     Exclude<ModalKey, null>,
     { icon: string; kicker: string; head?: string; body?: string; meta?: string }
@@ -1187,13 +1222,13 @@ export default function LyCardView({
       // Antes estaba al revés (PLAN.md Fase 9.1).
       kicker: displaySiglas,
       head: displayDenominacion,
-      // Explicación general SIEMPRE primero (2026-10-02, segunda vuelta --
-      // "necesito que en cada medalla o distincion.. se explique para que
-      // es cada una de forma general.. lo de aprendiz.. O.D. Ancient.. es
-      // solo para el legacy"), después el estado puntual (configurado o
-      // no). El viewer entiende el CONCEPTO del slot aunque nunca haya
-      // visto Legacy antes de leerlo.
-      body: `${t(lang, "odIntro")} ${displayDescripcion || t(lang, "odBody")}`,
+      // Solo el estado puntual acá (2026-10-03, cuarta vuelta -- Gunnar:
+      // "quiero algo mas visual.. mostrame logos.. dame imagenes"). La
+      // explicación general (odIntro) y los ejemplos de íconos ya NO
+      // viven en este párrafo de texto -- se renderizan aparte, abajo,
+      // en la rama visual de JSX (grilla de íconos reales, ver
+      // BADGE_ICON_EXAMPLES), igual que el modal Info.
+      body: displayDescripcion || t(lang, "odBody"),
       // meta condicional (2026-10-03): "Sin configurar" mientras el
       // Programa no definió su propio Puesto -- antes decía siempre
       // "Activo y Certificado" aunque el body ya avisara que no hay nada
@@ -1206,14 +1241,14 @@ export default function LyCardView({
       // Dynamic per the card's actual rank tier (PLAN.md Fase 9.5) — used
       // to always say "Ancient Pioneer" regardless of the real rank.
       head: `✦ ${rankTier.nombre} ✦`,
-      body: `${t(lang, "ancIntro")} ${rankTier.descripcion || t(lang, "ancBody")}`,
+      body: rankTier.descripcion || t(lang, "ancBody"),
       meta: rankTier.descripcion ? t(lang, "ancMeta") : t(lang, "ancMetaEmpty"),
     },
     medal: {
       icon: medalTier.icono || "workspace_premium",
       kicker: medalTier.subtitulo || t(lang, "medalKicker"),
       head: medalTier.nombre,
-      body: `${t(lang, "medalIntro")} ${medalTier.descripcion || t(lang, "medalBody")}`,
+      body: medalTier.descripcion || t(lang, "medalBody"),
       meta: medalTier.descripcion ? t(lang, "medalMeta") : t(lang, "medalMetaEmpty"),
     },
     // Tier label/icon are real (Card.contacts + Program.contactsScale,
@@ -1223,13 +1258,9 @@ export default function LyCardView({
       icon: contactsTier.icono || "military_tech",
       kicker: contactsTier.subtitulo || t(lang, "medalKicker"),
       head: `${contactsTier.nombre} · Contactados`,
-      // Mismo patrón que od/ancient/medal (2026-10-03, tercera vuelta --
-      // "explique para que y como funciona cada uno.. den ejemplos de
-      // algunos iconos"): explicación general siempre primero.
-      body: `${t(lang, "contactsIntro")} ${
+      body:
         contactsTier.descripcion ||
-        "Todavía es un dato simulado — la cuenta real llega con el envío por WhatsApp de verdad."
-      }`,
+        "Todavía es un dato simulado — la cuenta real llega con el envío por WhatsApp de verdad.",
       meta: "Simulado",
     },
     story: {
@@ -2724,6 +2755,52 @@ export default function LyCardView({
                     ))}
                   </div>
                 </div>
+              ) : modal === "od" || modal === "ancient" || modal === "medal" || modal === "contacts" ? (
+                // Formato visual tipo modal Info (2026-10-03, cuarta vuelta
+                // -- Gunnar: "esta horrible.. quiero algo mas visual..
+                // utiliza un formato como el del modal Info.. mostrame
+                // logos.. dame imagenes"). Mismo patrón de tarjetitas con
+                // Icon real (BADGE_ICON_EXAMPLES) en vez de nombres de
+                // ícono escritos como texto dentro de un párrafo.
+                <>
+                  <div style={{ padding: 14, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", textAlign: "center" }}>
+                    <span style={{ font: "700 17px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>{activeModal.head}</span>
+                  </div>
+                  <p style={{ margin: 0, font: "400 12.5px/1.7 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "rgba(245,242,235,.92)" }}>
+                    {t(lang, modal === "od" ? "odIntro" : modal === "ancient" ? "ancIntro" : modal === "medal" ? "medalIntro" : "contactsIntro")}
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ font: "600 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".14em", textTransform: "uppercase", color: "var(--ink2,#8a8378)" }}>
+                      {t(lang, "badgeExamplesLabel")}
+                    </span>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 }}>
+                      {BADGE_ICON_EXAMPLES[modal].map((ex) => (
+                        <div
+                          key={ex.icon}
+                          style={{
+                            padding: "11px 8px",
+                            borderRadius: 12,
+                            background: "var(--surf,#141414)",
+                            border: "1px solid rgba(var(--accentRgb,200,161,90),.25)",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: 4,
+                            textAlign: "center",
+                          }}
+                        >
+                          <Icon name={ex.icon} style={{ color: "var(--accentMid,#C8A15A)" }} />
+                          <span style={{ font: "700 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink,#F5F2EB)" }}>{ex.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <p style={{ margin: 0, font: "400 11.5px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "rgba(245,242,235,.7)" }}>{activeModal.body}</p>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,.1)" }}>
+                    <span style={{ font: "600 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>{activeModal.meta}</span>
+                    <span style={{ font: "italic 400 14px var(--brandFont,'Playfair Display'),serif", color: "var(--ink,#F5F2EB)" }}>{card.name}</span>
+                  </div>
+                </>
               ) : (
                 <>
                   <div style={{ padding: 14, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", textAlign: "center" }}>
