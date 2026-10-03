@@ -51,14 +51,19 @@ export default async function AdminResetPage({
             Esto borra, sin vuelta atrás, TODO lo que hay en producción:
           </p>
           <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4, font: "400 12.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#e0d6d3" }}>
-            <li>Todas las Cards (project, company, personal)</li>
-            <li>Todos los Programas, su escalera de Puestos y sus escalas de Medallón/Sabiduría</li>
+            <li>Todas las Cards menos la raíz (project, company, personal)</li>
+            <li>Todos los Programas, su escalera de Puestos, skins y horarios reales (InterviewSlot)</li>
             <li>Todos los Members, sus Memberships y sus OriginMemento</li>
             <li>Todas las inscripciones a entrevistas (Registration)</li>
+            <li>WowStore: catálogo de WowApps y sus instalaciones</li>
+            <li>Especialistas, Expertos, su equipo y sus consultas (WowHead)</li>
+            <li>Mensajería Interna (mensajes y entregas)</li>
+            <li>Destinatarios, Janus Tags, Notas de Voz y WowAwe de cada Card</li>
+            <li>Red de clientes (CardNetworkMembership) y Leads</li>
             <li>Todos los N0 acotados (Admin de Programa) — tu login MasterN0 no se toca</li>
           </ul>
           <p style={{ margin: 0, font: "600 12.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>
-            Lo único que queda es una Card nueva, &quot;MasterN0&quot; — desde ahí arrancás de nuevo creando Programas en /admin/programs.
+            Tu Card &quot;MasterN0&quot; sobrevive intacta tal cual está (nombre, foto, redes) — solo se le limpia el contenido de prueba colgado (destinatarios, tags, notas de voz, etc.). Tu login de Admin tampoco se toca. Lo demás queda en esqueleto: arrancás de nuevo creando Programas en /admin/programs.
           </p>
           {error === "confirm" && (
             <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>
@@ -80,7 +85,7 @@ export default async function AdminResetPage({
               type="submit"
               style={{ padding: 14, border: "none", borderRadius: 12, background: "#b3413a", color: "#F5F2EB", font: "700 12px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".12em", textTransform: "uppercase", cursor: "pointer" }}
             >
-              Borrar todo y crear MasterN0
+              Borrar todo el contenido
             </button>
           </form>
         </section>

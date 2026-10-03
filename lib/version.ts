@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.67.1";
+export const APP_VERSION = "1.68.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.68.0",
+    date: "2026-10-03",
+    notes:
+      "Reset a esqueleto, completo: Gunnar pidió repasar la lógica precisa del negocio desde cero (\"no quiero que haya nada.. ningún programa.. nada.. quiero que esté todo en esqueleto\") antes de rediseñar cómo se presenta el primer programa (Legacy). La herramienta \"Zona de Riesgo\" en /admin/reset ya existía pero había quedado corta -- cubría solo lo que existía hasta la Fase 6 de 2026-09, no WowStore, Especialistas/Expertos, Mensajería Interna, Destinatarios, Janus, Notas de Voz ni WowAwe, todo sumado después. Reescrita para cubrir el schema completo (28 tipos de contenido) en el orden correcto para no romper ninguna referencia (varias relaciones clave -- Card-Member, Card-Programa, Experto-Member, Admin-Programa, Admin-Member -- no tienen borrado en cadena a propósito, así que hay un orden exacto a respetar). A diferencia de la versión vieja, esta ya NO borra ni recrea tu Card MasterN0 -- la dejamos intacta tal cual está, con tu nombre/foto/redes, solo le limpiamos el contenido de prueba colgado. Tu login de Admin tampoco se toca. Lo único explícitamente fuera de este borrón es el panel interno de equipo/HR (Node/ProjectNode/Task/NashMeshRun en /admin/equipo y /admin/nashmesh) y la bitácora de logins (AdminLoginEvent, que nunca se borra por diseño) -- ninguno de los dos es contenido de negocio de cara al cliente. Verificado de verdad antes de shippear: sembré datos reales en las 28 tablas (Programa, Members, Admins vinculados, Cards de los 3 tipos, Puestos, mensajes, WowApps instaladas, Especialistas/Expertos con equipo y consultas, horarios reales, etc.) y corrí la transacción completa contra esos datos -- cero violaciones de llave foránea, sobrevive exactamente lo pactado y nada más.",
+  },
   {
     version: "1.67.1",
     date: "2026-10-02",

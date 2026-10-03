@@ -7830,3 +7830,111 @@ con el link real). Suite completa 41/41 -- incluye una validación
 casual extra: la fecha del sistema cambió de 2026-10-02 a 2026-10-03 a
 mitad de esta sesión y los horarios se recalcularon solos, sin tocar
 nada, confirmando que el fix de slots de la v1.67.0 sigue vivo.
+
+## 2026-10-03 -- Reset a esqueleto, completo (v1.68.0)
+
+Gunnar: "necesito repasar la lógica precisa del negocio.. necesitamos
+diseñar una app que sea super intuitiva.. que la gente sepa
+definitivamente que hacer.. entonces estoy pensando en como presentar
+el primer programa.. osea Legacy." Pedido textual previo: "Lo
+primero.. borra toda la base de datos.. no quiero que haya nada..
+ningún programa.. nada.. quiero que esté todo en esqueleto." Confirmado
+con dos preguntas directas: (1) conservar su propio Admin y la Card
+mastern0 tal cual están, (2) él mismo dispara el borrado desde un
+botón en `/admin/reset` -- yo no tengo ni voy a tener el connection
+string de la base de producción.
+
+### Por qué no era tan simple como ejecutar el botón que ya existía
+
+Ya existía una herramienta "Zona de Riesgo" en `/admin/reset` +
+`resetPlatformAction`, shippeada en una fase anterior (2026-09) --
+pero cubría solo lo que existía hasta esa fecha: Card, Program, Puesto,
+Member, OtpCode, Admin, ProgramMembership, OriginMemento, Registration.
+Desde entonces se sumaron WowStore (WowApp/WowAppInstall),
+Especialistas/Expertos (Especialista/EspecialistaInstall/Experto/
+EquipoInvitacion/CodiceEntry/Consulta), Mensajería Interna (Message/
+MessageDelivery), Destinatarios (CardRecipient/CardRecipientSource),
+Janus (Tag), Notas de Voz (VoiceNote), WowAwe (AweWalkEntry), Red de
+clientes de una Company (CardNetworkMembership) y Leads (CardLead) --
+ninguno de esos 15 modelos se tocaba. Un "borrar todo" que deja 15
+tipos de contenido de prueba atrás no es un esqueleto, es una mentira.
+
+Tampoco se podía borrar+recrear la Card mastern0 como hacía la versión
+vieja -- Gunnar pidió explícitamente conservarla intacta (su propia
+identidad/branding no se toca), así que ahora se la excluye del
+borrado (`card.deleteMany({ where: { isOrigin: false } })`) en vez de
+borrarla y recrearla en blanco.
+
+### Orden de borrado -- por qué importa
+
+Antes de escribir una sola línea, repasé el schema completo (32
+modelos) buscando cada relación SIN `onDelete: Cascade/SetNull` (a
+propósito, para no perder historial por accidente en el uso normal de
+la app) -- son 5: `Card.member`, `Card.program`, `Experto.member`,
+`Admin.program`, `Admin.member`. Esto fija un orden obligatorio: Card y
+Admin (menos el que ejecuta esto) tienen que borrarse ANTES que
+Member/Program, Experto ANTES que Member. Todo lo demás cascadea solo
+desde Card/Program/Member/Experto una vez que esos se borran, así que
+alcanza con una sola transacción (`prisma.$transaction`, timeout 60s)
+de 27 pasos hoja-primero-raíz-al-final: WowHead (Consulta→CodiceEntry→
+EquipoInvitacion→Experto→EspecialistaInstall→Especialista), WowStore
+(WowAppInstall→WowApp), Mensajería (MessageDelivery→Message), Red de
+Company + entrevistas (CardNetworkMembership→Registration), contenido
+por Card (CardLead/AweWalkEntry/VoiceNote/Tag/CardRecipientSource/
+CardRecipient), Programa (InterviewSlot/ProgramSkin/Puesto),
+Membresías (OriginMemento/ProgramMembership), Cards (menos mastern0),
+Admins (menos quien ejecuta), OtpCode, y por último Member/Program.
+
+### Fuera de alcance, a propósito
+
+`AdminLoginEvent` -- por diseño propio del modelo ("No se borra nunca;
+es el primer paso del futuro CRM/auditoría"), nunca se tocó. `Node`/
+`ProjectNode`/`Task`/`NashMeshRun` -- el panel interno de equipo/HR
+(`/admin/equipo`, `/admin/nashmesh`), decisión propia de esta sesión
+por no ser contenido de negocio de cara al cliente, pendiente de que
+Gunnar la confirme o la corrija.
+
+### `app/admin/reset/page.tsx`
+
+La copy decía cosas que ya no eran ciertas con la acción reescrita:
+lista de lo que se borra incompleta (le faltaban exactamente los 15
+modelos de arriba), y el cierre decía "Lo único que queda es una Card
+nueva, 'MasterN0'" cuando ahora la Card existente sobrevive sin
+tocarse. Reescrita la lista completa, el párrafo de cierre (ahora dice
+la verdad: mastern0 sobrevive intacta, tu Admin tampoco se toca), y el
+botón pasa de "Borrar todo y crear MasterN0" a "Borrar todo el
+contenido" (ya no crea nada).
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos,
+`pnpm test:unit:coverage` 251/251 al 100%, `pnpm build` limpio. Antes
+de tocar nada en real, sembré datos de verdad en las 27 tablas que
+toca la transacción -- Programa, 2 Members, 2 Admins (uno clásico con
+programId, uno "promovido" con memberId+programId, el patrón real de
+un Chido→N0), 2 ProgramMemberships con referido, Puesto, las 3 Cards
+(project/company/personal) con destinatario+fuente+tag+lead, VoiceNote
++AweWalkEntry, InterviewSlot+ProgramSkin, 2 Registrations (una contra
+InterviewSlot+ProgramMembership, otra contra CardNetworkMembership),
+OriginMemento, Message+MessageDelivery, WowApp+Install,
+Especialista+Install, 2 Expertos con EquipoInvitacion+CodiceEntry+
+Consulta, y OtpCode -- y corrí la transacción real contra esos datos:
+cero violaciones de llave foránea. Verificado después: las 27 tablas
+quedaron en 0, sobrevive exactamente 1 Card (`isOrigin:true`) y
+exactamente el Admin que la ejecuta, y Node/ProjectNode/Task/
+NashMeshRun/AdminLoginEvent (sembrados también, para probar que NO se
+tocan) siguieron intactos. Limpié mis propios datos de siembra después
+-- confirmado que no quedó contaminación: la suite Playwright completa
+corrió 41/41 verde, sin la falsa alarma de "SIMULACIÓN" duplicado que
+había aparecido en nashmesh.spec.ts por una fila mía sin limpiar a
+tiempo.
+
+### Cómo lo dispara Gunnar
+
+Desde su propia sesión de producción, logueado como MasterN0: entrar a
+`/admin/programs` → "Zona de Riesgo" → escribir `BORRAR TODO` en el
+campo de confirmación → "Borrar todo el contenido". Yo no ejecuto esto
+en producción ni tengo el connection string -- el botón lo dispara él.
+Pendiente de su confirmación/corrección: si Node/ProjectNode/Task/
+NashMeshRun (el panel de equipo interno) debían quedar afuera del
+borrado como asumí, o si también los quiere en esqueleto.
