@@ -8514,3 +8514,117 @@ Programa con pan+zoom real vía pointer events, retrato de Card con
 `fit:"cover"`, y el flujo completo de "Reposicionar" dos guardados
 seguidos) -- estable en 3 corridas consecutivas tras el fix del
 `key`. Suite Playwright completa 44/44 verde, cero regresiones.
+
+## 2026-10-04 -- Categorización: modales reales + selección desde la tarjeta (v1.71.0)
+
+Gunnar venía señalando dos cosas separadas que resultaron ser la misma
+raíz: (1) "todo el sistema de Categorizacion.. medallas, rangos,
+estatus.. no esta muy funcional.. necesito que todo este incluido
+dentro del dashboard de programa.. vamos a poner ahi una seccion que
+agrupe todo lo que ahora esta separado"; (2) más puntual después, ya
+con datos reales cargados en el Programa Legacy: "que paso con corregir
+la informacion de los modales.. que cada modal explique lo que se dice
+en el dashboard.. cree el sistema de logica de la segunda medalla y el
+sistema del Order of Distintion para el Estatus.. la idea es que
+mostremos eso en el modal y le demos la oportunidad al N0 de
+seleccionar eso desde ahi".
+
+Diagnóstico: el título grande de cada modal (Puesto/O.D., Medallón,
+Sabiduría, Contactos) YA leía el dato real de la Card/Programa desde
+Fase 9.2/9.4/9.5 -- eso funcionaba. El hueco real era la grilla de 4
+iconitos debajo (`BADGE_ICON_EXAMPLES` en `LyCardView.tsx`, sumada en
+la cuarta vuelta del 2026-10-03): 4 EJEMPLOS fijos por tipo de modal
+("diamond (fundador), shield (guardián)..."), iguales para cualquier
+Programa, que ignoraban por completo lo que el N0 configuró. Si Gunnar
+armaba 8 niveles de Medallón con sus propios nombres/colores, el modal
+seguía mostrando "Bronce/Plata/Oro/Diamante" de ejemplo.
+
+### Rename de dos escalas (pedido explícito de Gunnar, solo texto -- el
+### campo interno `type`/`Card.medal`/`Card.rank`/`Program.medalScale`/
+### `Program.rankScale` no cambia, cero migración)
+
+- "Escala de Medallón" -> **Medallón de Resultados**: deja de ser un
+  genérico bronce/plata/oro/diamante -- mide rendimiento/impacto real
+  (de Crítico a Liderazgo, escala rojo->morado que Gunnar ya armó a
+  mano en el Programa Legacy real).
+- "Escala de Sabiduría" -> **Medallón de Imán**: deja de ser "rango de
+  sabiduría" -- mide capacidad de atracción/conversión de red (QR
+  compartido, visitantes convertidos en miembros/Especialistas/
+  Expertos/Programas/Corporaciones).
+
+### `lib/escalas.ts` + `components/EscalaEditor.tsx`
+
+- `parseImportedEscala(raw: string): EscalaItem[]` (nuevo, puro,
+  testeado 100%): lee un array JSON pegado a mano y lo normaliza al
+  shape `EscalaItem`, aceptando TANTO el shape interno
+  (key/nombre/subtitulo/icono/color/descripcion) COMO el que devuelve
+  un LLM al que se le pide la estructura en español con tildes
+  (Clave/Nombre/Subtítulo/Ícono/Descripción) -- exactamente lo que
+  Gunnar pegó en el chat para Medallón de Resultados/Imán. Si falta la
+  Clave, la deriva slugificando el Nombre. `EscalaEditor` suma un
+  `AccordionAddRow` "Importar JSON (reemplaza toda la escala)" con un
+  textarea + botón -- pegar el bloque una vez reemplaza tipear 8-14
+  niveles a mano ("hacerlo manual es tardado", palabras de Gunnar).
+- Gap real encontrado y cerrado: el campo Color del editor estaba
+  OCULTO para `type==="rank"` (`type !== "rank" &&`) -- Sabiduría/Imán
+  no tenía forma de setear color en absoluto, aunque `EscalaItem.color`
+  siempre existió en el modelo de datos. Ahora el leading indicator es
+  igual para los 3 tipos: círculo de `item.color` con el ícono adentro
+  (mismo patrón `TIER_DOT` que ya usaba la tarjeta pública), con
+  `title={item.descripcion}` como tooltip nativo al pasar el mouse
+  (pedido de Gunnar: "esto en el dashboard.. las descripciones cuando
+  paso el mouse por arriba").
+
+### `app/admin/programs/[id]/page.tsx` -- sección "Categorización"
+
+Las 4 `AccordionSection` sueltas (Escalera de Puestos, Escala de
+Medallón, Escala de Sabiduría, Escala de Gente Contactada) -- que
+antes tenían, sin ninguna razón de negocio, "Horarios de Entrevista"
+metido justo en el medio -- pasan a vivir DENTRO de una sola
+`AccordionSection` exterior titulada "Categorización". Horarios de
+Entrevista se movió afuera, después del bloque entero (es agenda, no
+gamificación). Puro reordenamiento de JSX + un wrapper nuevo, cero
+cambio de lógica en cada editor interno.
+
+### `components/LyCardView.tsx` -- grilla real + selección en el modal
+
+- `app/c/[slug]/page.tsx`: `PROGRAM_INCLUDE` suma `puestos: { orderBy:
+  { order: "asc" } }` -- antes el query de la Card pública solo traía
+  el Puesto YA asignado (`card.puesto`), nunca el roster completo del
+  Programa. Ahora `program.puestos` viaja completo hasta `LyCardView`
+  (tipo actualizado en `CardCarousel.tsx` y `LyCardView.tsx`).
+- `BADGE_ICON_EXAMPLES` fue borrado. En su lugar, `tierTilesByModal`
+  construye, para cada uno de los 4 modales, la lista REAL de niveles
+  (Puesto[] para "od", `EscalaItem[]` para los otros 3) con la misma
+  forma de tile: ícono+color, nombre, subtítulo, descripción completa,
+  y si es el nivel actual de ESTA Card. El modal ya no dice "acá hay
+  ejemplos" -- dice literalmente lo que el N0 armó, con su descripción
+  entera visible (pedido de Gunnar: "se muestre la descripcion y todo
+  el detalle de cada Nivel").
+- `setCardTierAction` (nuevo, `app/c/card-tier-actions.ts`): tocar
+  cualquier tile que no sea el actual llama esta server action
+  (`Card.medal`/`rank`/`contacts`/`puestoId`), gateada igual que
+  `puestos-actions.ts` (`currentAdminScope` + `canAccessProgram` --
+  nunca confía en el `isAdmin` del cliente, lo vuelve a chequear
+  server-side) y valida que el valor elegido exista de verdad en la
+  escala/roster del Programa antes de guardar. `isAdmin` en el cliente
+  solo decide si el tile se ve tocable (`role="button"`, `cursor:
+  pointer`) -- un visitante anónimo puede leer todo pero tocar no hace
+  nada (ni red ni DB).
+- Alcance de esta vuelta, confirmado con Gunnar antes de construir
+  (AskUserQuestion): SOLO selección desde el modal. Editar color/
+  ícono/nombre/descripción sigue viviendo en el dashboard -- hacerlo
+  también desde el modal público de la tarjeta habría significado
+  duplicar el `EscalaEditor` entero ahí, mucho más superficie para lo
+  que quedaba de sesión.
+
+### Verificación
+
+`npx tsc --noEmit` limpio. `pnpm lint` sin errores nuevos. `lib/escalas.ts`
+suma a la puerta de cobertura (`vitest.config.mts`) con
+`lib/__tests__/escalas.test.ts` nuevo, 100% líneas/branches/funciones.
+`pnpm build` limpio. E2E nuevo `e2e/categorizacion.spec.ts` (4 tests:
+Medallón de Resultados muestra los niveles reales y el N0 reasigna,
+Medallón de Imán idem, O.D. idem con el roster de Puesto, y un
+visitante anónimo lee todo pero no logra reasignar nada). Suite
+Playwright completa 48/48 verde, cero regresiones.

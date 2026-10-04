@@ -19,7 +19,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 // A project card's Program plus only its active skin (0 or 1 rows) — the
 // filter lives in the Prisma query itself (Fase 2 del sistema de skins,
 // 2026-09-16), so LyCardView never has to pick the right one out of 3.
-const PROGRAM_INCLUDE = { skins: { where: { active: true } } } as const;
+// `puestos` (2026-10-04) suma el roster COMPLETO de Puestos del Programa
+// -- antes `card.puesto` solo traía el YA asignado a esta Card; el modal
+// de O.D. necesita ver todas las posiciones reales para mostrarlas (y
+// elegir entre ellas), no solo la que ya está puesta.
+const PROGRAM_INCLUDE = { skins: { where: { active: true } }, puestos: { orderBy: { order: "asc" } } } as const;
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +32,7 @@ export const dynamic = "force-dynamic";
 const KIND_ORDER = ["project", "company", "personal"];
 
 async function buildCardBundle(
-  card: Card & { program: (Program & { skins: ProgramSkin[] }) | null; puesto: Puesto | null },
+  card: Card & { program: (Program & { skins: ProgramSkin[]; puestos: Puesto[] }) | null; puesto: Puesto | null },
   baseUrl: string,
   adminScope: { id: string; programId: string | null } | null,
   memberId: string | null

@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.70.0";
+export const APP_VERSION = "1.71.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.71.0",
+    date: "2026-10-04",
+    notes:
+      "Categorización: los modales de la tarjeta (Puesto/O.D., Medallón de Resultados, Medallón de Imán, Contactos) ya no muestran 4 íconos de EJEMPLO fijos -- muestran el roster REAL que el N0 armó en /admin/programs, con nombre/subtítulo/descripción completos de cada nivel, y el N0 puede tocar cualquier otro nivel ahí mismo para reasignarlo (antes había que ir al dashboard). Rename de dos escalas por pedido de Gunnar: \"Escala de Medallón\" -> Medallón de Resultados, \"Escala de Sabiduría\" -> Medallón de Imán (mide atracción/conversión de red, no sabiduría). El dashboard de Programa ahora agrupa Puestos + las 3 escalas en una sola sección \"Categorización\" (antes 4 secciones sueltas con \"Horarios de Entrevista\" metido en el medio). El editor de cada escala suma: círculo de color + ícono juntos (antes era uno u otro según el tipo -- Sabiduría/Imán no tenía color en absoluto), tooltip con la descripción al pasar el mouse, y un importador de JSON que reemplaza toda la escala de una -- pegar el bloque que armaste con un LLM (clave/nombre/color/ícono/descripción, con o sin tildes) reemplaza tipear cada nivel a mano.",
+  },
   {
     version: "1.70.0",
     date: "2026-10-04",

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { EscalaItem } from "@/lib/escalas";
-import { AccordionRow } from "@/components/Accordion";
+import { type EscalaItem, parseImportedEscala } from "@/lib/escalas";
+import { AccordionRow, AccordionAddRow } from "@/components/Accordion";
 
 type EditableItem = EscalaItem & { _uid: string };
 
@@ -38,11 +38,15 @@ export default function EscalaEditor({
 }) {
   const [items, setItems] = useState<EditableItem[]>(() => initialItems.map((it) => ({ ...it, _uid: uid() })));
   const [openUid, setOpenUid] = useState<string | null>(null);
-  const colorPlaceholder = type === "rank" ? "" : "#C8A15A";
+  const [importText, setImportText] = useState("");
+  const [importError, setImportError] = useState<string | null>(null);
+  const colorPlaceholder = "#C8A15A";
+
+  const defaultIcon = type === "medal" ? "military_tech" : type === "rank" ? "hub" : "groups";
 
   function addItem() {
     const newUid = uid();
-    setItems((its) => [...its, { key: "", nombre: "", subtitulo: "", icono: "", color: "", descripcion: "", _uid: newUid }]);
+    setItems((its) => [...its, { key: "", nombre: "", subtitulo: "", icono: defaultIcon, color: "", descripcion: "", _uid: newUid }]);
     setOpenUid(newUid);
   }
   function updateItem(uidToUpdate: string, patch: Partial<EscalaItem>) {
@@ -51,6 +55,22 @@ export default function EscalaEditor({
   function removeItem(uidToRemove: string) {
     setItems((its) => its.filter((it) => it._uid !== uidToRemove));
     setOpenUid((cur) => (cur === uidToRemove ? null : cur));
+  }
+  // Pegar un bloque JSON (típicamente armado con un LLM, como hizo Gunnar
+  // para "Medallón de Resultados"/"Medallón de Imán") reemplaza TODA la
+  // escala de una -- más rápido que tipear cada nivel a mano en el
+  // acordeón ("hacerlo manual es tardado", 2026-10-04). Reemplaza, no
+  // suma: evita niveles duplicados si se pega dos veces por error.
+  function runImport() {
+    const parsed = parseImportedEscala(importText);
+    if (parsed.length === 0) {
+      setImportError("No se encontraron niveles válidos en ese JSON -- revisá que sea un array con clave/nombre en cada ítem.");
+      return;
+    }
+    setItems(parsed.map((it) => ({ ...it, _uid: uid() })));
+    setImportText("");
+    setImportError(null);
+    setOpenUid(null);
   }
 
   return (
@@ -75,13 +95,32 @@ export default function EscalaEditor({
           open={openUid === item._uid}
           onToggle={() => setOpenUid((cur) => (cur === item._uid ? null : item._uid))}
           leading={
-            type !== "rank" ? (
-              <span style={{ flex: "none", width: 22, height: 22, borderRadius: 999, background: item.color || "#353534", border: "1px solid rgba(255,255,255,.15)" }} />
-            ) : (
-              <span className="material-symbols-outlined" style={{ flex: "none", fontSize: 19, color: "#C8A15A" }}>
+            // Círculo de color + ícono adentro, siempre los dos juntos
+            // (2026-10-04, pedido de Gunnar: "necesito en la tarjeta
+            // ademas de verse el circulo de color se vea el icono..
+            // esto en el dashboard"). Antes era color XOR ícono según
+            // `type` -- ahora los 3 tipos (incluido Sabiduría/Imán, que
+            // antes no tenía color en absoluto) se ven igual. El title
+            // nativo muestra la descripción al pasar el mouse por
+            // arriba, sin armar un tooltip propio.
+            <span
+              title={item.descripcion || undefined}
+              style={{
+                flex: "none",
+                width: 26,
+                height: 26,
+                borderRadius: 999,
+                background: item.color || "#353534",
+                border: "1px solid rgba(255,255,255,.15)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 15, color: "#141414" }}>
                 {item.icono || "military_tech"}
               </span>
-            )
+            </span>
           }
           title={item.nombre || "(sin nombre)"}
           subtitle={item.key ? `clave: ${item.key}` : "sin clave"}
@@ -117,17 +156,15 @@ export default function EscalaEditor({
             style={{ ...FIELD, color: "#C2BEB5" }}
           />
           <div style={{ display: "flex", gap: 8 }}>
-            {type !== "rank" && (
-              <label style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
-                <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>Color</span>
-                <input
-                  placeholder={colorPlaceholder}
-                  value={item.color}
-                  onChange={(e) => updateItem(item._uid, { color: e.target.value })}
-                  style={{ ...FIELD, width: "100%", color: "#C2BEB5" }}
-                />
-              </label>
-            )}
+            <label style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+              <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>Color</span>
+              <input
+                placeholder={colorPlaceholder}
+                value={item.color}
+                onChange={(e) => updateItem(item._uid, { color: e.target.value })}
+                style={{ ...FIELD, width: "100%", color: "#C2BEB5" }}
+              />
+            </label>
             <label style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
               <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>Ícono (Material Symbols)</span>
               <input
@@ -156,6 +193,29 @@ export default function EscalaEditor({
         <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add</span>
         Agregar nivel
       </button>
+
+      <AccordionAddRow label="Importar JSON (reemplaza toda la escala)">
+        <p style={{ margin: 0, font: "400 11px/1.5 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>
+          Pegá un array con clave/nombre/subtítulo/color/ícono/descripción por nivel (podés usar tildes -- Clave,
+          Nombre, Subtítulo, Color, Ícono, Descripción -- o el shape sin tildes). Reemplaza todos los niveles de
+          acá abajo.
+        </p>
+        <textarea
+          placeholder='[{"clave":"bronce","nombre":"Bronce","subtitulo":"Honor","color":"#C8A15A","icono":"military_tech","descripcion":"..."}]'
+          value={importText}
+          onChange={(e) => setImportText(e.target.value)}
+          rows={5}
+          style={{ ...FIELD, color: "#C2BEB5", resize: "vertical", fontFamily: "monospace" }}
+        />
+        {importError && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>{importError}</p>}
+        <button
+          type="button"
+          onClick={runImport}
+          style={{ padding: 11, border: "none", borderRadius: 8, background: "rgba(200,161,90,.18)", color: "#E5C378", font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", cursor: "pointer" }}
+        >
+          Importar y reemplazar
+        </button>
+      </AccordionAddRow>
 
       <button
         type="submit"

@@ -9,6 +9,7 @@ import { rankById, medalById } from "@/lib/data";
 import { parseEscala } from "@/lib/escalas";
 import { registerInterviewAction, sendContactMessageAction, sendQrByWhatsappAction } from "@/app/c/actions";
 import { startLegacyFunnelAction } from "@/app/c/legacy-funnel-actions";
+import { setCardTierAction, type CardTierField } from "@/app/c/card-tier-actions";
 import { PROGRAM_DURATIONS } from "@/lib/legacyProgramDurations";
 import {
   listRecipientsAction,
@@ -614,8 +615,12 @@ export default function LyCardView({
   badge: string;
   originMemento: OriginMemento | null;
   // `skins` carries only the active one (query already filters it, see
-  // app/c/[slug]/page.tsx) — 0 or 1 entries, never more.
-  program: (Program & { skins: ProgramSkin[] }) | null;
+  // app/c/[slug]/page.tsx) — 0 or 1 entries, never more. `puestos`
+  // (2026-10-04) is the Program's FULL roster of positions, not just the
+  // one already assigned to this Card (that's the separate `puesto` prop
+  // below) — needed so the O.D. modal can show every real position, not
+  // generic icon examples.
+  program: (Program & { skins: ProgramSkin[]; puestos: Puesto[] }) | null;
   puesto: Puesto | null;
   // Horarios reales de "Agendar tu Entrevista" (Auditoría 2026-09-23) --
   // ya resueltos server-side, sin fechas vencidas: InterviewSlot real del
@@ -1111,6 +1116,53 @@ export default function LyCardView({
     descripcion: "",
   };
 
+  // Grilla real por modal (2026-10-04, reemplaza BADGE_ICON_EXAMPLES --
+  // pedido de Gunnar: "corregir la informacion de los modales.. que cada
+  // modal explique lo que se dice en el dashboard"). Antes cada modal
+  // mostraba 4 íconos de EJEMPLO fijos, iguales para cualquier Programa;
+  // ahora muestra el roster REAL que el N0 armó (Puesto para "od",
+  // EscalaItem[] para los otros 3) con nombre/subtítulo/descripción
+  // completos, y marca cuál es el actual en esta Card. "od" es el único
+  // que viene de otro modelo (Puesto, no un EscalaItem) -- se adapta al
+  // mismo shape de tile para poder compartir el mismo render.
+  type TierTile = { value: string; nombre: string; subtitulo: string; icono: string; color: string; descripcion: string; current: boolean };
+  const puestosTiles: TierTile[] = (program?.puestos ?? []).map((p) => ({
+    value: p.id,
+    nombre: p.denominacion,
+    subtitulo: p.siglas,
+    icono: p.icono,
+    color: "",
+    descripcion: p.descripcion,
+    current: puesto?.id === p.id,
+  }));
+  const medalTiles: TierTile[] = medalScale.map((m) => ({ value: m.key, nombre: m.nombre, subtitulo: m.subtitulo, icono: m.icono, color: m.color, descripcion: m.descripcion, current: m.key === card.medal }));
+  const rankTiles: TierTile[] = rankScale.map((r) => ({ value: r.key, nombre: r.nombre, subtitulo: r.subtitulo, icono: r.icono, color: r.color, descripcion: r.descripcion, current: r.key === card.rank }));
+  const contactsTiles: TierTile[] = contactsScale.map((c) => ({ value: c.key, nombre: c.nombre, subtitulo: c.subtitulo, icono: c.icono, color: c.color, descripcion: c.descripcion, current: c.key === card.contacts }));
+  const tierTilesByModal: Record<"od" | "ancient" | "medal" | "contacts", TierTile[]> = {
+    od: puestosTiles,
+    ancient: rankTiles,
+    medal: medalTiles,
+    contacts: contactsTiles,
+  };
+  const tierFieldByModal: Record<"od" | "ancient" | "medal" | "contacts", CardTierField> = {
+    od: "puestoId",
+    ancient: "rank",
+    medal: "medal",
+    contacts: "contacts",
+  };
+  // Tap-to-select habilitado solo para quien de verdad tiene sesión de
+  // Admin (isAdmin, no el badge "N0" relativo al viewer) -- esto es solo
+  // la señal de UI; la autorización real la vuelve a chequear
+  // setCardTierAction server-side (Card.programId === scope.programId).
+  const [tierPending, startTierTransition] = useTransition();
+  function selectTier(modalKey: "od" | "ancient" | "medal" | "contacts", value: string) {
+    if (!isAdmin || tierPending) return;
+    startTierTransition(async () => {
+      await setCardTierAction(card.id, tierFieldByModal[modalKey], value);
+      router.refresh();
+    });
+  }
+
   // Fase 2 del sistema de skins (2026-09-16): el skin activo del Programa
   // (si hay uno) pisa el tema dark/light de siempre — una identidad de
   // marca fija, no un par claro/oscuro — inyectando el mismo tipo de
@@ -1175,41 +1227,6 @@ export default function LyCardView({
     document.head.appendChild(link);
   }, [activeSkin?.font]);
 
-  // Ejemplos de íconos REALES para los 4 modales de distinción (2026-10-03,
-  // cuarta vuelta -- Gunnar: "quiero algo mas visual.. utiliza un formato
-  // como el del modal Info.. mostrame logos.. dame imagenes"). Antes los
-  // ejemplos eran texto dentro del párrafo ("diamond (fundador)..."); acá
-  // se renderizan de verdad, mismo patrón de tarjetitas que ya usa el
-  // modal Info (pil1/pil2/pil3 con Icon + label). Nombres de Material
-  // Symbols reales, ya usados en otras partes de la app (lib/data.ts
-  // RANKS/MEDALS, este mismo componente) -- no inventados.
-  const BADGE_ICON_EXAMPLES: Record<"od" | "ancient" | "medal" | "contacts", { icon: string; label: string }[]> = {
-    od: [
-      { icon: "diamond", label: lang === "en" ? "Founder" : "Fundador" },
-      { icon: "shield", label: lang === "en" ? "Guardian" : "Guardián" },
-      { icon: "handshake", label: lang === "en" ? "Liaison" : "Enlace" },
-      { icon: "groups", label: lang === "en" ? "Team lead" : "Líder" },
-    ],
-    ancient: [
-      { icon: "school", label: lang === "en" ? "Training" : "Formación" },
-      { icon: "trending_up", label: lang === "en" ? "Practice" : "Práctica" },
-      { icon: "workspace_premium", label: lang === "en" ? "Mastery" : "Dominio" },
-      { icon: "all_inclusive", label: lang === "en" ? "Top level" : "Nivel máx." },
-    ],
-    medal: [
-      { icon: "military_tech", label: lang === "en" ? "Bronze" : "Bronce" },
-      { icon: "workspace_premium", label: lang === "en" ? "Silver" : "Plata" },
-      { icon: "verified", label: lang === "en" ? "Gold" : "Oro" },
-      { icon: "emoji_events", label: lang === "en" ? "Diamond" : "Diamante" },
-    ],
-    contacts: [
-      { icon: "groups", label: lang === "en" ? "Network" : "Red" },
-      { icon: "forum", label: lang === "en" ? "Contacted" : "Contactados" },
-      { icon: "diversity_3", label: lang === "en" ? "Community" : "Comunidad" },
-      { icon: "contacts", label: lang === "en" ? "Address book" : "Agenda" },
-    ],
-  };
-
   const modalMap: Record<
     Exclude<ModalKey, null>,
     { icon: string; kicker: string; head?: string; body?: string; meta?: string }
@@ -1224,10 +1241,10 @@ export default function LyCardView({
       head: displayDenominacion,
       // Solo el estado puntual acá (2026-10-03, cuarta vuelta -- Gunnar:
       // "quiero algo mas visual.. mostrame logos.. dame imagenes"). La
-      // explicación general (odIntro) y los ejemplos de íconos ya NO
+      // explicación general (odIntro) y el roster real de niveles ya NO
       // viven en este párrafo de texto -- se renderizan aparte, abajo,
-      // en la rama visual de JSX (grilla de íconos reales, ver
-      // BADGE_ICON_EXAMPLES), igual que el modal Info.
+      // en la rama visual de JSX (grilla real, ver tierTilesByModal),
+      // igual que el modal Info.
       body: displayDescripcion || t(lang, "odBody"),
       // meta condicional (2026-10-03): "Sin configurar" mientras el
       // Programa no definió su propio Puesto -- antes decía siempre
@@ -1591,7 +1608,7 @@ export default function LyCardView({
                   <button
                     type="button"
                     onClick={() => setModal("medal")}
-                    aria-label="Nivel de Medallón"
+                    aria-label="Medallón de Resultados"
                     style={TIER_DOT(medalTier.color)}
                   >
                     <Icon name={medalTier.icono || "military_tech"} size={14} style={{ color: "#141414" }} />
@@ -1646,14 +1663,14 @@ export default function LyCardView({
                 </button>
 
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 8, pointerEvents: "auto" }}>
-                  <button type="button" onClick={() => setModal("od")} style={BADGE_BTN}>
+                  <button type="button" onClick={() => setModal("od")} aria-label="Puesto" style={BADGE_BTN}>
                     <Sweep />
                     <Icon name={puesto?.icono || "diamond"} size={12} style={{ color: "var(--goldtxt,#E5C378)" }} />
                     <span style={{ font: "700 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--goldtxt,#E5C378)" }}>
                       {displaySiglas}
                     </span>
                   </button>
-                  <button type="button" onClick={() => setModal("ancient")} style={BADGE_BTN}>
+                  <button type="button" onClick={() => setModal("ancient")} aria-label="Medallón de Imán" style={BADGE_BTN}>
                     <Sweep />
                     <Icon name={rankTier.icono || "auto_awesome"} size={14} style={{ color: "var(--accentLight,#E5C378)" }} />
                     <span style={{ font: "700 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--goldtxt,#E5C378)" }}>
@@ -2756,12 +2773,18 @@ export default function LyCardView({
                   </div>
                 </div>
               ) : modal === "od" || modal === "ancient" || modal === "medal" || modal === "contacts" ? (
-                // Formato visual tipo modal Info (2026-10-03, cuarta vuelta
-                // -- Gunnar: "esta horrible.. quiero algo mas visual..
-                // utiliza un formato como el del modal Info.. mostrame
-                // logos.. dame imagenes"). Mismo patrón de tarjetitas con
-                // Icon real (BADGE_ICON_EXAMPLES) en vez de nombres de
-                // ícono escritos como texto dentro de un párrafo.
+                // Formato visual tipo modal Info (2026-10-03) + grilla REAL
+                // de niveles (2026-10-04, reemplaza los 4 íconos de ejemplo
+                // fijos -- Gunnar: "corregir la informacion de los
+                // modales.. que cada modal explique lo que se dice en el
+                // dashboard.. le demos la oportunidad al N0 de seleccionar
+                // eso desde ahi"). Cada tile es el nivel real que el N0
+                // armó en /admin/programs (Puesto para "od", EscalaItem
+                // para los otros 3), con su descripción completa visible
+                // -- no hay que adivinar qué significa cada uno. El actual
+                // queda remarcado con un borde dorado + "ACTUAL"; tocar
+                // otro tile (solo con sesión real de Admin, isAdmin) lo
+                // selecciona de inmediato vía setCardTierAction.
                 <>
                   <div style={{ padding: 14, borderRadius: 12, background: "rgba(20,20,20,.8)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", textAlign: "center" }}>
                     <span style={{ font: "700 17px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>{activeModal.head}</span>
@@ -2769,33 +2792,69 @@ export default function LyCardView({
                   <p style={{ margin: 0, font: "400 12.5px/1.7 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "rgba(245,242,235,.92)" }}>
                     {t(lang, modal === "od" ? "odIntro" : modal === "ancient" ? "ancIntro" : modal === "medal" ? "medalIntro" : "contactsIntro")}
                   </p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <span style={{ font: "600 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".14em", textTransform: "uppercase", color: "var(--ink2,#8a8378)" }}>
-                      {t(lang, "badgeExamplesLabel")}
-                    </span>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 }}>
-                      {BADGE_ICON_EXAMPLES[modal].map((ex) => (
-                        <div
-                          key={ex.icon}
-                          style={{
-                            padding: "11px 8px",
-                            borderRadius: 12,
-                            background: "var(--surf,#141414)",
-                            border: "1px solid rgba(var(--accentRgb,200,161,90),.25)",
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            gap: 4,
-                            textAlign: "center",
-                          }}
-                        >
-                          <Icon name={ex.icon} style={{ color: "var(--accentMid,#C8A15A)" }} />
-                          <span style={{ font: "700 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink,#F5F2EB)" }}>{ex.label}</span>
-                        </div>
-                      ))}
+                  {tierTilesByModal[modal].length === 0 ? (
+                    <p style={{ margin: 0, font: "400 11.5px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "rgba(245,242,235,.7)" }}>{activeModal.body}</p>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <span style={{ font: "600 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".14em", textTransform: "uppercase", color: "var(--ink2,#8a8378)" }}>
+                        {t(lang, "badgeExamplesLabel")}
+                      </span>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {tierTilesByModal[modal].map((tile) => (
+                          <div
+                            key={tile.value}
+                            role={isAdmin ? "button" : undefined}
+                            tabIndex={isAdmin ? 0 : undefined}
+                            onClick={() => selectTier(modal, tile.value)}
+                            style={{
+                              padding: "10px 11px",
+                              borderRadius: 12,
+                              background: "var(--surf,#141414)",
+                              border: tile.current ? "1.5px solid var(--accentMid,#C8A15A)" : "1px solid rgba(var(--accentRgb,200,161,90),.22)",
+                              display: "flex",
+                              gap: 10,
+                              alignItems: "flex-start",
+                              cursor: isAdmin ? "pointer" : "default",
+                              opacity: tierPending ? 0.6 : 1,
+                              textAlign: "left",
+                            }}
+                          >
+                            <span
+                              style={{
+                                flex: "none",
+                                width: 28,
+                                height: 28,
+                                borderRadius: 999,
+                                background: tile.color || "var(--accentMid,#C8A15A)",
+                                border: "1px solid rgba(255,255,255,.2)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <Icon name={tile.icono || "military_tech"} size={15} style={{ color: "#141414" }} />
+                            </span>
+                            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+                                <span style={{ font: "700 12px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink,#F5F2EB)" }}>{tile.nombre}</span>
+                                {tile.current && (
+                                  <span style={{ font: "700 8.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#141414", background: "var(--accentMid,#C8A15A)", borderRadius: 999, padding: "2px 7px" }}>
+                                    {t(lang, "tierCurrent")}
+                                  </span>
+                                )}
+                              </div>
+                              {tile.subtitulo && (
+                                <span style={{ font: "400 10.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--accentMid,#C8A15A)" }}>{tile.subtitulo}</span>
+                              )}
+                              {tile.descripcion && (
+                                <span style={{ font: "400 11px/1.5 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "rgba(245,242,235,.72)" }}>{tile.descripcion}</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                  <p style={{ margin: 0, font: "400 11.5px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "rgba(245,242,235,.7)" }}>{activeModal.body}</p>
+                  )}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,.1)" }}>
                     <span style={{ font: "600 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>{activeModal.meta}</span>
                     <span style={{ font: "italic 400 14px var(--brandFont,'Playfair Display'),serif", color: "var(--ink,#F5F2EB)" }}>{card.name}</span>

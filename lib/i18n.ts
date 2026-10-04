@@ -130,27 +130,34 @@ export const STR: Record<Lang, Record<string, string>> = {
     // ya usa el modal Info con pil1/pil2/pil3), ver BADGE_ICON_EXAMPLES
     // en components/LyCardView.tsx.
     odIntro:
-      "Tu posición dentro de la estructura del Programa — un rol o título, no tu nivel de experiencia (eso es el Rango, el otro distintivo). El N0 arma su propia escalera de posiciones desde /admin/programs, de 3 a N roles.",
+      "Tu posición dentro de la estructura del Programa — un rol o título, no tu nivel de resultados ni de atracción (eso son los otros dos Medallones). El N0 arma su propia escalera de posiciones desde /admin/programs, de 3 a N roles.",
+    // "Rango de Sabiduría" pasó a ser Medallón de Imán (2026-10-04, pedido
+    // de Gunnar): mide capacidad de atracción/conversión de red -- QR
+    // compartido, visitantes que se vuelven miembros, especialistas,
+    // expertos, programas y corporaciones -- no "sabiduría" como tal.
     ancIntro:
-      "Tu rango de experiencia y trayectoria dentro del Programa — una escalera de progreso, como un sistema de cinturones. El N0 arma su propia escala desde /admin/programs, de 3 a N niveles.",
+      "Tu capacidad de atracción y conversión de red — cuánta gente sumás compartiendo tu QR, y hasta dónde los convertís: de visitante a miembro, a Especialista, a Experto, a Programa, a Corporación. El N0 arma su propia escala desde /admin/programs, de 3 a N niveles.",
+    // "Nivel de Medallón" pasó a ser Medallón de Resultados (2026-10-04):
+    // mide rendimiento/impacto real, no un genérico bronce/plata/oro.
     medalIntro:
-      "Tu nivel de distinción general dentro del Programa — un reconocimiento de tu compromiso, tipo bronce/plata/oro/diamante. El N0 arma su propia escala desde /admin/programs.",
+      "Tu nivel de resultados dentro del Programa — rendimiento e impacto real, de crítico a liderazgo. El N0 arma su propia escala desde /admin/programs.",
     contactsIntro:
       "Tu alcance — cuánta gente contactaste o le compartiste tu LyCard. El N0 arma su propia escala de niveles desde /admin/programs.",
-    badgeExamplesLabel: "Ejemplos de íconos",
+    badgeExamplesLabel: "Niveles de la escala",
+    tierCurrent: "Actual",
     odBody:
       "Esta distinción todavía no fue configurada. El N0 del Programa define acá su nombre, ícono y descripción desde /admin/programs — cada Programa arma la suya, no hay una fija.",
     odMeta: "Estatus: Activo y Certificado",
     odMetaEmpty: "Sin configurar",
-    ancKicker: "Rango de Sabiduría",
+    ancKicker: "Medallón de Imán",
     ancBody:
-      "Este rango todavía no fue configurado. El N0 del Programa arma su propia escala de rangos desde /admin/programs — cada Programa define los suyos, no hay uno fijo.",
-    ancMeta: "Mentoría & Consejo",
+      "Este nivel todavía no fue configurado. El N0 del Programa arma su propia escala de atracción desde /admin/programs — cada Programa define la suya, no hay una fija.",
+    ancMeta: "Imán de Red",
     ancMetaEmpty: "Sin configurar",
-    medalKicker: "Nivel de Medallón",
+    medalKicker: "Medallón de Resultados",
     medalBody:
-      "Este nivel todavía no fue configurado. El N0 del Programa arma su propia escala de medallones desde /admin/programs — cada Programa define los suyos, no hay uno fijo.",
-    medalMeta: "Distintivo Legacy",
+      "Este nivel todavía no fue configurado. El N0 del Programa arma su propia escala de resultados desde /admin/programs — cada Programa define la suya, no hay una fija.",
+    medalMeta: "Resultado Certificado",
     medalMetaEmpty: "Sin configurar",
     storyKicker: "Mi Camino con Legacy",
     storyHead: "«Descubrí en Legacy una forma de trascender.»",
@@ -294,27 +301,28 @@ export const STR: Record<Lang, Record<string, string>> = {
     meetingSub: "Pick an available time to talk with {name}.",
     linkCopied: "Link copied",
     odIntro:
-      "Your position within the Program's structure — a role or title, not your experience level (that's the Rank, the other distinction). The Program's N0 builds its own ladder of positions from /admin/programs, from 3 to N roles.",
+      "Your position within the Program's structure — a role or title, not your results or attraction level (those are the other two Medallions). The Program's N0 builds its own ladder of positions from /admin/programs, from 3 to N roles.",
     ancIntro:
-      "Your rank of experience and track record within the Program — a progress ladder, like a belt system. The Program's N0 builds its own scale from /admin/programs, from 3 to N levels.",
+      "Your network attraction and conversion power — how many people you bring in by sharing your QR, and how far you convert them: from visitor to member, to Specialist, to Expert, to Program, to Corporation. The Program's N0 builds its own scale from /admin/programs, from 3 to N levels.",
     medalIntro:
-      "Your general distinction level within the Program — recognition of commitment, like bronze/silver/gold/diamond. The Program's N0 builds its own scale from /admin/programs.",
+      "Your results level within the Program — real performance and impact, from critical to leadership. The Program's N0 builds its own scale from /admin/programs.",
     contactsIntro:
       "Your reach — how many people you contacted or shared your LyCard with. The Program's N0 builds its own scale of levels from /admin/programs.",
-    badgeExamplesLabel: "Icon examples",
+    badgeExamplesLabel: "Scale levels",
+    tierCurrent: "Current",
     odBody:
       "This distinction hasn't been configured yet. The Program's N0 sets its name, icon and description from /admin/programs — each Program builds its own, there's no fixed one.",
     odMeta: "Status: Active and Certified",
     odMetaEmpty: "Not configured",
-    ancKicker: "Rank of Wisdom",
+    ancKicker: "Magnet Medallion",
     ancBody:
-      "This rank hasn't been configured yet. The Program's N0 builds its own rank scale from /admin/programs — each Program defines its own, there's no fixed one.",
-    ancMeta: "Mentorship & Council",
+      "This level hasn't been configured yet. The Program's N0 builds its own attraction scale from /admin/programs — each Program defines its own, there's no fixed one.",
+    ancMeta: "Network Magnet",
     ancMetaEmpty: "Not configured",
-    medalKicker: "Medallion Level",
+    medalKicker: "Results Medallion",
     medalBody:
-      "This level hasn't been configured yet. The Program's N0 builds its own medallion scale from /admin/programs — each Program defines its own, there's no fixed one.",
-    medalMeta: "Legacy Distinction",
+      "This level hasn't been configured yet. The Program's N0 builds its own results scale from /admin/programs — each Program defines its own, there's no fixed one.",
+    medalMeta: "Certified Result",
     medalMetaEmpty: "Not configured",
     storyKicker: "My Path with Legacy",
     storyHead: "“In Legacy I found a way to transcend.”",

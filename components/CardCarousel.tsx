@@ -8,7 +8,7 @@ export type CarouselBundle = {
   card: Card;
   qrSvg: string;
   originMemento: OriginMemento | null;
-  program: (Program & { skins: ProgramSkin[] }) | null;
+  program: (Program & { skins: ProgramSkin[]; puestos: Puesto[] }) | null;
   puesto: Puesto | null;
   // Viewer-relative N0/N1/.../NA (2026-09-16) — independent per Card, unlike
   // isAdmin/isHost below which are shared across the whole carousel.
