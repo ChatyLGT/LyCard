@@ -8729,3 +8729,123 @@ abre el mismo modal de Info, no el de Mi Camino") confirma que
 aparece el texto real de Info (`infoTitle`) y NO aparece el texto de
 Mi Camino. `pnpm test:unit:coverage` 263/263 al 100% (sin cambios en
 `lib/`), `pnpm build` limpio. Suite Playwright completa 49/49 verde.
+
+## 2026-10-04 -- Botones del Podio + Bóveda Legacy + Agente de IA a medida (v1.73.0)
+
+Gunnar: "habiamos trabajado en nuestro plan inicial la idea de poder
+elegir desde el dashboard de cada programa los Botones que ibamos a
+colocar abajo.. para esto tenemos que tener opciones de botones en el
+dashboard.. son 3 botones.. los laterales pequeños y el principal
+grande.. el N0 decide que poner alli.. en el caso del programa de
+Legacy.. quiero poner un boton de Bobeda Legacy.. o Legacy Vault.. y
+ahi poner la informacion de lo que teniamos de la informacion del
+N0.. el link a su notebooklm.. eso ya lo habiamos echo.. quedo para
+Rogelio.. buscalo.. lo quiero ahi.. y en el dashboard.. que me de
+posibilidad de elegir entre eso, el Info actual, el modal simple que
+estaba en el camino, el Enviar Invitacion Especial y uno mas en donde
+me permita con apoyo de un agente especialista dedicado.. poder crear
+otras funcionalidades con ia."
+
+Aclarado con 3 preguntas antes de construir: la fila que se vuelve
+configurable es el podio de la tarjeta principal en `/c/[slug]`
+(`LyCardView.tsx`), NO la fila de Oficina Virtual (Gemelo
+Digital/WowHead/BirdBrain, esa sigue fija); el cubo del CENTRO queda
+fijo en el QR real (host) / funnel "Creá tu Card" (no-host) -- solo
+los 2 cubos LATERALES son elegibles; y el agente de IA se construye
+"funcional de verdad" esta vuelta (Gunnar rechazó explícitamente la
+opción de dejarlo como placeholder).
+
+### Schema (`prisma/schema.prisma`, migración `podium_buttons_vault`)
+
+```prisma
+model Program {
+  ...
+  podiumButtons       Json   @default("[]")  // PodiumButtonConfig[]
+  vaultTitle          String @default("Bóveda Legacy")
+  vaultPalabraSecreta String @default("")
+  vaultCuadernoUrl    String @default("")
+  vaultSources        Json   @default("[]")  // VaultSource[]
+}
+```
+
+### `lib/podiumButtons.ts` (100% cobertura)
+
+`PodiumButtonKind = "info" | "story" | "invite" | "vault" | "ai_agent"`.
+`parsePodiumButtons`/`getPodiumButton`/`upsertPodiumButton` (reemplazo
+por slot, mismo patrón que `medalScale`/`officeSkills` pero granular
+por lado porque el form del dashboard edita un cubo a la vez).
+`parseVaultSources` para `VaultSource[]` (`type: "link"|"texto"`,
+`label`, `value`).
+
+### Dashboard (`app/admin/programs/[id]/page.tsx`)
+
+Dos secciones nuevas en el acordeón: "Botones del Podio" (un
+`PodiumSlotEditor` por lado, `<select>` con las 5 opciones +
+sub-formulario de IA cuando el kind es `ai_agent`) y "Bóveda Legacy"
+(título, palabra secreta opcional, link de cuaderno,
+`VaultSourcesEditor` para las fuentes). `setPodiumButtonAction`/
+`updateVaultAction` en `app/admin/programs/podium-actions.ts`.
+
+### Tarjeta pública (`components/LyCardView.tsx`)
+
+`resolvePodiumKind()` resuelve, por slot, el kind configurado o el
+default de SIEMPRE si no se configuró nada (Info a la izquierda,
+Enviar Invitación a la derecha para el host) -- un Programa que nunca
+toca este dashboard nuevo no cambia un píxel de lo que ya tenía.
+`"invite"` sigue siendo host-only sin importar en qué slot se puso
+(hallazgo de PASO 5): un visitante que lo vea cae al fallback propio
+de ESE slot, no a un invite roto. El modal de Bóveda reusa el mismo
+gate de palabra secreta que "Info [nombre]" (generalizado para leer
+`Program.vaultPalabraSecreta` cuando `modal==="vault"`), visible para
+cualquier visitante -- no es gestión interna, a diferencia de
+"invite".
+
+### Decisiones de alcance (disclosed, no pedidas explícitamente)
+
+- **Bóveda Legacy es independiente de la Card de Rogelio**: en vez de
+  enganchar al `CardRecipient` puntual que ya existía para Rogelio, se
+  construyó como campos de Programa genéricos -- cualquier Programa
+  puede activar su propia Bóveda, no solo el que tiene a Rogelio
+  cargado. Mismo contenido conceptual, otra arquitectura.
+- **Fuentes de la Bóveda**: solo `link` y `texto`, sin archivo (a
+  diferencia de `CardRecipientSource` que sí soporta `archivo`) --
+  evita construir storage nuevo a nivel Programa esta vuelta.
+- **El modal de Bóveda NO incluye** el Códice PDF de ejemplo, el CTA
+  "Crear mi Gemelo Digital" ni el texto de "Cómo la usamos" que sí
+  tiene el dossier de destinatario -- eso es contenido promocional de
+  ESE flujo puntual, no de la Bóveda genérica.
+
+### Agente de IA (`lib/aiAgent.ts` + `app/admin/programs/ai-agent-actions.ts`)
+
+`@anthropic-ai/sdk`, modelo `claude-opus-5-5`, `output_config:{effort:
+"low"}`. El N0 escribe un pedido en lenguaje natural, el agente
+devuelve `{title, icon, body}` (JSON validado a mano en
+`parseAiAgentResponse`, con un regex de rescate si el modelo mete
+texto alrededor del JSON). Sin `ANTHROPIC_API_KEY`, o si la cuenta no
+tiene crédito cargado, la acción devuelve honestamente
+`not_configured`/`failed` en vez de inventar una respuesta -- mismo
+criterio que "Simulado" en WowStore. Gunnar pidió explícitamente
+dejar esta pata para después ("saltemonos el tema del agente de ia..
+haz lo de los botones.. que sea configurables.. con las opciones que
+tenemos ya") -- la opción queda armada y seleccionable en el picker,
+honesta sin crédito, pero no es el foco de esta entrega.
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos, `pnpm
+test:unit:coverage` 100% (292/292, suma `lib/podiumButtons.ts` +
+`lib/aiAgent.ts`), `pnpm build` limpio. `e2e/podium-vault-ai.spec.ts`
+nuevo (6 tests): default sin configurar idéntico a antes, el N0 elige
+Bóveda Legacy desde el dashboard y la tarjeta la muestra con gate real
+(palabra incorrecta rechazada, correcta abre fuentes + "Abrir mi
+cuaderno"), un visitante anónimo también puede abrirla (no es
+host-only), "Modal simple" abre el contenido viejo de "Mi camino" sin
+chocar con el redirect a Info de Legacy (v1.72.0), y el Agente de IA
+siempre devuelve una respuesta honesta (nunca silencio, nunca
+contenido inventado) tanto desde el dashboard como en el fallback
+público. Al correr el E2E completo aparecieron 2 bugs reales,
+corregidos: el botón "Guardar" de `PodiumSlotEditor` no tenía texto
+distintivo y rompía un test preexistente de `photo-positioner.spec.ts`
+(ahora "Guardar Botón"); y el Prisma Client del server de dev quedó
+stale en memoria tras la migración (requirió reiniciar el proceso).
+Suite Playwright completa 55/55 verde.

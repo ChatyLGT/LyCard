@@ -7,6 +7,7 @@ import type { Card, OriginMemento, Program, ProgramSkin, Puesto } from "@/genera
 import { t, type Lang } from "@/lib/i18n";
 import { rankById, medalById } from "@/lib/data";
 import { parseEscala } from "@/lib/escalas";
+import { parsePodiumButtons, getPodiumButton, parseVaultSources, type PodiumButtonKind } from "@/lib/podiumButtons";
 import { registerInterviewAction, sendContactMessageAction, sendQrByWhatsappAction } from "@/app/c/actions";
 import { startLegacyFunnelAction } from "@/app/c/legacy-funnel-actions";
 import { setCardTierAction, type CardTierField } from "@/app/c/card-tier-actions";
@@ -41,6 +42,8 @@ type ModalKey =
   | "cardInfo"
   | "versionInfo"
   | "contacts"
+  | "vault"
+  | "ai_agent"
   | null;
 
 const THEME_VARS: Record<"dark" | "light", CSSProperties> = {
@@ -931,12 +934,16 @@ export default function LyCardView({
   const [infoUnlocked, setInfoUnlocked] = useState(false);
   const [infoSecretInput, setInfoSecretInput] = useState("");
   const [infoSecretError, setInfoSecretError] = useState<string | null>(null);
-  const infoNeedsGate = !!recipient?.palabraSecreta.trim();
+  // Bóveda Legacy (2026-10-04) reusa el mismo gate -- la palabra
+  // secreta vive en el Programa (program.vaultPalabraSecreta) en vez
+  // de en el destinatario cuando modal==="vault".
+  const infoNeedsGate = modal === "vault" ? !!program?.vaultPalabraSecreta.trim() : !!recipient?.palabraSecreta.trim();
   const infoContentVisible = !infoNeedsGate || infoUnlocked;
 
   function submitInfoSecret() {
-    if (!recipient) return;
-    if (infoSecretInput.trim().toLowerCase() === recipient.palabraSecreta.trim().toLowerCase()) {
+    const expected = modal === "vault" ? program?.vaultPalabraSecreta : recipient?.palabraSecreta;
+    if (!expected) return;
+    if (infoSecretInput.trim().toLowerCase() === expected.trim().toLowerCase()) {
       setInfoUnlocked(true);
       setInfoSecretError(null);
     } else {
@@ -1115,6 +1122,55 @@ export default function LyCardView({
     color: contactsFallback.gem,
     descripcion: "",
   };
+
+  // Botones del Podio (2026-10-04, pedido de Gunnar: "poder elegir desde
+  // el dashboard de cada programa los Botones que ibamos a colocar
+  // abajo.. son 3 botones.. los laterales pequeños y el principal
+  // grande.. el N0 decide que poner alli"). Solo los 2 cubos laterales
+  // son configurables -- el del centro queda fijo en el QR real.
+  const podiumButtons = parsePodiumButtons(program?.podiumButtons);
+  const leftPodiumConfig = getPodiumButton(podiumButtons, "left");
+  const rightPodiumConfig = getPodiumButton(podiumButtons, "right");
+  const vaultSources = parseVaultSources(program?.vaultSources);
+  // "invite" sigue siendo host-only sin importar en qué slot se puso --
+  // es el panel interno de Destinatarios (hallazgo de PASO 5, ver
+  // PLAN.md) -- un visitante que lo vea cae al fallback de ESE slot
+  // (el mismo que tenía antes de que existiera este picker, para no
+  // romper ningún Programa que todavía no configuró nada).
+  function resolvePodiumKind(configured: PodiumButtonKind | undefined, fallbackKind: PodiumButtonKind | "contactMessage"): PodiumButtonKind | "contactMessage" {
+    const kind = configured ?? fallbackKind;
+    if (kind === "invite" && !isHost) return fallbackKind === "invite" ? "contactMessage" : fallbackKind;
+    return kind;
+  }
+  const leftPodiumKind = resolvePodiumKind(leftPodiumConfig?.kind, "info");
+  const rightPodiumKind = resolvePodiumKind(rightPodiumConfig?.kind, isHost ? "invite" : "contactMessage");
+  // Cuál de los 2 slots (si alguno) está en "ai_agent" -- maneja el
+  // modal genérico de abajo (modalMap.ai_agent); si ambos lo estuvieran
+  // (caso raro), el izquierdo gana.
+  const activeAiAgentConfig = leftPodiumConfig?.kind === "ai_agent" ? leftPodiumConfig : rightPodiumConfig?.kind === "ai_agent" ? rightPodiumConfig : null;
+
+  // Props visuales (ícono/label/onClick) para el kind que haya quedado
+  // resuelto en cualquiera de los 2 cubos laterales -- comparte lógica
+  // entre izquierda y derecha porque las 6 opciones (info/story/invite/
+  // vault/ai_agent/contactMessage) significan exactamente lo mismo sin
+  // importar en qué lado estén.
+  function podiumKindProps(kind: PodiumButtonKind | "contactMessage"): { icon: string; label: string; onClick: () => void } {
+    switch (kind) {
+      case "story":
+        return { icon: "auto_stories", label: L(isProject ? "storyBtn" : isCompany ? "storyBtnCompany" : "storyBtnPersonal"), onClick: () => setModal("story") };
+      case "invite":
+        return { icon: "mail", label: L("inviteBtn"), onClick: () => setModal("invite") };
+      case "vault":
+        return { icon: "lock", label: program?.vaultTitle || "Bóveda Legacy", onClick: () => setModal("vault") };
+      case "ai_agent":
+        return { icon: activeAiAgentConfig?.aiIcon || "auto_awesome", label: activeAiAgentConfig?.aiTitle || "Agente IA", onClick: () => setModal("ai_agent") };
+      case "contactMessage":
+        return { icon: "chat", label: t(lang, "sendMessageBtn"), onClick: () => setModal("contactMessage") };
+      case "info":
+      default:
+        return { icon: isCompany ? "storefront" : "diamond", label: L(isCompany ? "companyInfoBtn" : "infoBtn"), onClick: () => setModal("info") };
+    }
+  }
 
   // Grilla real por modal (2026-10-04, reemplaza BADGE_ICON_EXAMPLES --
   // pedido de Gunnar: "corregir la informacion de los modales.. que cada
@@ -1303,6 +1359,21 @@ export default function LyCardView({
       ? { icon: "storefront", kicker: t(lang, "companyInfoKicker"), head: card.title || card.name, body: card.quote, meta: t(lang, "companyInfoMeta") }
       : { icon: "diamond", kicker: L("infoKicker") },
     invite: { icon: "mail", kicker: L("inviteKicker") },
+    // Bóveda Legacy / "Legacy Vault" (2026-10-04) -- título/gate propios
+    // del Programa (program.vaultTitle/vaultPalabraSecreta), el contenido
+    // real (fuentes + cuaderno) se renderiza aparte en JSX, no acá.
+    vault: { icon: "lock", kicker: program?.vaultTitle || "Bóveda Legacy" },
+    // Agente de IA a medida (2026-10-04) -- lo último que generó
+    // generatePodiumAiButtonAction para CUALQUIERA de los 2 slots que
+    // esté en "ai_agent" (activeAiAgentConfig, ver arriba). Honesto si
+    // todavía no se generó nada o si falta la clave.
+    ai_agent: {
+      icon: activeAiAgentConfig?.aiIcon || "auto_awesome",
+      kicker: "Funcionalidad a medida",
+      head: activeAiAgentConfig?.aiTitle || "Todavía no se generó nada",
+      body: activeAiAgentConfig?.aiBody || "El N0 no generó contenido para este botón todavía (o falta activar la clave de IA).",
+      meta: "Generado con IA",
+    },
     // PASO 5 (2026-10-02): "Deja tu Legado" -- el Documento de
     // Bienvenida, solo con destinatario.
     legado: { icon: "auto_stories", kicker: recipient ? `Para ${recipient.nombre}` : "Documento de Bienvenida" },
@@ -1868,15 +1939,20 @@ export default function LyCardView({
                 <span style={CUBE_LABEL}>{`Info ${recipient.nombre}`}</span>
               </button>
             ) : (
-              <button
-                type="button"
-                onClick={() => setModal("info")}
-                style={CUBE_MEDIUM}
-                aria-label={L(isCompany ? "companyInfoBtn" : "infoBtn")}
-              >
-                <Icon name={isCompany ? "storefront" : "diamond"} size={22} />
-                <span style={CUBE_LABEL}>{L(isCompany ? "companyInfoBtn" : "infoBtn")}</span>
-              </button>
+              // Botones del Podio (2026-10-04): sin destinatario, este
+              // cubo lo decide el N0 desde el dashboard -- ver
+              // leftPodiumKind/podiumKindProps más arriba. Antes era
+              // siempre "Info" a secas; ese sigue siendo el default si
+              // no se configuró nada.
+              (() => {
+                const left = podiumKindProps(leftPodiumKind);
+                return (
+                  <button type="button" onClick={left.onClick} style={CUBE_MEDIUM} aria-label={left.label}>
+                    <Icon name={left.icon} size={22} />
+                    <span style={CUBE_LABEL}>{left.label}</span>
+                  </button>
+                );
+              })()
             )}
 
             {/* QR area, unified across the 3 kinds (2026-09-16): the owner
@@ -1963,20 +2039,22 @@ export default function LyCardView({
                 <Icon name="auto_stories" size={22} />
                 <span style={CUBE_LABEL}>Deja tu Legado</span>
               </button>
-            ) : isHost ? (
-              // El panel de Destinatarios (Thread C) es gestión interna
-              // -- antes se veía igual para cualquier visitante anónimo,
-              // ahora queda atrás de isHost (hallazgo al armar PASO 5,
-              // ver PLAN.md).
-              <button type="button" onClick={() => setModal("invite")} style={CUBE_MEDIUM_ALT} aria-label={L("inviteBtn")}>
-                <Icon name="mail" size={22} />
-                <span style={CUBE_LABEL}>{L("inviteBtn")}</span>
-              </button>
             ) : (
-              <button type="button" onClick={() => setModal("contactMessage")} style={CUBE_MEDIUM_ALT} aria-label={t(lang, "sendMessageBtn")}>
-                <Icon name="chat" size={22} />
-                <span style={CUBE_LABEL}>{t(lang, "sendMessageBtn")}</span>
-              </button>
+              // Botones del Podio (2026-10-04): sin destinatario, este
+              // cubo lo decide el N0 -- ver rightPodiumKind más arriba.
+              // El panel de Destinatarios ("invite") sigue siendo
+              // gestión interna -- resolvePodiumKind ya lo deja atrás
+              // de isHost sin importar qué haya elegido el N0 (hallazgo
+              // al armar PASO 5, ver PLAN.md).
+              (() => {
+                const right = podiumKindProps(rightPodiumKind);
+                return (
+                  <button type="button" onClick={right.onClick} style={CUBE_MEDIUM_ALT} aria-label={right.label}>
+                    <Icon name={right.icon} size={22} />
+                    <span style={CUBE_LABEL}>{right.label}</span>
+                  </button>
+                );
+              })()
             )}
           </div>
 
@@ -2244,6 +2322,92 @@ export default function LyCardView({
                       <Icon name="auto_awesome" size={18} />
                       Crear mi Gemelo Digital
                     </Link>
+                  </div>
+                )
+              ) : modal === "vault" && program ? (
+                // Bóveda Legacy / "Legacy Vault" (2026-10-04, pedido de
+                // Gunnar: "la informacion que teniamos de la informacion
+                // del N0.. el link a su notebooklm.. eso ya lo habiamos
+                // echo.. quedo para Rogelio"). Mismo gate de palabra
+                // secreta que "Info [nombre]" (ver infoNeedsGate más
+                // arriba, generalizado para leer de Program en vez de
+                // recipient) pero a nivel Programa -- visible para
+                // cualquier visitante, sin necesitar un link de
+                // destinatario (?para=). Alcance de esta vuelta: fuentes
+                // (link/nota) + "Abrir mi cuaderno" -- sin el Códice PDF
+                // de ejemplo ni "Crear mi Gemelo Digital" del flujo de
+                // destinatario, que son contenido promocional de ESE
+                // flujo puntual, no de la Bóveda genérica.
+                !infoContentVisible ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    <p style={{ margin: 0, font: "400 12.5px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
+                      Esta sección está protegida. Ingresá la palabra secreta para ver el contenido.
+                    </p>
+                    <input
+                      value={infoSecretInput}
+                      onChange={(e) => setInfoSecretInput(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && submitInfoSecret()}
+                      placeholder="Palabra secreta"
+                      style={{ background: "var(--deepBg,#0D0D0D)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", borderRadius: 10, padding: "11px 14px", color: "var(--ink,#F5F2EB)", font: "400 14px var(--brandFont,'Plus Jakarta Sans'),sans-serif", outline: "none" }}
+                    />
+                    {infoSecretError && <span style={{ font: "600 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "#e5928a" }}>{infoSecretError}</span>}
+                    <button
+                      type="button"
+                      onClick={submitInfoSecret}
+                      style={{
+                        width: "100%",
+                        padding: 14,
+                        border: "none",
+                        borderRadius: 12,
+                        background: "linear-gradient(90deg,var(--accentLight,#E5C378),var(--accentMid,#C8A15A) 50%,var(--accentDeep,#99732B))",
+                        color: "var(--deepBg,#0D0D0D)",
+                        font: "700 12.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
+                        letterSpacing: ".12em",
+                        textTransform: "uppercase",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Continuar
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                    <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <h4 style={{ margin: 0, font: "600 13px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>
+                        Qué información usamos
+                      </h4>
+                      {vaultSources.length === 0 ? (
+                        <p style={{ margin: 0, font: "400 11.5px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#8a8378)" }}>
+                          Todavía no se cargaron fuentes.
+                        </p>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          {vaultSources.map((s, i) => (
+                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 8, background: "rgba(0,0,0,.25)" }}>
+                              <Icon name={s.type === "link" ? "link" : "notes"} size={14} style={{ color: "var(--accentMid,#C8A15A)", flexShrink: 0 }} />
+                              <span style={{ flex: "none", font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".04em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
+                                {s.type === "link" ? "Link" : "Nota"}
+                              </span>
+                              <span style={{ flex: 1, minWidth: 0, font: "400 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {s.label || (s.type === "texto" ? s.value.slice(0, 40) : s.value)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+
+                    {program.vaultCuadernoUrl && (
+                      <a
+                        href={program.vaultCuadernoUrl}
+                        target="_blank"
+                        rel="noopener"
+                        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: 13, borderRadius: 12, border: "1px solid rgba(var(--accentRgb,200,161,90),.4)", color: "var(--accentLight,#E5C378)", font: "700 11.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".06em", textTransform: "uppercase", textDecoration: "none" }}
+                      >
+                        <Icon name="menu_book" size={18} />
+                        Abrir mi cuaderno
+                      </a>
+                    )}
                   </div>
                 )
               ) : modal === "info" && isProject ? (

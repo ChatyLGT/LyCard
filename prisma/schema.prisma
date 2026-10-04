@@ -489,6 +489,39 @@ model Program {
   motivationalPhrases Json @default("[]")
   // Marca un Program generado por el ambiente de datos demo (Fase E5).
   isDemo              Boolean  @default(false)
+
+  // Botones del podio de la tarjeta, configurables por Programa
+  // (2026-10-04, pedido de Gunnar: "poder elegir desde el dashboard de
+  // cada programa los Botones que ibamos a colocar abajo.. son 3
+  // botones.. los laterales pequeños y el principal grande.. el N0
+  // decide que poner alli"). Solo los 2 cubos LATERALES son
+  // configurables -- el del centro queda siempre fijo en el QR real
+  // (compartir la Card) por decisión explícita, sacarlo rompería la
+  // única forma real de compartir. Array de 0 a 2 entradas
+  // {slot:"left"|"right", kind:"info"|"story"|"invite"|"vault"|
+  // "ai_agent", ...}, ver lib/podiumButtons.ts. Vacío (el default) es
+  // el comportamiento de siempre: izquierda "Info", derecha "Enviar
+  // Invitación" (o "Mensaje" si no es el host).
+  podiumButtons Json @default("[]")
+
+  // Bóveda Legacy / "Legacy Vault" (2026-10-04, pedido de Gunnar: "la
+  // informacion que teniamos de la informacion del N0.. el link a su
+  // notebooklm.. eso ya lo habiamos echo.. quedo para Rogelio"). Mismo
+  // tipo de contenido que ya armamos por CardRecipient (palabra
+  // secreta + "Abrir mi cuaderno" + fuentes) pero a nivel de PROGRAMA
+  // -- visible para cualquier visitante que abra el botón "vault" del
+  // podio, sin necesitar un link de destinatario (?para=). Se asigna a
+  // un slot del podio como cualquier otro kind; vacío por Programa no
+  // configurado todavía cae a un placeholder honesto, nunca a datos de
+  // otro Programa.
+  vaultTitle          String @default("Bóveda Legacy")
+  vaultPalabraSecreta String @default("")
+  vaultCuadernoUrl    String @default("")
+  // VaultSource[] -- {type:"link"|"texto", label, value}, ver
+  // lib/podiumButtons.ts. Mismo patrón que medalScale/officeSkills:
+  // array plano, reemplazo total al guardar.
+  vaultSources        Json   @default("[]")
+
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 

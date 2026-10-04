@@ -24,14 +24,18 @@ import { CHANNELS } from "@/lib/messaging";
 import { buildFunnelStages } from "@/lib/funnel";
 import { createPuestoAction, updatePuestoAction, deletePuestoAction } from "../puestos-actions";
 import { createInterviewSlotAction, updateInterviewSlotAction, deleteInterviewSlotAction } from "../interview-slots-actions";
+import { setPodiumButtonAction, updateVaultAction } from "../podium-actions";
 import { CARD_LABEL_FIELDS, defaultCardLabel } from "@/lib/cardLabels";
 import { parseEscala } from "@/lib/escalas";
 import { parseOfficeSkills, DEFAULT_OFFICE_SKILLS } from "@/lib/officeSkills";
 import { parseMotivationalPhrases } from "@/lib/oficinaExtras";
+import { parsePodiumButtons, getPodiumButton, parseVaultSources } from "@/lib/podiumButtons";
 import EscalaEditor from "@/components/EscalaEditor";
 import OfficeSkillsEditor from "@/components/OfficeSkillsEditor";
 import PhraseListEditor from "@/components/PhraseListEditor";
 import ProgramSkinInfo from "@/components/ProgramSkinInfo";
+import PodiumSlotEditor from "@/components/PodiumSlotEditor";
+import VaultSourcesEditor from "@/components/VaultSourcesEditor";
 import { AccordionSection, AccordionRow, AccordionAddRow } from "@/components/Accordion";
 import type { SkinColors } from "@/lib/designMd";
 
@@ -126,6 +130,8 @@ export default async function AdminProgramDetailPage({
     officeSkillsSaved?: string;
     officeSkillsError?: string;
     motivationalPhrasesSaved?: string;
+    podiumSaved?: string;
+    vaultSaved?: string;
     focus?: string;
     messageSent?: string;
     messageError?: string;
@@ -159,6 +165,8 @@ export default async function AdminProgramDetailPage({
     officeSkillsSaved,
     officeSkillsError,
     motivationalPhrasesSaved,
+    podiumSaved,
+    vaultSaved,
     focus,
   } = await searchParams;
   const SKIN_ERROR_COPY: Record<string, string> = {
@@ -208,6 +216,8 @@ export default async function AdminProgramDetailPage({
   const contactsScale = parseEscala(program.contactsScale);
   const officeSkills = parseOfficeSkills(program.officeSkills);
   const motivationalPhrases = parseMotivationalPhrases(program.motivationalPhrases);
+  const podiumButtons = parsePodiumButtons(program.podiumButtons);
+  const vaultSources = parseVaultSources(program.vaultSources);
 
   const registrations = await prisma.registration.findMany({
     where: { card: { programId: id } },
@@ -632,6 +642,69 @@ export default async function AdminProgramDetailPage({
           {escalaSaved === "rank" && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Escala guardada.</p>}
           <EscalaEditor type="rank" initialItems={rankScale} action={updateEscalaAction.bind(null, program.id, "rank")} />
         </AccordionSection>
+        </AccordionSection>
+
+        {/* Botones del Podio (2026-10-04, pedido de Gunnar: "poder
+            elegir desde el dashboard de cada programa los Botones que
+            ibamos a colocar abajo.. son 3 botones.. los laterales
+            pequeños y el principal grande.. el N0 decide que poner
+            alli"). Solo los 2 cubos LATERALES son elegibles -- el del
+            centro queda fijo en el QR real (compartir la Card), decisión
+            explícita confirmada con Gunnar. */}
+        <AccordionSection
+          title="Botones del Podio"
+          subtitle="Los 2 cubos chicos de la tarjeta (el del medio queda siempre con el QR real). Elegí qué va en cada uno: el modal Info de siempre, el modal simple que antes abría 'Mi camino', Enviar Invitación, Bóveda Legacy, o un botón armado a medida con el agente de IA."
+          meta={<span style={PILL}>{podiumButtons.length ? `${podiumButtons.length}/2` : "fijo"}</span>}
+          defaultOpen={Boolean(podiumSaved)}
+        >
+          {podiumSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Botón guardado.</p>}
+          <section style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={{ font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#5A5A5A" }}>
+              Cubo izquierdo
+            </span>
+            <PodiumSlotEditor
+              programId={program.id}
+              slot="left"
+              current={getPodiumButton(podiumButtons, "left")}
+              setKindAction={setPodiumButtonAction.bind(null, program.id, "left")}
+            />
+          </section>
+          <section style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={{ font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#5A5A5A" }}>
+              Cubo derecho
+            </span>
+            <PodiumSlotEditor
+              programId={program.id}
+              slot="right"
+              current={getPodiumButton(podiumButtons, "right")}
+              setKindAction={setPodiumButtonAction.bind(null, program.id, "right")}
+            />
+          </section>
+        </AccordionSection>
+
+        {/* Bóveda Legacy / "Legacy Vault" (2026-10-04, pedido de Gunnar:
+            "la informacion que teniamos de la informacion del N0.. el
+            link a su notebooklm.. eso ya lo habiamos echo.. quedo para
+            Rogelio"). Mismo contenido que ya existía por destinatario
+            (palabra secreta + cuaderno + fuentes) pero a nivel
+            Programa -- se activa eligiendo "Bóveda Legacy" en alguno de
+            los 2 cubos de arriba. */}
+        <AccordionSection
+          title="Bóveda Legacy"
+          subtitle="El contenido que se muestra cuando alguien toca el botón 'Bóveda Legacy' -- palabra secreta (opcional), link de tu NotebookLM/cuaderno, y las fuentes que armaron esa información."
+          meta={<span style={PILL}>{vaultSources.length}</span>}
+          defaultOpen={Boolean(vaultSaved)}
+        >
+          {vaultSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Bóveda guardada.</p>}
+          <form action={updateVaultAction.bind(null, program.id)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <input name="vaultTitle" defaultValue={program.vaultTitle} placeholder="Título (ej. Bóveda Legacy)" style={INPUT} />
+            <input name="vaultPalabraSecreta" defaultValue={program.vaultPalabraSecreta} placeholder="Palabra secreta (opcional -- vacío = sin gate)" style={INPUT} />
+            <input name="vaultCuadernoUrl" defaultValue={program.vaultCuadernoUrl} placeholder="Link de tu NotebookLM / cuaderno" style={INPUT} />
+            <VaultSourcesEditor initialItems={vaultSources} />
+            <button type="submit" style={{ padding: 13, border: "none", borderRadius: 10, background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)", color: "#0D0D0D", font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", cursor: "pointer" }}>
+              Guardar Bóveda
+            </button>
+          </form>
         </AccordionSection>
 
         {/* Horarios de Entrevista — cupo real por Programa (Auditoría

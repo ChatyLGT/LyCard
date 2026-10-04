@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.72.0";
+export const APP_VERSION = "1.73.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.73.0",
+    date: "2026-10-04",
+    notes:
+      "Botones del Podio: el N0 elige desde el dashboard de cada Programa qué va en los 2 cubos laterales de la tarjeta (el del centro queda fijo en el QR) -- Info, el modal simple que antes abría \"Mi camino\", Enviar Invitación Especial, la nueva Bóveda Legacy (fuentes + link de NotebookLM, con palabra secreta opcional -- el mismo contenido que se armó para Rogelio, ahora reusable por cualquier Programa), o un botón a medida generado con un agente de IA (Anthropic). Sin ANTHROPIC_API_KEY o sin crédito en la cuenta, el botón de IA avisa honestamente en vez de inventar una respuesta -- mismo criterio de siempre.",
+  },
   {
     version: "1.72.0",
     date: "2026-10-04",
