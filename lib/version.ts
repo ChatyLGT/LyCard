@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.71.2";
+export const APP_VERSION = "1.72.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.72.0",
+    date: "2026-10-04",
+    notes:
+      "El botón \"Mi camino\" de la tarjeta Legacy (proyecto) deja de abrir su propio modal y abre el mismo modal rico de \"Info\" que ya existía (pedido de Gunnar: \"ese boton.. que ahora es el boton de mas informacion sobre legacy.. quiero que al picar ese boton salga el modal que sale ahora en el que dice Info.. el mismo\"). Company y personal siguen con su propio \"Mi camino con...\"/\"Mi Viaje\" de siempre, sin cambios -- esto es específico de Legacy.",
+  },
   {
     version: "1.71.2",
     date: "2026-10-04",

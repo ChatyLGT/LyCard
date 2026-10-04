@@ -8703,3 +8703,29 @@ Verificación: `npx tsc --noEmit` limpio, `pnpm lint` sin errores
 nuevos (mismos 11 warnings preexistentes), `pnpm test:unit:coverage`
 263/263 al 100% (sin tocar `lib/`), `pnpm build` limpio. Suite
 Playwright completa 48/48 verde, cero regresiones.
+
+## 2026-10-04 -- "Mi camino" (Legacy) abre el modal de Info (v1.72.0)
+
+Gunnar: "ahora vamos con el boton de Mi Camino.. que ahora es el
+boton de mas informacion sobre legacy.. quiero que al picar ese boton
+salga el modal que sale ahora en el que dice Info.. el mismo."
+
+En una Card de proyecto (Legacy), el botón "Mi camino" dejó de abrir
+su propio modal (storyKicker/storyHead/storyBody, la frase fija
+"«Descubrí en Legacy una forma de trascender.»") y ahora abre el
+mismo modal rico de "Info" que ya existe más abajo en la tarjeta
+(`modal === "info" && isProject`, con `infoTitle`/`infoP1`/`infoP2`/
+pil1-3/`legacyPass`). `components/LyCardView.tsx`:
+`onClick={() => setModal(isProject ? "info" : "story")}` -- un solo
+ternario, scoped a `isProject`. Company y personal siguen con su
+"Mi camino con la Empresa"/"Mi Viaje" real de siempre (su propio
+modal `story`, sin tocar). El label visible del botón ("Mi camino")
+no cambió -- Gunnar solo pidió el redirect de destino, no el texto;
+se ajusta en una vuelta aparte si lo pide.
+
+Verificación: `npx tsc --noEmit` limpio, `pnpm lint` sin errores
+nuevos. Test nuevo en `e2e/public-card.spec.ts` ("Mi camino (Legacy):
+abre el mismo modal de Info, no el de Mi Camino") confirma que
+aparece el texto real de Info (`infoTitle`) y NO aparece el texto de
+Mi Camino. `pnpm test:unit:coverage` 263/263 al 100% (sin cambios en
+`lib/`), `pnpm build` limpio. Suite Playwright completa 49/49 verde.

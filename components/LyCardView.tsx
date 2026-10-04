@@ -1815,10 +1815,18 @@ export default function LyCardView({
                 {card.quote}
               </p>
             )}
-            {/* -20% (2026-09-17, pedido de Gunnar) */}
+            {/* -20% (2026-09-17, pedido de Gunnar). En project (Legacy),
+                este botón deja de abrir el modal de "Mi Camino" propio
+                del host y abre el mismo modal de "Info" que ya existe
+                (2026-10-04, pedido de Gunnar: "el boton de Mi Camino..
+                que ahora es el boton de mas informacion sobre legacy..
+                quiero que al picar ese boton salga el modal que sale
+                ahora en el que dice Info.. el mismo"). Company/personal
+                siguen abriendo su propio "Mi camino con..."/"Mi Viaje",
+                sin cambios -- esto es específico de Legacy. */}
             <button
               type="button"
-              onClick={() => setModal("story")}
+              onClick={() => setModal(isProject ? "info" : "story")}
               style={{
                 display: "inline-flex",
                 alignItems: "center",

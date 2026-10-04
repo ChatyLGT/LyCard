@@ -42,4 +42,20 @@ test.describe("Tarjeta pública — smoke test", () => {
     const response = await page.goto("/c/esta-tarjeta-no-existe-nunca", { waitUntil: "networkidle" });
     expect(response?.status()).toBe(404);
   });
+
+  // 2026-10-04, pedido de Gunnar: "el boton de Mi Camino.. que ahora es
+  // el boton de mas informacion sobre legacy.. quiero que al picar ese
+  // boton salga el modal que sale ahora en el que dice Info.. el mismo".
+  // Cubre que, en una Card de proyecto (Legacy), ese botón ya no abre su
+  // propio modal de "Mi Camino" -- abre el mismo modal rico de "Info"
+  // (infoTitle/pil1/pil2/pil3) que el cubo "Info" de más abajo. Company/
+  // personal no se tocan (tienen su propio "Mi camino"/"Mi Viaje" real).
+  test("Mi camino (Legacy): abre el mismo modal de Info, no el de Mi Camino", async ({ page }) => {
+    await page.goto(`/c/${cardSlug}`, { waitUntil: "networkidle" });
+
+    await page.getByText("Mi camino", { exact: true }).click();
+
+    await expect(page.getByText("Construcción y Protección de Legado Patrimonial", { exact: true })).toBeVisible();
+    await expect(page.getByText("Descubrí en Legacy una forma de trascender", { exact: false })).toHaveCount(0);
+  });
 });
