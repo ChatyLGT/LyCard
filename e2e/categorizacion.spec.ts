@@ -8,7 +8,7 @@ const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
 // de los modales.. que cada modal explique lo que se dice en el
 // dashboard.. le demos la oportunidad al N0 de seleccionar eso desde
 // ahi"). Antes cada uno de los 4 modales de distinción (Puesto/O.D.,
-// Medallón de Resultados, Imán Badge, Contactos) mostraba 4 íconos
+// Medalla Rango, Badge de Rangos, Medalla KPIs) mostraba 4 íconos
 // de EJEMPLO fijos, iguales para cualquier Programa -- esta prueba cubre
 // que ahora muestran el roster REAL (nombre + descripción completa de
 // cada nivel que el N0 armó), marcan el nivel actual, y que un N0 puede
@@ -81,14 +81,14 @@ test.describe("Categorización — modales con escalas reales + selección desde
     await e2eDb.end();
   });
 
-  test("Medallón de Resultados: el modal muestra los 2 niveles reales (no ejemplos genéricos) y el N0 puede seleccionar el otro", async ({ browser }) => {
+  test("Medalla Rango: el modal muestra los 2 niveles reales (no ejemplos genéricos) y el N0 puede seleccionar el otro", async ({ browser }) => {
     const context = await browser.newContext();
     const cookie = await mintAdminCookie(adminId);
     await context.addCookies([{ ...cookie, url: BASE_URL }]);
     const page = await context.newPage();
 
     await page.goto(`${BASE_URL}/c/${cardSlug}`, { waitUntil: "networkidle" });
-    await page.getByRole("button", { name: "Medallón de Resultados", exact: true }).click();
+    await page.getByRole("button", { name: "Medalla Rango", exact: true }).click();
 
     // Nombre + descripción REALES de los 2 niveles, no "Bronce/Plata/Oro/Diamante".
     // "Crítico" aparece dos veces a propósito: una vez grande arriba (el
@@ -109,14 +109,14 @@ test.describe("Categorización — modales con escalas reales + selección desde
       .toBe("liderazgo");
   });
 
-  test("Imán Badge: el modal muestra los niveles reales de atracción de red", async ({ browser }) => {
+  test("Badge de Rangos: el modal muestra los niveles reales de atracción de red", async ({ browser }) => {
     const context = await browser.newContext();
     const cookie = await mintAdminCookie(adminId);
     await context.addCookies([{ ...cookie, url: BASE_URL }]);
     const page = await context.newPage();
 
     await page.goto(`${BASE_URL}/c/${cardSlug}`, { waitUntil: "networkidle" });
-    await page.getByRole("button", { name: "Imán Badge", exact: true }).click();
+    await page.getByRole("button", { name: "Badge de Rangos", exact: true }).click();
 
     await expect(page.getByText("Imán Corporativo", { exact: true })).toBeVisible();
     await expect(page.getByText("Tu influencia convierte Corporaciones completas.")).toBeVisible();
@@ -138,7 +138,7 @@ test.describe("Categorización — modales con escalas reales + selección desde
     const page = await context.newPage();
 
     await page.goto(`${BASE_URL}/c/${cardSlug}`, { waitUntil: "networkidle" });
-    await page.getByRole("button", { name: "Puesto", exact: true }).click();
+    await page.getByRole("button", { name: "Badge de Puestos", exact: true }).click();
 
     await expect(page.getByText("Guardián de Red", { exact: true })).toBeVisible();
     await expect(page.getByText("Mantiene la red activa.")).toBeVisible();
@@ -164,7 +164,7 @@ test.describe("Categorización — modales con escalas reales + selección desde
     const otherTileName = before.rows[0].rank === "anfitrion" ? "Imán Corporativo" : "Anfitrión";
 
     await page.goto(`${BASE_URL}/c/${cardSlug}`, { waitUntil: "networkidle" });
-    await page.getByRole("button", { name: "Imán Badge", exact: true }).click();
+    await page.getByRole("button", { name: "Badge de Rangos", exact: true }).click();
     await expect(page.getByText(otherTileName, { exact: true })).toBeVisible();
 
     await page.getByText(otherTileName, { exact: true }).click();

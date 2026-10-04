@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.71.1";
+export const APP_VERSION = "1.71.2";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.71.2",
+    date: "2026-10-04",
+    notes:
+      "Tercer y último rename de Categorización, pedido de Gunnar mirando la tarjeta real: Medallón de Resultados -> Medalla Rango, Imán Badge -> Badge de Rangos, Escalera de Puestos -> Badge de Puestos, Badge de Valor -> Medalla KPIs. Además, la sección Categorización del dashboard ahora lista los 4 en el mismo orden en que se leen en la tarjeta (izquierda a derecha, arriba a abajo): Medalla KPIs, Medalla Rango, Badge de Puestos, Badge de Rangos -- antes el orden no coincidía con lo que se ve en vivo. Puro rename + reorden de UI, los campos internos (Card.medal/rank/contacts/puestoId, Program.medalScale/rankScale/contactsScale) no cambian.",
+  },
   {
     version: "1.71.1",
     date: "2026-10-04",

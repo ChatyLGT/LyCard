@@ -1587,7 +1587,7 @@ export default function LyCardView({
                   <button
                     type="button"
                     onClick={() => setModal("contacts")}
-                    aria-label="Badge de Valor"
+                    aria-label="Medalla KPIs"
                     style={TIER_DOT(contactsTier.color)}
                   >
                     <Icon name={contactsTier.icono || "military_tech"} size={14} style={{ color: "#141414" }} />
@@ -1611,7 +1611,7 @@ export default function LyCardView({
                   <button
                     type="button"
                     onClick={() => setModal("medal")}
-                    aria-label="Medallón de Resultados"
+                    aria-label="Medalla Rango"
                     style={TIER_DOT(medalTier.color)}
                   >
                     <Icon name={medalTier.icono || "military_tech"} size={14} style={{ color: "#141414" }} />
@@ -1666,14 +1666,14 @@ export default function LyCardView({
                 </button>
 
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 8, pointerEvents: "auto" }}>
-                  <button type="button" onClick={() => setModal("od")} aria-label="Puesto" style={BADGE_BTN}>
+                  <button type="button" onClick={() => setModal("od")} aria-label="Badge de Puestos" style={BADGE_BTN}>
                     <Sweep />
                     <Icon name={puesto?.icono || "diamond"} size={12} style={{ color: "var(--goldtxt,#E5C378)" }} />
                     <span style={{ font: "700 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--goldtxt,#E5C378)" }}>
                       {displaySiglas}
                     </span>
                   </button>
-                  <button type="button" onClick={() => setModal("ancient")} aria-label="Imán Badge" style={BADGE_BTN}>
+                  <button type="button" onClick={() => setModal("ancient")} aria-label="Badge de Rangos" style={BADGE_BTN}>
                     <Sweep />
                     <Icon name={rankTier.icono || "auto_awesome"} size={14} style={{ color: "var(--accentLight,#E5C378)" }} />
                     <span style={{ font: "700 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--goldtxt,#E5C378)" }}>

@@ -8665,3 +8665,41 @@ nuevos (mismos 11 warnings preexistentes), `pnpm test:unit:coverage`
 263/263 al 100% (sin cambios en `lib/`, puro rename de copy/UI),
 `pnpm build` limpio. `e2e/categorizacion.spec.ts` actualizado (aria-
 label "Imán Badge") y pasando. Suite Playwright completa 48/48 verde.
+
+## 2026-10-04 -- Tercer rename + reorden de Categorización (v1.71.2)
+
+Gunnar, mirando la tarjeta real: "necesito le pongas los nombres
+correctos a las medallas y bugdess.. y que tambien la ordenes dentro
+de la categorizacion. vamos de izquierda a derecha.. Medalla KPIs,
+Placeholder Nombre Completo, Medalla Rango luego abajo es el cv y
+abajo del cv es el Badget de Puestos.. y luego el de Rangos."
+
+Mapeo final (posición en la tarjeta → nombre → campo interno, sin
+cambios de schema en ninguno de los 3 renames de esta sesión):
+
+| Posición en la tarjeta | Nombre final | Antes (v1.71.1) | Campo interno |
+|---|---|---|---|
+| Dot a la izquierda del nombre | **Medalla KPIs** | Badge de Valor | `type="contacts"` |
+| Dot a la derecha del nombre | **Medalla Rango** | Medallón de Resultados | `type="medal"` |
+| 1er botón, fila de abajo | **Badge de Puestos** | Escalera de Puestos | `Puesto` (modal "od") |
+| 2do botón, fila de abajo | **Badge de Rangos** | Imán Badge | `type="rank"` (modal "ancient") |
+
+- `components/LyCardView.tsx`: los 4 `aria-label` de los botones/dots
+  en la tarjeta pública se actualizaron a los nombres finales.
+- `lib/i18n.ts`: `valueKicker`/`medalKicker`/`ancKicker` (los textos
+  que ven en el modal cuando el nivel actual no trae su propio
+  `subtitulo`) renombrados igual, ES y EN. El contenido de fondo
+  (`contactsIntro`/`medalIntro`/`ancIntro`, qué mide cada uno) no
+  cambió -- esto es solo el nombre de la etiqueta, no el concepto.
+- `app/admin/programs/[id]/page.tsx`: las 4 `AccordionSection` dentro
+  de "Categorización" se renombraron Y se reordenaron para que el
+  orden de lectura del dashboard coincida con el de la tarjeta real
+  (antes era Puestos → Medallón → Imán Badge → Contactos, sin
+  relación con cómo se ven en la tarjeta).
+- `e2e/categorizacion.spec.ts`: los `aria-label` que usan los tests
+  para abrir cada modal se actualizaron a los nombres finales.
+
+Verificación: `npx tsc --noEmit` limpio, `pnpm lint` sin errores
+nuevos (mismos 11 warnings preexistentes), `pnpm test:unit:coverage`
+263/263 al 100% (sin tocar `lib/`), `pnpm build` limpio. Suite
+Playwright completa 48/48 verde, cero regresiones.

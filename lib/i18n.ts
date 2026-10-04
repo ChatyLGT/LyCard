@@ -162,17 +162,17 @@ export const STR: Record<Lang, Record<string, string>> = {
       "Esta distinción todavía no fue configurada. El N0 del Programa define acá su nombre, ícono y descripción desde /admin/programs — cada Programa arma la suya, no hay una fija.",
     odMeta: "Estatus: Activo y Certificado",
     odMetaEmpty: "Sin configurar",
-    ancKicker: "Imán Badge",
+    ancKicker: "Badge de Rangos",
     ancBody:
       "Este nivel todavía no fue configurado. El N0 del Programa arma su propia escala de atracción desde /admin/programs — cada Programa define la suya, no hay una fija.",
     ancMeta: "Imán de Red",
     ancMetaEmpty: "Sin configurar",
-    medalKicker: "Medallón de Resultados",
+    medalKicker: "Medalla Rango",
     medalBody:
       "Este nivel todavía no fue configurado. El N0 del Programa arma su propia escala de resultados desde /admin/programs — cada Programa define la suya, no hay una fija.",
     medalMeta: "Resultado Certificado",
     medalMetaEmpty: "Sin configurar",
-    valueKicker: "Badge de Valor",
+    valueKicker: "Medalla KPIs",
     valueBody:
       "Este nivel todavía no fue configurado. El N0 del Programa arma su propia escala de valor desde /admin/programs — cada Programa define la suya, no hay una fija.",
     valueMeta: "Valor Certificado",
@@ -332,17 +332,17 @@ export const STR: Record<Lang, Record<string, string>> = {
       "This distinction hasn't been configured yet. The Program's N0 sets its name, icon and description from /admin/programs — each Program builds its own, there's no fixed one.",
     odMeta: "Status: Active and Certified",
     odMetaEmpty: "Not configured",
-    ancKicker: "Magnet Badge",
+    ancKicker: "Rank Badge",
     ancBody:
       "This level hasn't been configured yet. The Program's N0 builds its own attraction scale from /admin/programs — each Program defines its own, there's no fixed one.",
     ancMeta: "Network Magnet",
     ancMetaEmpty: "Not configured",
-    medalKicker: "Results Medallion",
+    medalKicker: "Rank Medal",
     medalBody:
       "This level hasn't been configured yet. The Program's N0 builds its own results scale from /admin/programs — each Program defines its own, there's no fixed one.",
     medalMeta: "Certified Result",
     medalMetaEmpty: "Not configured",
-    valueKicker: "Value Badge",
+    valueKicker: "KPI Medal",
     valueBody:
       "This level hasn't been configured yet. The Program's N0 builds its own value scale from /admin/programs — each Program defines its own, there's no fixed one.",
     valueMeta: "Certified Value",

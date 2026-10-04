@@ -492,24 +492,69 @@ export default async function AdminProgramDetailPage({
           </form>
         </AccordionSection>
 
-        {/* Categorización — unifica Puestos + Medallón + Sabiduría +
-            Contactos en un solo lugar (2026-10-04, pedido de Gunnar: "todo
-            eso no esta muy funcional.. ayudame a mejorarlo.. vamos a poner
-            ahi una seccion que agrupe todo lo que ahora esta separado").
-            Antes eran 4 AccordionSection sueltas intercaladas con Horarios
-            de Entrevista, que no tiene nada que ver con gamificación — esa
-            sección se corrió fuera de este bloque, ver más abajo. */}
+        {/* Categorización — unifica los 4 distintivos en un solo lugar
+            (2026-10-04, pedido de Gunnar: "todo eso no esta muy
+            funcional.. ayudame a mejorarlo.. vamos a poner ahi una seccion
+            que agrupe todo lo que ahora esta separado"). Antes eran 4
+            AccordionSection sueltas intercaladas con Horarios de
+            Entrevista, que no tiene nada que ver con gamificación — esa
+            sección se corrió fuera de este bloque, ver más abajo.
+            Orden y nombres (2026-10-04, segunda corrección de Gunnar
+            viendo la tarjeta real en vivo): izquierda a derecha / arriba
+            a abajo tal como se leen en la tarjeta -- Medalla KPIs (dot a
+            la izquierda del nombre), Medalla Rango (dot a la derecha del
+            nombre), Badge de Puestos y Badge de Rangos (fila de abajo,
+            en ese orden). */}
         <AccordionSection
           title="Categorización"
-          subtitle="Toda la gamificación del Programa en un solo lugar: Puesto, Medallón de Resultados, Imán Badge y Badge de Valor. Editá colores, íconos y títulos acá — el modal de cada distintivo en la tarjeta ya refleja esto automáticamente."
+          subtitle="Toda la gamificación del Programa en un solo lugar, en el mismo orden en que se leen en la tarjeta: Medalla KPIs, Medalla Rango, Badge de Puestos y Badge de Rangos. Editá colores, íconos y títulos acá — el modal de cada distintivo en la tarjeta ya refleja esto automáticamente."
           meta={<span style={PILL}>{program.puestos.length + medalScale.length + rankScale.length + contactsScale.length || "fijo"}</span>}
           defaultOpen={Boolean(puestoCreated || puestoSaved || puestoDeleted || puestoError || escalaSaved)}
         >
-        {/* Puestos — the N0-designed ladder of positions (PLAN.md Fase 9.1)
-            that project Cards will pick from instead of writing their own
-            siglas/denominación/descripción by hand (wiring is Fase 9.2). */}
+        {/* "Escala de Gente Contactada" → Medalla KPIs (2026-10-04 --
+            primero "Badge de Valor", corregido otra vez por Gunnar viendo
+            la tarjeta real: "tiene que ver con cantidad de valor
+            creado.. o de ventas realizadas.. o en el caso de legacy..
+            gemelos digitales legacies creados a recomendacion del host").
+            Mismo mecanismo manual que los otros 3, confirmado con Gunnar
+            antes de construir -- el N0 elige el nivel a mano, sin
+            contador automático de referidos todavía. Internamente sigue
+            siendo type="contacts" (Card.contacts, Program.contactsScale).
+            Primero en el orden -- es el dot a la izquierda del nombre. */}
         <AccordionSection
-          title="Escalera de Puestos"
+          title="Medalla KPIs"
+          subtitle="Sin niveles acá, las tarjetas siguen usando la escala fija de medallones (Bronce → Diamante). El ícono de cada nivel es el que se muestra en el badge junto al nombre."
+          meta={<span style={PILL}>{contactsScale.length || "fija"}</span>}
+          defaultOpen={escalaSaved === "contacts"}
+        >
+          {escalaSaved === "contacts" && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Escala guardada.</p>}
+          <EscalaEditor type="contacts" initialItems={contactsScale} action={updateEscalaAction.bind(null, program.id, "contacts")} />
+        </AccordionSection>
+
+        {/* "Escala de Medallón" → Medalla Rango (2026-10-04 -- primero
+            "Medallón de Resultados", corregido por Gunnar en la misma
+            vuelta que Medalla KPIs: mide rendimiento/impacto real, de
+            crítico a liderazgo). Internamente sigue siendo type="medal"
+            (Card.medal, Program.medalScale). Segundo en el orden -- es
+            el dot a la derecha del nombre. */}
+        <AccordionSection
+          title="Medalla Rango"
+          subtitle="Sin niveles acá, las tarjetas de Proyecto siguen usando la escala fija (Bronce → Diamante). La clave de cada nivel es lo que se guarda en la tarjeta — cambiarla después de asignada la rompe."
+          meta={<span style={PILL}>{medalScale.length || "fija"}</span>}
+          defaultOpen={escalaSaved === "medal"}
+        >
+          {escalaSaved === "medal" && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Escala guardada.</p>}
+          <EscalaEditor type="medal" initialItems={medalScale} action={updateEscalaAction.bind(null, program.id, "medal")} />
+        </AccordionSection>
+
+        {/* Puestos — Badge de Puestos (2026-10-04, antes "Escalera de
+            Puestos") -- el N0 arma su propia escalera de posiciones
+            (PLAN.md Fase 9.1) que project Cards pican en vez de escribir
+            su propia siglas/denominación/descripción a mano (wiring Fase
+            9.2). Tercero en el orden -- primer botón de la fila de abajo
+            en la tarjeta. */}
+        <AccordionSection
+          title="Badge de Puestos"
           subtitle="Ej. O.D. / Founders / Experts / Specialists / Partners — cada uno con sigla, ícono, denominación y descripción. Orden más bajo aparece primero."
           meta={<span style={PILL}>{program.puestos.length}</span>}
           defaultOpen={Boolean(puestoCreated || puestoSaved || puestoDeleted || puestoError)}
@@ -570,58 +615,22 @@ export default async function AdminProgramDetailPage({
           ))}
         </AccordionSection>
 
-        {/* Medallón + Sabiduría + Contactos scales — PLAN.md Fase 9.4/9.5
-            + Fase Contactos (2026-09-16). Empty = keep the fixed scale in
-            lib/data.ts, same fallback as every other piece of Fase 9. */}
-        {/* "Escala de Medallón" → Medallón de Resultados (2026-10-04,
-            rename de Gunnar: mide rendimiento/impacto real, de crítico a
-            liderazgo -- no es un bronce/plata/oro genérico). Internamente
-            sigue siendo el type="medal" de siempre (Card.medal,
-            Program.medalScale) -- solo cambia el nombre que ve el N0. */}
+        {/* "Escala de Sabiduría" → Badge de Rangos (2026-10-04 -- primero
+            "Imán Badge", corregido por Gunnar en la misma vuelta que
+            Medalla KPIs/Medalla Rango/Badge de Puestos). Mide capacidad
+            de atracción/conversión de red -- QR compartido, visitantes
+            convertidos en miembros/Especialistas/Expertos/Programas/
+            Corporaciones. Internamente sigue siendo type="rank"
+            (Card.rank, Program.rankScale). Último en el orden -- segundo
+            botón de la fila de abajo en la tarjeta. */}
         <AccordionSection
-          title="Medallón de Resultados"
-          subtitle="Sin niveles acá, las tarjetas de Proyecto siguen usando la escala fija (Bronce → Diamante). La clave de cada nivel es lo que se guarda en la tarjeta — cambiarla después de asignada la rompe."
-          meta={<span style={PILL}>{medalScale.length || "fija"}</span>}
-          defaultOpen={escalaSaved === "medal"}
-        >
-          {escalaSaved === "medal" && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Escala guardada.</p>}
-          <EscalaEditor type="medal" initialItems={medalScale} action={updateEscalaAction.bind(null, program.id, "medal")} />
-        </AccordionSection>
-
-        {/* "Escala de Sabiduría" → Imán Badge (2026-10-04, rename de
-            Gunnar: mide capacidad de atracción/conversión de red -- QR
-            compartido, visitantes convertidos en miembros/Especialistas/
-            Expertos/Programas/Corporaciones -- no "sabiduría". Corrección
-            en vivo de la misma vuelta: es un "Badge", no un "Medallón" --
-            esa palabra queda solo para Resultados). Internamente sigue
-            siendo type="rank" (Card.rank, Program.rankScale). */}
-        <AccordionSection
-          title="Imán Badge"
+          title="Badge de Rangos"
           subtitle="Sin niveles acá, las tarjetas de Proyecto siguen usando la escala fija (Curioso → Ancient)."
           meta={<span style={PILL}>{rankScale.length || "fija"}</span>}
           defaultOpen={escalaSaved === "rank"}
         >
           {escalaSaved === "rank" && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Escala guardada.</p>}
           <EscalaEditor type="rank" initialItems={rankScale} action={updateEscalaAction.bind(null, program.id, "rank")} />
-        </AccordionSection>
-
-        {/* "Escala de Gente Contactada" → Badge de Valor (2026-10-04,
-            misma vuelta -- Gunnar: "tiene que ver con cantidad de valor
-            creado.. o de ventas realizadas.. o en el caso de legacy..
-            gemelos digitales legacies creados a recomendacion del host").
-            Mismo mecanismo manual que Resultados/Imán Badge, confirmado
-            con Gunnar antes de construir -- el N0 elige el nivel a mano,
-            sin contador automático de referidos todavía. Internamente
-            sigue siendo type="contacts" (Card.contacts,
-            Program.contactsScale). */}
-        <AccordionSection
-          title="Badge de Valor"
-          subtitle="Sin niveles acá, las tarjetas siguen usando la escala fija de medallones (Bronce → Diamante). El ícono de cada nivel es el que se muestra en el badge junto al nombre."
-          meta={<span style={PILL}>{contactsScale.length || "fija"}</span>}
-          defaultOpen={escalaSaved === "contacts"}
-        >
-          {escalaSaved === "contacts" && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Escala guardada.</p>}
-          <EscalaEditor type="contacts" initialItems={contactsScale} action={updateEscalaAction.bind(null, program.id, "contacts")} />
         </AccordionSection>
         </AccordionSection>
 
