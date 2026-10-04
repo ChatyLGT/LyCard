@@ -114,6 +114,16 @@ test.describe("Botones del Podio — dashboard + tarjeta pública", () => {
     await page.getByPlaceholder("Palabra secreta").fill("MayanCity");
     await page.getByRole("button", { name: "Continuar" }).click();
 
+    // El contenido es el mismo Documento de Bienvenida completo que
+    // "Deja tu Legado" (pedido de Gunnar: "mira esto que hicimos para
+    // rogelio.. quiero usar lo mismo para el modal de Boveda") -- sin
+    // destinatario, "Preparado exclusivamente para" cae al nombre de
+    // la Card en vez del de un ?para=.
+    await expect(page.getByText("Documento de Bienvenida · Edición Personal")).toBeVisible();
+    await expect(page.getByText("Preparado exclusivamente para E2E Podium Owner")).toBeVisible();
+    await expect(page.getByText("Carta de apertura")).toBeVisible();
+    await expect(page.getByText("El Códice", { exact: true })).toBeVisible();
+
     await expect(page.getByText("NotebookLM original")).toBeVisible();
     await expect(page.getByRole("link", { name: "Abrir mi cuaderno" })).toHaveAttribute("href", "https://notebooklm.google.com/e2e-cuaderno");
 

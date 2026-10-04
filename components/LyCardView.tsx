@@ -557,6 +557,143 @@ const LEGADO_ROLES: { rol: string; desc: string }[] = [
 const LEGADO_CAP_6_CIERRE_FINAL =
   "El objetivo de la semana 4 no es entregarle un documento bonito. Es que salga de esa sesión con roles asignados, metas escritas y el primer movimiento comercial en marcha.";
 
+// Documento de Bienvenida completo, extraído como componente propio
+// (2026-10-04, pedido de Gunnar: "mira esto que hicimos para rogelio..
+// qiuero usar lo mismo para el modal que te dije de Boveda") -- antes
+// vivía inline solo dentro de "Deja tu Legado" (requiere destinatario);
+// ahora lo reusa también la Bóveda Legacy, que no necesita un link de
+// destinatario (?para=) para existir. Recibe un solo dato variable
+// (`nombre`) -- todo lo demás (capítulos I/II/III/IV/VII, "antes de
+// empezar", roles propuestos) es boilerplate fijo del programa.
+function DocumentoBienvenida({ nombre }: { nombre: string }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, textAlign: "center", paddingBottom: 10, borderBottom: "1px solid rgba(var(--accentRgb,200,161,90),.25)" }}>
+        <span style={{ font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".2em", textTransform: "uppercase", color: "var(--ink2,#8a8378)" }}>
+          Documento de Bienvenida · Edición Personal
+        </span>
+        <h3 style={{ margin: "4px 0 0", font: "600 20px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>
+          LEGACY <span style={{ opacity: 0.6, fontWeight: 400 }}>by EinarOS</span>
+        </h3>
+        <span style={{ font: "400 11.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
+          Preparado exclusivamente para {nombre}
+        </span>
+        <span style={{ font: "600 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#8a8378)" }}>[PLACEHOLDER: título/rol de {nombre}]</span>
+        <span style={{ marginTop: 8, font: "italic 400 12px var(--brandFont,'Playfair Display'),serif", color: "var(--ink2,#C2BEB5)" }}>La experiencia se convierte en legado.</span>
+        <span style={{ font: "500 9px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ink2,#8a8378)" }}>
+          EinarOS v3.0 · Programa Legacy · {new Date().toLocaleDateString("es", { month: "long", year: "numeric" }).toUpperCase()}
+        </span>
+      </div>
+
+      <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <span style={{ font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".18em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
+          Carta de apertura
+        </span>
+        <p style={{ margin: 0, font: "600 13px var(--brandFont,'Playfair Display'),serif", color: "var(--ink,#F5F2EB)" }}>{nombre},</p>
+        {legadoCartaParagraphs(nombre).map((p, i) => (
+          <p key={i} style={{ margin: 0, font: "400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: p.startsWith("[PLACEHOLDER]") ? "var(--ink2,#8a8378)" : "var(--ink2,#C2BEB5)", fontStyle: p.startsWith("[PLACEHOLDER]") ? "italic" : "normal" }}>
+            {p}
+          </p>
+        ))}
+        <p style={{ margin: "6px 0 0", font: "600 11.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink,#F5F2EB)" }}>
+          Gunnar Pareja Ballivián
+          <br />
+          <span style={{ font: "400 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "var(--ink2,#8a8378)" }}>
+            Arquitecto de EinarOS · Dirección del Programa Legacy
+          </span>
+        </p>
+      </section>
+
+      {[LEGADO_CAP_1, LEGADO_CAP_2, LEGADO_CAP_3, LEGADO_CAP_4].map((cap) => (
+        <section key={cap.num} style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,.08)" }}>
+          <span style={{ font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".18em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
+            {cap.kicker}
+          </span>
+          <h4 style={{ margin: 0, font: "600 14px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>{cap.title}</h4>
+          {cap.paragraphs.map((p, i) => (
+            <p key={i} style={{ margin: 0, whiteSpace: "pre-line", font: "400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
+              {p}
+            </p>
+          ))}
+        </section>
+      ))}
+
+      <section style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,.08)" }}>
+        <span style={{ font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".18em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
+          Capítulo V
+        </span>
+        <h4 style={{ margin: 0, font: "600 14px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>Qué esperar en cada sesión</h4>
+        <p style={{ margin: 0, font: "400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
+          Cada encuentro dura 45 minutos exactos y se graba con transcripción automática. No hay preguntas trampa ni exámenes: es una conversación dirigida con un objetivo definido.
+        </p>
+        {legadoSesiones(nombre).map((s, idx) => (
+          <div key={s.num} style={{ display: "flex", flexDirection: "column", gap: 4, padding: "10px 12px", borderRadius: 10, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)" }}>
+            <span style={{ font: "700 9px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
+              {s.num} · {s.semana} -- {s.capa}
+            </span>
+            <span style={{ font: "600 12px var(--brandFont,'Playfair Display'),serif", color: "var(--ink,#F5F2EB)" }}>{s.titulo}</span>
+            <p style={{ margin: 0, font: `${s.cuerpo.startsWith("[PLACEHOLDER]") ? "italic" : "normal"} 400 11.5px/1.65 var(--brandFont,'Plus Jakarta Sans'),sans-serif`, color: s.cuerpo.startsWith("[PLACEHOLDER]") ? "var(--ink2,#8a8378)" : "var(--ink2,#C2BEB5)" }}>
+              {s.cuerpo}
+            </p>
+            <span style={{ font: "400 10.5px/1.5 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#8a8378)" }}>
+              <b>Usted trae:</b> {s.trae}
+            </span>
+            <span style={{ font: "400 10.5px/1.5 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#8a8378)" }}>
+              <b>Queda construido:</b> {s.queda}
+            </span>
+            {idx === 2 && (
+              <p style={{ margin: "4px 0 0", font: "italic 400 11px/1.6 var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>{LEGADO_TRES_PRIMERAS}</p>
+            )}
+          </div>
+        ))}
+        <p style={{ margin: 0, font: "400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>{LEGADO_ENTRE_SESIONES}</p>
+      </section>
+
+      <section style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,.08)" }}>
+        <span style={{ font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".18em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
+          Capítulo VI
+        </span>
+        <h4 style={{ margin: 0, font: "600 14px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>Del Códice al negocio</h4>
+        <p style={{ margin: 0, font: "400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>{LEGADO_CAP_6_INTRO}</p>
+        <p style={{ margin: 0, fontStyle: "italic", font: "italic 400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#8a8378)" }}>{legadoCap6Placeholder(nombre)}</p>
+        <p style={{ margin: 0, font: "400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>{LEGADO_CAP_6_CIERRE}</p>
+        <span style={{ marginTop: 4, font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ink2,#8a8378)" }}>Estructura propuesta</span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "9px 11px", borderRadius: 10, background: "rgba(var(--accentRgb,200,161,90),.08)", border: "1px solid rgba(var(--accentRgb,200,161,90),.25)" }}>
+          <span style={{ font: "700 10.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--accentLight,#E5C378)" }}>Dirección -- {nombre}</span>
+          <span style={{ font: "400 11px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>Usted define doctrina, aprueba contenido y marca el rumbo. Deja de operar y pasa a dirigir.</span>
+        </div>
+        {LEGADO_ROLES.map((r) => (
+          <div key={r.rol} style={{ display: "flex", flexDirection: "column", gap: 3, padding: "9px 11px", borderRadius: 10, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)" }}>
+            <span style={{ font: "700 10.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink,#F5F2EB)" }}>{r.rol}</span>
+            <span style={{ font: "400 11px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>{r.desc}</span>
+          </div>
+        ))}
+        <p style={{ margin: 0, font: "400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>{LEGADO_CAP_6_CIERRE_FINAL}</p>
+      </section>
+
+      {[LEGADO_CAP_7, LEGADO_ANTES].map((cap) => (
+        <section key={cap.kicker} style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,.08)" }}>
+          <span style={{ font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".18em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
+            {cap.kicker}
+          </span>
+          <h4 style={{ margin: 0, font: "600 14px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>{cap.title}</h4>
+          {cap.paragraphs.map((p, i) => (
+            <p key={i} style={{ margin: 0, whiteSpace: "pre-line", font: "400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
+              {p}
+            </p>
+          ))}
+        </section>
+      ))}
+
+      <div style={{ textAlign: "center", paddingTop: 14, borderTop: "1px solid rgba(var(--accentRgb,200,161,90),.25)" }}>
+        <span style={{ font: "500 9px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--ink2,#8a8378)" }}>
+          Legacy by EinarOS · EinarOS v3.0 · Documento de Bienvenida · Edición {nombre}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function socialHref(channel: string, value: string) {
   const v = value.trim();
   if (!v) return null;
@@ -2328,16 +2465,19 @@ export default function LyCardView({
                 // Bóveda Legacy / "Legacy Vault" (2026-10-04, pedido de
                 // Gunnar: "la informacion que teniamos de la informacion
                 // del N0.. el link a su notebooklm.. eso ya lo habiamos
-                // echo.. quedo para Rogelio"). Mismo gate de palabra
-                // secreta que "Info [nombre]" (ver infoNeedsGate más
-                // arriba, generalizado para leer de Program en vez de
-                // recipient) pero a nivel Programa -- visible para
-                // cualquier visitante, sin necesitar un link de
-                // destinatario (?para=). Alcance de esta vuelta: fuentes
-                // (link/nota) + "Abrir mi cuaderno" -- sin el Códice PDF
-                // de ejemplo ni "Crear mi Gemelo Digital" del flujo de
-                // destinatario, que son contenido promocional de ESE
-                // flujo puntual, no de la Bóveda genérica.
+                // echo.. quedo para Rogelio.. mira esto que hicimos para
+                // rogelio.. quiero usar lo mismo para el modal de
+                // Boveda"). Mismo gate de palabra secreta que "Info
+                // [nombre]" (ver infoNeedsGate más arriba, generalizado
+                // para leer de Program en vez de recipient) pero a nivel
+                // Programa -- visible para cualquier visitante, sin
+                // necesitar un link de destinatario (?para=). Contenido:
+                // el mismo Documento de Bienvenida completo de "Deja tu
+                // Legado" (<DocumentoBienvenida>, calcado del PDF real
+                // que Gunnar compartió), con "Preparado exclusivamente
+                // para" cayendo al nombre de la Card cuando no hay
+                // destinatario -- más las fuentes (link/nota) + "Abrir mi
+                // cuaderno" que ya existían, como anexo debajo.
                 !infoContentVisible ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                     <p style={{ margin: 0, font: "400 12.5px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
@@ -2372,7 +2512,9 @@ export default function LyCardView({
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-                    <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <DocumentoBienvenida nombre={recipient?.nombre ?? card.name} />
+
+                    <section style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,.08)" }}>
                       <h4 style={{ margin: 0, font: "600 13px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>
                         Qué información usamos
                       </h4>
@@ -2476,134 +2618,11 @@ export default function LyCardView({
                   </a>
                 </>
               ) : modal === "legado" && recipient ? (
-                // PASO 5 (2026-10-02) -- Documento de Bienvenida, calcado
-                // de la estructura real del de Rafael Rico Carrascosa.
-                // Ver comentario arriba de LEGADO_CAP_1 para qué quedó
-                // fijo y qué quedó [PLACEHOLDER].
-                <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4, textAlign: "center", paddingBottom: 10, borderBottom: "1px solid rgba(var(--accentRgb,200,161,90),.25)" }}>
-                    <span style={{ font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".2em", textTransform: "uppercase", color: "var(--ink2,#8a8378)" }}>
-                      Documento de Bienvenida · Edición Personal
-                    </span>
-                    <h3 style={{ margin: "4px 0 0", font: "600 20px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>
-                      LEGACY <span style={{ opacity: 0.6, fontWeight: 400 }}>by EinarOS</span>
-                    </h3>
-                    <span style={{ font: "400 11.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
-                      Preparado exclusivamente para {recipient.nombre}
-                    </span>
-                    <span style={{ font: "600 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#8a8378)" }}>[PLACEHOLDER: título/rol de {recipient.nombre}]</span>
-                    <span style={{ marginTop: 8, font: "italic 400 12px var(--brandFont,'Playfair Display'),serif", color: "var(--ink2,#C2BEB5)" }}>La experiencia se convierte en legado.</span>
-                    <span style={{ font: "500 9px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ink2,#8a8378)" }}>
-                      EinarOS v3.0 · Programa Legacy · {new Date().toLocaleDateString("es", { month: "long", year: "numeric" }).toUpperCase()}
-                    </span>
-                  </div>
-
-                  <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    <span style={{ font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".18em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
-                      Carta de apertura
-                    </span>
-                    <p style={{ margin: 0, font: "600 13px var(--brandFont,'Playfair Display'),serif", color: "var(--ink,#F5F2EB)" }}>{recipient.nombre},</p>
-                    {legadoCartaParagraphs(recipient.nombre).map((p, i) => (
-                      <p key={i} style={{ margin: 0, font: "400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: p.startsWith("[PLACEHOLDER]") ? "var(--ink2,#8a8378)" : "var(--ink2,#C2BEB5)", fontStyle: p.startsWith("[PLACEHOLDER]") ? "italic" : "normal" }}>
-                        {p}
-                      </p>
-                    ))}
-                    <p style={{ margin: "6px 0 0", font: "600 11.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink,#F5F2EB)" }}>
-                      Gunnar Pareja Ballivián
-                      <br />
-                      <span style={{ font: "400 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "var(--ink2,#8a8378)" }}>
-                        Arquitecto de EinarOS · Dirección del Programa Legacy
-                      </span>
-                    </p>
-                  </section>
-
-                  {[LEGADO_CAP_1, LEGADO_CAP_2, LEGADO_CAP_3, LEGADO_CAP_4].map((cap) => (
-                    <section key={cap.num} style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,.08)" }}>
-                      <span style={{ font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".18em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
-                        {cap.kicker}
-                      </span>
-                      <h4 style={{ margin: 0, font: "600 14px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>{cap.title}</h4>
-                      {cap.paragraphs.map((p, i) => (
-                        <p key={i} style={{ margin: 0, whiteSpace: "pre-line", font: "400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
-                          {p}
-                        </p>
-                      ))}
-                    </section>
-                  ))}
-
-                  <section style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,.08)" }}>
-                    <span style={{ font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".18em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
-                      Capítulo V
-                    </span>
-                    <h4 style={{ margin: 0, font: "600 14px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>Qué esperar en cada sesión</h4>
-                    <p style={{ margin: 0, font: "400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
-                      Cada encuentro dura 45 minutos exactos y se graba con transcripción automática. No hay preguntas trampa ni exámenes: es una conversación dirigida con un objetivo definido.
-                    </p>
-                    {legadoSesiones(recipient.nombre).map((s, idx) => (
-                      <div key={s.num} style={{ display: "flex", flexDirection: "column", gap: 4, padding: "10px 12px", borderRadius: 10, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)" }}>
-                        <span style={{ font: "700 9px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
-                          {s.num} · {s.semana} -- {s.capa}
-                        </span>
-                        <span style={{ font: "600 12px var(--brandFont,'Playfair Display'),serif", color: "var(--ink,#F5F2EB)" }}>{s.titulo}</span>
-                        <p style={{ margin: 0, font: `${s.cuerpo.startsWith("[PLACEHOLDER]") ? "italic" : "normal"} 400 11.5px/1.65 var(--brandFont,'Plus Jakarta Sans'),sans-serif`, color: s.cuerpo.startsWith("[PLACEHOLDER]") ? "var(--ink2,#8a8378)" : "var(--ink2,#C2BEB5)" }}>
-                          {s.cuerpo}
-                        </p>
-                        <span style={{ font: "400 10.5px/1.5 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#8a8378)" }}>
-                          <b>Usted trae:</b> {s.trae}
-                        </span>
-                        <span style={{ font: "400 10.5px/1.5 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#8a8378)" }}>
-                          <b>Queda construido:</b> {s.queda}
-                        </span>
-                        {idx === 2 && (
-                          <p style={{ margin: "4px 0 0", font: "italic 400 11px/1.6 var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>{LEGADO_TRES_PRIMERAS}</p>
-                        )}
-                      </div>
-                    ))}
-                    <p style={{ margin: 0, font: "400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>{LEGADO_ENTRE_SESIONES}</p>
-                  </section>
-
-                  <section style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,.08)" }}>
-                    <span style={{ font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".18em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
-                      Capítulo VI
-                    </span>
-                    <h4 style={{ margin: 0, font: "600 14px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>Del Códice al negocio</h4>
-                    <p style={{ margin: 0, font: "400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>{LEGADO_CAP_6_INTRO}</p>
-                    <p style={{ margin: 0, fontStyle: "italic", font: "italic 400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#8a8378)" }}>{legadoCap6Placeholder(recipient.nombre)}</p>
-                    <p style={{ margin: 0, font: "400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>{LEGADO_CAP_6_CIERRE}</p>
-                    <span style={{ marginTop: 4, font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ink2,#8a8378)" }}>Estructura propuesta</span>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "9px 11px", borderRadius: 10, background: "rgba(var(--accentRgb,200,161,90),.08)", border: "1px solid rgba(var(--accentRgb,200,161,90),.25)" }}>
-                      <span style={{ font: "700 10.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--accentLight,#E5C378)" }}>Dirección -- {recipient.nombre}</span>
-                      <span style={{ font: "400 11px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>Usted define doctrina, aprueba contenido y marca el rumbo. Deja de operar y pasa a dirigir.</span>
-                    </div>
-                    {LEGADO_ROLES.map((r) => (
-                      <div key={r.rol} style={{ display: "flex", flexDirection: "column", gap: 3, padding: "9px 11px", borderRadius: 10, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)" }}>
-                        <span style={{ font: "700 10.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink,#F5F2EB)" }}>{r.rol}</span>
-                        <span style={{ font: "400 11px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>{r.desc}</span>
-                      </div>
-                    ))}
-                    <p style={{ margin: 0, font: "400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>{LEGADO_CAP_6_CIERRE_FINAL}</p>
-                  </section>
-
-                  {[LEGADO_CAP_7, LEGADO_ANTES].map((cap) => (
-                    <section key={cap.kicker} style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,.08)" }}>
-                      <span style={{ font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".18em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
-                        {cap.kicker}
-                      </span>
-                      <h4 style={{ margin: 0, font: "600 14px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>{cap.title}</h4>
-                      {cap.paragraphs.map((p, i) => (
-                        <p key={i} style={{ margin: 0, whiteSpace: "pre-line", font: "400 12px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
-                          {p}
-                        </p>
-                      ))}
-                    </section>
-                  ))}
-
-                  <div style={{ textAlign: "center", paddingTop: 14, borderTop: "1px solid rgba(var(--accentRgb,200,161,90),.25)" }}>
-                    <span style={{ font: "500 9px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--ink2,#8a8378)" }}>
-                      Legacy by EinarOS · EinarOS v3.0 · Documento de Bienvenida · Edición {recipient.nombre}
-                    </span>
-                  </div>
-                </div>
+                // PASO 5 (2026-10-02) -- Documento de Bienvenida completo,
+                // ahora extraído a <DocumentoBienvenida> (ver comentario
+                // ahí arriba) para poder reusarlo también en la Bóveda
+                // Legacy sin necesitar un destinatario.
+                <DocumentoBienvenida nombre={recipient.nombre} />
               ) : modal === "invite" ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   <p style={{ margin: 0, font: "400 12px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>

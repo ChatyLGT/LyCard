@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.73.0";
+export const APP_VERSION = "1.73.1";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.73.1",
+    date: "2026-10-04",
+    notes:
+      "Bóveda Legacy ahora abre el Documento de Bienvenida completo (Carta de Apertura + los 7 capítulos reales) en vez de la versión chica de \"fuentes + cuaderno\" -- mismo contenido que ya existía en \"Deja tu Legado\", extraído a un componente reusable (DocumentoBienvenida) para no duplicarlo. Pedido de Gunnar: \"mira esto que hicimos para rogelio.. quiero usar lo mismo para el modal de Boveda\". Sin un destinatario (?para=), \"Preparado exclusivamente para\" cae al nombre de la Card. Las fuentes y el link de cuaderno quedan como anexo debajo del documento, no se perdieron.",
+  },
   {
     version: "1.73.0",
     date: "2026-10-04",

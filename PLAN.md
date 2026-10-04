@@ -8849,3 +8849,46 @@ distintivo y rompía un test preexistente de `photo-positioner.spec.ts`
 (ahora "Guardar Botón"); y el Prisma Client del server de dev quedó
 stale en memoria tras la migración (requirió reiniciar el proceso).
 Suite Playwright completa 55/55 verde.
+
+## 2026-10-04 -- Bóveda Legacy: Documento de Bienvenida completo, no fuentes+cuaderno (v1.73.1)
+
+Gunnar, después de ver la v1.73.0 shippeada: "tenemos que revisar bien
+lo de la boveda" -- compartió el PDF real del "Documento de
+Bienvenida" (el que se armó para Rafael Rico Carrascosa) y el link
+vivo de la tarjeta de Rogelio (`/c/mastern0?para=rogelio`), y pidió:
+"mira esto que hicimos para rogelio.. quiero usar lo mismo para el
+modal que te dije de Boveda."
+
+Al revisar el código, "Deja tu Legado" (`modal === "legado"`, PASO 5,
+2026-10-02) YA es ese documento completo -- Carta de Apertura +
+Capítulos I-VII, calcado del PDF real -- pero vive atado a un
+`recipient` (necesita un link `?para=`). La Bóveda Legacy que se
+shippeó en v1.73.0 en cambio tenía contenido propio y mucho más chico
+("Qué información usamos" + fuentes + "Abrir mi cuaderno"), sin
+relación con ese documento. Gunnar señaló correctamente que eso no
+era "lo mismo".
+
+Corrección: todo el JSX del Documento de Bienvenida se extrajo a un
+componente propio, `DocumentoBienvenida({ nombre })`
+(`components/LyCardView.tsx`) -- recibe un solo dato variable
+(el resto, capítulos I/II/III/IV/VII + "antes de empezar" + roles
+propuestos, es boilerplate fijo del programa, ya generalizado con
+`nombre` desde que se escribió). "Deja tu Legado" pasa a ser
+`<DocumentoBienvenida nombre={recipient.nombre} />` (sin cambio de
+comportamiento). La Bóveda Legacy ahora renderiza el mismo componente
+con `nombre={recipient?.nombre ?? card.name}` -- sin destinatario,
+"Preparado exclusivamente para" usa el nombre de la Card. Las fuentes
+y el link de cuaderno NO se sacaron: quedan como sección aparte,
+debajo del documento (decisión propia, no pedida explícitamente: el
+pedido original de Gunnar de "el link a su notebooklm" sigue
+sirviendo, y no contradice "usar lo mismo" -- es sumar, no reemplazar).
+
+Verificación: `npx tsc --noEmit` limpio, `pnpm lint` sin errores
+nuevos, `pnpm test:unit:coverage` 292/292 al 100% (sin tocar `lib/`).
+`e2e/podium-vault-ai.spec.ts` ampliado: la Bóveda ahora confirma que
+aparecen "Documento de Bienvenida · Edición Personal", "Preparado
+exclusivamente para [nombre de la Card]", "Carta de apertura" y "El
+Códice", además de la fuente y el cuaderno de siempre. `pnpm build`
+limpio. Suite Playwright completa 55/55 verde (Postgres local se
+había caído entre rondas -- se reinició el servicio, nada que ver con
+el código). Deploy a producción, cero errores runtime nuevos.
