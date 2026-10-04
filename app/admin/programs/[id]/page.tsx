@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
+import PhotoPositioner from "@/components/PhotoPositioner";
 import { prisma } from "@/lib/prisma";
 import { currentAdminScope, isMasterN0Scope, canAccessProgram } from "@/lib/auth";
 import { logoutAction } from "@/app/admin/actions";
@@ -278,32 +279,38 @@ export default async function AdminProgramDetailPage({
               <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#C2BEB5" }}>Nombre</span>
               <input name="name" defaultValue={program.name} style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "10px 14px", color: "#F5F2EB", font: "400 13px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
             </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            {/* div, no label -- PhotoPositioner ya trae su propio <button>
+                para abrir el selector; anidarlo en un <label> asociado al
+                input de archivo arriesga que un click en "Confirmar" o
+                arrastrar dentro del editor reabra el picker nativo. */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
               <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#C2BEB5" }}>
                 Logo (abre en el botón de Oficina Virtual de cada tarjeta de este Programa)
               </span>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                {program.logoUrl ? (
-                  // objectFit:"contain" + padding (2026-10-02, reportado por
-                  // Gunnar: "se ve cortado") -- el preview tiene que mostrar
-                  // lo mismo que de verdad se ve en la tarjeta, nunca un
-                  // logo rectangular recortado a la fuerza en un círculo.
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={program.logoUrl} alt="" style={{ width: 44, height: 44, padding: 5, boxSizing: "border-box", borderRadius: 999, objectFit: "contain", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)" }} />
-                ) : (
-                  <span style={{ width: 44, height: 44, borderRadius: 999, background: "#0D0D0D", border: "1px dashed rgba(200,161,90,.3)", flex: "none" }} />
-                )}
-                <input
-                  type="file"
-                  name="logo"
-                  accept="image/*"
-                  style={{ font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}
-                />
-              </div>
-              <span style={{ font: "400 10.5px/1.5 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
-                Sin logo, se muestra el emblema decorativo de siempre.
-              </span>
-            </label>
+              {/* Posicionador real (2026-10-04, pedido de Gunnar: "se ve
+                  cortada.. no puedo editar o modificar su posicion o
+                  tamaño") -- reemplaza el <input type="file"> crudo de
+                  antes. Ya no depende de objectFit:contain para no
+                  recortar el logo: ahora el propio N0 elige, con
+                  arrastre + zoom, cómo se compone dentro del círculo
+                  antes de subirlo. Ver components/PhotoPositioner.tsx. */}
+              <PhotoPositioner
+                // key=initialUrl (2026-10-04): fuerza un remount cuando el
+                // logo guardado cambia -- sin esto, "Reposicionar" dos
+                // veces seguidas en la misma sesión (sin recargar a mano)
+                // podía reabrir un blob: URL viejo del navegador en vez
+                // del archivo real recién guardado, y el modal no abría.
+                key={program.logoUrl ?? "empty"}
+                name="logo"
+                label="Subir logo"
+                initialUrl={program.logoUrl}
+                aspect="square"
+                fit="contain"
+                previewShape="circle"
+                previewSize={44}
+                helpText="Sin logo, se muestra el emblema decorativo de siempre."
+              />
+            </div>
             <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
               <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "#C2BEB5" }}>
                 Nombre de la app (pestaña del navegador)

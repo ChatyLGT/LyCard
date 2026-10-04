@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.69.1";
+export const APP_VERSION = "1.70.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.70.0",
+    date: "2026-10-04",
+    notes:
+      "Posicionador de fotos en el dashboard (pedido de Gunnar: \"en todos los servicios que utilizamos para subir fotos.. dame la oportunidad de mover, posicionar, disminuir, aumentar el tamaño.. ahorita puse una para el programa Legacy.. se ve cortada\"). Nuevo componente `PhotoPositioner`: al elegir un archivo se abre un editor con arrastre + zoom sobre el recorte real (antes el archivo se mandaba crudo y la tarjeta lo recortaba a ciegas con CSS); al confirmar, esa selección se compone en un PNG y ES ese archivo el que se sube -- sin tocar ningún server action ni el schema. Alcance de esta vuelta: Retrato de la Card, Logo de Empresa, Logo de Programa (las 3 fotos que se ven en vivo en la tarjeta/oficina). Suma un botón \"Reposicionar\" para ajustar una foto ya subida sin tener que volver a elegir el archivo.",
+  },
   {
     version: "1.69.1",
     date: "2026-10-03",

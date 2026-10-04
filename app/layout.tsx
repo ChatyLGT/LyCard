@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { unstable_cache } from "next/cache";
 import "./globals.css";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import { prisma } from "@/lib/prisma";
@@ -19,13 +20,29 @@ const DEFAULT_ICONS: Metadata["icons"] = {
 // marcada `isOrigin` — que es, por definición, Legacy — en vez del
 // triángulo genérico. Sin una Origin Card configurada, cae a los
 // íconos de siempre.
+//
+// Cacheado 60s (2026-10-04, encontrado armando el posicionador de
+// fotos) -- antes corría sin caché en CADA request de TODA la app
+// (toda página, toda acción de servidor), una query a Postgres
+// redundante la enorme mayoría de las veces. El logo/nombre de origen
+// casi nunca cambia -- 60s de margen es invisible para Gunnar y saca
+// esta query del camino crítico de cada request.
+const getOriginMeta = unstable_cache(
+  async () => {
+    const origin = await prisma.card.findFirst({
+      where: { isOrigin: true },
+      select: { program: { select: { logoUrl: true, cardAppName: true } } },
+    });
+    return { cardAppName: origin?.program?.cardAppName ?? null, logoUrl: origin?.program?.logoUrl ?? null };
+  },
+  ["origin-card-meta"],
+  { revalidate: 60 }
+);
+
 export async function generateMetadata(): Promise<Metadata> {
-  const origin = await prisma.card.findFirst({
-    where: { isOrigin: true },
-    select: { program: { select: { logoUrl: true, cardAppName: true } } },
-  });
-  const title = origin?.program?.cardAppName?.trim() || DEFAULT_TITLE;
-  const logoUrl = origin?.program?.logoUrl;
+  const origin = await getOriginMeta();
+  const title = origin.cardAppName?.trim() || DEFAULT_TITLE;
+  const logoUrl = origin.logoUrl;
 
   return {
     title,

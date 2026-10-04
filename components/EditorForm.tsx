@@ -11,6 +11,7 @@ import type { EscalaItem } from "@/lib/escalas";
 import { AccordionSection, AccordionRow, AccordionAddRow } from "@/components/Accordion";
 import { CARD_KINDS, CARD_KIND_LABEL, parseShareScope } from "@/lib/shareScope";
 import OficinaExtrasEditor from "@/components/OficinaExtrasEditor";
+import PhotoPositioner from "@/components/PhotoPositioner";
 
 const FIELD_WRAP: CSSProperties = {
   display: "flex",
@@ -78,7 +79,6 @@ export default function EditorForm({
   const [medal, setMedal] = useState(card.medal);
   const [rank, setRank] = useState(card.rank);
   const [contacts, setContacts] = useState(card.contacts);
-  const [portraitPreview, setPortraitPreview] = useState<string | null>(card.portraitUrl);
   // Project cards inherit their official social channels from the Program
   // (see LyCardView) — only their own personal WhatsApp stays editable
   // here. Company/Personal cards keep editing all 8 as before.
@@ -179,44 +179,23 @@ export default function EditorForm({
         </div>
 
         <AccordionSection title="Retrato Oficial" defaultOpen={true}>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <div style={{ width: 96, height: 96, flex: "none", borderRadius: 999, overflow: "hidden", background: "#0D0D0D", boxShadow: "0 8px 24px rgba(0,0,0,.6)" }}>
-              {portraitPreview ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={portraitPreview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              ) : null}
-            </div>
-            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
-              <label
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 7,
-                  padding: 10,
-                  borderRadius: 10,
-                  background: "#353534",
-                  color: "#F5F2EB",
-                  font: "600 11px 'Plus Jakarta Sans',sans-serif",
-                  letterSpacing: ".1em",
-                  textTransform: "uppercase",
-                  cursor: "pointer",
-                }}
-              >
-                Subir nueva foto
-                <input
-                  type="file"
-                  name="portrait"
-                  accept="image/*"
-                  style={{ display: "none" }}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) setPortraitPreview(URL.createObjectURL(file));
-                  }}
-                />
-              </label>
-            </div>
-          </div>
+          {/* Posicionador real (2026-10-04, pedido de Gunnar: "se ve
+              cortada.. no puedo editar o modificar su posicion o
+              tamaño.. en el dashboard no en la tarjeta") -- antes el
+              archivo se mandaba tal cual y objectFit:"cover" recortaba
+              a la fuerza en la tarjeta real, sin ningún control. Ver
+              components/PhotoPositioner.tsx. */}
+          <PhotoPositioner
+            // key=initialUrl: ver nota en app/admin/programs/[id]/page.tsx
+            key={card.portraitUrl ?? "empty"}
+            name="portrait"
+            label="Subir nueva foto"
+            initialUrl={card.portraitUrl}
+            aspect="portrait"
+            fit="cover"
+            previewShape="rounded"
+            previewSize={96}
+          />
         </AccordionSection>
 
         <AccordionSection title="Identidad" defaultOpen={true}>

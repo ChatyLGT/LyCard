@@ -8,6 +8,7 @@ import { MEDALS, RANKS, CHANNELS } from "@/lib/data";
 import { AccordionSection, AccordionRow } from "@/components/Accordion";
 import { CARD_KINDS, CARD_KIND_LABEL, parseShareScope } from "@/lib/shareScope";
 import OficinaExtrasEditor from "@/components/OficinaExtrasEditor";
+import PhotoPositioner from "@/components/PhotoPositioner";
 
 const FIELD_WRAP: CSSProperties = {
   display: "flex",
@@ -131,8 +132,6 @@ export default function MemberCardEditor({
   const [medal, setMedal] = useState(card.medal);
   const [rank, setRank] = useState(card.rank);
   const [contacts, setContacts] = useState(card.contacts);
-  const [portraitPreview, setPortraitPreview] = useState<string | null>(card.portraitUrl);
-  const [logoPreview, setLogoPreview] = useState<string | null>(card.logoUrl);
   const [officeItems, setOfficeItems] = useState<OfficeItem[]>(() => parseOfficeItems(card.officeItems));
   const [openOfficeId, setOpenOfficeId] = useState<string | null>(null);
   const copy = COPY[kind];
@@ -243,86 +242,35 @@ export default function MemberCardEditor({
         </div>
 
         <AccordionSection title="Foto" defaultOpen={true}>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <div style={{ width: 96, height: 96, flex: "none", borderRadius: 999, overflow: "hidden", background: "#0D0D0D", boxShadow: "0 8px 24px rgba(0,0,0,.6)" }}>
-              {portraitPreview ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={portraitPreview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              ) : null}
-            </div>
-            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
-              <label
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 7,
-                  padding: 10,
-                  borderRadius: 10,
-                  background: "#353534",
-                  color: "#F5F2EB",
-                  font: "600 11px 'Plus Jakarta Sans',sans-serif",
-                  letterSpacing: ".1em",
-                  textTransform: "uppercase",
-                  cursor: "pointer",
-                }}
-              >
-                Subir nueva foto
-                <input
-                  type="file"
-                  name="portrait"
-                  accept="image/*"
-                  style={{ display: "none" }}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) setPortraitPreview(URL.createObjectURL(file));
-                  }}
-                />
-              </label>
-            </div>
-          </div>
+          {/* Posicionador real (2026-10-04, pedido de Gunnar: "se ve
+              cortada.. no puedo editar o modificar su posicion o
+              tamaño.. en el dashboard no en la tarjeta"). Ver
+              components/PhotoPositioner.tsx. */}
+          <PhotoPositioner
+            // key=initialUrl: ver nota en app/admin/programs/[id]/page.tsx
+            key={card.portraitUrl ?? "empty"}
+            name="portrait"
+            label="Subir nueva foto"
+            initialUrl={card.portraitUrl}
+            aspect="portrait"
+            fit="cover"
+            previewShape="rounded"
+            previewSize={96}
+          />
 
           {kind === "company" && (
-            <div style={{ display: "flex", alignItems: "center", gap: 14, paddingTop: 4, borderTop: "1px solid rgba(255,255,255,.06)" }}>
-              <div style={{ width: 64, height: 64, flex: "none", borderRadius: 999, overflow: "hidden", background: "#0D0D0D", boxShadow: "0 8px 24px rgba(0,0,0,.6)" }}>
-                {logoPreview ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={logoPreview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                ) : null}
-              </div>
-              <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
-                <span style={{ font: "400 11px/1.5 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
-                  Logo de la Empresa — reemplaza el emblema decorativo del botón de Oficina Virtual.
-                </span>
-                <label
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 7,
-                    padding: 10,
-                    borderRadius: 10,
-                    background: "#353534",
-                    color: "#F5F2EB",
-                    font: "600 11px 'Plus Jakarta Sans',sans-serif",
-                    letterSpacing: ".1em",
-                    textTransform: "uppercase",
-                    cursor: "pointer",
-                  }}
-                >
-                  Subir logo
-                  <input
-                    type="file"
-                    name="logo"
-                    accept="image/*"
-                    style={{ display: "none" }}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) setLogoPreview(URL.createObjectURL(file));
-                    }}
-                  />
-                </label>
-              </div>
+            <div style={{ paddingTop: 10, borderTop: "1px solid rgba(255,255,255,.06)" }}>
+              <PhotoPositioner
+                key={card.logoUrl ?? "empty"}
+                name="logo"
+                label="Subir logo"
+                initialUrl={card.logoUrl}
+                aspect="square"
+                fit="contain"
+                previewShape="circle"
+                previewSize={64}
+                helpText="Logo de la Empresa — reemplaza el emblema decorativo del botón de Oficina Virtual."
+              />
             </div>
           )}
         </AccordionSection>

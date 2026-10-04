@@ -8429,3 +8429,88 @@ aria-label, O.D./Ancient por selector de botones sin aria-label) y
 capturada cada pantalla -- confirmado visualmente que los 4 muestran
 la grilla de 4 íconos reales (no nombres de texto), sin desbordar,
 legible, mismo lenguaje visual que el modal Info.
+
+## 2026-10-04 -- Posicionador de fotos en el dashboard (v1.70.0)
+
+Gunnar: "en todos los servicios que utilizamos para subir fotos.. dame
+la oportunidad de mover, posicionar, disminuir, aumentar el tamaño de
+la foto.. ahorita puse una para el programa Legacy.. y se ve cortada y
+no puedo editar o modificar su posicion o tamaño.. dame la habilidad..
+en el dashboard no en la tarjeta." Confirmado por `AskUserQuestion`:
+alcance acotado a las 3 fotos que se ven de verdad en la tarjeta/
+oficina pública (Retrato de Card, Logo de Empresa, Logo de Programa),
+no a íconos internos de admin (Superpoderes/WowApps) ni al upload de
+"diseño corporativo".
+
+### Qué se hizo
+
+Componente nuevo `components/PhotoPositioner.tsx` (client, sin
+librerías externas -- canvas + pointer events a mano, mismo criterio
+que el resto de la app). Reemplaza el `<input type="file">` crudo de
+los 3 lugares de siempre:
+
+- Intercepta el archivo elegido ANTES de que el `<form>` nativo lo
+  mande: abre un editor con un marco que representa el recorte real
+  (cuadrado para logos con `fit:"contain"`, 4:5 vertical para
+  retratos con `fit:"cover"`), arrastre con Pointer Events para
+  pan, y un slider de zoom que preserva el punto enfocado al centro
+  en vez de recentrar siempre.
+- Al confirmar, compone la selección en un `<canvas>` a 2.4x de
+  resolución del marco y exporta un PNG transparente (logos, modo
+  `"contain"`, dejan ver el padding elegido) o opaco (retratos, modo
+  `"cover"`, sin huecos nunca). Ese PNG se inyecta en el MISMO
+  `<input type="file">` vía `DataTransfer`, así que el `<form
+  action={...}>` existente sigue funcionando sin tocar ningún server
+  action ni el schema -- el archivo que llega al servidor YA viene
+  bien encuadrado.
+- Botón "Reposicionar" (solo si ya hay una foto subida): reabre el
+  editor sobre la URL YA guardada, sin tener que volver a elegir el
+  archivo del disco -- resuelve el caso concreto que reportó (el logo
+  de Legacy ya estaba subido y cortado, no quería resubirlo).
+
+Enganchado en `app/admin/programs/[id]/page.tsx` (logo de Programa),
+`components/EditorForm.tsx` (retrato de Card de proyecto, lado admin)
+y `components/MemberCardEditor.tsx` (retrato + logo de Empresa, lado
+`/m/dashboard`). Cada uso lleva `key={initialUrl ?? "empty"}`: fuerza
+un remount cuando la URL guardada cambia, para que "Reposicionar" dos
+veces seguidas en la misma sesión (sin recargar a mano) siempre abra
+la foto REAL recién guardada y no un `blob:` URL viejo que quedó
+flotando en el estado de React de un render anterior -- bug real
+encontrado armando el E2E, no hipotético.
+
+### El rabbit hole de la sesión (para que quede documentado)
+
+Mientras se probaba "Reposicionar" (que guarda dos veces seguidas en
+la misma sesión), aparecía un fallo raro: la sesión del Admin que
+estaba guardando "desaparecía" justo en el segundo guardado, y ese
+segundo cambio nunca quedaba persistido. Se investigó a fondo
+(reintentos en la lectura de sesión, pool de Postgres a `max:1`,
+Postgres reiniciado limpio, hasta un trigger de auditoría en la tabla
+Admin) sospechando un bug real de `@prisma/adapter-pg` en Prisma 7
+(issues #29407/#30374 de prisma/orm, confirmados y reales, pero no
+era esto). La causa de fondo terminó siendo mucho más boba y 100%
+propia: el script de prueba usaba `page.waitForURL(/saved=1/)` después
+del segundo guardado, pero la URL YA estaba en `?saved=1` desde el
+primer guardado -- Playwright resolvía esa espera de inmediato sin
+esperar el segundo POST real, el script seguía de largo y corría su
+propio cleanup (`delete from "Admin"`) MIENTRAS el segundo guardado
+todavía estaba en vuelo en el servidor, que entonces no encontraba su
+propio Admin y abortaba. La app nunca tuvo el bug. Se revirtieron
+todos los parches especulativos (sin dejar nada raro en el código);
+lo único que quedó, porque es una mejora real independiente de todo
+esto, es cachear 60s la query de `generateMetadata()` en
+`app/layout.tsx` (corría sin caché en cada request de toda la app,
+redundante). El bug real que SÍ apareció -- el de `blob:` URL viejo
+en "Reposicionar" -- se encontró y arregló aparte (ver arriba, `key`).
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos (mismos 11
+warnings preexistentes), `pnpm test:unit:coverage` 251/251 al 100%
+(PhotoPositioner es puramente interactivo, sin lógica nueva en
+`lib/`, mismo criterio que `CardSizePanel.tsx`). `pnpm build` limpio.
+E2E nuevo `e2e/photo-positioner.spec.ts` (3 tests reales: logo de
+Programa con pan+zoom real vía pointer events, retrato de Card con
+`fit:"cover"`, y el flujo completo de "Reposicionar" dos guardados
+seguidos) -- estable en 3 corridas consecutivas tras el fix del
+`key`. Suite Playwright completa 44/44 verde, cero regresiones.
