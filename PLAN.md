@@ -8892,3 +8892,47 @@ Códice", además de la fuente y el cuaderno de siempre. `pnpm build`
 limpio. Suite Playwright completa 55/55 verde (Postgres local se
 había caído entre rondas -- se reinició el servicio, nada que ver con
 el código). Deploy a producción, cero errores runtime nuevos.
+
+## 2026-10-04 -- Corrección final de la Bóveda: es "Info Rogelio", no "Deja tu Legado" + se sacó el gate (v1.73.2)
+
+Gunnar, viendo v1.73.1 en producción: "espera.. no esta bien.. la
+Boveda es lo que en la tarjeta de rogelio dice Info Rogelio.. esa es
+la boveda.. ahi se explica que informacion tenemos de Rogelio y como
+se usa.. bueno es lo mismo pero para todos.. mismos componentes." Y
+agregó: "cuando le pico ahi, me pide una palabra clave.. creo que esa
+palabra clave debe estar inicialmente cuando rogelio recibe la
+invitacion especial.. quitalo porfa.. luego vemos donde y como lo
+usamos."
+
+Confusión real de esta sesión: hay DOS botones de contenido rico en la
+Card de un destinatario -- "Deja tu Legado" (el Documento de
+Bienvenida, Carta de Apertura + 7 capítulos, PASO 5) y "Info [nombre]"
+(el dossier del Códice: qué información se usa, cómo, metodología,
+fuentes, cuaderno, PASO 4). v1.73.1 calcó la Bóveda sobre el primero
+por error -- Gunnar señaló que el que corresponde es el segundo.
+
+Corrección: todo el JSX de "Info [nombre]" se extrajo a
+`CodiceDossier({ sources, cuadernoUrl, borradoHref })`
+(`components/LyCardView.tsx`) -- genérico, no depende de `recipient`.
+"Info [nombre]" pasa a usarlo con `recipient.sources`/
+`recipient.cuadernoUrl` (mismo comportamiento de siempre). La Bóveda
+Legacy lo usa con `vaultSources`/`program.vaultCuadernoUrl` en vez del
+Documento de Bienvenida que tenía en v1.73.1 (ese queda exclusivo de
+"Deja tu Legado", sin tocar). Además, el gate de palabra secreta
+(`infoNeedsGate`/`infoUnlocked`/`submitInfoSecret` y toda su UI) se
+eliminó por completo de los dos botones -- el campo `palabraSecreta`/
+`vaultPalabraSecreta` sigue existiendo en la DB y en el dashboard
+(Destinatarios / Bóveda Legacy), simplemente ya no bloquea nada acá;
+Gunnar lo va a reusar en otro punto del flujo (probablemente el
+momento en que Rogelio recibe la Invitación Especial) en una vuelta
+aparte.
+
+Verificación: `npx tsc --noEmit` limpio (cero referencias colgantes al
+gate eliminado), `pnpm lint` sin errores nuevos, `pnpm
+test:unit:coverage` 292/292 al 100%. `e2e/podium-vault-ai.spec.ts`
+reescrito: confirma que la Bóveda muestra "Qué información usamos" /
+"Cómo la usamos" / "Nuestra metodología" (no el Documento de
+Bienvenida) y que NI el host NI un visitante anónimo ven el prompt de
+palabra secreta al abrirla. `pnpm build` limpio. Suite Playwright
+completa 55/55 verde. Deploy a producción, cero errores runtime
+nuevos.

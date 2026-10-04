@@ -711,6 +711,135 @@ function socialHref(channel: string, value: string) {
   return null;
 }
 
+// Dossier del Códice ("qué información tenemos y cómo se usa"),
+// extraído como componente propio (2026-10-04, pedido de Gunnar: "la
+// Boveda es lo que en la tarjeta de rogelio dice Info Rogelio.. ahi se
+// explica que informacion tenemos de Rogelio y como se usa.. bueno es
+// lo mismo pero para todos.. mismos componentes"). Antes vivía inline
+// solo dentro de "Info [nombre]" (requiere destinatario); ahora lo
+// reusa también la Bóveda Legacy a nivel Programa. Sin gate de palabra
+// secreta -- se sacó por pedido explícito de Gunnar ("quitalo
+// porfa.. luego vemos donde y como lo usamos"); el campo
+// palabraSecreta sigue existiendo en la DB y en el dashboard, solo que
+// ya no bloquea la entrada a este contenido.
+type CodiceSource = { type: string; label: string; value: string };
+
+function CodiceDossier({ sources, cuadernoUrl, borradoHref }: { sources: CodiceSource[]; cuadernoUrl: string; borradoHref: string | null }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+      <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <h4 style={{ margin: 0, font: "600 13px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>
+          Qué información usamos
+        </h4>
+        {sources.length === 0 ? (
+          <p style={{ margin: 0, font: "400 11.5px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#8a8378)" }}>
+            Todavía no cargamos fuentes.
+          </p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {sources.map((s, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 8, background: "rgba(0,0,0,.25)" }}>
+                <Icon name={s.type === "link" ? "link" : s.type === "archivo" ? "attach_file" : "notes"} size={14} style={{ color: "var(--accentMid,#C8A15A)", flexShrink: 0 }} />
+                <span style={{ flex: "none", font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".04em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
+                  {s.type === "link" ? "Link" : s.type === "archivo" ? "Archivo" : "Nota"}
+                </span>
+                <span style={{ flex: 1, minWidth: 0, font: "400 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {s.label || (s.type === "texto" ? s.value.slice(0, 40) : s.value)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <h4 style={{ margin: 0, font: "600 13px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>
+          Cómo la usamos
+        </h4>
+        <p style={{ margin: 0, font: "400 12px/1.7 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
+          [PLACEHOLDER] Usamos esta información únicamente para construir tu Códice -- la base de
+          conocimiento privada de tu Gemelo Digital. No se comparte con terceros ni se usa para otro fin.
+        </p>
+      </section>
+
+      <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <h4 style={{ margin: 0, font: "600 13px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>
+          Nuestra metodología
+        </h4>
+        <p style={{ margin: 0, whiteSpace: "pre-line", font: "400 12px/1.7 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
+          {CODICE_METHODOLOGY_TEXT}
+        </p>
+      </section>
+
+      <a
+        href="/docs/codice-ejemplo.pdf"
+        target="_blank"
+        rel="noopener"
+        style={{ display: "flex", alignItems: "center", gap: 10, padding: 12, borderRadius: 12, background: "var(--surf,#141414)", border: "1px solid rgba(var(--accentRgb,200,161,90),.25)", textDecoration: "none" }}
+      >
+        <Icon name="picture_as_pdf" size={20} style={{ color: "var(--accentMid,#C8A15A)" }} />
+        <span style={{ flex: 1, font: "700 11.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink,#F5F2EB)" }}>Ver PDF de ejemplo de tu Códice</span>
+        <span style={{ flex: "none", padding: "2px 8px", borderRadius: 5, background: "rgba(0,0,0,.4)", border: "1px solid rgba(255,255,255,.15)", font: "700 9px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ink2,#8a8378)" }}>
+          Ejemplo
+        </span>
+      </a>
+
+      {cuadernoUrl && (
+        <a
+          href={cuadernoUrl}
+          target="_blank"
+          rel="noopener"
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: 13, borderRadius: 12, border: "1px solid rgba(var(--accentRgb,200,161,90),.4)", color: "var(--accentLight,#E5C378)", font: "700 11.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".06em", textTransform: "uppercase", textDecoration: "none" }}
+        >
+          <Icon name="menu_book" size={18} />
+          Abrir mi cuaderno
+        </a>
+      )}
+
+      <section style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 4, borderTop: "1px solid rgba(255,255,255,.08)" }}>
+        <h4 style={{ margin: 0, font: "600 13px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>
+          Tu información es tuya
+        </h4>
+        <p style={{ margin: 0, font: "400 12px/1.7 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
+          {CODICE_PRIVACY_TEXT}
+        </p>
+        {borradoHref && (
+          <a
+            href={borradoHref}
+            target="_blank"
+            rel="noopener"
+            style={{ font: "700 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "#e5928a", textDecoration: "underline", alignSelf: "flex-start" }}
+          >
+            Pedir que borren mi información
+          </a>
+        )}
+      </section>
+
+      <Link
+        href="/onboarding"
+        style={{
+          width: "100%",
+          padding: 14,
+          borderRadius: 12,
+          background: "linear-gradient(90deg,var(--accentLight,#E5C378),var(--accentMid,#C8A15A) 50%,var(--accentDeep,#99732B))",
+          color: "var(--deepBg,#0D0D0D)",
+          font: "700 12.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
+          letterSpacing: ".12em",
+          textTransform: "uppercase",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+          textDecoration: "none",
+        }}
+      >
+        <Icon name="auto_awesome" size={18} />
+        Crear mi Gemelo Digital
+      </Link>
+    </div>
+  );
+}
+
 // Title-only override for the fixed set of button/modal labels a Program's
 // N0 can customize (lib/cardLabels.ts) — atajo version of PLAN.md Fase 9.
 // Only ever non-null for project cards (see app/c/[slug]/page.tsx), so
@@ -1064,29 +1193,6 @@ export default function LyCardView({
   const [sourceTextValue, setSourceTextValue] = useState("");
   const [addingSource, startAddingSource] = useTransition();
   const sourceFileInputRef = useRef<HTMLInputElement>(null);
-
-  // PASO 4 (2026-10-02) -- gate de palabra secreta del botón "Info
-  // [nombre]". Sin palabra configurada para este destinatario, el gate
-  // se salta directo (no hay nada que validar todavía, "placeholder").
-  const [infoUnlocked, setInfoUnlocked] = useState(false);
-  const [infoSecretInput, setInfoSecretInput] = useState("");
-  const [infoSecretError, setInfoSecretError] = useState<string | null>(null);
-  // Bóveda Legacy (2026-10-04) reusa el mismo gate -- la palabra
-  // secreta vive en el Programa (program.vaultPalabraSecreta) en vez
-  // de en el destinatario cuando modal==="vault".
-  const infoNeedsGate = modal === "vault" ? !!program?.vaultPalabraSecreta.trim() : !!recipient?.palabraSecreta.trim();
-  const infoContentVisible = !infoNeedsGate || infoUnlocked;
-
-  function submitInfoSecret() {
-    const expected = modal === "vault" ? program?.vaultPalabraSecreta : recipient?.palabraSecreta;
-    if (!expected) return;
-    if (infoSecretInput.trim().toLowerCase() === expected.trim().toLowerCase()) {
-      setInfoUnlocked(true);
-      setInfoSecretError(null);
-    } else {
-      setInfoSecretError("Esa no es la palabra. Probá de nuevo.");
-    }
-  }
 
   // Edición in-place de palabra secreta / link de cuaderno por
   // destinatario, desde el mismo panel de Destinatarios (modal
@@ -1545,9 +1651,6 @@ export default function LyCardView({
     setMessageText("");
     setContactError(null);
     setContactSent(false);
-    setInfoUnlocked(false);
-    setInfoSecretInput("");
-    setInfoSecretError(null);
   }
 
   return (
@@ -2311,247 +2414,32 @@ export default function LyCardView({
               </div>
 
               {modal === "info" && recipient ? (
-                // PASO 4 (2026-10-02) -- "Info [nombre]": contenido
-                // nuevo, solo con destinatario. Gate de palabra secreta
-                // primero (si el destinatario tiene una configurada),
-                // dossier + Códice después. Nunca toca el "info"
+                // PASO 4 (2026-10-02) -- "Info [nombre]": dossier del
+                // Códice, solo con destinatario. Sin gate de palabra
+                // secreta (sacado 2026-10-04 a pedido de Gunnar -- "luego
+                // vemos donde y como lo usamos", el campo palabraSecreta
+                // sigue en la DB/dashboard). Nunca toca el "info"
                 // original de abajo (sin destinatario, no cambia).
-                !infoContentVisible ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                    <p style={{ margin: 0, font: "400 12.5px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
-                      Esta sección está protegida. Ingresá la palabra secreta que te compartimos para ver tu información.
-                    </p>
-                    <input
-                      value={infoSecretInput}
-                      onChange={(e) => setInfoSecretInput(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && submitInfoSecret()}
-                      placeholder="Palabra secreta"
-                      style={{ background: "var(--deepBg,#0D0D0D)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", borderRadius: 10, padding: "11px 14px", color: "var(--ink,#F5F2EB)", font: "400 14px var(--brandFont,'Plus Jakarta Sans'),sans-serif", outline: "none" }}
-                    />
-                    {infoSecretError && <span style={{ font: "600 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "#e5928a" }}>{infoSecretError}</span>}
-                    <button
-                      type="button"
-                      onClick={submitInfoSecret}
-                      style={{
-                        width: "100%",
-                        padding: 14,
-                        border: "none",
-                        borderRadius: 12,
-                        background: "linear-gradient(90deg,var(--accentLight,#E5C378),var(--accentMid,#C8A15A) 50%,var(--accentDeep,#99732B))",
-                        color: "var(--deepBg,#0D0D0D)",
-                        font: "700 12.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
-                        letterSpacing: ".12em",
-                        textTransform: "uppercase",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Continuar
-                    </button>
-                  </div>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-                    <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      <h4 style={{ margin: 0, font: "600 13px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>
-                        Qué información usamos
-                      </h4>
-                      {recipient.sources.length === 0 ? (
-                        <p style={{ margin: 0, font: "400 11.5px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#8a8378)" }}>
-                          Todavía no cargamos fuentes para tu perfil.
-                        </p>
-                      ) : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                          {recipient.sources.map((s) => (
-                            <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 8, background: "rgba(0,0,0,.25)" }}>
-                              <Icon name={s.type === "link" ? "link" : s.type === "archivo" ? "attach_file" : "notes"} size={14} style={{ color: "var(--accentMid,#C8A15A)", flexShrink: 0 }} />
-                              <span style={{ flex: "none", font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".04em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
-                                {s.type === "link" ? "Link" : s.type === "archivo" ? "Archivo" : "Nota"}
-                              </span>
-                              <span style={{ flex: 1, minWidth: 0, font: "400 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                {s.label || (s.type === "texto" ? s.value.slice(0, 40) : s.value)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </section>
-
-                    <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      <h4 style={{ margin: 0, font: "600 13px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>
-                        Cómo la usamos
-                      </h4>
-                      <p style={{ margin: 0, font: "400 12px/1.7 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
-                        [PLACEHOLDER] Usamos esta información únicamente para construir tu Códice -- la base de
-                        conocimiento privada de tu Gemelo Digital. No se comparte con terceros ni se usa para otro fin.
-                      </p>
-                    </section>
-
-                    <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      <h4 style={{ margin: 0, font: "600 13px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>
-                        Nuestra metodología
-                      </h4>
-                      <p style={{ margin: 0, whiteSpace: "pre-line", font: "400 12px/1.7 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
-                        {CODICE_METHODOLOGY_TEXT}
-                      </p>
-                    </section>
-
-                    <a
-                      href="/docs/codice-ejemplo.pdf"
-                      target="_blank"
-                      rel="noopener"
-                      style={{ display: "flex", alignItems: "center", gap: 10, padding: 12, borderRadius: 12, background: "var(--surf,#141414)", border: "1px solid rgba(var(--accentRgb,200,161,90),.25)", textDecoration: "none" }}
-                    >
-                      <Icon name="picture_as_pdf" size={20} style={{ color: "var(--accentMid,#C8A15A)" }} />
-                      <span style={{ flex: 1, font: "700 11.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink,#F5F2EB)" }}>Ver PDF de ejemplo de tu Códice</span>
-                      <span style={{ flex: "none", padding: "2px 8px", borderRadius: 5, background: "rgba(0,0,0,.4)", border: "1px solid rgba(255,255,255,.15)", font: "700 9px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ink2,#8a8378)" }}>
-                        Ejemplo
-                      </span>
-                    </a>
-
-                    {recipient.cuadernoUrl && (
-                      <a
-                        href={recipient.cuadernoUrl}
-                        target="_blank"
-                        rel="noopener"
-                        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: 13, borderRadius: 12, border: "1px solid rgba(var(--accentRgb,200,161,90),.4)", color: "var(--accentLight,#E5C378)", font: "700 11.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".06em", textTransform: "uppercase", textDecoration: "none" }}
-                      >
-                        <Icon name="menu_book" size={18} />
-                        Abrir mi cuaderno
-                      </a>
-                    )}
-
-                    <section style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 4, borderTop: "1px solid rgba(255,255,255,.08)" }}>
-                      <h4 style={{ margin: 0, font: "600 13px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>
-                        Tu información es tuya
-                      </h4>
-                      <p style={{ margin: 0, font: "400 12px/1.7 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
-                        {CODICE_PRIVACY_TEXT}
-                      </p>
-                      {socialHref("wa", card.wa) && (
-                        <a
-                          href={`${socialHref("wa", card.wa)}?text=${encodeURIComponent(`Hola, soy ${recipient.nombre}. Quiero pedir que borren mi información del Códice.`)}`}
-                          target="_blank"
-                          rel="noopener"
-                          style={{ font: "700 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "#e5928a", textDecoration: "underline", alignSelf: "flex-start" }}
-                        >
-                          Pedir que borren mi información
-                        </a>
-                      )}
-                    </section>
-
-                    <Link
-                      href="/onboarding"
-                      style={{
-                        width: "100%",
-                        padding: 14,
-                        borderRadius: 12,
-                        background: "linear-gradient(90deg,var(--accentLight,#E5C378),var(--accentMid,#C8A15A) 50%,var(--accentDeep,#99732B))",
-                        color: "var(--deepBg,#0D0D0D)",
-                        font: "700 12.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
-                        letterSpacing: ".12em",
-                        textTransform: "uppercase",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 8,
-                        textDecoration: "none",
-                      }}
-                    >
-                      <Icon name="auto_awesome" size={18} />
-                      Crear mi Gemelo Digital
-                    </Link>
-                  </div>
-                )
+                <CodiceDossier
+                  sources={recipient.sources}
+                  cuadernoUrl={recipient.cuadernoUrl}
+                  borradoHref={socialHref("wa", card.wa) ? `${socialHref("wa", card.wa)}?text=${encodeURIComponent(`Hola, soy ${recipient.nombre}. Quiero pedir que borren mi información del Códice.`)}` : null}
+                />
               ) : modal === "vault" && program ? (
                 // Bóveda Legacy / "Legacy Vault" (2026-10-04, pedido de
-                // Gunnar: "la informacion que teniamos de la informacion
-                // del N0.. el link a su notebooklm.. eso ya lo habiamos
-                // echo.. quedo para Rogelio.. mira esto que hicimos para
-                // rogelio.. quiero usar lo mismo para el modal de
-                // Boveda"). Mismo gate de palabra secreta que "Info
-                // [nombre]" (ver infoNeedsGate más arriba, generalizado
-                // para leer de Program en vez de recipient) pero a nivel
-                // Programa -- visible para cualquier visitante, sin
-                // necesitar un link de destinatario (?para=). Contenido:
-                // el mismo Documento de Bienvenida completo de "Deja tu
-                // Legado" (<DocumentoBienvenida>, calcado del PDF real
-                // que Gunnar compartió), con "Preparado exclusivamente
-                // para" cayendo al nombre de la Card cuando no hay
-                // destinatario -- más las fuentes (link/nota) + "Abrir mi
-                // cuaderno" que ya existían, como anexo debajo.
-                !infoContentVisible ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                    <p style={{ margin: 0, font: "400 12.5px/1.75 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
-                      Esta sección está protegida. Ingresá la palabra secreta para ver el contenido.
-                    </p>
-                    <input
-                      value={infoSecretInput}
-                      onChange={(e) => setInfoSecretInput(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && submitInfoSecret()}
-                      placeholder="Palabra secreta"
-                      style={{ background: "var(--deepBg,#0D0D0D)", border: "1px solid rgba(var(--accentRgb,200,161,90),.3)", borderRadius: 10, padding: "11px 14px", color: "var(--ink,#F5F2EB)", font: "400 14px var(--brandFont,'Plus Jakarta Sans'),sans-serif", outline: "none" }}
-                    />
-                    {infoSecretError && <span style={{ font: "600 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "#e5928a" }}>{infoSecretError}</span>}
-                    <button
-                      type="button"
-                      onClick={submitInfoSecret}
-                      style={{
-                        width: "100%",
-                        padding: 14,
-                        border: "none",
-                        borderRadius: 12,
-                        background: "linear-gradient(90deg,var(--accentLight,#E5C378),var(--accentMid,#C8A15A) 50%,var(--accentDeep,#99732B))",
-                        color: "var(--deepBg,#0D0D0D)",
-                        font: "700 12.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
-                        letterSpacing: ".12em",
-                        textTransform: "uppercase",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Continuar
-                    </button>
-                  </div>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-                    <DocumentoBienvenida nombre={recipient?.nombre ?? card.name} />
-
-                    <section style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,.08)" }}>
-                      <h4 style={{ margin: 0, font: "600 13px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>
-                        Qué información usamos
-                      </h4>
-                      {vaultSources.length === 0 ? (
-                        <p style={{ margin: 0, font: "400 11.5px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#8a8378)" }}>
-                          Todavía no se cargaron fuentes.
-                        </p>
-                      ) : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                          {vaultSources.map((s, i) => (
-                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 8, background: "rgba(0,0,0,.25)" }}>
-                              <Icon name={s.type === "link" ? "link" : "notes"} size={14} style={{ color: "var(--accentMid,#C8A15A)", flexShrink: 0 }} />
-                              <span style={{ flex: "none", font: "700 9.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".04em", textTransform: "uppercase", color: "var(--accentMid,#C8A15A)" }}>
-                                {s.type === "link" ? "Link" : "Nota"}
-                              </span>
-                              <span style={{ flex: 1, minWidth: 0, font: "400 11px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                {s.label || (s.type === "texto" ? s.value.slice(0, 40) : s.value)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </section>
-
-                    {program.vaultCuadernoUrl && (
-                      <a
-                        href={program.vaultCuadernoUrl}
-                        target="_blank"
-                        rel="noopener"
-                        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: 13, borderRadius: 12, border: "1px solid rgba(var(--accentRgb,200,161,90),.4)", color: "var(--accentLight,#E5C378)", font: "700 11.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".06em", textTransform: "uppercase", textDecoration: "none" }}
-                      >
-                        <Icon name="menu_book" size={18} />
-                        Abrir mi cuaderno
-                      </a>
-                    )}
-                  </div>
-                )
+                // Gunnar: "la Boveda es lo que en la tarjeta de rogelio
+                // dice Info Rogelio.. ahi se explica que informacion
+                // tenemos de Rogelio y como se usa.. bueno es lo mismo
+                // pero para todos.. mismos componentes"). Mismo
+                // <CodiceDossier> que "Info [nombre]", a nivel Programa
+                // -- visible para cualquier visitante, sin necesitar un
+                // link de destinatario (?para=). Sin gate de palabra
+                // secreta (ver comentario en CodiceDossier).
+                <CodiceDossier
+                  sources={vaultSources}
+                  cuadernoUrl={program.vaultCuadernoUrl}
+                  borradoHref={socialHref("wa", card.wa) ? `${socialHref("wa", card.wa)}?text=${encodeURIComponent("Quiero pedir que borren mi información del Códice.")}` : null}
+                />
               ) : modal === "info" && isProject ? (
                 <>
                   <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", borderRadius: 16, overflow: "hidden", border: "1px solid rgba(var(--accentRgb,200,161,90),.4)", background: "#000" }}>

@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.73.1";
+export const APP_VERSION = "1.73.2";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.73.2",
+    date: "2026-10-04",
+    notes:
+      "Corrección sobre v1.73.1: la Bóveda Legacy en realidad es el mismo dossier de \"Info [nombre]\" (qué información tenemos y cómo se usa), no el Documento de Bienvenida -- Gunnar: \"la Boveda es lo que en la tarjeta de rogelio dice Info Rogelio.. es lo mismo pero para todos.. mismos componentes\". Se extrajo a un componente compartido (CodiceDossier) que usan ambos botones. Además se sacó el gate de palabra secreta de los dos (\"Info [nombre]\" y Bóveda Legacy) a pedido explícito de Gunnar -- el campo sigue guardado en la DB y editable desde el dashboard, solo que ya no bloquea la entrada al contenido.",
+  },
   {
     version: "1.73.1",
     date: "2026-10-04",

@@ -9,11 +9,14 @@ const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
 // que ibamos a colocar abajo.. son 3 botones.. los laterales pequeños y
 // el principal grande.. el N0 decide que poner alli"). Cubre: el picker
 // del dashboard guarda de verdad, el default sin configurar no cambió
-// respecto de antes de esta feature, la Bóveda Legacy (gate + fuentes +
-// cuaderno) funciona para host y para anónimo, el cubo "Modal simple"
-// abre el contenido viejo de "Mi camino" sin chocar con el botón de
-// redirect de Legacy, y el Agente de IA nunca inventa una respuesta --
-// ni desde el dashboard ni en el fallback público.
+// respecto de antes de esta feature, la Bóveda Legacy (mismo dossier del
+// Códice que "Info [nombre]", sin gate -- Gunnar: "la Boveda es lo que
+// en la tarjeta de rogelio dice Info Rogelio.. es lo mismo pero para
+// todos.. mismos componentes" / "quitalo [el gate] porfa.. luego vemos
+// donde y como lo usamos") funciona para host y para anónimo, el cubo
+// "Modal simple" abre el contenido viejo de "Mi camino" sin chocar con
+// el botón de redirect de Legacy, y el Agente de IA nunca inventa una
+// respuesta -- ni desde el dashboard ni en el fallback público.
 test.describe("Botones del Podio — dashboard + tarjeta pública", () => {
   const e2eDb = createE2eDb();
   let programId: string;
@@ -67,7 +70,7 @@ test.describe("Botones del Podio — dashboard + tarjeta pública", () => {
     await context.close();
   });
 
-  test("el N0 elige Bóveda Legacy para el cubo izquierdo y llena el form -- la tarjeta pública la muestra con gate real", async ({ browser }) => {
+  test("el N0 elige Bóveda Legacy para el cubo izquierdo y llena el form -- la tarjeta pública muestra el mismo dossier del Códice, sin gate", async ({ browser }) => {
     const context = await browser.newContext();
     const cookie = await mintAdminCookie(adminId);
     await context.addCookies([{ ...cookie, url: BASE_URL }]);
@@ -87,6 +90,9 @@ test.describe("Botones del Podio — dashboard + tarjeta pública", () => {
     // también menciona "Bóveda Legacy" en su descripción y matchearía.
     await page.getByRole("button", { name: /^Bóveda Legacy/ }).click();
     await page.locator('input[name="vaultTitle"]').fill("Bóveda de Gunnar");
+    // La palabra secreta se sigue pudiendo guardar (Gunnar: "luego vemos
+    // donde y como lo usamos") pero YA NO bloquea nada en este botón --
+    // se confirma más abajo que el contenido aparece directo.
     await page.locator('input[name="vaultPalabraSecreta"]').fill("mayancity");
     await page.locator('input[name="vaultCuadernoUrl"]').fill("https://notebooklm.google.com/e2e-cuaderno");
     await page.getByRole("button", { name: "Agregar fuente" }).click();
@@ -106,39 +112,28 @@ test.describe("Botones del Podio — dashboard + tarjeta pública", () => {
     await page.goto(`${BASE_URL}/c/${cardSlug}`, { waitUntil: "networkidle" });
     await page.getByRole("button", { name: "Bóveda de Gunnar", exact: true }).click();
 
-    await expect(page.getByText("Esta sección está protegida.")).toBeVisible();
-    await page.getByPlaceholder("Palabra secreta").fill("incorrecta");
-    await page.getByRole("button", { name: "Continuar" }).click();
-    await expect(page.getByText("Esa no es la palabra. Probá de nuevo.")).toBeVisible();
-
-    await page.getByPlaceholder("Palabra secreta").fill("MayanCity");
-    await page.getByRole("button", { name: "Continuar" }).click();
-
-    // El contenido es el mismo Documento de Bienvenida completo que
-    // "Deja tu Legado" (pedido de Gunnar: "mira esto que hicimos para
-    // rogelio.. quiero usar lo mismo para el modal de Boveda") -- sin
-    // destinatario, "Preparado exclusivamente para" cae al nombre de
-    // la Card en vez del de un ?para=.
-    await expect(page.getByText("Documento de Bienvenida · Edición Personal")).toBeVisible();
-    await expect(page.getByText("Preparado exclusivamente para E2E Podium Owner")).toBeVisible();
-    await expect(page.getByText("Carta de apertura")).toBeVisible();
-    await expect(page.getByText("El Códice", { exact: true })).toBeVisible();
-
+    // Ni gate ni "Esta sección está protegida" -- el contenido es el
+    // mismo dossier del Códice que "Info [nombre]" (pedido de Gunnar:
+    // "la Boveda es lo que en la tarjeta de rogelio dice Info Rogelio..
+    // es lo mismo pero para todos"), visible directo.
+    await expect(page.getByText("Esta sección está protegida.")).not.toBeVisible();
+    await expect(page.getByText("Qué información usamos")).toBeVisible();
+    await expect(page.getByText("Cómo la usamos")).toBeVisible();
+    await expect(page.getByText("Nuestra metodología")).toBeVisible();
     await expect(page.getByText("NotebookLM original")).toBeVisible();
     await expect(page.getByRole("link", { name: "Abrir mi cuaderno" })).toHaveAttribute("href", "https://notebooklm.google.com/e2e-cuaderno");
 
     await context.close();
   });
 
-  test("un visitante anónimo también puede abrir la Bóveda -- no es gestión interna como 'invite'", async ({ browser }) => {
+  test("un visitante anónimo también puede abrir la Bóveda directo, sin palabra secreta -- no es gestión interna como 'invite'", async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
 
     await page.goto(`${BASE_URL}/c/${cardSlug}`, { waitUntil: "networkidle" });
     await page.getByRole("button", { name: "Bóveda de Gunnar", exact: true }).click();
-    await page.getByPlaceholder("Palabra secreta").fill("mayancity");
-    await page.getByRole("button", { name: "Continuar" }).click();
 
+    await expect(page.getByPlaceholder("Palabra secreta")).not.toBeVisible();
     await expect(page.getByText("NotebookLM original")).toBeVisible();
 
     await context.close();
