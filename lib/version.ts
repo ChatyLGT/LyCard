@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.71.0";
+export const APP_VERSION = "1.71.1";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.71.1",
+    date: "2026-10-04",
+    notes:
+      "Dos correcciones de nombre en Categorización (pedido de Gunnar sobre lo que acababa de ver en la tarjeta real): \"Medallón de Imán\" -> Imán Badge (\"no es medallon.. es un Badged\"). Y \"Escala de Gente Contactada\" -> Badge de Valor: deja de medir \"gente contactada\" -- mide valor real creado (ventas cerradas, referidos convertidos, o en Legacy: gemelos digitales Legacy nacidos por recomendación del host). Mismo mecanismo manual que Medallón de Resultados e Imán Badge -- el N0 elige el nivel a mano, sin contador automático de referidos (confirmado con Gunnar antes de construir: eso sería una fase aparte, no esta).",
+  },
   {
     version: "1.71.0",
     date: "2026-10-04",

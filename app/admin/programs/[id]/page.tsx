@@ -501,7 +501,7 @@ export default async function AdminProgramDetailPage({
             sección se corrió fuera de este bloque, ver más abajo. */}
         <AccordionSection
           title="Categorización"
-          subtitle="Toda la gamificación del Programa en un solo lugar: Puestos, Medallón, Sabiduría y Contactos. Editá colores, íconos y títulos acá — el modal de cada distintivo en la tarjeta ya refleja esto automáticamente."
+          subtitle="Toda la gamificación del Programa en un solo lugar: Puesto, Medallón de Resultados, Imán Badge y Badge de Valor. Editá colores, íconos y títulos acá — el modal de cada distintivo en la tarjeta ya refleja esto automáticamente."
           meta={<span style={PILL}>{program.puestos.length + medalScale.length + rankScale.length + contactsScale.length || "fijo"}</span>}
           defaultOpen={Boolean(puestoCreated || puestoSaved || puestoDeleted || puestoError || escalaSaved)}
         >
@@ -588,13 +588,15 @@ export default async function AdminProgramDetailPage({
           <EscalaEditor type="medal" initialItems={medalScale} action={updateEscalaAction.bind(null, program.id, "medal")} />
         </AccordionSection>
 
-        {/* "Escala de Sabiduría" → Medallón de Imán (2026-10-04, rename de
+        {/* "Escala de Sabiduría" → Imán Badge (2026-10-04, rename de
             Gunnar: mide capacidad de atracción/conversión de red -- QR
             compartido, visitantes convertidos en miembros/Especialistas/
-            Expertos/Programas/Corporaciones -- no "sabiduría"). Internamente
-            sigue siendo type="rank" (Card.rank, Program.rankScale). */}
+            Expertos/Programas/Corporaciones -- no "sabiduría". Corrección
+            en vivo de la misma vuelta: es un "Badge", no un "Medallón" --
+            esa palabra queda solo para Resultados). Internamente sigue
+            siendo type="rank" (Card.rank, Program.rankScale). */}
         <AccordionSection
-          title="Medallón de Imán"
+          title="Imán Badge"
           subtitle="Sin niveles acá, las tarjetas de Proyecto siguen usando la escala fija (Curioso → Ancient)."
           meta={<span style={PILL}>{rankScale.length || "fija"}</span>}
           defaultOpen={escalaSaved === "rank"}
@@ -603,8 +605,17 @@ export default async function AdminProgramDetailPage({
           <EscalaEditor type="rank" initialItems={rankScale} action={updateEscalaAction.bind(null, program.id, "rank")} />
         </AccordionSection>
 
+        {/* "Escala de Gente Contactada" → Badge de Valor (2026-10-04,
+            misma vuelta -- Gunnar: "tiene que ver con cantidad de valor
+            creado.. o de ventas realizadas.. o en el caso de legacy..
+            gemelos digitales legacies creados a recomendacion del host").
+            Mismo mecanismo manual que Resultados/Imán Badge, confirmado
+            con Gunnar antes de construir -- el N0 elige el nivel a mano,
+            sin contador automático de referidos todavía. Internamente
+            sigue siendo type="contacts" (Card.contacts,
+            Program.contactsScale). */}
         <AccordionSection
-          title="Escala de Gente Contactada"
+          title="Badge de Valor"
           subtitle="Sin niveles acá, las tarjetas siguen usando la escala fija de medallones (Bronce → Diamante). El ícono de cada nivel es el que se muestra en el badge junto al nombre."
           meta={<span style={PILL}>{contactsScale.length || "fija"}</span>}
           defaultOpen={escalaSaved === "contacts"}

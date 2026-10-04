@@ -1268,17 +1268,20 @@ export default function LyCardView({
       body: medalTier.descripcion || t(lang, "medalBody"),
       meta: medalTier.descripcion ? t(lang, "medalMeta") : t(lang, "medalMetaEmpty"),
     },
-    // Tier label/icon are real (Card.contacts + Program.contactsScale,
-    // 2026-09-16) — the *count* behind it is still simulated, no real
-    // send/contact tally feeds it yet.
+    // "Gente Contactada" pasó a ser Badge de Valor (2026-10-04, pedido de
+    // Gunnar: "tiene que ver con cantidad de valor creado.. o de ventas
+    // realizadas.. o en el caso de legacy.. gemelos digitales legacies
+    // creados a recomendacion del host"). Mismo mecanismo manual que
+    // Resultados/Imán Badge -- el N0 elige el nivel a mano desde el
+    // dashboard o este mismo modal, sin contador automático (confirmado
+    // con Gunnar antes de construir: no se engancha a un conteo real de
+    // referidos todavía, eso sería una fase aparte).
     contacts: {
       icon: contactsTier.icono || "military_tech",
-      kicker: contactsTier.subtitulo || t(lang, "medalKicker"),
-      head: `${contactsTier.nombre} · Contactados`,
-      body:
-        contactsTier.descripcion ||
-        "Todavía es un dato simulado — la cuenta real llega con el envío por WhatsApp de verdad.",
-      meta: "Simulado",
+      kicker: contactsTier.subtitulo || t(lang, "valueKicker"),
+      head: contactsTier.nombre,
+      body: contactsTier.descripcion || t(lang, "valueBody"),
+      meta: contactsTier.descripcion ? t(lang, "valueMeta") : t(lang, "valueMetaEmpty"),
     },
     story: {
       icon: "auto_stories",
@@ -1584,7 +1587,7 @@ export default function LyCardView({
                   <button
                     type="button"
                     onClick={() => setModal("contacts")}
-                    aria-label="Personas contactadas"
+                    aria-label="Badge de Valor"
                     style={TIER_DOT(contactsTier.color)}
                   >
                     <Icon name={contactsTier.icono || "military_tech"} size={14} style={{ color: "#141414" }} />
@@ -1670,7 +1673,7 @@ export default function LyCardView({
                       {displaySiglas}
                     </span>
                   </button>
-                  <button type="button" onClick={() => setModal("ancient")} aria-label="Medallón de Imán" style={BADGE_BTN}>
+                  <button type="button" onClick={() => setModal("ancient")} aria-label="Imán Badge" style={BADGE_BTN}>
                     <Sweep />
                     <Icon name={rankTier.icono || "auto_awesome"} size={14} style={{ color: "var(--accentLight,#E5C378)" }} />
                     <span style={{ font: "700 10px var(--brandFont,'Plus Jakarta Sans'),sans-serif", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--goldtxt,#E5C378)" }}>

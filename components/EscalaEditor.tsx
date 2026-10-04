@@ -20,8 +20,9 @@ const FIELD: React.CSSProperties = {
   outline: "none",
 };
 
-// Client-side array editor for a Program's Medallón/Sabiduría/Contactos
-// scale (PLAN.md Fase 9.4/9.5, + Fase Contactos 2026-09-16) — same shape
+// Client-side array editor for a Program's Medallón de Resultados/Imán
+// Badge/Badge de Valor scale (PLAN.md Fase 9.4/9.5, + Fase Contactos
+// 2026-09-16, renombradas 2026-10-04) — same shape
 // as officeItems in MemberCardEditor: local state, one hidden JSON input,
 // one save action for the whole list. Each tier collapses into a summary
 // row (swatch/ícono + nombre) and opens one at a time to edit — only the
@@ -42,7 +43,7 @@ export default function EscalaEditor({
   const [importError, setImportError] = useState<string | null>(null);
   const colorPlaceholder = "#C8A15A";
 
-  const defaultIcon = type === "medal" ? "military_tech" : type === "rank" ? "hub" : "groups";
+  const defaultIcon = type === "medal" ? "military_tech" : type === "rank" ? "hub" : "payments";
 
   function addItem() {
     const newUid = uid();

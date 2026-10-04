@@ -8628,3 +8628,40 @@ Medallón de Resultados muestra los niveles reales y el N0 reasigna,
 Medallón de Imán idem, O.D. idem con el roster de Puesto, y un
 visitante anónimo lee todo pero no logra reasignar nada). Suite
 Playwright completa 48/48 verde, cero regresiones.
+
+## 2026-10-04 -- Imán Badge + Badge de Valor (v1.71.1, corrección de nombres sobre lo recién shippeado)
+
+Apenas vio v1.71.0 en vivo, Gunnar corrigió dos nombres sobre la
+marcha: "el Medallon de iman no es medallon es un Badged.. es Iman
+Badged" -- y el badge a la izquierda del nombre (hasta ahora "Escala
+de Gente Contactada"/Contactos) "tiene que ver con cantidad de valor
+creado.. o de ventas realizadas.. o en el caso de legacy.. en gemelos
+digitales legacies creados a recomendacion del host".
+
+- **Imán Badge** (antes "Medallón de Imán", 2026-10-04 más temprano):
+  puro rename de terminología -- sigue siendo exactamente el mismo
+  `type="rank"` (Card.rank, Program.rankScale), cero cambio de
+  mecánica. "Medallón" queda reservado para Resultados, que sí es un
+  medallón de verdad.
+- **Badge de Valor** (antes "Escala de Gente Contactada"/`type=
+  "contacts"`): deja de medir "gente contactada" -- mide el valor de
+  negocio real que generó el N0 (ventas cerradas, referidos
+  convertidos, o en Legacy: Cards nuevas nacidas por su recomendación).
+  Antes de construir se le preguntó a Gunnar si esto necesitaba un
+  CONTADOR automático real (leer referidos de verdad desde
+  ProgramMembership) o el mismo mecanismo manual que Resultados/Imán
+  Badge -- eligió manual ("igual que los otros 2"), así que el alcance
+  quedó acotado: mismo `EscalaEditor`/`parseImportedEscala` de siempre,
+  solo cambia el texto (i18n `contactsIntro`/`valueKicker`/`valueBody`/
+  `valueMeta`/`valueMetaEmpty` nuevos, reemplazan el viejo framing
+  "Simulado" + sufijo hardcodeado "· Contactados" en el `head` del
+  modal). Ícono default del editor para este tipo pasa de `groups` a
+  `payments` (ya no es "gente", es valor/ventas). Un contador real
+  sobre ProgramMembership queda documentado como fase aparte, no
+  entra en esta vuelta.
+
+Verificación: `npx tsc --noEmit` limpio, `pnpm lint` sin errores
+nuevos (mismos 11 warnings preexistentes), `pnpm test:unit:coverage`
+263/263 al 100% (sin cambios en `lib/`, puro rename de copy/UI),
+`pnpm build` limpio. `e2e/categorizacion.spec.ts` actualizado (aria-
+label "Imán Badge") y pasando. Suite Playwright completa 48/48 verde.

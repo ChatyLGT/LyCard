@@ -130,26 +130,39 @@ export const STR: Record<Lang, Record<string, string>> = {
     // ya usa el modal Info con pil1/pil2/pil3), ver BADGE_ICON_EXAMPLES
     // en components/LyCardView.tsx.
     odIntro:
-      "Tu posición dentro de la estructura del Programa — un rol o título, no tu nivel de resultados ni de atracción (eso son los otros dos Medallones). El N0 arma su propia escalera de posiciones desde /admin/programs, de 3 a N roles.",
-    // "Rango de Sabiduría" pasó a ser Medallón de Imán (2026-10-04, pedido
-    // de Gunnar): mide capacidad de atracción/conversión de red -- QR
+      "Tu posición dentro de la estructura del Programa — un rol o título, no tu nivel de resultados, atracción ni valor creado (esos son los otros tres distintivos). El N0 arma su propia escalera de posiciones desde /admin/programs, de 3 a N roles.",
+    // "Rango de Sabiduría" pasó a ser Imán Badge (2026-10-04, pedido de
+    // Gunnar: mide capacidad de atracción/conversión de red -- QR
     // compartido, visitantes que se vuelven miembros, especialistas,
     // expertos, programas y corporaciones -- no "sabiduría" como tal.
+    // CORRECCIÓN en vivo, misma vuelta: Gunnar aclaró que esto es un
+    // "Badge", no un "Medallón" -- esa palabra queda reservada para
+    // Resultados, que sí es un medallón de verdad).
     ancIntro:
       "Tu capacidad de atracción y conversión de red — cuánta gente sumás compartiendo tu QR, y hasta dónde los convertís: de visitante a miembro, a Especialista, a Experto, a Programa, a Corporación. El N0 arma su propia escala desde /admin/programs, de 3 a N niveles.",
     // "Nivel de Medallón" pasó a ser Medallón de Resultados (2026-10-04):
     // mide rendimiento/impacto real, no un genérico bronce/plata/oro.
     medalIntro:
       "Tu nivel de resultados dentro del Programa — rendimiento e impacto real, de crítico a liderazgo. El N0 arma su propia escala desde /admin/programs.",
+    // "Escala de Gente Contactada" pasó a ser Badge de Valor (2026-10-04,
+    // misma vuelta que Imán Badge -- Gunnar: "tiene que ver con cantidad
+    // de valor creado.. o de ventas realizadas.. o en el caso de legacy..
+    // en gemelos digitales legacies creados a recomendacion del host").
+    // Ya no es "cuánta gente contactaste" -- es el valor de negocio real
+    // que generaste (ventas, referidos convertidos, o en Legacy: Cards
+    // nuevas creadas por tu recomendación). Mismo mecanismo manual que
+    // Resultados/Imán Badge -- el N0 elige a mano el nivel, no hay
+    // contador automático todavía (confirmado con Gunnar antes de
+    // construir).
     contactsIntro:
-      "Tu alcance — cuánta gente contactaste o le compartiste tu LyCard. El N0 arma su propia escala de niveles desde /admin/programs.",
+      "El valor real que generaste — ventas cerradas, referidos convertidos, o en Legacy: gemelos digitales Legacy creados por tu recomendación. El N0 arma su propia escala desde /admin/programs.",
     badgeExamplesLabel: "Niveles de la escala",
     tierCurrent: "Actual",
     odBody:
       "Esta distinción todavía no fue configurada. El N0 del Programa define acá su nombre, ícono y descripción desde /admin/programs — cada Programa arma la suya, no hay una fija.",
     odMeta: "Estatus: Activo y Certificado",
     odMetaEmpty: "Sin configurar",
-    ancKicker: "Medallón de Imán",
+    ancKicker: "Imán Badge",
     ancBody:
       "Este nivel todavía no fue configurado. El N0 del Programa arma su propia escala de atracción desde /admin/programs — cada Programa define la suya, no hay una fija.",
     ancMeta: "Imán de Red",
@@ -159,6 +172,11 @@ export const STR: Record<Lang, Record<string, string>> = {
       "Este nivel todavía no fue configurado. El N0 del Programa arma su propia escala de resultados desde /admin/programs — cada Programa define la suya, no hay una fija.",
     medalMeta: "Resultado Certificado",
     medalMetaEmpty: "Sin configurar",
+    valueKicker: "Badge de Valor",
+    valueBody:
+      "Este nivel todavía no fue configurado. El N0 del Programa arma su propia escala de valor desde /admin/programs — cada Programa define la suya, no hay una fija.",
+    valueMeta: "Valor Certificado",
+    valueMetaEmpty: "Sin configurar",
     storyKicker: "Mi Camino con Legacy",
     storyHead: "«Descubrí en Legacy una forma de trascender.»",
     storyBody:
@@ -301,20 +319,20 @@ export const STR: Record<Lang, Record<string, string>> = {
     meetingSub: "Pick an available time to talk with {name}.",
     linkCopied: "Link copied",
     odIntro:
-      "Your position within the Program's structure — a role or title, not your results or attraction level (those are the other two Medallions). The Program's N0 builds its own ladder of positions from /admin/programs, from 3 to N roles.",
+      "Your position within the Program's structure — a role or title, not your results, attraction or value level (those are the other three distinctions). The Program's N0 builds its own ladder of positions from /admin/programs, from 3 to N roles.",
     ancIntro:
       "Your network attraction and conversion power — how many people you bring in by sharing your QR, and how far you convert them: from visitor to member, to Specialist, to Expert, to Program, to Corporation. The Program's N0 builds its own scale from /admin/programs, from 3 to N levels.",
     medalIntro:
       "Your results level within the Program — real performance and impact, from critical to leadership. The Program's N0 builds its own scale from /admin/programs.",
     contactsIntro:
-      "Your reach — how many people you contacted or shared your LyCard with. The Program's N0 builds its own scale of levels from /admin/programs.",
+      "The real value you generated — closed sales, converted referrals, or in Legacy's case: digital-twin Legacy Cards created from your own recommendation. The Program's N0 builds its own scale from /admin/programs.",
     badgeExamplesLabel: "Scale levels",
     tierCurrent: "Current",
     odBody:
       "This distinction hasn't been configured yet. The Program's N0 sets its name, icon and description from /admin/programs — each Program builds its own, there's no fixed one.",
     odMeta: "Status: Active and Certified",
     odMetaEmpty: "Not configured",
-    ancKicker: "Magnet Medallion",
+    ancKicker: "Magnet Badge",
     ancBody:
       "This level hasn't been configured yet. The Program's N0 builds its own attraction scale from /admin/programs — each Program defines its own, there's no fixed one.",
     ancMeta: "Network Magnet",
@@ -324,6 +342,11 @@ export const STR: Record<Lang, Record<string, string>> = {
       "This level hasn't been configured yet. The Program's N0 builds its own results scale from /admin/programs — each Program defines its own, there's no fixed one.",
     medalMeta: "Certified Result",
     medalMetaEmpty: "Not configured",
+    valueKicker: "Value Badge",
+    valueBody:
+      "This level hasn't been configured yet. The Program's N0 builds its own value scale from /admin/programs — each Program defines its own, there's no fixed one.",
+    valueMeta: "Certified Value",
+    valueMetaEmpty: "Not configured",
     storyKicker: "My Path with Legacy",
     storyHead: "“In Legacy I found a way to transcend.”",
     storyBody:

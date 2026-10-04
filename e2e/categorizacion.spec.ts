@@ -8,7 +8,7 @@ const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
 // de los modales.. que cada modal explique lo que se dice en el
 // dashboard.. le demos la oportunidad al N0 de seleccionar eso desde
 // ahi"). Antes cada uno de los 4 modales de distinción (Puesto/O.D.,
-// Medallón de Resultados, Medallón de Imán, Contactos) mostraba 4 íconos
+// Medallón de Resultados, Imán Badge, Contactos) mostraba 4 íconos
 // de EJEMPLO fijos, iguales para cualquier Programa -- esta prueba cubre
 // que ahora muestran el roster REAL (nombre + descripción completa de
 // cada nivel que el N0 armó), marcan el nivel actual, y que un N0 puede
@@ -109,14 +109,14 @@ test.describe("Categorización — modales con escalas reales + selección desde
       .toBe("liderazgo");
   });
 
-  test("Medallón de Imán: el modal muestra los niveles reales de atracción de red", async ({ browser }) => {
+  test("Imán Badge: el modal muestra los niveles reales de atracción de red", async ({ browser }) => {
     const context = await browser.newContext();
     const cookie = await mintAdminCookie(adminId);
     await context.addCookies([{ ...cookie, url: BASE_URL }]);
     const page = await context.newPage();
 
     await page.goto(`${BASE_URL}/c/${cardSlug}`, { waitUntil: "networkidle" });
-    await page.getByRole("button", { name: "Medallón de Imán", exact: true }).click();
+    await page.getByRole("button", { name: "Imán Badge", exact: true }).click();
 
     await expect(page.getByText("Imán Corporativo", { exact: true })).toBeVisible();
     await expect(page.getByText("Tu influencia convierte Corporaciones completas.")).toBeVisible();
@@ -164,7 +164,7 @@ test.describe("Categorización — modales con escalas reales + selección desde
     const otherTileName = before.rows[0].rank === "anfitrion" ? "Imán Corporativo" : "Anfitrión";
 
     await page.goto(`${BASE_URL}/c/${cardSlug}`, { waitUntil: "networkidle" });
-    await page.getByRole("button", { name: "Medallón de Imán", exact: true }).click();
+    await page.getByRole("button", { name: "Imán Badge", exact: true }).click();
     await expect(page.getByText(otherTileName, { exact: true })).toBeVisible();
 
     await page.getByText(otherTileName, { exact: true }).click();
