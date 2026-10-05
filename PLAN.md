@@ -9232,3 +9232,55 @@ la propuesta.
 
 `npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos, `pnpm build`
 limpio, suite Playwright completa 59/59 verde.
+
+## 2026-10-05 -- Mirón/NA: la Card Origen real, no una página aparte (v1.76.0)
+
+Gunnar, mandando una captura de la pantalla Mirón/NA en su iPhone: *"Ok..
+no se porque o para que sale esta página.. esto debería salir en vez del
+qr en la tarjeta del visitante. El que viene de la nada."*
+
+### Diagnóstico
+
+v1.75.0 implementó Mirón/NA como una página bespoke
+(`components/MironLanding.tsx`) con su propio copy/diseño ("Tu tarjeta,
+tu legado", explicación genérica) -- leyendo otra vez el pedido
+original de Gunnar, el texto literal siempre fue *"aqui abre la tarjeta
+de Legacy"* (LA tarjeta, no una pantalla nueva). La implementación
+original no reutilizó `LyCardView` porque la Card marcada `isOrigin`
+siempre da host a CUALQUIERA (`isHost = isAdmin || card.isOrigin ||
+...`, `app/c/[slug]/page.tsx`, decisión deliberada para que el QR real
+de Legacy sea compartible sin sesión) -- renderizarla tal cual por la
+ruta de siempre le habría dado modo edición completo a cualquier
+visitante anónimo de la raíz, lo opuesto de "no puedes hacer nada".
+
+### El fix real
+
+`app/page.tsx` ahora busca la Card marcada `isOrigin` (fallback: la más
+vieja de la base, mismo criterio pre-sesión) y la renderiza con el
+mismo `LyCardView` de siempre -- mismo branding, mismos badges, mismo
+contenido real -- pero pasándole `isHost={false}` `isAdmin={false}`
+`isAuthenticatedOwner={false}` EXPLÍCITOS desde el padre (bypassea la
+regla "isOrigin = host para todos" a propósito, solo para esta ruta).
+Nuevo prop `naMode` en `LyCardView.tsx`: reemplaza el cubo central (QR
+real para el host / "Crea Tu LyCard" para un visitante normal) por un
+tercer cubo que abre un modal nuevo (`modal === "na"`, mismo sistema de
+modales de siempre) con `QrScannerLauncher` (cámara real, ya existía)
++ la lista de Programas activos (`naPrograms`, misma resolución
+company/project > personal que antes).
+
+`buildCardBundle` + `PROGRAM_INCLUDE` se extrajeron de
+`app/c/[slug]/page.tsx` a `lib/cardBundle.ts` (archivo nuevo) para que
+`app/page.tsx` arme el mismo bundle real (qrSvg/badge/interviewSlots)
+sin duplicar la lógica -- `app/c/[slug]/page.tsx` quedó más corto,
+mismo comportamiento. `components/MironLanding.tsx` borrado (ya sin
+uso).
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos, `pnpm build`
+limpio. `e2e/viaje-del-cliente.spec.ts` reescrito: la raíz muestra el
+nombre real de la Card Origen (no copy inventado), el ícono de arriba
+manda a login (nunca a `/admin/[slug]`, confirmando que no es
+editable), el cubo central abre el modal con el botón de escanear real
+y la lista de Programas activos (fixture propio, `afterAll` limpio).
+Suite Playwright completa corrida de punta a punta.

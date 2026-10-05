@@ -8,12 +8,64 @@ const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
 // palabra secreta a nivel de Card completa para Invitado/Visitante
 // Especial, y el botón self-service "Convertir en Programa" en el
 // dashboard del Member (caso Juancho/Digital Kingdom).
+//
+// Mirón/NA, segunda vuelta (2026-10-05, corrección de Gunnar sobre el
+// primer intento -- una página aparte, MironLanding.tsx, ya borrada:
+// "esto debería salir en vez del qr en la tarjeta del visitante.. el que
+// viene de la nada"): la raíz ahora renderiza la Card Origen REAL vía el
+// mismo LyCardView de siempre (isHost forzado a false, nadie edita nada),
+// con el cubo central QR reemplazado por uno que abre un modal con
+// escanear-QR + lista de Programas activos.
 test.describe("Mirón/NA -- raíz sin host", () => {
-  test("sin ningún contexto de host, la raíz muestra la pantalla genérica no editable", async ({ page }) => {
+  const e2eDb = createE2eDb();
+  const suffix = Date.now() + 2;
+  let originCardName: string;
+  let naProgramId: string;
+
+  test.beforeAll(async () => {
+    await e2eDb.connect();
+
+    const origin = await e2eDb.query<{ name: string }>(`select name from "Card" where "isOrigin" = true limit 1`);
+    originCardName = origin.rows[0]?.name ?? "";
+
+    const program = await e2eDb.query<{ id: string }>(
+      `insert into "Program" (id, slug, name, active, "updatedAt") values (gen_random_uuid()::text, $1, $2, true, now()) returning id`,
+      [`e2e-na-program-${suffix}`, "Programa E2E NA"]
+    );
+    naProgramId = program.rows[0].id;
+    await e2eDb.query(
+      `insert into "Card" (id, slug, "updatedAt", name, title, quote, kind, "programId") values (gen_random_uuid()::text, $1, now(), 'Programa E2E NA', 'N0', 'cita', 'project', $2)`,
+      [`e2e-na-card-${suffix}`, naProgramId]
+    );
+  });
+
+  test.afterAll(async () => {
+    await e2eDb.query(`delete from "Card" where "programId" = $1`, [naProgramId]).catch(() => {});
+    await e2eDb.query(`delete from "Program" where id = $1`, [naProgramId]).catch(() => {});
+    await e2eDb.end();
+  });
+
+  test("sin ningún contexto de host, la raíz muestra la Card Origen real, no editable, con el cubo QR reemplazado", async ({ page }) => {
     await page.goto(`${BASE_URL}/`, { waitUntil: "networkidle" });
-    await expect(page.getByText("Tu tarjeta, tu legado")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Escanear QR" })).toBeVisible();
-    await expect(page.getByText("no es una tarjeta editable", { exact: false })).toBeVisible();
+
+    // Es la Card Origen real -- no una pantalla bespoke con copy propio.
+    if (originCardName) {
+      await expect(page.getByRole("heading", { name: originCardName })).toBeVisible();
+    }
+
+    // No editable para nadie: el ícono de arriba manda a login, no a
+    // /admin/[slug] (ver LyCardView.tsx, `badge === "NA"`).
+    await expect(page.getByRole("link", { name: "Iniciar sesión" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Personalizar mi LyCard" })).not.toBeVisible();
+
+    // El cubo central es el de escanear/elegir Programa, no el QR real ni
+    // "Crea Tu LyCard".
+    await expect(page.getByRole("button", { name: "Escanear QR o elegir Programa" })).toBeVisible();
+    await page.getByRole("button", { name: "Escanear QR o elegir Programa" }).click();
+
+    await expect(page.getByText("Escanear o elegir Programa", { exact: false })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Escanear QR$/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Programa E2E NA" })).toBeVisible();
   });
 });
 

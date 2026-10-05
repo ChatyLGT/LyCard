@@ -31,6 +31,7 @@ import { googleFontHref } from "@/lib/googleFont";
 import { hexToRgbString, lightness, shade } from "@/lib/color";
 import { parseCardSizeConfig, buildCardSizeCssVars, type CardSizeConfig } from "@/lib/cardSizeConfig";
 import CardSizePanel from "@/components/CardSizePanel";
+import QrScannerLauncher from "@/components/QrScannerLauncher";
 
 type ModalKey =
   | "od"
@@ -46,6 +47,7 @@ type ModalKey =
   | "contacts"
   | "vault"
   | "ai_agent"
+  | "na"
   | null;
 
 const THEME_VARS: Record<"dark" | "light", CSSProperties> = {
@@ -867,6 +869,8 @@ export default function LyCardView({
   puesto,
   interviewSlots,
   recipient,
+  naMode,
+  naPrograms,
 }: {
   card: Card;
   qrSvg: string;
@@ -903,6 +907,15 @@ export default function LyCardView({
   // PASO 4 (2026-10-02): el dossier completo del destinatario, no solo
   // el nombre que ya usaba el saludo de bienvenida de PASO 1.
   recipient?: RecipientWithSources | null;
+  // Mirón/NA (2026-10-05) -- true SOLO en la pantalla genérica de la raíz
+  // (app/page.tsx), para un visitante sin ningún host/referido. Fuerza el
+  // cubo central a abrir el modal "na" (escanear QR real por cámara o
+  // elegir Programa de la lista) en vez del QR de compartir o "Crea Tu
+  // LyCard" -- independiente de `isHost`, que para la Card Origen ya da
+  // host a cualquiera (ver app/c/[slug]/page.tsx); acá se ignora a
+  // propósito, esta pantalla nunca es editable para nadie.
+  naMode?: boolean;
+  naPrograms?: { id: string; name: string; cardSlug: string }[];
 }) {
   const router = useRouter();
   const isProject = card.kind === "project";
@@ -1637,6 +1650,11 @@ export default function LyCardView({
     // PASO 5 (2026-10-02): "Deja tu Legado" -- el Documento de
     // Bienvenida, solo con destinatario.
     legado: { icon: "auto_stories", kicker: recipient ? `Para ${recipient.nombre}` : "Documento de Bienvenida" },
+    // Mirón/NA (2026-10-05, corrección de Gunnar): "esto debería salir en
+    // vez del qr en la tarjeta del visitante.. el que viene de la nada" --
+    // reemplaza el cubo QR cuando naMode está activo (ver render del cubo
+    // central más abajo), nunca un modal aparte que nadie pidió.
+    na: { icon: "qr_code_scanner", kicker: "Escanear o elegir Programa" },
     contactMessage: { icon: "chat", kicker: t(lang, "contactKicker") },
     // Name island (2026-09-16) — short explainer of what this Card type is
     // for. Fixed copy per kind, not Program-configurable yet.
@@ -2223,7 +2241,49 @@ export default function LyCardView({
                 funnel instead of a scannable code. Replaces the old
                 project-only split (a dev-testing "simulate scan" shortcut
                 for the host, a copy-link button for company/personal). */}
-            {isHost ? (
+            {naMode ? (
+              // Mirón/NA (2026-10-05, corrección de Gunnar: "esto debería
+              // salir en vez del qr en la tarjeta del visitante.. el que
+              // viene de la nada") -- mismo tamaño/estilo que el cubo de
+              // "Crea Tu LyCard" de abajo, pero abre el modal "na"
+              // (escanear o elegir Programa) en vez de mandar a /m/login.
+              <button
+                type="button"
+                onClick={() => setModal("na")}
+                aria-label="Escanear QR o elegir Programa"
+                style={{
+                  position: "relative",
+                  flex: "none",
+                  width: "clamp(calc(84px*var(--scale-qrBtn,1)),calc(15dvh*var(--scale-qrBtn,1)),calc(140px*var(--scale-qrBtn,1)))",
+                  height: "clamp(calc(84px*var(--scale-qrBtn,1)),calc(15dvh*var(--scale-qrBtn,1)),calc(140px*var(--scale-qrBtn,1)))",
+                  borderRadius: 20,
+                  background: "linear-gradient(160deg,var(--accentLight,#E5C378),var(--accentMid,#C8A15A) 55%,var(--accentDeep,#99732B))",
+                  border: "1px solid rgba(255,230,163,.5)",
+                  boxShadow: "0 12px 36px rgba(var(--accentRgb,200,161,90),.45)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  padding: 10,
+                  color: "var(--onAccent,#141414)",
+                  cursor: "pointer",
+                }}
+              >
+                <Icon name="qr_code_scanner" size={32} />
+                <span
+                  style={{
+                    font: "800 10.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
+                    letterSpacing: ".07em",
+                    textTransform: "uppercase",
+                    textAlign: "center",
+                    lineHeight: 1.25,
+                  }}
+                >
+                  Escanear QR
+                </span>
+              </button>
+            ) : isHost ? (
               <button
                 type="button"
                 onClick={() => setQrSendOpen(true)}
@@ -2435,7 +2495,41 @@ export default function LyCardView({
                 </button>
               </div>
 
-              {modal === "info" && recipient ? (
+              {modal === "na" ? (
+                <>
+                  <p style={{ margin: 0, font: "400 12.5px/1.7 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#C2BEB5)" }}>
+                    ¿Te compartieron un QR? Apuntá la cámara, o elegí tu Programa de la lista.
+                  </p>
+                  <QrScannerLauncher label="Escanear QR" />
+                  {naPrograms && naPrograms.length > 0 && (
+                    <>
+                      <span style={{ font: "500 10.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "var(--ink2,#8a8378)", textAlign: "center" }}>— o elegí tu Programa —</span>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {naPrograms.map((p) => (
+                          <Link
+                            key={p.id}
+                            href={`/c/${p.cardSlug}`}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              padding: "12px 14px",
+                              borderRadius: 10,
+                              border: "1px solid rgba(var(--accentRgb,200,161,90),.25)",
+                              color: "var(--ink,#F5F2EB)",
+                              textDecoration: "none",
+                              font: "600 13px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
+                            }}
+                          >
+                            {p.name}
+                            <Icon name="chevron_right" size={16} style={{ color: "var(--accentMid,#C8A15A)" }} />
+                          </Link>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : modal === "info" && recipient ? (
                 // PASO 4 (2026-10-02) -- "Info [nombre]": dossier del
                 // Códice, solo con destinatario. Sin gate de palabra
                 // secreta (sacado 2026-10-04 a pedido de Gunnar -- "luego

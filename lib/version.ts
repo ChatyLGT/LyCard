@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.75.2";
+export const APP_VERSION = "1.76.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.76.0",
+    date: "2026-10-05",
+    notes:
+      "Mirón/NA, corrección de diseño: Gunnar vio la pantalla genérica de la raíz y no la reconoció como parte de la app (\"no se porque o para que sale esta página... esto debería salir en vez del qr en la tarjeta del visitante\"). Se reemplazó la página bespoke (MironLanding.tsx, borrada) por la Card Origen REAL renderizada con el mismo LyCardView de siempre -- mismo branding, mismos badges, mismo contenido -- con host forzado a false (no editable para nadie, ni el propio MasterN0) y el cubo central QR reemplazado por uno que abre un modal con escanear-QR real por cámara + lista de Programas activos. buildCardBundle se extrajo a lib/cardBundle.ts para no duplicar la lógica entre app/page.tsx y app/c/[slug]/page.tsx.",
+  },
   {
     version: "1.75.2",
     date: "2026-10-05",

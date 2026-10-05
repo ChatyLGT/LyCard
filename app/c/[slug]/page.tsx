@@ -1,82 +1,25 @@
 import { notFound } from "next/navigation";
-import QRCode from "qrcode";
 import { prisma } from "@/lib/prisma";
 import { currentAdminScope } from "@/lib/auth";
 import { currentMemberId } from "@/lib/memberAuth";
-import { computeBadge } from "@/lib/badge";
 import { buildCardMetadata } from "@/lib/cardMetadata";
 import { parseShareScope } from "@/lib/shareScope";
-import { upcomingSlots } from "@/lib/interviewSlots";
 import { isRecipientUnlocked } from "@/lib/recipientAuth";
+import { buildCardBundle, PROGRAM_INCLUDE } from "@/lib/cardBundle";
 import LyCardView from "@/components/LyCardView";
 import RecipientGate from "@/components/RecipientGate";
-import CardCarousel, { type CarouselBundle } from "@/components/CardCarousel";
-import type { Card, Program, ProgramSkin, Puesto } from "@/generated/prisma/client";
+import CardCarousel from "@/components/CardCarousel";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   return buildCardMetadata(slug);
 }
 
-// A project card's Program plus only its active skin (0 or 1 rows) — the
-// filter lives in the Prisma query itself (Fase 2 del sistema de skins,
-// 2026-09-16), so LyCardView never has to pick the right one out of 3.
-// `puestos` (2026-10-04) suma el roster COMPLETO de Puestos del Programa
-// -- antes `card.puesto` solo traía el YA asignado a esta Card; el modal
-// de O.D. necesita ver todas las posiciones reales para mostrarlas (y
-// elegir entre ellas), no solo la que ya está puesta.
-const PROGRAM_INCLUDE = { skins: { where: { active: true } }, puestos: { orderBy: { order: "asc" } } } as const;
-
 export const dynamic = "force-dynamic";
 
 // Fixed swipe order across a Member's 3 Cards, whichever of the 3 links
 // someone opens: Programa → Business → Personal.
 const KIND_ORDER = ["project", "company", "personal"];
-
-async function buildCardBundle(
-  card: Card & { program: (Program & { skins: ProgramSkin[]; puestos: Puesto[] }) | null; puesto: Puesto | null },
-  baseUrl: string,
-  adminScope: { id: string; programId: string | null } | null,
-  memberId: string | null
-): Promise<CarouselBundle> {
-  const cardUrl = `${baseUrl}/c/${card.slug}`;
-  const [qrSvg, originMemento, badge] = await Promise.all([
-    QRCode.toString(cardUrl, {
-      type: "svg",
-      margin: 1,
-      color: { dark: "#141414", light: "#FFFFFF" },
-    }),
-    // Only project cards show this (their Virtual Office is their own
-    // recruitment story, PLAN.md Fase 7) — skip the query otherwise.
-    card.kind === "project" && card.memberId
-      ? prisma.originMemento.findUnique({ where: { memberId: card.memberId } })
-      : null,
-    // Independent per Card (2026-09-16) — unlike isHost/isAdmin, which are
-    // shared across the whole carousel, each slide computes its own N.
-    computeBadge(card, adminScope, memberId),
-  ]);
-
-  // Cupo real por Programa (Auditoría 2026-09-23, hallazgo 1.4): un
-  // project Card cuyo Programa ya cargó sus propios InterviewSlot los usa
-  // en vez de los 4 hardcodeados de lib/interviewSlots.ts -- un Programa
-  // sin filas propias, o cualquier Card company/personal, sigue cayendo
-  // al array fijo (mismo criterio honesto de siempre, nunca una sección
-  // vacía el primer día).
-  let interviewSlots: { id: string; label: string; labelEn: string; time: string }[] = upcomingSlots();
-  if (card.kind === "project" && card.programId) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const realSlots = await prisma.interviewSlot.findMany({
-      where: { programId: card.programId, date: { gte: today } },
-      orderBy: { date: "asc" },
-    });
-    if (realSlots.length > 0) {
-      interviewSlots = realSlots.map((s) => ({ id: s.id, label: s.label, labelEn: s.labelEn, time: s.time }));
-    }
-  }
-
-  return { card, qrSvg, originMemento, program: card.program, puesto: card.puesto, badge, interviewSlots };
-}
 
 export default async function CardPage({
   params,
