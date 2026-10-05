@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.73.2";
+export const APP_VERSION = "1.74.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.74.0",
+    date: "2026-10-05",
+    notes:
+      "Editor de Modales (piloto en Bóveda Legacy): el N0 arma el contenido del modal bloque por bloque desde el dashboard -- texto, imagen, video/audio, archivo-botón y KPI -- en vez de un formulario fijo. Reordenable con flechas arriba/abajo. Pedido de Gunnar: \"podamos crear un editor de modales.. como el editor de un formulario.. nuestro dashboard con respecto a la edicion del contenido de los modales esta horrible.\" Reemplaza las fuentes/cuaderno fijos que tenía la Bóveda por este sistema genérico, reusable a futuro en otros modales de contenido libre (Info, Documento de Bienvenida, Mi camino). Las encuestas/preguntas (que necesitan guardar respuestas de visitantes) quedan para una fase aparte.",
+  },
   {
     version: "1.73.2",
     date: "2026-10-04",

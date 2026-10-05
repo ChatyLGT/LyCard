@@ -516,11 +516,16 @@ model Program {
   // otro Programa.
   vaultTitle          String @default("Bóveda Legacy")
   vaultPalabraSecreta String @default("")
-  vaultCuadernoUrl    String @default("")
-  // VaultSource[] -- {type:"link"|"texto", label, value}, ver
-  // lib/podiumButtons.ts. Mismo patrón que medalScale/officeSkills:
-  // array plano, reemplazo total al guardar.
-  vaultSources        Json   @default("[]")
+  // Editor de Modales (2026-10-04, pedido de Gunnar: "podamos crear un
+  // editor de modales.. no solo el contenido sino tambien los
+  // elementos.. si se muestra un video, o un audio, o un archivo, o un
+  // texto.. como el editor de un formulario"). ModalBlock[] -- ver
+  // lib/modalBlocks.ts. Reemplaza lo que antes eran vaultSources +
+  // vaultCuadernoUrl (ambos eran, en el fondo, un tipo de bloque cada
+  // uno) por un único array de bloques libres que el N0 compone en el
+  // dashboard. Mismo patrón que medalScale/officeSkills: array plano,
+  // reemplazo total al guardar.
+  vaultBlocks         Json   @default("[]")
 
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt

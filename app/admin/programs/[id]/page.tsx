@@ -29,13 +29,14 @@ import { CARD_LABEL_FIELDS, defaultCardLabel } from "@/lib/cardLabels";
 import { parseEscala } from "@/lib/escalas";
 import { parseOfficeSkills, DEFAULT_OFFICE_SKILLS } from "@/lib/officeSkills";
 import { parseMotivationalPhrases } from "@/lib/oficinaExtras";
-import { parsePodiumButtons, getPodiumButton, parseVaultSources } from "@/lib/podiumButtons";
+import { parsePodiumButtons, getPodiumButton } from "@/lib/podiumButtons";
+import { parseModalBlocks } from "@/lib/modalBlocks";
 import EscalaEditor from "@/components/EscalaEditor";
 import OfficeSkillsEditor from "@/components/OfficeSkillsEditor";
 import PhraseListEditor from "@/components/PhraseListEditor";
 import ProgramSkinInfo from "@/components/ProgramSkinInfo";
 import PodiumSlotEditor from "@/components/PodiumSlotEditor";
-import VaultSourcesEditor from "@/components/VaultSourcesEditor";
+import ModalBlocksEditor from "@/components/ModalBlocksEditor";
 import { AccordionSection, AccordionRow, AccordionAddRow } from "@/components/Accordion";
 import type { SkinColors } from "@/lib/designMd";
 
@@ -217,7 +218,7 @@ export default async function AdminProgramDetailPage({
   const officeSkills = parseOfficeSkills(program.officeSkills);
   const motivationalPhrases = parseMotivationalPhrases(program.motivationalPhrases);
   const podiumButtons = parsePodiumButtons(program.podiumButtons);
-  const vaultSources = parseVaultSources(program.vaultSources);
+  const vaultBlocks = parseModalBlocks(program.vaultBlocks);
 
   const registrations = await prisma.registration.findMany({
     where: { card: { programId: id } },
@@ -683,24 +684,25 @@ export default async function AdminProgramDetailPage({
         </AccordionSection>
 
         {/* Bóveda Legacy / "Legacy Vault" (2026-10-04, pedido de Gunnar:
-            "la informacion que teniamos de la informacion del N0.. el
-            link a su notebooklm.. eso ya lo habiamos echo.. quedo para
-            Rogelio"). Mismo contenido que ya existía por destinatario
-            (palabra secreta + cuaderno + fuentes) pero a nivel
-            Programa -- se activa eligiendo "Bóveda Legacy" en alguno de
-            los 2 cubos de arriba. */}
+            "la Boveda es lo que en la tarjeta de rogelio dice Info
+            Rogelio.. es lo mismo pero para todos"). El contenido ahora
+            se arma con el Editor de Modales (ModalBlocksEditor, ver
+            lib/modalBlocks.ts) -- piloto de "poder crear un editor de
+            modales.. como el editor de un formulario" (pedido
+            2026-10-04). La palabra secreta sigue guardada pero ya NO
+            bloquea el acceso (sacada a pedido explícito de Gunnar --
+            "luego vemos donde y como lo usamos"). */}
         <AccordionSection
           title="Bóveda Legacy"
-          subtitle="El contenido que se muestra cuando alguien toca el botón 'Bóveda Legacy' -- palabra secreta (opcional), link de tu NotebookLM/cuaderno, y las fuentes que armaron esa información."
-          meta={<span style={PILL}>{vaultSources.length}</span>}
+          subtitle="El contenido que se muestra cuando alguien toca el botón 'Bóveda Legacy' -- armalo con bloques (texto, imagen, video/audio, archivo/botón, KPI), igual que un formulario."
+          meta={<span style={PILL}>{vaultBlocks.length}</span>}
           defaultOpen={Boolean(vaultSaved)}
         >
           {vaultSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Bóveda guardada.</p>}
           <form action={updateVaultAction.bind(null, program.id)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <input name="vaultTitle" defaultValue={program.vaultTitle} placeholder="Título (ej. Bóveda Legacy)" style={INPUT} />
-            <input name="vaultPalabraSecreta" defaultValue={program.vaultPalabraSecreta} placeholder="Palabra secreta (opcional -- vacío = sin gate)" style={INPUT} />
-            <input name="vaultCuadernoUrl" defaultValue={program.vaultCuadernoUrl} placeholder="Link de tu NotebookLM / cuaderno" style={INPUT} />
-            <VaultSourcesEditor initialItems={vaultSources} />
+            <input name="vaultPalabraSecreta" defaultValue={program.vaultPalabraSecreta} placeholder="Palabra secreta (guardada para más adelante -- ya no bloquea el contenido)" style={INPUT} />
+            <ModalBlocksEditor name="vaultBlocks" initialBlocks={vaultBlocks} />
             <button type="submit" style={{ padding: 13, border: "none", borderRadius: 10, background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)", color: "#0D0D0D", font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", cursor: "pointer" }}>
               Guardar Bóveda
             </button>

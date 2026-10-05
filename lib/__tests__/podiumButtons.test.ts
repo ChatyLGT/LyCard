@@ -3,7 +3,6 @@ import {
   parsePodiumButtons,
   getPodiumButton,
   upsertPodiumButton,
-  parseVaultSources,
   type PodiumButtonConfig,
 } from "@/lib/podiumButtons";
 
@@ -103,36 +102,3 @@ describe("upsertPodiumButton", () => {
   });
 });
 
-describe("parseVaultSources", () => {
-  it("devuelve [] si no es un array", () => {
-    expect(parseVaultSources(null)).toEqual([]);
-    expect(parseVaultSources("no es un array")).toEqual([]);
-  });
-
-  it("parsea fuentes válidas", () => {
-    const result = parseVaultSources([
-      { type: "link", label: "Sitio", value: "https://example.com" },
-      { type: "texto", label: "Nota", value: "algo" },
-    ]);
-    expect(result).toEqual([
-      { type: "link", label: "Sitio", value: "https://example.com" },
-      { type: "texto", label: "Nota", value: "algo" },
-    ]);
-  });
-
-  it("cae a type:'link' si no es 'texto'", () => {
-    expect(parseVaultSources([{ type: "archivo", label: "x", value: "v" }])).toEqual([{ type: "link", label: "x", value: "v" }]);
-  });
-
-  it("descarta entradas sin value y entradas que no son objetos", () => {
-    expect(parseVaultSources([{ type: "link", label: "x", value: "" }, "no objeto", 5, null])).toEqual([]);
-  });
-
-  it("trata label que no es string como vacío", () => {
-    expect(parseVaultSources([{ type: "link", label: 5, value: "v" }])).toEqual([{ type: "link", label: "", value: "v" }]);
-  });
-
-  it("trata value que no es string como vacío (y lo descarta)", () => {
-    expect(parseVaultSources([{ type: "link", label: "x", value: 123 }])).toEqual([]);
-  });
-});

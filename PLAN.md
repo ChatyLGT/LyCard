@@ -8936,3 +8936,85 @@ Bienvenida) y que NI el host NI un visitante anónimo ven el prompt de
 palabra secreta al abrirla. `pnpm build` limpio. Suite Playwright
 completa 55/55 verde. Deploy a producción, cero errores runtime
 nuevos.
+
+## 2026-10-05 -- Editor de Modales: bloques libres, piloto en Bóveda Legacy (v1.74.0)
+
+Gunnar, después de dos vueltas de corrección sobre la Bóveda: "vamos a
+hacer algo mejor.. se me ocurre que podamos crear un editor de
+modales.. podemos tener en el dashboard.. Todos los Modales de cada
+boton o badget con capacidad de editarlos.. no solo el contenido sino
+tambien los elementos.. por ejemplo si se muestra un video, o un
+audio, o un archivo, o un texto.. haz de cuenta que es como el editor
+de un formulario.. ahorita nuestro dashboard con respecto a como
+acomodamos los elementos y la edicion del contenido de los modales
+esta horrible."
+
+Antes de construir, se acordó el alcance con 3 preguntas: (1) esta
+vuelta aplica solo a modales de CONTENIDO PURO (Info, Bóveda,
+Documento de Bienvenida, "Mi camino") -- los selectores de nivel
+(Medalla/Rangos/Puestos) quedan con su editor actual (EscalaEditor),
+porque no son contenido libre: cada tile mueve un campo real de la
+Card al tocarlo; (2) tipos de bloque para esta ronda: Texto, Imagen,
+Video/Audio, Archivo/botón-link y KPI -- Preguntas/Encuestas (también
+pedidas) quedan para una fase aparte porque necesitan guardar
+RESPUESTAS de visitantes (un modelo de DB + vista de resultados en el
+dashboard), no solo mostrar contenido; (3) reorden con flechas
+arriba/abajo, no drag&drop (más simple, más confiable en mobile).
+
+Piloto de esta vuelta: solo la **Bóveda Legacy** usa el sistema nuevo
+-- es el modal más "en blanco" y el que se venía iterando. Si el
+patrón funciona bien, se extiende a Info/Documento de
+Bienvenida/story en una vuelta futura.
+
+### `lib/modalBlocks.ts` (100% cobertura)
+
+`ModalBlockKind = "texto"|"imagen"|"video_audio"|"archivo_link"|"kpi"`.
+`ModalBlock` -- shape plano (todas las columnas existen siempre, cada
+kind usa las que le importan), mismo criterio que `PodiumButtonConfig`.
+`parseModalBlocks` + `isEmbedVideoUrl`/`toEmbedVideoUrl` (detecta
+YouTube/Vimeo por dominio y los convierte a URL de embed para
+`<iframe>`; un archivo directo cae a `<video>`/`<audio>` nativo).
+
+### Schema (`prisma/schema.prisma`, migración `modal_blocks`)
+
+`Program.vaultBlocks Json @default("[]")` reemplaza `vaultSources` +
+`vaultCuadernoUrl` -- ambos eran, en el fondo, un tipo de bloque cada
+uno (nota de texto/link, y un botón-link fijo), ahora unificados en un
+solo array libre.
+
+### `components/ModalBlocksEditor.tsx` (dashboard)
+
+Array editado a mano (hidden input con el JSON completo), mismo patrón
+que EscalaEditor/el extinto VaultSourcesEditor -- `AccordionRow` por
+bloque, `<select>` de kind con campos condicionales, flechas
+↑/↓ + botón de borrar, "+ Agregar bloque" al final.
+
+### `components/ModalBlocksRenderer.tsx` (público)
+
+Switch puro por kind -- texto (título+párrafo), imagen (`<img>` +
+leyenda), video_audio (`<iframe>` embed si es YouTube/Vimeo, sino
+`<video>`/`<audio>` nativo), archivo_link (botón estilo "Abrir mi
+cuaderno" de siempre), kpi (número grande + etiqueta + aclaración).
+
+### Wiring
+
+`app/admin/programs/podium-actions.ts` (`updateVaultAction`) ahora
+parsea `vaultBlocks` en vez de `vaultSources`/`vaultCuadernoUrl`.
+`app/admin/programs/[id]/page.tsx` cambia `VaultSourcesEditor` por
+`ModalBlocksEditor` en la sección Bóveda Legacy.
+`components/LyCardView.tsx`: la rama `modal === "vault"` pasa de
+`<CodiceDossier>` (fijo) a `<ModalBlocksRenderer blocks={vaultBlocks}>`
+-- el contenido es 100% lo que el N0 armó, sin texto fijo de ningún
+tipo. `CodiceDossier` sigue existiendo, usado solo por "Info [nombre]"
+(sin cambios, fuera del alcance de esta vuelta).
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos (mismo patrón
+de warning `_uid` que ya tienen EscalaEditor/OfficeSkillsEditor/etc),
+`pnpm test:unit:coverage` 301/301 al 100% (`lib/modalBlocks.ts` nuevo).
+`e2e/podium-vault-ai.spec.ts` reescrito: el N0 arma un bloque de texto
++ uno de archivo-link desde el dashboard, guarda, y la tarjeta pública
+muestra exactamente eso -- nada fijo, ni "Qué información usamos" ni
+el Documento de Bienvenida de rondas anteriores. `pnpm build` limpio.
+Suite Playwright completa 55/55 verde.

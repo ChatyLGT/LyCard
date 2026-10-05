@@ -7,7 +7,9 @@ import type { Card, OriginMemento, Program, ProgramSkin, Puesto } from "@/genera
 import { t, type Lang } from "@/lib/i18n";
 import { rankById, medalById } from "@/lib/data";
 import { parseEscala } from "@/lib/escalas";
-import { parsePodiumButtons, getPodiumButton, parseVaultSources, type PodiumButtonKind } from "@/lib/podiumButtons";
+import { parsePodiumButtons, getPodiumButton, type PodiumButtonKind } from "@/lib/podiumButtons";
+import { parseModalBlocks } from "@/lib/modalBlocks";
+import ModalBlocksRenderer from "@/components/ModalBlocksRenderer";
 import { registerInterviewAction, sendContactMessageAction, sendQrByWhatsappAction } from "@/app/c/actions";
 import { startLegacyFunnelAction } from "@/app/c/legacy-funnel-actions";
 import { setCardTierAction, type CardTierField } from "@/app/c/card-tier-actions";
@@ -1374,7 +1376,7 @@ export default function LyCardView({
   const podiumButtons = parsePodiumButtons(program?.podiumButtons);
   const leftPodiumConfig = getPodiumButton(podiumButtons, "left");
   const rightPodiumConfig = getPodiumButton(podiumButtons, "right");
-  const vaultSources = parseVaultSources(program?.vaultSources);
+  const vaultBlocks = parseModalBlocks(program?.vaultBlocks);
   // "invite" sigue siendo host-only sin importar en qué slot se puso --
   // es el panel interno de Destinatarios (hallazgo de PASO 5, ver
   // PLAN.md) -- un visitante que lo vea cae al fallback de ESE slot
@@ -2427,19 +2429,17 @@ export default function LyCardView({
                 />
               ) : modal === "vault" && program ? (
                 // Bóveda Legacy / "Legacy Vault" (2026-10-04, pedido de
-                // Gunnar: "la Boveda es lo que en la tarjeta de rogelio
-                // dice Info Rogelio.. ahi se explica que informacion
-                // tenemos de Rogelio y como se usa.. bueno es lo mismo
-                // pero para todos.. mismos componentes"). Mismo
-                // <CodiceDossier> que "Info [nombre]", a nivel Programa
-                // -- visible para cualquier visitante, sin necesitar un
-                // link de destinatario (?para=). Sin gate de palabra
-                // secreta (ver comentario en CodiceDossier).
-                <CodiceDossier
-                  sources={vaultSources}
-                  cuadernoUrl={program.vaultCuadernoUrl}
-                  borradoHref={socialHref("wa", card.wa) ? `${socialHref("wa", card.wa)}?text=${encodeURIComponent("Quiero pedir que borren mi información del Códice.")}` : null}
-                />
+                // Gunnar: "podamos crear un editor de modales.. como el
+                // editor de un formulario"). El contenido ya no es fijo
+                // (ni el CodiceDossier de "Info [nombre]" ni el
+                // Documento de Bienvenida) -- lo arma el N0 bloque por
+                // bloque desde el dashboard (ModalBlocksEditor, ver
+                // lib/modalBlocks.ts). Piloto de esta vuelta: solo la
+                // Bóveda usa este sistema; "Info [nombre]" sigue con
+                // CodiceDossier de siempre. Visible para cualquier
+                // visitante, sin link de destinatario (?para=) y sin
+                // gate de palabra secreta.
+                <ModalBlocksRenderer blocks={vaultBlocks} />
               ) : modal === "info" && isProject ? (
                 <>
                   <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", borderRadius: 16, overflow: "hidden", border: "1px solid rgba(var(--accentRgb,200,161,90),.4)", background: "#000" }}>

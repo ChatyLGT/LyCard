@@ -51,28 +51,3 @@ export function upsertPodiumButton(items: PodiumButtonConfig[], next: PodiumButt
   const rest = items.filter((i) => i.slot !== next.slot);
   return [...rest, next];
 }
-
-// Bóveda Legacy / "Legacy Vault" -- una fuente del dossier a nivel
-// Programa (2026-10-04). Mismo shape conceptual que CardRecipientSource
-// pero sin archivos (JSON plano, no hay storage por Programa todavía) --
-// alcanza para link y nota de texto, que es lo que Gunnar pidió
-// replicar ("el link a su notebooklm").
-export type VaultSourceType = "link" | "texto";
-
-export type VaultSource = {
-  type: VaultSourceType;
-  label: string;
-  value: string;
-};
-
-export function parseVaultSources(value: unknown): VaultSource[] {
-  if (!Array.isArray(value)) return [];
-  return value
-    .filter((v): v is Record<string, unknown> => typeof v === "object" && v !== null)
-    .map((v): VaultSource => ({
-      type: v.type === "texto" ? "texto" : "link",
-      label: typeof v.label === "string" ? v.label : "",
-      value: typeof v.value === "string" ? v.value : "",
-    }))
-    .filter((item) => item.value.trim());
-}

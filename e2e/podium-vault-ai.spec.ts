@@ -89,38 +89,48 @@ test.describe("Botones del Podio — dashboard + tarjeta pública", () => {
     // Anclado al INICIO (^) porque el subtítulo de "Botones del Podio"
     // también menciona "Bóveda Legacy" en su descripción y matchearía.
     await page.getByRole("button", { name: /^Bóveda Legacy/ }).click();
-    await page.locator('input[name="vaultTitle"]').fill("Bóveda de Gunnar");
+    // Scope por el <form> que tiene vaultTitle -- evita ambigüedad con
+    // los <select> de "Botones del Podio" (puede seguir abierto por el
+    // query param ?podiumSaved= del paso anterior).
+    const vaultForm = page.locator("form").filter({ has: page.locator('input[name="vaultTitle"]') });
+    await vaultForm.locator('input[name="vaultTitle"]').fill("Bóveda de Gunnar");
     // La palabra secreta se sigue pudiendo guardar (Gunnar: "luego vemos
     // donde y como lo usamos") pero YA NO bloquea nada en este botón --
     // se confirma más abajo que el contenido aparece directo.
-    await page.locator('input[name="vaultPalabraSecreta"]').fill("mayancity");
-    await page.locator('input[name="vaultCuadernoUrl"]').fill("https://notebooklm.google.com/e2e-cuaderno");
-    await page.getByRole("button", { name: "Agregar fuente" }).click();
-    await page.getByPlaceholder("Etiqueta (opcional)").fill("NotebookLM original");
-    await page.getByPlaceholder("https://...").fill("https://notebooklm.google.com/fuente-original");
-    await page.getByRole("button", { name: "Guardar Bóveda" }).click();
+    await vaultForm.locator('input[name="vaultPalabraSecreta"]').fill("mayancity");
+
+    // Editor de Modales (2026-10-04, pedido de Gunnar: "podamos crear
+    // un editor de modales.. como el editor de un formulario") -- un
+    // bloque de texto + un bloque de archivo/botón-link, igual que
+    // armaría el N0 de verdad.
+    await vaultForm.getByRole("button", { name: "Agregar bloque" }).click();
+    await vaultForm.getByPlaceholder("Título (opcional)").fill("Qué información usamos");
+    await vaultForm.getByPlaceholder("Texto").fill("Fuentes reales que armamos para este Programa.");
+
+    await vaultForm.getByRole("button", { name: "Agregar bloque" }).click();
+    await vaultForm.locator("select").nth(1).selectOption("archivo_link");
+    await vaultForm.getByPlaceholder("https://... (el link o archivo que abre)").fill("https://notebooklm.google.com/e2e-cuaderno");
+    await vaultForm.getByPlaceholder("Texto del botón (ej. Abrir mi cuaderno)").fill("Abrir mi cuaderno");
+
+    await vaultForm.getByRole("button", { name: "Guardar Bóveda" }).click();
     await page.waitForURL(/vaultSaved=1/);
 
-    const saved = await e2eDb.query<{ vaultTitle: string; vaultPalabraSecreta: string; vaultSources: unknown }>(
-      `select "vaultTitle", "vaultPalabraSecreta", "vaultSources" from "Program" where id = $1`,
+    const saved = await e2eDb.query<{ vaultTitle: string; vaultPalabraSecreta: string; vaultBlocks: unknown }>(
+      `select "vaultTitle", "vaultPalabraSecreta", "vaultBlocks" from "Program" where id = $1`,
       [programId]
     );
     expect(saved.rows[0].vaultTitle).toBe("Bóveda de Gunnar");
     expect(saved.rows[0].vaultPalabraSecreta).toBe("mayancity");
-    expect(JSON.stringify(saved.rows[0].vaultSources)).toContain("notebooklm.google.com/fuente-original");
+    expect(JSON.stringify(saved.rows[0].vaultBlocks)).toContain("notebooklm.google.com/e2e-cuaderno");
 
     await page.goto(`${BASE_URL}/c/${cardSlug}`, { waitUntil: "networkidle" });
     await page.getByRole("button", { name: "Bóveda de Gunnar", exact: true }).click();
 
-    // Ni gate ni "Esta sección está protegida" -- el contenido es el
-    // mismo dossier del Códice que "Info [nombre]" (pedido de Gunnar:
-    // "la Boveda es lo que en la tarjeta de rogelio dice Info Rogelio..
-    // es lo mismo pero para todos"), visible directo.
+    // Ni gate ni "Esta sección está protegida" -- el contenido es
+    // exactamente lo que el N0 armó bloque por bloque, nada fijo.
     await expect(page.getByText("Esta sección está protegida.")).not.toBeVisible();
     await expect(page.getByText("Qué información usamos")).toBeVisible();
-    await expect(page.getByText("Cómo la usamos")).toBeVisible();
-    await expect(page.getByText("Nuestra metodología")).toBeVisible();
-    await expect(page.getByText("NotebookLM original")).toBeVisible();
+    await expect(page.getByText("Fuentes reales que armamos para este Programa.")).toBeVisible();
     await expect(page.getByRole("link", { name: "Abrir mi cuaderno" })).toHaveAttribute("href", "https://notebooklm.google.com/e2e-cuaderno");
 
     await context.close();
@@ -134,7 +144,7 @@ test.describe("Botones del Podio — dashboard + tarjeta pública", () => {
     await page.getByRole("button", { name: "Bóveda de Gunnar", exact: true }).click();
 
     await expect(page.getByPlaceholder("Palabra secreta")).not.toBeVisible();
-    await expect(page.getByText("NotebookLM original")).toBeVisible();
+    await expect(page.getByText("Fuentes reales que armamos para este Programa.")).toBeVisible();
 
     await context.close();
   });

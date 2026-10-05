@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { currentAdminScope, canAccessProgram } from "@/lib/auth";
-import { parsePodiumButtons, upsertPodiumButton, parseVaultSources, PODIUM_BUTTON_KINDS, type PodiumButtonKind } from "@/lib/podiumButtons";
+import { parsePodiumButtons, upsertPodiumButton, PODIUM_BUTTON_KINDS, type PodiumButtonKind } from "@/lib/podiumButtons";
+import { parseModalBlocks } from "@/lib/modalBlocks";
 
 // Mismo guard que puestos-actions.ts -- MasterN0 maneja cualquier
 // Programa, un N0 escopado solo el suyo.
@@ -38,8 +39,9 @@ export async function setPodiumButtonAction(programId: string, slot: "left" | "r
   redirect(`/admin/programs/${programId}?podiumSaved=${slot}`);
 }
 
-// Bóveda Legacy (2026-10-04) -- título, palabra secreta, link de
-// NotebookLM ("cuaderno") y fuentes, a nivel Programa. Mismo contenido
+// Bóveda Legacy (2026-10-04) -- título, palabra secreta (dormant, ver
+// PLAN.md) y el contenido libre armado con el Editor de Modales
+// (lib/modalBlocks.ts), a nivel Programa. Mismo contenido conceptual
 // que ya existía por CardRecipient pero sin necesitar un link de
 // destinatario (?para=) para verlo.
 export async function updateVaultAction(programId: string, formData: FormData) {
@@ -47,19 +49,18 @@ export async function updateVaultAction(programId: string, formData: FormData) {
 
   const vaultTitle = String(formData.get("vaultTitle") || "").trim() || "Bóveda Legacy";
   const vaultPalabraSecreta = String(formData.get("vaultPalabraSecreta") || "").trim();
-  const vaultCuadernoUrl = String(formData.get("vaultCuadernoUrl") || "").trim();
 
-  let sourcesRaw: unknown = [];
+  let blocksRaw: unknown = [];
   try {
-    sourcesRaw = JSON.parse(String(formData.get("vaultSources") || "[]"));
+    blocksRaw = JSON.parse(String(formData.get("vaultBlocks") || "[]"));
   } catch {
-    sourcesRaw = [];
+    blocksRaw = [];
   }
-  const vaultSources = parseVaultSources(sourcesRaw);
+  const vaultBlocks = parseModalBlocks(blocksRaw);
 
   await prisma.program.update({
     where: { id: programId },
-    data: { vaultTitle, vaultPalabraSecreta, vaultCuadernoUrl, vaultSources },
+    data: { vaultTitle, vaultPalabraSecreta, vaultBlocks },
   });
 
   revalidatePath(`/admin/programs/${programId}`);
