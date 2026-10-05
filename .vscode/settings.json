@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^printf 'Tracked top-level entries:\\\\n'; git ls-tree --name-only HEAD; printf '\\\\nDirectories present locally:\\\\n'; for d in app components lib prisma public e2e docs \\.github node_modules; do if test -d \"\\$d\"; then printf '%s: present\\\\n' \"\\$d\"; else printf '%s: absent\\\\n' \"\\$d\"; fi; done; printf '\\\\nLocal \\.env file: '; if test -f \\.env; then echo present; else echo absent; fi; printf 'Origin host: '; git remote get-url origin \\| sed -E 's#\\(https\\?://\\)\\[\\^/@\\]\\+:\\[\\^/@\\]\\+@#\\\\1\\[redacted\\]@#; s#\\(https\\?://\\[\\^/\\]\\+\\)\\.\\*#\\\\1#; s#\\(git@\\[\\^:\\]\\+\\):\\.\\*#\\\\1#'$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}
