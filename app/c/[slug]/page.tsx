@@ -7,7 +7,9 @@ import { computeBadge } from "@/lib/badge";
 import { buildCardMetadata } from "@/lib/cardMetadata";
 import { parseShareScope } from "@/lib/shareScope";
 import { upcomingSlots } from "@/lib/interviewSlots";
+import { isRecipientUnlocked } from "@/lib/recipientAuth";
 import LyCardView from "@/components/LyCardView";
+import RecipientGate from "@/components/RecipientGate";
 import CardCarousel, { type CarouselBundle } from "@/components/CardCarousel";
 import type { Card, Program, ProgramSkin, Puesto } from "@/generated/prisma/client";
 
@@ -81,10 +83,10 @@ export default async function CardPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ para?: string }>;
+  searchParams: Promise<{ para?: string; gateError?: string }>;
 }) {
   const { slug } = await params;
-  const { para } = await searchParams;
+  const { para, gateError } = await searchParams;
   const card = await prisma.card.findUnique({ where: { slug }, include: { program: { include: PROGRAM_INCLUDE }, puesto: true } });
   if (!card) notFound();
 
@@ -131,6 +133,19 @@ export default async function CardPage({
   // sin sesión (no se toca), pero un visitante anónimo de esa Card no
   // debería ver la islita de versión.
   const isAuthenticatedOwner = isAdmin || (memberId !== null && memberId === card.memberId);
+
+  // Gate de tarjeta completa para Invitado/Visitante Especial (2026-10-05,
+  // pedido de Gunnar) -- si este link `?para=` tiene palabra secreta
+  // cargada, la Card ENTERA queda detrás de ese gate hasta confirmarla
+  // (cookie firmada scoped al recipient, lib/recipientAuth.ts). El host
+  // real (dueño de la Card o MasterN0) nunca lo ve -- previsualiza/gestiona
+  // su propia invitación sin tener que saberse la palabra secreta.
+  if (recipient && recipient.palabraSecreta && !isHost) {
+    const unlocked = await isRecipientUnlocked(recipient.id);
+    if (!unlocked) {
+      return <RecipientGate cardSlug={slug} recipientSlug={recipient.slug} recipientNombre={recipient.nombre} error={gateError} />;
+    }
+  }
 
   // Swipeable Programa/Business/Personal carousel — pero solo hasta donde
   // ESTA tarjeta puntual lo permite (2026-09-19, pedido de Gunnar): un

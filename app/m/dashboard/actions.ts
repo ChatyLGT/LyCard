@@ -7,6 +7,7 @@ import { currentMemberId } from "@/lib/memberAuth";
 import { saveUpload } from "@/lib/storage";
 import { parseShareScope } from "@/lib/shareScope";
 import { parseOficinaExtrasFormData } from "@/lib/oficinaExtras";
+import { getPromotionStatus, checkAndPromoteToPrograma } from "@/lib/programPromotion";
 
 // Member-scoped twin of app/admin/actions.ts's updateCardAction — same
 // field set, but gated by ownership (card.memberId must match the caller's
@@ -129,4 +130,23 @@ export async function updateMemberStoryAction(slug: string, formData: FormData) 
   revalidatePath("/m/dashboard/project");
   revalidatePath(`/c/${slug}`);
   redirect("/m/dashboard/project?saved=1");
+}
+
+// Self-service "Convertir en Programa" (2026-10-05, caso Juancho/Digital
+// Kingdom -- ver lib/programPromotion.ts). NO relaja el gate que ya existe
+// (pagó + 1 referido activo): re-chequea la elegibilidad del lado del
+// servidor antes de disparar nada, así que llamar esto sin cumplir el
+// umbral es un no-op silencioso, nunca un atajo. checkAndPromoteToPrograma
+// ya es idempotente por sí misma.
+export async function convertToProgramaAction() {
+  const memberId = await currentMemberId();
+  if (!memberId) redirect("/m/login");
+
+  const status = await getPromotionStatus(memberId);
+  if (status?.eligible) {
+    await checkAndPromoteToPrograma(status.membershipId);
+  }
+
+  revalidatePath("/m/dashboard");
+  redirect("/m/dashboard");
 }

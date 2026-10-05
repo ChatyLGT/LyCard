@@ -3,8 +3,9 @@ import { redirect } from "next/navigation";
 import { currentMember } from "@/lib/memberAuth";
 import { prisma } from "@/lib/prisma";
 import { memberLogoutAction } from "@/app/m/actions";
+import { convertToProgramaAction } from "@/app/m/dashboard/actions";
 import MemberEmailCapture from "@/components/MemberEmailCapture";
-import { findPromotedProgram } from "@/lib/programPromotion";
+import { findPromotedProgram, getPromotionStatus } from "@/lib/programPromotion";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ export default async function MemberDashboardPage() {
     findPromotedProgram(member.id),
   ]);
   const byKind = new Map(cards.map((c) => [c.kind, c]));
+  const promotionStatus = promotedProgram ? null : await getPromotionStatus(member.id);
 
   return (
     <div
@@ -104,6 +106,55 @@ export default async function MemberDashboardPage() {
             >
               Administrar mi Programa
             </Link>
+          </section>
+        )}
+
+        {/* Convertir en Programa, self-service (2026-10-05, caso
+            Juancho/Digital Kingdom) -- mismo gate honesto de siempre
+            (pagó + 1 referido activo), ahora visible en vez de invisible:
+            si ya se cumple, el botón dispara la promoción ahí mismo; si
+            no, dice exactamente qué falta en vez de fingir un botón que
+            no hace nada. */}
+        {promotionStatus && (
+          <section style={{ background: "#201f1f", borderRadius: 14, padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+            <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#9a8f80" }}>
+              Convertí tu Empresa en tu propio Programa
+            </span>
+            {promotionStatus.eligible ? (
+              <>
+                <p style={{ margin: 0, font: "400 12.5px/1.5 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
+                  Ya cumplís las 2 condiciones -- podés convertirte ahora mismo.
+                </p>
+                <form action={convertToProgramaAction}>
+                  <button
+                    type="submit"
+                    style={{
+                      padding: "9px 16px",
+                      borderRadius: 999,
+                      border: "none",
+                      background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)",
+                      color: "#0D0D0D",
+                      font: "700 10.5px 'Plus Jakarta Sans',sans-serif",
+                      letterSpacing: ".08em",
+                      textTransform: "uppercase",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Convertir en Programa
+                  </button>
+                </form>
+              </>
+            ) : (
+              <>
+                <p style={{ margin: 0, font: "400 12.5px/1.5 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
+                  Te falta:
+                </p>
+                <ul style={{ margin: 0, paddingLeft: 18, font: "400 12.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
+                  {!promotionStatus.paid && <li>pagar tu membresía</li>}
+                  {promotionStatus.activeReferrals < 1 && <li>conseguir al menos 1 referido activo (hoy: {promotionStatus.activeReferrals})</li>}
+                </ul>
+              </>
+            )}
           </section>
         )}
 

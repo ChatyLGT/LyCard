@@ -25,6 +25,7 @@ export default async function AdminProgramsPage({
     orderBy: { createdAt: "asc" },
     include: {
       _count: { select: { memberships: true, cards: true, admins: true } },
+      originProgram: { select: { id: true, name: true } },
     },
   });
 
@@ -76,6 +77,19 @@ export default async function AdminProgramsPage({
               placeholder="slug (opcional)"
               style={{ flex: "1 1 140px", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "10px 14px", color: "#F5F2EB", font: "400 13px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
             />
+            <select
+              name="originProgramId"
+              defaultValue=""
+              title="Programa de origen (linaje) -- opcional"
+              style={{ flex: "1 1 160px", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "10px 14px", color: "#F5F2EB", font: "400 13px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
+            >
+              <option value="">Sin origen (raíz)</option>
+              {programs.map((p) => (
+                <option key={p.id} value={p.id}>
+                  Origen: {p.name}
+                </option>
+              ))}
+            </select>
             <button
               type="submit"
               style={{ padding: "10px 18px", border: "none", borderRadius: 10, background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)", color: "#0D0D0D", font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", cursor: "pointer" }}
@@ -118,6 +132,7 @@ export default async function AdminProgramsPage({
                   </p>
                   <p style={{ margin: 0, font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#C8A15A" }}>
                     {p.slug} · {p._count.memberships} miembros · {p._count.admins} N0
+                    {p.originProgram && <span style={{ color: "#8a8378" }}> · desde {p.originProgram.name}</span>}
                   </p>
                 </Link>
                 <Link href={`/admin/programs/${p.id}`} aria-label="Ver Programa" style={{ flex: "none" }}>

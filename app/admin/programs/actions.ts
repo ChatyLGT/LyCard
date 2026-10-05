@@ -33,7 +33,13 @@ export async function createProgramAction(formData: FormData) {
     prisma.program.findUnique({ where: { slug }, select: { id: true } }).then(Boolean)
   );
 
-  const program = await prisma.program.create({ data: { slug, name } });
+  // Linaje opcional (2026-10-05): MasterN0 puede linkear a mano un Programa
+  // nuevo a su Programa de origen -- mismo campo que promoteToPrograma()
+  // setea sola, pero acá es a mano para los casos creados desde este form
+  // (ej. retroactivamente ligar Digital Kingdom a Legacy).
+  const originProgramId = String(formData.get("originProgramId") || "").trim() || null;
+
+  const program = await prisma.program.create({ data: { slug, name, originProgramId } });
 
   revalidatePath("/admin/programs");
   redirect(`/admin/programs/${program.id}`);
@@ -62,6 +68,22 @@ export async function createProgramAdminAction(formData: FormData) {
 
   revalidatePath(`/admin/programs/${programId}`);
   redirect(`/admin/programs/${programId}?adminCreated=1`);
+}
+
+// Linkear (o desligar) retroactivamente el linaje de un Programa ya
+// existente (2026-10-05) -- para el caso Digital Kingdom, creado antes de
+// que este campo existiera. MasterN0-only, igual que crear Programas.
+export async function setProgramOriginAction(programId: string, formData: FormData) {
+  await requireMasterN0();
+
+  const originProgramId = String(formData.get("originProgramId") || "").trim() || null;
+  if (originProgramId === programId) redirect(`/admin/programs/${programId}?error=origin-self`);
+
+  await prisma.program.update({ where: { id: programId }, data: { originProgramId } });
+
+  revalidatePath(`/admin/programs/${programId}`);
+  revalidatePath("/admin/programs");
+  redirect(`/admin/programs/${programId}?originSaved=1`);
 }
 
 export async function toggleProgramActiveAction(programId: string) {

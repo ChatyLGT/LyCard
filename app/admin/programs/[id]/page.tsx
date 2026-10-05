@@ -7,6 +7,7 @@ import { logoutAction } from "@/app/admin/actions";
 import { completeInterviewAction } from "@/app/admin/interviews/actions";
 import {
   updateProgramAction,
+  setProgramOriginAction,
   createProgramAdminAction,
   updateCardLabelsAction,
   updateEscalaAction,
@@ -133,6 +134,7 @@ export default async function AdminProgramDetailPage({
     motivationalPhrasesSaved?: string;
     podiumSaved?: string;
     vaultSaved?: string;
+    originSaved?: string;
     focus?: string;
     messageSent?: string;
     messageError?: string;
@@ -168,6 +170,7 @@ export default async function AdminProgramDetailPage({
     motivationalPhrasesSaved,
     podiumSaved,
     vaultSaved,
+    originSaved,
     focus,
   } = await searchParams;
   const SKIN_ERROR_COPY: Record<string, string> = {
@@ -203,9 +206,16 @@ export default async function AdminProgramDetailPage({
         orderBy: { createdAt: "desc" },
         include: { member: { include: { cards: true } }, referredBy: { include: { member: true } } },
       },
+      originProgram: { select: { id: true, name: true } },
     },
   });
   if (!program) notFound();
+
+  // Linaje (2026-10-05) -- lista de candidatos para "Programa de origen",
+  // solo para el selector MasterN0 de abajo: todos salvo este mismo.
+  const originCandidates = isMasterN0
+    ? await prisma.program.findMany({ where: { id: { not: program.id } }, select: { id: true, name: true }, orderBy: { name: "asc" } })
+    : [];
 
   const cardLabels: Record<string, string> =
     program.cardLabels && typeof program.cardLabels === "object" && !Array.isArray(program.cardLabels)
@@ -354,6 +364,39 @@ export default async function AdminProgramDetailPage({
             </button>
           </form>
         </AccordionSection>
+
+        {/* Linaje de Programas (2026-10-05, caso Juancho/Digital Kingdom):
+            solo MasterN0 puede ver/cambiar de dónde "cuelga" este Programa.
+            No es parte de "Identidad" porque es un dato de plataforma, no
+            de marca -- un N0 scoped no debería ni verlo. */}
+        {isMasterN0 && (
+          <AccordionSection title="Linaje" meta={program.originProgram ? <span style={PILL}>desde {program.originProgram.name}</span> : undefined}>
+            {originSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Guardado.</p>}
+            <p style={{ margin: 0, font: "400 11.5px/1.5 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>
+              De qué Programa salió este -- se setea solo cuando se promueve un Chido a su propio Programa; acá se puede linkear a mano uno creado directo (ej. Digital Kingdom → Legacy).
+            </p>
+            <form action={setProgramOriginAction.bind(null, program.id)} style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <select
+                name="originProgramId"
+                defaultValue={program.originProgramId ?? ""}
+                style={{ flex: "1 1 200px", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "10px 14px", color: "#F5F2EB", font: "400 13px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
+              >
+                <option value="">Sin origen (raíz)</option>
+                {originCandidates.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="submit"
+                style={{ padding: "10px 18px", border: "none", borderRadius: 10, background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)", color: "#0D0D0D", font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", cursor: "pointer" }}
+              >
+                Guardar
+              </button>
+            </form>
+          </AccordionSection>
+        )}
 
         {/* Skins de marca — hasta 3 por Programa, uno activo a la vez
             (2026-09-16, noche). Cada skin sale de un design.md real

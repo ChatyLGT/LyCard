@@ -530,6 +530,17 @@ model Program {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
+  // Linaje de Programas (2026-10-05, pedido de Gunnar: caso Juancho/Digital
+  // Kingdom -- se creó un Programa nuevo sin quedar ligado a Legacy).
+  // Seteado automáticamente por promoteToPrograma() (lib/programPromotion.ts)
+  // al Programa del que salió la membresía promovida; también asignable a
+  // mano desde /admin/programs para linkear retroactivamente un Programa
+  // creado manualmente. Null = Programa raíz (ej. Legacy). onDelete
+  // SetNull: borrar el Programa de origen no debe arrastrar el derivado.
+  originProgramId String?
+  originProgram   Program?  @relation("ProgramLineage", fields: [originProgramId], references: [id], onDelete: SetNull)
+  derivedPrograms Program[] @relation("ProgramLineage")
+
   memberships ProgramMembership[]
   cards       Card[]
   admins      Admin[]

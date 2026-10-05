@@ -54,18 +54,23 @@ export async function checkAndPromoteToPrograma(candidateMembershipId: string): 
   const companyCard = candidate.member.cards.find((c) => c.kind === "company");
   if (!companyCard) return; // no debería pasar (activateMembershipAndSpawnCards siempre crea las 3), defensivo
 
-  await promoteToPrograma(candidate.id, candidate.memberId, companyCard.id, companyCard.name || companyCard.slug);
+  await promoteToPrograma(candidate.id, candidate.memberId, candidate.programId, companyCard.id, companyCard.name || companyCard.slug);
 }
 
 async function promoteToPrograma(
   candidateMembershipId: string,
   candidateMemberId: string,
+  originProgramId: string,
   companyCardId: string,
   companyName: string
 ) {
   const baseSlug = await uniqueSlug(slugify(companyName), programSlugTaken);
+  // Linaje (2026-10-05): el Programa nuevo siempre nace ligado al Programa
+  // del que salió la membresía promovida (hoy, casi siempre Legacy) --
+  // resuelve el caso Juancho/Digital Kingdom, donde el Programa nuevo
+  // quedaba suelto sin ningún rastro de dónde vino.
   const newProgram = await prisma.program.create({
-    data: { slug: baseSlug, name: companyName },
+    data: { slug: baseSlug, name: companyName, originProgramId },
   });
 
   // Todos los humanos que este Chido ya reclutó y activó -- no solo el que
@@ -89,6 +94,37 @@ async function promoteToPrograma(
       ];
     }),
   ]);
+}
+
+// Para la UI (dashboard del Member, botón self-service "Convertir en
+// Programa", 2026-10-05 pedido de Gunnar tras el caso Juancho/Digital
+// Kingdom -- ver PLAN.md). El gate sigue siendo EXACTAMENTE el mismo que
+// usa checkAndPromoteToPrograma (pagó + 1+ referido activo): esto no lo
+// relaja, solo lo hace visible y autoservible -- si ya se cumple, el botón
+// dispara la promoción ahí mismo; si no, la pantalla dice honestamente qué
+// falta en vez de fingir un botón que no hace nada.
+export type PromotionStatus = {
+  membershipId: string;
+  paid: boolean;
+  activeReferrals: number;
+  eligible: boolean;
+};
+
+export async function getPromotionStatus(memberId: string): Promise<PromotionStatus | null> {
+  const legacyProgram = await prisma.program.findUnique({ where: { slug: "legacy" } });
+  if (!legacyProgram) return null;
+
+  const membership = await prisma.programMembership.findUnique({
+    where: { memberId_programId: { memberId, programId: legacyProgram.id } },
+  });
+  if (!membership) return null;
+
+  const activeReferrals = await prisma.programMembership.count({
+    where: { referredByMembershipId: membership.id, status: "active" },
+  });
+  const paid = Boolean(membership.membershipPaidAt);
+
+  return { membershipId: membership.id, paid, activeReferrals, eligible: paid && activeReferrals >= 1 };
 }
 
 // Para la UI (dashboard del Member, "Programa Legado"): ¿este Member fue

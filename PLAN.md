@@ -9018,3 +9018,95 @@ de warning `_uid` que ya tienen EscalaEditor/OfficeSkillsEditor/etc),
 muestra exactamente eso -- nada fijo, ni "Qué información usamos" ni
 el Documento de Bienvenida de rondas anteriores. `pnpm build` limpio.
 Suite Playwright completa 55/55 verde.
+
+## 2026-10-05 -- Viaje del cliente: taxonomía de visitantes (v1.75.0)
+
+Pedido textual de Gunnar, en 2 mensajes. Primero reportó un bug real:
+*"intenté que el QR de mi tarjeta del programa Legacy la escaneara
+Juancho.. para que cree le programa de Digital Kingdom pero no pudo"*,
+y propuso una taxonomía de 4 tipos de tarjeta (NA/visitante sin host,
+Invitado Especial, visitante con QR, usuario self-service). Después,
+pidió simplificar: *"quiero tener claro el 'viaje del cliente'
+pensando de alguien que se tropieza con la tarjeta.. es lo que hicimos
+de Miron, Visitante, Vividor, Chido, Chido+, Chido++..."* -- y tras una
+tabla de reconciliación entre ambos pedidos (propuesta y aceptada),
+dio luz verde con *"Vale.. hazlo todo"*.
+
+### Diagnóstico del bug (antes de tocar código)
+
+`lib/legacyMembership.ts#ensureLegacyMembershipAndCards` está
+hardcodeado a `program.slug === "legacy"` -- cualquier alta self-service
+(sea cual sea la Card que refirió) siempre cuelga de Legacy, nunca crea
+ni liga un Programa nuevo. El ÚNICO camino real que crea un Programa
+nuevo es la promoción automática Chido→Programa
+(`lib/programPromotion.ts`, ya existente, PLAN.md "Modelo de
+monetización cerrado") -- invisible, sin disparador self-service, y sin
+ningún campo de linaje. Conclusión: "Digital Kingdom" casi seguro se
+creó a mano por `/admin/programs` (`createProgramAction`, antes sin
+ningún link a Legacy) -- de ahí que "no se liguen".
+
+### Lo construido (las 4 piezas, en el orden que resuelve esto)
+
+**1. Linaje de Programas** -- `Program.originProgramId` (self-relation,
+nullable, `onDelete: SetNull`). `promoteToPrograma()` lo setea solo al
+Programa de origen de la membresía promovida (`candidate.programId`).
+Dropdown opcional "Programa de origen" en el form de creación de
+`/admin/programs`, y una sección "Linaje" (MasterN0-only) en
+`/admin/programs/[id]` para linkear retroactivamente un Programa
+existente (`setProgramOriginAction`) -- resuelve a Digital Kingdom sin
+tocar su historia.
+
+**2. Botón self-service "Convertir en Programa"** -- NO relaja el gate
+de monetización que Gunnar ya diseñó (pagó + 1 referido activo); lo
+hace visible y autoservible. `getPromotionStatus(memberId)`
+(`lib/programPromotion.ts`) calcula el estado real; en `/m/dashboard`,
+si no está promovido todavía, una sección honesta: elegible -> botón
+real (`convertToProgramaAction`, re-chequea del lado del servidor antes
+de llamar `checkAndPromoteToPrograma` -- nunca un atajo); no elegible
+-> lista exactamente qué falta ("pagar tu membresía" / "conseguir al
+menos 1 referido activo (hoy: N)").
+
+**3. Gate de palabra secreta a nivel de CARD COMPLETA** para
+Invitado/Visitante Especial -- distinto del gate de MODAL que se sacó
+en una ronda anterior de esta misma sesión (ver v1.73.2, "quitalo
+porfa"). Ahora, si `?para=<slug>` resuelve un `CardRecipient` con
+`palabraSecreta` no vacía y el visitante no es host, `app/c/[slug]/
+page.tsx` renderiza `<RecipientGate>` (pantalla entera, sin branding del
+Programa) ANTES que `LyCardView` -- nunca lo salta. Desbloqueo vía
+`lib/recipientAuth.ts` (mismo patrón JWT-en-cookie que
+`lib/memberAuth.ts`, pero scoped al `CardRecipient.id`, no a un Member:
+el visitante puede no tener cuenta todavía). `app/c/recipient-gate-
+actions.ts` (archivo nuevo, separado a propósito de
+`app/c/recipient-actions.ts` -- ese es el CRUD interno del dashboard,
+este es el gate público).
+
+**4. Pantalla Mirón/NA** -- antes, `/` sin ningún Card en la DB
+redirigía a `/admin/login` (bootstrap, sin cambios), pero CON Cards
+redirigía ciego a la más vieja de toda la base -- ni remotamente una
+experiencia real para "alguien que llegó por algún motivo sin host".
+Ahora `app/page.tsx` muestra `<MironLanding>`: genérica, explícitamente
+NO editable, con dos caminos reales en vez del QR de siempre (que no
+tiene sentido sin host del que venir): un escáner de cámara real
+(`components/QrScannerLauncher.tsx`, `jsQR` -- elegido sobre la
+`BarcodeDetector` nativa del navegador porque esa API no corre en
+Safari/iOS, y la audiencia documentada de LyCard es mayoría iPhone) o
+una lista de Programas activos con al menos una Card real (nunca un
+link muerto).
+
+**Nota aparte, ya resuelta sin tocar nada**: el cubo central "Crea Tu
+LyCard" para un visitante no-host (casos "Invitado Especial" y
+"visitante con QR" de Gunnar) YA estaba construido de una ronda anterior
+(`LyCardView.tsx`, `isHost ? <QR> : <Link href="/m/login?ref=...">`) --
+confirmado al leer el código, no se dupicó.
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos,
+`pnpm test:unit:coverage` 302/302 al 100%, `pnpm build` limpio.
+`e2e/viaje-del-cliente.spec.ts` (nuevo): la raíz sin host muestra la
+pantalla Mirón con el botón de escanear; el gate de Invitado Especial
+rechaza la palabra incorrecta, acepta la correcta, y la cookie persiste
+tras recargar; el botón self-service dice honestamente qué falta sin
+cumplir el umbral, y promueve de verdad (con linaje a Legacy
+confirmado en DB) al cumplirlo -- 4/4 verde. Suite Playwright completa
+corrida de punta a punta sin regresiones.

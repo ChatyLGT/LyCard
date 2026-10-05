@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.74.0";
+export const APP_VERSION = "1.75.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.75.0",
+    date: "2026-10-05",
+    notes:
+      "Viaje del cliente: taxonomía real de visitantes. (1) Linaje de Programas (Program.originProgramId) -- un Programa promovido automáticamente queda ligado de verdad a su Programa de origen, resuelve el caso \"Juancho escaneó el QR de Legacy para crear Digital Kingdom y no se ligaron\"; también asignable a mano desde /admin/programs. (2) Botón self-service \"Convertir en Programa\" en el dashboard del Member -- mismo gate honesto de siempre (pagó + 1 referido activo), ahora visible y autoservible en vez de invisible: si ya se cumple, dispara la promoción ahí mismo; si no, dice exactamente qué falta. (3) Gate de palabra secreta a nivel de TARJETA COMPLETA para Invitado/Visitante Especial (antes era un gate de modal, ya sacado) -- cookie firmada scoped al destinatario. (4) Pantalla Mirón/NA en la raíz del sitio (antes redirigía ciego a la Card más vieja): genérica, no editable, con escáner de QR real por cámara (jsQR, elegido sobre BarcodeDetector por compatibilidad real con Safari/iOS) + lista de Programas activos como alternativa. Pedido de Gunnar: \"quiero tener claro el 'viaje del cliente'... Mirón, Visitante, Vividor, Chido...\".",
+  },
   {
     version: "1.74.0",
     date: "2026-10-05",
