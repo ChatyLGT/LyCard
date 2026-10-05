@@ -42,8 +42,8 @@ export default async function AccountPage({
           zIndex: 40,
           background: "rgba(20,20,20,.96)",
           borderBottom: "1px solid rgba(200,161,90,.22)",
-          padding: "0 16px",
-          height: 64,
+          // Fix (2026-10-05, reportado por Gunnar): notch/isla dinámica.
+          padding: "calc(env(safe-area-inset-top,0px) + 14px) 16px 14px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",

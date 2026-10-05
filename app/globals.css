@@ -12,6 +12,18 @@ body {
   box-sizing: border-box;
 }
 
+/* Fix (2026-10-05, Gunnar: espacio muerto abajo de la LyCard en iPhone 13
+   PWA standalone) -- capa de respaldo CSS para el instante antes de que
+   el JS de LyCardView.tsx termine de medir `appVh` (ver su comentario).
+   `-webkit-fill-available` es el fix clásico de WebKit para exactamente
+   este síntoma (hueco al pie en modo standalone) -- motores que no lo
+   entienden (todo lo no-WebKit) ignoran esa línea entera y se quedan con
+   el `100dvh` de arriba, que ya es correcto ahí. */
+.lycard-fullscreen {
+  height: 100dvh;
+  height: -webkit-fill-available;
+}
+
 ::-webkit-scrollbar {
   display: none;
 }

@@ -9110,3 +9110,75 @@ tras recargar; el botón self-service dice honestamente qué falta sin
 cumplir el umbral, y promueve de verdad (con linaje a Legacy
 confirmado en DB) al cumplirlo -- 4/4 verde. Suite Playwright completa
 corrida de punta a punta sin regresiones.
+
+## 2026-10-05 -- 2 fixes de iPhone 13 appweb: notch en TODO /admin/* + espacio muerto al pie (v1.75.1)
+
+Gunnar, tras probar v1.75.0 en su iPhone 13 en modo appweb (PWA
+instalada): *"en el dashboard.. en todo los menus.. hay un problema en
+el diseño.. la parte de arriba el menu principal de arriba se esconde
+debajo de la pantalla y no puedes acceder a el.. revisalo.. por otro
+lado sigue existiendo un espacio importante en la parte de abajo de la
+pantalla de la lycard.. revisalo..es un iphone 13.. y esta funcionando
+en modo appweb"*.
+
+### Bug 1 -- menú tapado por notch/isla dinámica, en TODO /admin/*
+
+El fix original (v1.63.x, "Fix: menú superior del Dashboard tapado por
+notch/isla dinámica") solo había tocado `MemberCardEditor.tsx` (el
+dashboard del Member) y dos páginas más
+(`app/c/[slug]/oficina/page.tsx`, `app/m/dashboard/company/network/
+page.tsx`) -- confirmado grepeando `position: "sticky"` en todo el
+proyecto. Quedaron afuera, con el mismo bug exacto (`top:0` sin
+compensar `env(safe-area-inset-top)`, así que el header sticky queda
+literalmente debajo del notch/isla, intocable en standalone):
+
+- Las 11 páginas de `/admin/*`: roster (`page.tsx`), `programs/page.tsx`,
+  `programs/[id]/page.tsx`, `interviews`, `janus`, `nashmesh`, `equipo`,
+  `wowstore`, `account`, `login-history`, `reset`, `demo-data`.
+- `components/EditorForm.tsx` (editor de Card de proyecto, usado desde
+  `/admin/[slug]`) y `components/MemberStoryEditor.tsx`.
+
+Mismo arreglo en los 14: el padding del header sticky pasa a
+`calc(env(safe-area-inset-top,0px) + Npx) ...` -- en los 3 que tenían
+`height: 64` fijo (`login-history`, `account`, `EditorForm.tsx`), se
+cambia por padding compensado (igual que ya hacía `MemberCardEditor.tsx`,
+`box-sizing: border-box` global hace que agregar padding-top a una
+altura fija la hubiera encogido mal).
+
+### Bug 2 -- espacio muerto al pie de la LyCard, pese al fix anterior
+
+El fix de v1.68.2/v1.69.x (`appVh` medido con `visualViewport.height`
+sobre `window.innerHeight`, con relectura a los 300ms) seguía sin
+resolverlo. Causa más probable, no verificable sin un iPhone real:
+`visualViewport.height` en standalone, en iPhones con home indicator
+(sin botón físico, como el 13), puede venir MÁS CHICO que
+`window.innerHeight` por el alto exacto de esa franja -- WebKit la
+trataría como "overlay de sistema" a los fines de `visualViewport` ahí
+aunque no tape nada visualmente. Preferir `visualViewport.height` (como
+hacía el fix anterior) terminaba horneando ese faltante como la altura
+real de la tarjeta.
+
+Arreglo en `components/LyCardView.tsx` y `components/CardCarousel.tsx`
+(mismo bug duplicado en los dos): la lectura ahora toma el **máximo**
+de las dos fuentes (`Math.max(visualViewport.height, innerHeight)`) --
+nunca puede dar menos que cualquiera de las dos, cubre el bug sea cual
+sea el sentido real. Reforzado con una capa de respaldo en
+`app/globals.css` (clase `.lycard-fullscreen`: `height: 100dvh; height:
+-webkit-fill-available;` -- el fix clásico de WebKit para exactamente
+este síntoma) aplicada vía `className` mientras el JS todavía no midió
+nada (en vez del `"100dvh"` fijo de antes como fallback inline, que un
+motor no-WebKit simplemente ignora si no entiende `-webkit-fill-
+available`, quedándose con el `100dvh` normal).
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos, `pnpm build`
+limpio, suite Playwright completa 59/59 verde (sin specs nuevos esta
+vez -- cambios de CSS/layout puro, cubiertos por que nada de la suite
+existente se rompió). **Disclosure honesto**: ninguno de los 2 bugs se
+pudo verificar visualmente de verdad -- Chromium headless (el único
+motor disponible en este sandbox) no simula `env(safe-area-inset-*)`
+de un notch/isla dinámica real, a diferencia de WebKit/Safari. El
+código sigue el mismo patrón ya confirmado funcionando por Gunnar en
+el dashboard del Member: consistente, pero la prueba final la da su
+propio iPhone.

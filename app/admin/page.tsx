@@ -81,7 +81,8 @@ export default async function AdminRosterPage() {
           zIndex: 10,
           background: "rgba(20,20,20,.96)",
           borderBottom: "1px solid rgba(200,161,90,.22)",
-          padding: "16px 20px",
+          // Fix (2026-10-05, reportado por Gunnar): notch/isla dinámica.
+          padding: "calc(env(safe-area-inset-top,0px) + 16px) 20px 16px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",

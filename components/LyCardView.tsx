@@ -1022,8 +1022,23 @@ export default function LyCardView({
   // primero vino mal.
   const [appVh, setAppVh] = useState<number | null>(null);
   useEffect(() => {
+    // Fix (2026-10-05, Gunnar reporta que el espacio muerto SIGUE
+    // existiendo en iPhone 13 standalone, pese al fix de v1.68.2/v1.69.x
+    // de arriba): bug de WebKit más específico que el ya documentado --
+    // en modo standalone, en iPhones con home indicator (sin botón
+    // físico), `visualViewport.height` puede venir MÁS CHICO que
+    // `window.innerHeight` por el alto exacto de la franja del home
+    // indicator (WebKit la trata como "overlay de sistema" a los fines
+    // de visualViewport ahí, aunque visualmente no tape nada). Priorizar
+    // visualViewport (como hacía el fix anterior) termina horneando ESE
+    // faltante como altura real de la tarjeta. Tomar el máximo de las dos
+    // lecturas nunca puede dar un valor menor que cualquiera de las dos
+    // fuentes -- si el bug es al revés (innerHeight el que se queda
+    // corto), visualViewport sigue cubriendo ese caso igual.
     function readVh() {
-      return Math.round(window.visualViewport?.height ?? window.innerHeight);
+      const vv = window.visualViewport?.height;
+      const inner = window.innerHeight;
+      return Math.round(vv ? Math.max(vv, inner) : inner);
     }
     function updateVh() {
       setAppVh(readVh());
@@ -1662,8 +1677,13 @@ export default function LyCardView({
       onPointerUp={cancelLongPress}
       onPointerLeave={cancelLongPress}
       onPointerCancel={cancelLongPress}
+      // appVh medido (JS) le gana a la clase CSS (ver globals.css,
+      // ".lycard-fullscreen") -- un style inline siempre pisa una regla
+      // de hoja de estilos, así que mientras no haya medición todavía
+      // (primer paint) la clase cubre con el fallback -webkit-fill-available.
+      className={appVh ? undefined : "lycard-fullscreen"}
       style={{
-        height: appVh ? `${appVh}px` : "100dvh",
+        ...(appVh ? { height: `${appVh}px` } : {}),
         width: "100%",
         display: "flex",
         justifyContent: "center",

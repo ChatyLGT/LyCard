@@ -54,8 +54,14 @@ export default function CardCarousel({
   // el layout real de pantalla completa en standalone.
   const [appVh, setAppVh] = useState<number | null>(null);
   useEffect(() => {
+    // Fix (2026-10-05, mismo bug reportado por Gunnar en LyCardView.tsx):
+    // en standalone, `visualViewport.height` puede venir más chico que
+    // `window.innerHeight` por la franja del home indicator -- tomar el
+    // máximo de las dos lecturas nunca puede dar menos que cualquiera.
     function readVh() {
-      return Math.round(window.visualViewport?.height ?? window.innerHeight);
+      const vv = window.visualViewport?.height;
+      const inner = window.innerHeight;
+      return Math.round(vv ? Math.max(vv, inner) : inner);
     }
     function updateVh() {
       setAppVh(readVh());
@@ -102,7 +108,10 @@ export default function CardCarousel({
   }, []);
 
   return (
-    <div style={{ position: "relative", height: appVh ? `${appVh}px` : "100dvh", width: "100%", overflow: "hidden", background: "#09090b" }}>
+    <div
+      className={appVh ? undefined : "lycard-fullscreen"}
+      style={{ position: "relative", ...(appVh ? { height: `${appVh}px` } : {}), width: "100%", overflow: "hidden", background: "#09090b" }}
+    >
       <div
         ref={scrollerRef}
         style={{

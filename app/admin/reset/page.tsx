@@ -28,7 +28,11 @@ export default async function AdminResetPage({
           zIndex: 10,
           background: "rgba(20,20,20,.96)",
           borderBottom: "1px solid rgba(229,146,138,.3)",
-          padding: "16px 20px",
+          // Fix (2026-10-05, reportado por Gunnar: "el menu principal de
+          // arriba se esconde debajo de la pantalla") -- mismo bug de
+          // notch/isla dinámica que MemberCardEditor.tsx, acá sin
+          // compensar todavía.
+          padding: "calc(env(safe-area-inset-top,0px) + 16px) 20px 16px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",

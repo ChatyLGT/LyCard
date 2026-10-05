@@ -36,7 +36,10 @@ export default async function AdminDemoDataPage({
           zIndex: 10,
           background: "rgba(20,20,20,.96)",
           borderBottom: "1px solid rgba(200,161,90,.22)",
-          padding: "16px 20px",
+          // Fix (2026-10-05, reportado por Gunnar): sticky top:0 sin
+          // compensar notch/isla dinámica -- mismo patrón que
+          // MemberCardEditor.tsx.
+          padding: "calc(env(safe-area-inset-top,0px) + 16px) 20px 16px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",

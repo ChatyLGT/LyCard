@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.75.0";
+export const APP_VERSION = "1.75.1";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.75.1",
+    date: "2026-10-05",
+    notes:
+      "2 fixes de iPhone 13 en modo appweb (PWA standalone), reportados por Gunnar. (1) El menú superior tapado por la isla dinámica/notch -- el fix anterior (v1.63.x) solo había cubierto el dashboard del Member; quedaron afuera TODAS las páginas de /admin/* (roster, programas, interviews, janus, nashmesh, equipo, wowstore, cuenta, login-history, reset, demo-data) más EditorForm.tsx y MemberStoryEditor.tsx -- mismo patrón de padding con env(safe-area-inset-top) aplicado a los 14. (2) El espacio muerto al pie de la LyCard, que seguía existiendo pese al fix de v1.68.2/v1.69.x -- la medición preferia `visualViewport.height`, que en standalone puede venir más chico que `window.innerHeight` por la franja del home indicator; ahora se toma el máximo de las dos lecturas, más una capa de respaldo CSS (`-webkit-fill-available`) para el instante antes de que el JS termine de medir (LyCardView.tsx y CardCarousel.tsx). No se pudo verificar visualmente en un iPhone real -- Chromium headless no simula safe-area-insets de notch -- pero sigue el mismo patrón ya confirmado funcionando en el dashboard.",
+  },
   {
     version: "1.75.0",
     date: "2026-10-05",
