@@ -84,6 +84,7 @@ export default async function AdminRosterPage() {
           // Fix (2026-10-05, reportado por Gunnar): notch/isla dinámica.
           padding: "calc(env(safe-area-inset-top,0px) + 16px) 20px 16px",
           display: "flex",
+          flexWrap: "wrap",
           alignItems: "center",
           justifyContent: "space-between",
           gap: 12,
@@ -104,7 +105,13 @@ export default async function AdminRosterPage() {
             LyCards
           </h1>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        {/* Fix (2026-10-05, reportado por Gunnar: "no puedo cambiar de
+            pantalla.. solo veo a Janus") -- 6 pills + Cerrar sesión en una
+            sola fila sin wrap, ningún overflow visible: en un iPhone
+            angosto el resto queda cortado afuera de la pantalla (html/body
+            tienen overflow-x:hidden global) e inalcanzable. flexWrap deja
+            que bajen de línea en vez de desaparecer. */}
+        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: 8 }}>
           <Link
             href="/admin/programs"
             style={{

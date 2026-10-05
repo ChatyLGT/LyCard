@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.75.1";
+export const APP_VERSION = "1.75.2";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.75.2",
+    date: "2026-10-05",
+    notes:
+      "Fix: el header de Roster Legacy (/admin) tenía 6 botones + Cerrar sesión en una sola fila sin flexWrap -- en un iPhone angosto el resto desbordaba fuera de la pantalla, inalcanzable (reportado por Gunnar: \"no puedo cambiar de pantalla.. solo veo a Janus\"). Agregado flexWrap al header y al bloque de nav. Mismo flexWrap defensivo en el footer de /admin/programs (WowStore/Demo/Zona de Riesgo). Esto es un parche puntual -- el rediseño real de fondo (barra de navegación inferior con 4 destinos + \"Más\", en vez de 9 páginas-hermana al mismo nivel) queda propuesto como mockup aparte, pendiente de luz verde de Gunnar.",
+  },
   {
     version: "1.75.1",
     date: "2026-10-05",

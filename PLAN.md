@@ -9182,3 +9182,53 @@ de un notch/isla dinámica real, a diferencia de WebKit/Safari. El
 código sigue el mismo patrón ya confirmado funcionando por Gunnar en
 el dashboard del Member: consistente, pero la prueba final la da su
 propio iPhone.
+
+## 2026-10-05 -- Fix: header de Roster Legacy desbordaba en iPhone + mockup del rediseño (v1.75.2)
+
+Gunnar, probando v1.75.1 en su iPhone 13 appweb, siguiendo el flujo
+completo (pantalla Mirón → eligió Legacy de la lista → tarjeta →
+dashboard): *"ahora estoy en el dashboard.. ya se puede ver.. pero el
+de roaster legacy no corre.. no puedo cambiar de pantalla.. y solo veo
+a Janus."*
+
+### Diagnóstico
+
+`app/admin/page.tsx` (el roster, título "Roster Legacy" en su propio
+header -- de ahí la referencia de Gunnar) tenía 6 botones pill
+(Programas/Equipo/Janus/NashMesh/Entrevistas/Mi cuenta) + "Cerrar
+sesión" en un único `<div style={{display:"flex", gap:8}}>` SIN
+`flexWrap`. En un iPhone angosto eso desborda; `html,body{overflow-x:
+hidden}` (global, `app/globals.css`) recorta lo que no entra, dejándolo
+literalmente fuera de la pantalla e inalcanzable -- de ahí "solo veo a
+Janus" (lo único que alcanzaba a entrar en la fila antes del corte).
+Bug viejo, sin relación con los fixes de notch de v1.75.1 -- recién
+visible porque era la primera vez que Gunnar probaba este flujo
+completo en su propio teléfono.
+
+Arreglo: `flexWrap: "wrap"` en el header (`app/admin/page.tsx`) y en su
+bloque de nav, más el mismo `flexWrap` defensivo en el footer de
+`app/admin/programs/page.tsx` (WowStore/Datos de Demo/Zona de Riesgo),
+que tenía el mismo patrón sin confirmar si desbordaba en los anchos
+más chicos.
+
+### El pedido de fondo: rediseñar todo el dashboard
+
+Mismo mensaje, Gunnar: *"creo qeu es importante rediseñar con Top1%
+todo el dashboard.. esta muy complicado.. deberiamos Rediseñarlo para
+que sea intuitivo.. puedes sugerir algo.. top1%?"*. Exploratorio, no
+una orden de build -- se le devolvió una recomendación corta (barra de
+navegación inferior fija con 4 destinos máximo + "Más" para todo lo
+secundario, patrón mobile-first de Stripe/Notion/Linear) y, a pedido
+de Gunnar ("hazme una imagen de ejemplo"), un **mockup real** (Artifact
+tipo Design, 2 artboards lado a lado, Antes/Después, colores y
+tipografía exactos de Legacy) -- el "Después" es interactivo de
+verdad: tocar "Más" abre una hoja real que sube desde abajo con
+Janus/NashMesh/Entrevistas/WowStore/Cuenta/Demo/Zona de
+Riesgo/Cerrar sesión. Pendiente de luz verde antes de tocar código --
+este PLAN.md no documenta ese rediseño como hecho, solo el mockup y
+la propuesta.
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos, `pnpm build`
+limpio, suite Playwright completa 59/59 verde.
