@@ -9432,3 +9432,69 @@ y el texto introductorio de O.D. desde el hub en un solo submit, la
 DB lo persiste, y la tarjeta pública lo muestra de verdad (ícono
 nuevo visible en el modal, texto introductorio nuevo reemplaza al
 fijo de siempre). Suite Playwright completa: 61/61.
+
+## 2026-10-06 -- "Entrar como este Miembro": acceso real a /m/dashboard desde el Admin (v1.79.0)
+
+Tras el Editor de Modales, Gunnar preguntó cómo editar el modal "Mi
+camino" -- la respuesta reveló que ese contenido se edita en
+`/m/dashboard`, una pantalla que Gunnar dijo no haber visto nunca:
+*"eso del m/dashboard no lo veo nunca en ningún lado es la primera vez
+que entro alli.. creo que tenemos un montón de pantallas y menus y
+aplicaciones que hemos creado que estan huerfanas.. revisa eso
+porfa"*.
+
+### Auditoría (antes de construir nada)
+
+Se listaron las 35 rutas reales de la app (`find app -name page.tsx`)
+y se greppeó cada una contra todo el repo para confirmar si tenía
+algún link de entrada real, no solo su propio archivo. Hallazgo
+confirmado: **cero links de `/admin/*` hacia `/m/*` en toda la app**
+salvo uno (un "Ver perfil" puntual de Experto en `/admin/wowstore`).
+La causa raíz: `/admin/*` (login por contraseña) y `/m/*` (login de
+Member por WhatsApp OTP) son dos sistemas de sesión completamente
+separados (`lib/auth.ts` / `lib/memberAuth.ts`), y la ÚNICA puerta de
+entrada a todo `/m/*` es el botón "Crea Tu LyCard" que aparece en una
+Card SOLO cuando `isHost === false` -- la propia Card de Gunnar
+(`isOrigin`) por regla deliberada siempre muestra el QR real en lugar
+de ese botón, así que nunca se lo mostró.
+
+(Una sospecha inicial -- que `/m/wowstore/mias`, `/perfil` y
+`/solicitudes` también estaban huérfanas -- resultó FALSA al leer el
+código real: `components/WowStoreTabs.tsx` ya las conecta entre sí
+desde el 2026-09-24, el grep inicial no las encontró porque arma el
+`href` con un template literal (`/m/wowstore${tab.href}`), no con el
+string completo. Corrección honesta, no se tocó nada ahí.)
+
+### Lo construido
+
+- `viewAsMemberAction(memberId, programId)` nueva
+  (`app/admin/programs/members-actions.ts`): mintea una sesión de
+  Member real (`lib/memberAuth.ts#createMemberSession`, ya existía,
+  reusado) para ese Miembro puntual y redirige a `/m/dashboard` --
+  acceso real, no una vista de solo lectura, mismo criterio que
+  cualquier "ver como" de soporte en otros SaaS. Guardada igual que el
+  resto de `members-actions.ts`: `requireProgramAccess` +
+  `requireMembership` (el Miembro tiene que pertenecer de verdad a
+  ese Programa).
+- Guard extra: requiere `currentAdminId()` (cookie propia de Admin,
+  no el scope ya resuelto que puede venir del puente Member→Admin de
+  un N0 promovido por Chido→Programa). Un N0 así nunca tuvo cookie de
+  Admin propia -- si "entrara como" otro Miembro perdería su propia
+  sesión de Admin hasta volver a loguearse, y de cualquier forma ya
+  tiene su propio `/m/dashboard` a un click (el suyo), no necesita
+  este atajo.
+- Botón nuevo "Entrar como este Miembro →" en la sección "Miembros"
+  de `/admin/programs/[id]`, junto al link `/c/[slug]` ya existente,
+  solo para membresías `status: "active"` (las "Invitado" todavía no
+  tienen Cards creadas).
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos, `pnpm
+build` limpio, `pnpm test:unit:coverage` 100% (sin cambios en lib/,
+nada nuevo que testear ahí). Test E2E nuevo
+(`e2e/view-as-member.spec.ts`): el N0 entra de verdad al
+`/m/dashboard` de un Miembro real (ve "Hola, [nombre]"), y su propia
+sesión de Admin sigue intacta después (vuelve a
+`/admin/programs/[id]` sin que lo manden a loguearse de nuevo). Suite
+Playwright completa corrida de punta a punta.

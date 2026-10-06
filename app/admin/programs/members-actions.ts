@@ -3,8 +3,9 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { currentAdminScope, canAccessProgram } from "@/lib/auth";
+import { currentAdminScope, canAccessProgram, currentAdminId } from "@/lib/auth";
 import { checkAndPromoteToPrograma } from "@/lib/programPromotion";
+import { createMemberSession } from "@/lib/memberAuth";
 
 // MasterN0 can manage any Program's members; a scoped N0 only their own —
 // and only members who actually belong to that Program (checked at the
@@ -116,6 +117,33 @@ export async function markMembershipPaidAction(memberId: string, programId: stri
 
   revalidatePath(`/admin/programs/${programId}`);
   redirect(`/admin/programs/${programId}?memberPaidToggled=1`);
+}
+
+// "Entrar como este Miembro" (2026-10-06, pedido de Gunnar: "necesito
+// que todas las pantallas sean accesibles en el Dashboard" -- el hueco
+// real era /m/dashboard y todo lo que cuelga de ahí: un Admin clásico
+// (login por contraseña) nunca tiene sesión de Member propia, así que
+// nunca veía esas pantallas ni por accidente. Mintea una sesión de
+// Member real (lib/memberAuth.ts) y manda al N0 al mismo /m/dashboard
+// que vería ese Miembro -- no es una vista de solo lectura, es entrar
+// de verdad, mismo criterio que cualquier "ver como" de soporte.
+//
+// Guard extra (`currentAdminId()`, la cookie propia de Admin, no el
+// scope ya resuelto que puede venir del puente Member→Admin): un N0
+// promovido por Chido→Programa (Admin.memberId) nunca tuvo cookie de
+// Admin propia, navega siempre con su propia cookie de Member -- si
+// "entrara como" otro Miembro se pisaría su propia sesión y perdería
+// su propio acceso de Admin hasta volver a loguearse. Ese caso ya
+// tiene su /m/dashboard a un click (el suyo propio), no necesita este
+// atajo -- así que directamente no se lo ofrecemos.
+export async function viewAsMemberAction(memberId: string, programId: string) {
+  const ownAdminId = await currentAdminId();
+  if (!ownAdminId) redirect(`/admin/programs/${programId}?memberError=viewAsRequiresOwnLogin`);
+  await requireProgramAccess(programId);
+  await requireMembership(memberId, programId);
+
+  await createMemberSession(memberId);
+  redirect("/m/dashboard");
 }
 
 function escapeHtml(value: string) {

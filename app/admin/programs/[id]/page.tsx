@@ -19,7 +19,7 @@ import {
   setOfficeSkillIconAction,
   updateMotivationalPhrasesAction,
 } from "../actions";
-import { updateMemberAction, deleteMemberAction, messageMemberAction, markMembershipPaidAction } from "../members-actions";
+import { updateMemberAction, deleteMemberAction, messageMemberAction, markMembershipPaidAction, viewAsMemberAction } from "../members-actions";
 import { sendMassMessageAction } from "../messages-actions";
 import { CHANNELS } from "@/lib/messaging";
 import { buildFunnelStages } from "@/lib/funnel";
@@ -193,6 +193,7 @@ export default async function AdminProgramDetailPage({
     messageNotConfigured: "Este miembro no tiene email cargado, o el envío de correos no está activado.",
     messageFailed: "No se pudo enviar el mensaje, probá de nuevo.",
     paidRequiresActive: "Solo se puede marcar como pagada una membresía ya activa.",
+    viewAsRequiresOwnLogin: "Para entrar como un Miembro necesitás tu propia sesión de Admin (no la del puente Chido→Programa) -- vos ya tenés tu /m/dashboard a un click, sin este atajo.",
   };
 
   const scope = await currentAdminScope();
@@ -1107,6 +1108,25 @@ export default async function AdminProgramDetailPage({
                   <Link href={`/c/${projectCard.slug}`} style={{ font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#C8A15A" }}>
                     /c/{projectCard.slug}
                   </Link>
+                )}
+
+                {/* "Entrar como este Miembro" (2026-10-06, pedido de Gunnar:
+                    "necesito que todas las pantallas sean accesibles en el
+                    Dashboard") -- único acceso real a /m/dashboard y todo lo
+                    que cuelga de ahí (WowStore, WowHead, Mensajes, Red de
+                    Clientes) para un Admin clásico, que nunca tiene sesión
+                    de Member propia. Solo para membresías activas -- las
+                    "Invitado" todavía no tienen las 3 Cards creadas, no hay
+                    nada que ver. */}
+                {m.status === "active" && (
+                  <form action={viewAsMemberAction.bind(null, m.member.id, program.id)}>
+                    <button
+                      type="submit"
+                      style={{ background: "none", border: "1px solid rgba(200,161,90,.3)", borderRadius: 999, padding: "6px 12px", color: "#C8A15A", font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", cursor: "pointer", width: "fit-content" }}
+                    >
+                      Entrar como este Miembro →
+                    </button>
+                  </form>
                 )}
 
                 {m.status === "active" && (

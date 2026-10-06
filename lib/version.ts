@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.78.0";
+export const APP_VERSION = "1.79.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.79.0",
+    date: "2026-10-06",
+    notes:
+      "\"Entrar como este Miembro\": Gunnar pidió que \"todas las pantallas sean accesibles en el Dashboard\" tras descubrir que nunca había visto /m/dashboard -- un Admin clásico (login por contraseña) nunca tiene sesión de Member propia, así que esa pantalla y todo lo que cuelga de ahí (WowStore, WowHead, Mensajes, Red de Clientes) le era literalmente invisible, sin ningún link de entrada. Nuevo botón en la sección \"Miembros\" de /admin/programs/[id]: entra de verdad al /m/dashboard de ese Miembro (sesión real, no una vista de solo lectura), sin perder la sesión propia de Admin. De paso: las 3 pantallas de WowStore (Mis WowApps/Solicitudes/Perfil) que parecían huérfanas en una auditoría previa resultaron tener su propia navegación interna (WowStoreTabs) desde siempre -- correctamente enlazadas, no hacía falta tocarlas.",
+  },
   {
     version: "1.78.0",
     date: "2026-10-06",
