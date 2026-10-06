@@ -83,6 +83,7 @@ export const STR: Record<Lang, Record<string, string>> = {
     vcardBtn: "Guardar Contacto",
     sendMessageBtn: "Enviar Mensaje",
     contactKicker: "Enviar Mensaje",
+    cardInfoKicker: "[Programa] Card",
     contactSub: "Escribile directo a {name} — le llega por correo.",
     fSenderName: "Tu nombre",
     fSenderEmail: "Tu correo",

@@ -9349,3 +9349,86 @@ rompió 2 tests de `photo-positioner.spec.ts` que buscan ese botón sin
 ambigüedad. Renombrado a "Guardar Modal" (misma convención que "Guardar
 Bóveda"/"Guardar Textos"), y recorrida la suite completa (60/60) para
 confirmarlo antes de este commit.
+
+## 2026-10-06 -- Editor de Modales: Reorganización completa (v1.78.0)
+
+Tras ver el modal "Legacy Card" funcionando, Gunnar escaló el pedido:
+*"Lo que necesito es que el modal pueda editarlo.. tanto los
+componentes que lo integran como el contenido de los títulos y
+texto. Necesito me permitas hacer esto en este modal y en todos los
+demás en el Dashboard. Y organizarlo bien top1% para que sea fácil
+para el usuario e intuitivo identificar cada placeholder y tener
+claridad de que tipo de información o acción se muestre allí."*
+
+Se le presentaron 2 caminos (`AskUserQuestion`): reorganización
+completa (un hub único) vs. extensión incremental sin reestructurar.
+Eligió **"Reorganización completa, top1% (Recomendado)"**.
+
+Después, mandó una captura del modal real con 4 campos anotados a
+mano (Nombre Botón, MAIN TITLE, MAIN TEXT, TEXTFOOTRIGHT) preguntando
+si era posible editar todo eso, simple o complejo, para cualquier
+modal. Se le mapeó cada campo contra el código real antes de
+construir nada: MAIN TITLE/MAIN TEXT ya eran editables (v1.77.0,
+bloques); TEXTFOOTRIGHT es `card.name`, no contenido de modal; el
+único hueco real era el ícono+texto del botón disparador, hardcodeado
+en todos los modales. Confirmado el "ok dale", se construyó eso.
+
+### Decisión de alcance (antes de tocar código)
+
+Se catalogaron los 14 tipos de modal y su mecanismo real antes de
+tocar nada, para no romper lo que ya funciona:
+
+- **6 modales de ícono fijo** (cardInfo/"LyCard", vault/Bóveda, info,
+  invite, contactMessage, story) -- su ícono está hardcodeado por
+  tipo de Card, nunca elegible. Entran al hub con override de ícono.
+- **4 modales de niveles reales** (od, ancient, medal, contacts) --
+  su ícono es DINÁMICO (el de la Puesto/EscalaItem seleccionada en
+  Categorización). Un override de ícono acá se pisaría con esa
+  selección real -- deliberadamente afuera. En cambio, su párrafo
+  introductorio (hoy fijo, `odIntro`/`ancIntro`/etc en lib/i18n.ts)
+  SÍ entra al hub como override de texto, sin tocar la selección.
+- **Fuera de alcance esta vuelta** (documentado, no construido): el
+  modal "info" de proyecto tiene un layout bespoke (video/pills/CTA)
+  que convertir a bloques sería una reescritura grande y riesgosa sin
+  pedido explícito; "Mi camino" (story) sigue siendo contenido del
+  dueño de la Card vía /m/dashboard, no del N0; na/versionInfo son
+  contenido de sistema, no autoría del N0; legado es del destinatario.
+
+### Lo construido
+
+- `Program.modalIcons`/`Program.tierIntros` (schema, `Json
+  @default("{}")`, aditivos -- no tocan vaultBlocks/cardInfoBlocks ni
+  lib/cardLabels.ts).
+- `lib/modalEditor.ts` (nuevo): registro único de los 10 modales
+  configurables (`MODAL_EDITOR_ENTRIES`) con nombre, ícono default,
+  tipo de contenido (bloques/niveles/automático) y dónde editar el
+  resto -- fuente única para el hub y para la acción que lo guarda.
+  Tests unitarios 100%.
+- `updateModalEditorAction` (`app/admin/programs/podium-actions.ts`):
+  un solo submit guarda los 10 campos (6 íconos + 4 intros), vacío =
+  vuelve al default de siempre.
+- Nueva sección "Editor de Modales" en `/admin/programs/[id]`,
+  arriba de todo (justo después de "Identidad del Programa"): un
+  vistazo de los 10 modales con su ícono/tipo, campo de ícono o de
+  texto introductorio según corresponda, y una nota de dónde está el
+  resto de cada uno (sin duplicar los editores existentes).
+- `components/LyCardView.tsx`: `modalIconOverride()`/
+  `tierIntroOverride()` (mismo patrón que `cardLabel()`) leídos en
+  `modalMap` para los 6 modales de ícono fijo y en el párrafo
+  introductorio de los 4 de niveles.
+- 2 huecos reales cerrados en `lib/cardLabels.ts`
+  (`CARD_LABEL_FIELDS`): `cardInfoKicker` (el texto del botón
+  "[Programa] Card", antes solo auto-armado, nunca editable a mano) y
+  `contactKicker` (el modal "Enviar Mensaje" nunca tuvo override,
+  pese a que `t(lang,"contactKicker")` ya existía en lib/i18n.ts).
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos, `pnpm
+build` limpio, `pnpm test:unit:coverage` 100% (308 tests, incluido
+`lib/modalEditor.ts` nuevo en el ratchet de cobertura). Test E2E
+nuevo (`podium-vault-ai.spec.ts`): el N0 cambia el ícono de cardInfo
+y el texto introductorio de O.D. desde el hub en un solo submit, la
+DB lo persiste, y la tarjeta pública lo muestra de verdad (ícono
+nuevo visible en el modal, texto introductorio nuevo reemplaza al
+fijo de siempre). Suite Playwright completa: 61/61.

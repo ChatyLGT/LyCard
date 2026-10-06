@@ -848,13 +848,29 @@ function CodiceDossier({ sources, cuadernoUrl, borradoHref }: { sources: CodiceS
 // N0 can customize (lib/cardLabels.ts) — atajo version of PLAN.md Fase 9.
 // Only ever non-null for project cards (see app/c/[slug]/page.tsx), so
 // company/personal cards fall through to the i18n default unchanged.
-function cardLabel(program: Program | null, lang: Lang, key: string): string {
-  const overrides = program?.cardLabels;
-  if (overrides && typeof overrides === "object" && !Array.isArray(overrides)) {
-    const v = (overrides as Record<string, unknown>)[key];
+function jsonOverride(json: unknown, key: string): string | null {
+  if (json && typeof json === "object" && !Array.isArray(json)) {
+    const v = (json as Record<string, unknown>)[key];
     if (typeof v === "string" && v.trim()) return v;
   }
-  return t(lang, key);
+  return null;
+}
+
+function cardLabel(program: Program | null, lang: Lang, key: string): string {
+  return jsonOverride(program?.cardLabels, key) ?? t(lang, key);
+}
+
+// Editor de Modales -- Reorganización completa (2026-10-06, pedido de
+// Gunnar: "necesito que el modal pueda editarlo.. tanto los componentes
+// que lo integran como el contenido.. en este modal y en todos los
+// demás.. organizarlo bien top1%"). Dos huecos genéricos más, sobre el
+// mismo patrón de cardLabel() de arriba -- ver Program.modalIcons/
+// tierIntros en prisma/schema.prisma para el porqué de cada uno.
+function modalIconOverride(program: Program | null, key: string): string | null {
+  return jsonOverride(program?.modalIcons, key);
+}
+function tierIntroOverride(program: Program | null, key: string): string | null {
+  return jsonOverride(program?.tierIntros, key);
 }
 
 export default function LyCardView({
@@ -948,11 +964,17 @@ export default function LyCardView({
   // (general)". mastern0 nunca tuvo Programa (programId: null), así que
   // ese fallback mentía sobre ser "la de Legacy" sin que nadie lo haya
   // configurado así.
-  const cardIslandLabel = isProject
-    ? program?.name
-      ? `${program.name} Card`
-      : "LyCard"
-    : card.islandLabel || (isCompany ? "Mi Tarjeta de Empresa" : "Mi Tarjeta Personal");
+  // Editor de Modales (2026-10-06): override de texto libre por sobre el
+  // auto-armado `${program.name} Card` -- solo isProject, mismo criterio
+  // que el resto de Program.cardLabels (company/personal usan su propio
+  // Card.islandLabel, no esto).
+  const cardIslandLabel =
+    (isProject && jsonOverride(program?.cardLabels, "cardInfoKicker")) ||
+    (isProject
+      ? program?.name
+        ? `${program.name} Card`
+        : "LyCard"
+      : card.islandLabel || (isCompany ? "Mi Tarjeta de Empresa" : "Mi Tarjeta Personal"));
   const [theme, setTheme] = useState<"dark" | "light">(
     (card.defaultTheme as "dark" | "light") || "dark"
   );
@@ -1617,7 +1639,7 @@ export default function LyCardView({
       meta: contactsTier.descripcion ? t(lang, "valueMeta") : t(lang, "valueMetaEmpty"),
     },
     story: {
-      icon: "auto_stories",
+      icon: (isProject && modalIconOverride(program, "story")) || "auto_stories",
       kicker: isProject ? L("storyKicker") : t(lang, isCompany ? "storyKickerCompany" : "storyKickerPersonal"),
       // Each host's own words (PLAN.md Fase 9.3, editable at /m/dashboard) —
       // project falls back to the fixed Legacy copy until they write their
@@ -1634,12 +1656,12 @@ export default function LyCardView({
       ? { icon: "diamond", kicker: `Info ${recipient.nombre}` }
       : isCompany
       ? { icon: "storefront", kicker: t(lang, "companyInfoKicker"), head: card.title || card.name, body: card.quote, meta: t(lang, "companyInfoMeta") }
-      : { icon: "diamond", kicker: L("infoKicker") },
-    invite: { icon: "mail", kicker: L("inviteKicker") },
+      : { icon: modalIconOverride(program, "info") || "diamond", kicker: L("infoKicker") },
+    invite: { icon: modalIconOverride(program, "invite") || "mail", kicker: L("inviteKicker") },
     // Bóveda Legacy / "Legacy Vault" (2026-10-04) -- título/gate propios
     // del Programa (program.vaultTitle/vaultPalabraSecreta), el contenido
     // real (fuentes + cuaderno) se renderiza aparte en JSX, no acá.
-    vault: { icon: "lock", kicker: program?.vaultTitle || "Bóveda Legacy" },
+    vault: { icon: modalIconOverride(program, "vault") || "lock", kicker: program?.vaultTitle || "Bóveda Legacy" },
     // Agente de IA a medida (2026-10-04) -- lo último que generó
     // generatePodiumAiButtonAction para CUALQUIERA de los 2 slots que
     // esté en "ai_agent" (activeAiAgentConfig, ver arriba). Honesto si
@@ -1659,11 +1681,11 @@ export default function LyCardView({
     // reemplaza el cubo QR cuando naMode está activo (ver render del cubo
     // central más abajo), nunca un modal aparte que nadie pidió.
     na: { icon: "qr_code_scanner", kicker: "Escanear o elegir Programa" },
-    contactMessage: { icon: "chat", kicker: t(lang, "contactKicker") },
+    contactMessage: { icon: modalIconOverride(program, "contactMessage") || "chat", kicker: L("contactKicker") },
     // Name island (2026-09-16) — short explainer of what this Card type is
     // for. Fixed copy per kind, not Program-configurable yet.
     cardInfo: {
-      icon: isProject ? "military_tech" : isCompany ? "storefront" : "badge",
+      icon: modalIconOverride(program, "cardInfo") || (isProject ? "military_tech" : isCompany ? "storefront" : "badge"),
       kicker: cardIslandLabel,
       head: t(lang, isProject ? "cardInfoProjectHead" : isCompany ? "cardInfoCompanyHead" : "cardInfoPersonalHead"),
       body: t(lang, isProject ? "cardInfoProjectBody" : isCompany ? "cardInfoCompanyBody" : "cardInfoPersonalBody"),
@@ -2999,7 +3021,8 @@ export default function LyCardView({
                     <span style={{ font: "700 17px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>{activeModal.head}</span>
                   </div>
                   <p style={{ margin: 0, font: "400 12.5px/1.7 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "rgba(245,242,235,.92)" }}>
-                    {t(lang, modal === "od" ? "odIntro" : modal === "ancient" ? "ancIntro" : modal === "medal" ? "medalIntro" : "contactsIntro")}
+                    {tierIntroOverride(program, modal) ||
+                      t(lang, modal === "od" ? "odIntro" : modal === "ancient" ? "ancIntro" : modal === "medal" ? "medalIntro" : "contactsIntro")}
                   </p>
                   {tierTilesByModal[modal].length === 0 ? (
                     <p style={{ margin: 0, font: "400 11.5px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "rgba(245,242,235,.7)" }}>{activeModal.body}</p>

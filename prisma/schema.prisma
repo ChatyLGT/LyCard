@@ -539,6 +539,29 @@ model Program {
   // fijo de siempre, fuera de alcance de esta vuelta.
   cardInfoBlocks      Json   @default("[]")
 
+  // Editor de Modales -- Reorganización completa (2026-10-06, pedido de
+  // Gunnar tras ver cardInfo: "necesito que el modal pueda editarlo..
+  // tanto los componentes que lo integran como el contenido.. en este
+  // modal y en todos los demás.. organizarlo bien top1%"). Dos campos
+  // genéricos, aditivos -- no reemplazan vaultBlocks/cardInfoBlocks ni
+  // lib/cardLabels.ts, los complementan:
+  //
+  // modalIcons: Record<modalKey, icono Material Symbol> -- el ícono del
+  // botón disparador de un modal (ej. "military_tech" en el botón
+  // "Legacy Card"), hoy fijo por tipo de Card. Solo para los modales de
+  // ícono fijo (cardInfo/vault/info/invite/contactMessage/story) --
+  // od/ancient/medal/contacts tienen ícono DINÁMICO (el de la Puesto/
+  // EscalaItem seleccionada en Categorización) y no entran acá, se
+  // pisarían entre sí.
+  //
+  // tierIntros: Record<"od"|"ancient"|"medal"|"contacts", texto> -- el
+  // párrafo introductorio de los 4 modales de niveles reales, hoy fijo
+  // (lib/i18n.ts odIntro/ancIntro/medalIntro/contactsIntro). La
+  // selección real de nivel (Puesto/EscalaItem) sigue intacta, esto solo
+  // reemplaza el texto de arriba.
+  modalIcons  Json @default("{}")
+  tierIntros  Json @default("{}")
+
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 

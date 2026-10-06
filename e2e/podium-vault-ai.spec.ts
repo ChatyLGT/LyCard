@@ -241,6 +241,45 @@ test.describe("Botones del Podio — dashboard + tarjeta pública", () => {
 
     await context.close();
   });
+
+  // Editor de Modales -- hub (2026-10-06, pedido de Gunnar: "el modal
+  // pueda editarlo.. tanto los componentes que lo integran como el
+  // contenido.. en este modal y en todos los demás"). Cubre los 2 campos
+  // genéricos nuevos desde un solo submit: el ícono del botón disparador
+  // (cardInfo, de ícono fijo) y el texto introductorio de un modal de
+  // niveles reales (O.D., la selección real de Puesto sigue intacta).
+  test("Editor de Modales: ícono de cardInfo y texto introductorio de O.D. se guardan y se ven en la tarjeta pública", async ({ browser }) => {
+    const context = await browser.newContext();
+    const cookie = await mintAdminCookie(adminId);
+    await context.addCookies([{ ...cookie, url: BASE_URL }]);
+    const page = await context.newPage();
+
+    await page.goto(`${BASE_URL}/admin/programs/${programId}`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: /^Editor de Modales/ }).click();
+
+    const modalEditorForm = page.locator("form").filter({ has: page.locator('input[name="icon_cardInfo"]') });
+    await modalEditorForm.locator('input[name="icon_cardInfo"]').fill("rocket_launch");
+    await modalEditorForm.locator('textarea[name="intro_od"]').fill("Texto introductorio propio del Programa para O.D.");
+    await modalEditorForm.getByRole("button", { name: "Guardar Editor de Modales" }).click();
+    await page.waitForURL(/modalEditorSaved=1/);
+
+    const saved = await e2eDb.query<{ modalIcons: unknown; tierIntros: unknown }>(
+      `select "modalIcons", "tierIntros" from "Program" where id = $1`,
+      [programId]
+    );
+    expect(saved.rows[0].modalIcons).toEqual({ cardInfo: "rocket_launch" });
+    expect(saved.rows[0].tierIntros).toEqual({ od: "Texto introductorio propio del Programa para O.D." });
+
+    await page.goto(`${BASE_URL}/c/${cardSlug}`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Sobre esta tarjeta" }).click();
+    await expect(page.locator(".material-symbols-outlined", { hasText: "rocket_launch" }).first()).toBeVisible();
+    await page.getByRole("button", { name: "Cerrar" }).click();
+
+    await page.getByRole("button", { name: "Badge de Puestos", exact: true }).click();
+    await expect(page.getByText("Texto introductorio propio del Programa para O.D.")).toBeVisible();
+
+    await context.close();
+  });
 });
 
 test.describe("Botones del Podio — 'Modal simple' (story)", () => {

@@ -1,0 +1,2 @@
+ALTER TABLE "Program" ADD COLUMN "modalIcons" JSONB NOT NULL DEFAULT '{}';
+ALTER TABLE "Program" ADD COLUMN "tierIntros" JSONB NOT NULL DEFAULT '{}';

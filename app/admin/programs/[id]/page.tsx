@@ -25,13 +25,14 @@ import { CHANNELS } from "@/lib/messaging";
 import { buildFunnelStages } from "@/lib/funnel";
 import { createPuestoAction, updatePuestoAction, deletePuestoAction } from "../puestos-actions";
 import { createInterviewSlotAction, updateInterviewSlotAction, deleteInterviewSlotAction } from "../interview-slots-actions";
-import { setPodiumButtonAction, updateVaultAction, updateCardInfoAction } from "../podium-actions";
+import { setPodiumButtonAction, updateVaultAction, updateCardInfoAction, updateModalEditorAction } from "../podium-actions";
 import { CARD_LABEL_FIELDS, defaultCardLabel } from "@/lib/cardLabels";
 import { parseEscala } from "@/lib/escalas";
 import { parseOfficeSkills, DEFAULT_OFFICE_SKILLS } from "@/lib/officeSkills";
 import { parseMotivationalPhrases } from "@/lib/oficinaExtras";
 import { parsePodiumButtons, getPodiumButton } from "@/lib/podiumButtons";
 import { parseModalBlocks } from "@/lib/modalBlocks";
+import { MODAL_EDITOR_ENTRIES, parseModalIcons, parseTierIntros } from "@/lib/modalEditor";
 import EscalaEditor from "@/components/EscalaEditor";
 import OfficeSkillsEditor from "@/components/OfficeSkillsEditor";
 import PhraseListEditor from "@/components/PhraseListEditor";
@@ -135,6 +136,7 @@ export default async function AdminProgramDetailPage({
     podiumSaved?: string;
     vaultSaved?: string;
     cardInfoSaved?: string;
+    modalEditorSaved?: string;
     originSaved?: string;
     focus?: string;
     messageSent?: string;
@@ -172,6 +174,7 @@ export default async function AdminProgramDetailPage({
     podiumSaved,
     vaultSaved,
     cardInfoSaved,
+    modalEditorSaved,
     originSaved,
     focus,
   } = await searchParams;
@@ -232,6 +235,8 @@ export default async function AdminProgramDetailPage({
   const podiumButtons = parsePodiumButtons(program.podiumButtons);
   const vaultBlocks = parseModalBlocks(program.vaultBlocks);
   const cardInfoBlocks = parseModalBlocks(program.cardInfoBlocks);
+  const modalIcons = parseModalIcons(program.modalIcons);
+  const tierIntros = parseTierIntros(program.tierIntros);
 
   const registrations = await prisma.registration.findMany({
     where: { card: { programId: id } },
@@ -365,6 +370,77 @@ export default async function AdminProgramDetailPage({
               style={{ marginTop: 4, padding: 13, border: "none", borderRadius: 10, background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)", color: "#0D0D0D", font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", cursor: "pointer" }}
             >
               Guardar
+            </button>
+          </form>
+        </AccordionSection>
+
+        {/* Editor de Modales -- Reorganización completa (2026-10-06,
+            pedido de Gunnar tras ver el modal "Legacy Card": "necesito que
+            el modal pueda editarlo.. tanto los componentes que lo
+            integran como el contenido.. en este modal y en todos los
+            demás.. organizarlo bien top1% para que sea fácil para el
+            usuario e intuitivo identificar cada placeholder". Hub único:
+            un vistazo de los 10 modales que un N0 puede tocar, con su
+            ícono de disparador editable acá mismo (los 4 de niveles
+            reales usan en cambio un texto introductorio, su ícono sigue
+            siendo el de la Puesto/EscalaItem elegida en Categorización,
+            editarlo acá los pisaría). El TEXTO del botón (ej. "Legacy
+            Card") y el CONTENIDO pesado (bloques, niveles) siguen en sus
+            secciones de siempre -- esta no las duplica, las resume y
+            apunta a cada una, ver lib/modalEditor.ts para el porqué. */}
+        <AccordionSection
+          title="Editor de Modales"
+          subtitle='Los 10 modales que podés tocar desde acá, en un solo lugar: qué ícono abre cada uno, y dónde editar el resto. El texto del botón (ej. "Legacy Card") sigue en "Textos de Botones y Modales", el contenido pesado en su propia sección -- esta solo resume y apunta.'
+          meta={<span style={PILL}>{MODAL_EDITOR_ENTRIES.length}</span>}
+          defaultOpen={Boolean(modalEditorSaved)}
+        >
+          {modalEditorSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Editor de Modales guardado.</p>}
+          <form action={updateModalEditorAction.bind(null, program.id)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {MODAL_EDITOR_ENTRIES.map((entry) => (
+              <div
+                key={entry.key}
+                style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, borderRadius: 12, background: "#141414", border: "1px solid rgba(200,161,90,.15)" }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 20, color: "#C8A15A", flex: "none" }}>
+                    {modalIcons[entry.key] || entry.defaultIcon}
+                  </span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
+                    <span style={{ font: "700 12px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>{entry.name}</span>
+                    <span
+                      style={{
+                        font: "600 9px 'Plus Jakarta Sans',sans-serif",
+                        letterSpacing: ".08em",
+                        textTransform: "uppercase",
+                        color: entry.contentKind === "bloques" ? "#8fd19e" : entry.contentKind === "niveles" ? "#C8A15A" : "#8a8378",
+                      }}
+                    >
+                      {entry.contentKind === "bloques" ? "Bloques" : entry.contentKind === "niveles" ? "Niveles reales" : "Automático"}
+                    </span>
+                  </div>
+                </div>
+                {entry.contentKind === "niveles" ? (
+                  <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>Texto introductorio (arriba de los niveles)</span>
+                    <textarea
+                      name={`intro_${entry.key}`}
+                      defaultValue={tierIntros[entry.key] || ""}
+                      rows={2}
+                      placeholder="Vacío = texto fijo de siempre"
+                      style={{ ...INPUT, resize: "vertical" }}
+                    />
+                  </label>
+                ) : (
+                  <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>Ícono del botón (nombre Material Symbol)</span>
+                    <input name={`icon_${entry.key}`} defaultValue={modalIcons[entry.key] || ""} placeholder={entry.defaultIcon} style={INPUT} />
+                  </label>
+                )}
+                <span style={{ font: "400 10.5px/1.5 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>{entry.contentHint}</span>
+              </div>
+            ))}
+            <button type="submit" style={{ marginTop: 4, padding: 13, border: "none", borderRadius: 10, background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)", color: "#0D0D0D", font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", cursor: "pointer" }}>
+              Guardar Editor de Modales
             </button>
           </form>
         </AccordionSection>

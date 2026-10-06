@@ -22,6 +22,14 @@ export const CARD_LABEL_FIELDS: { key: string; label: string; group: "Botones" |
   { key: "scheduleTitle", label: "Modal Agendar — título", group: "Modales" },
   { key: "officeKickerProject", label: "Modal Virtual Office — encabezado", group: "Modales" },
   { key: "officeSkillsKicker", label: "Nombre de la sección de Superpoderes (Oficina Virtual)", group: "Modales" },
+  // Editor de Modales -- Reorganización completa (2026-10-06): 2 huecos
+  // reales que quedaban sin override. cardInfoKicker es el único campo
+  // de este archivo con default DINÁMICO (`${program.name} Card`, no un
+  // string fijo de lib/i18n.ts) -- se resuelve a mano en LyCardView.tsx
+  // (cardIslandLabel), no vía cardLabel()/t(), por eso el placeholder de
+  // abajo es solo orientativo.
+  { key: "cardInfoKicker", label: "Nombre del botón “[Programa] Card” (arriba de la tarjeta)", group: "Modales" },
+  { key: "contactKicker", label: "Modal Mensaje — encabezado", group: "Modales" },
 ];
 
 export function defaultCardLabel(key: string): string {

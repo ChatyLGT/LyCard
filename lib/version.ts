@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.77.0";
+export const APP_VERSION = "1.78.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.78.0",
+    date: "2026-10-06",
+    notes:
+      "Editor de Modales -- Reorganización completa: Gunnar escaló el pedido del modal \"Legacy Card\" a todos los modales del Dashboard (\"necesito que el modal pueda editarlo.. tanto los componentes que lo integran como el contenido.. en este modal y en todos los demás.. organizarlo bien top1%\"). Nuevo hub \"Editor de Modales\" en /admin/programs/[id]: un vistazo de los 10 modales que un N0 puede tocar -- ícono del botón disparador editable para los 6 de ícono fijo (LyCard/Legacy Card, Bóveda, Info, Invitación, Mensaje, Mi camino), texto introductorio editable para los 4 de niveles reales (O.D., Ancient, Medalla, Valor) sin tocar la selección real de nivel. El texto del botón \"[Programa] Card\" y \"Enviar Mensaje\" también se sumaron a \"Textos de Botones y Modales\", cerrando 2 huecos que no tenían override. El contenido pesado (bloques, niveles) sigue en sus secciones de siempre -- este hub resume y apunta, no duplica.",
+  },
   {
     version: "1.77.0",
     date: "2026-10-06",
