@@ -200,6 +200,47 @@ test.describe("Botones del Podio — dashboard + tarjeta pública", () => {
 
     await context.close();
   });
+
+  // Modal "[Programa] Card" (2026-10-05, pedido de Gunnar: "ese modal es
+  // necesario que tenga una explicacion clara de que es la legacy Card..
+  // a lo mejor tambien agregar un pequeño manual de uso.. o un video").
+  // Mismo Editor de Modales que la Bóveda, bloque por bloque -- sin
+  // configurar nada, el modal "Sobre esta tarjeta" sigue mostrando el
+  // texto genérico de siempre (fallback honesto).
+  test("el N0 arma el modal 'Qué es esta tarjeta' con un bloque propio -- la tarjeta pública lo muestra en vez del texto genérico", async ({ browser }) => {
+    const context = await browser.newContext();
+    const cookie = await mintAdminCookie(adminId);
+    await context.addCookies([{ ...cookie, url: BASE_URL }]);
+    const page = await context.newPage();
+
+    await page.goto(`${BASE_URL}/c/${cardSlug}`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Sobre esta tarjeta" }).click();
+    await expect(page.getByText("¿Qué es LyCard?")).toBeVisible();
+    await page.keyboard.press("Escape").catch(() => {});
+
+    await page.goto(`${BASE_URL}/admin/programs/${programId}`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: /^Modal "Qué es esta tarjeta"/ }).click();
+
+    const cardInfoForm = page.locator("form").filter({ has: page.locator('input[name="cardInfoBlocks"]') });
+    await cardInfoForm.getByRole("button", { name: "Agregar bloque" }).click();
+    await cardInfoForm.getByPlaceholder("Título (opcional)").fill("Manual rápido de uso");
+    await cardInfoForm.getByPlaceholder("Texto").fill("Tocá cualquier botón para ver tu contacto, tu info y tu Oficina Virtual.");
+
+    await cardInfoForm.getByRole("button", { name: "Guardar" }).click();
+    await page.waitForURL(/cardInfoSaved=1/);
+
+    const saved = await e2eDb.query<{ cardInfoBlocks: unknown }>(`select "cardInfoBlocks" from "Program" where id = $1`, [programId]);
+    expect(JSON.stringify(saved.rows[0].cardInfoBlocks)).toContain("Manual rápido de uso");
+
+    await page.goto(`${BASE_URL}/c/${cardSlug}`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Sobre esta tarjeta" }).click();
+    await expect(page.getByText("Manual rápido de uso")).toBeVisible();
+    await expect(page.getByText("Tocá cualquier botón para ver tu contacto")).toBeVisible();
+    // El texto genérico de siempre ya no aparece -- lo reemplazó el bloque.
+    await expect(page.getByText("¿Qué es LyCard?")).not.toBeVisible();
+
+    await context.close();
+  });
 });
 
 test.describe("Botones del Podio — 'Modal simple' (story)", () => {

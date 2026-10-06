@@ -64,8 +64,13 @@ export const STR: Record<Lang, Record<string, string>> = {
     inviteErrNotConfigured: "El envío de correos todavía no está activado.",
     inviteSubCompany: "Le enviamos un correo personalizado en tu nombre, invitándolo a conocer tu negocio.",
     close: "Cerrar",
-    cardInfoProjectHead: "Tu tarjeta de Programa",
-    cardInfoProjectBody: "Tu identidad dentro del Programa. Compartila para invitar gente a tu red — quien la escanee puede sumarse.",
+    // Copy actualizado (2026-10-05, pedido de Gunnar): "ese modal es
+    // necesario que tenga una explicacion clara de que es la legacy
+    // Card.. Que hace para ti" -- este es el fallback cuando el N0 no
+    // configuró bloques propios (Program.cardInfoBlocks, ver
+    // LyCardView.tsx) -- nunca queda una sección vacía el primer día.
+    cardInfoProjectHead: "¿Qué es LyCard?",
+    cardInfoProjectBody: "Tu tarjeta de presentación virtual: te permite compartir tu contacto, tu información y tu Oficina Virtual con otros al instante, con un solo link.",
     cardInfoCompanyHead: "Tu tarjeta de Negocio",
     cardInfoCompanyBody: "Tu tarjeta de negocio. Compartila con clientes y socios: mostrá tu marca, guardá contacto, agendá reuniones.",
     cardInfoPersonalHead: "Tu tarjeta Personal",
@@ -289,8 +294,8 @@ export const STR: Record<Lang, Record<string, string>> = {
     inviteErrNotConfigured: "Email sending isn't set up yet.",
     inviteSubCompany: "We'll send a personalized email on your behalf, inviting them to discover your business.",
     close: "Close",
-    cardInfoProjectHead: "Your Program card",
-    cardInfoProjectBody: "Your identity inside the Program. Share it to invite people into your network — anyone who scans it can join.",
+    cardInfoProjectHead: "What is LyCard?",
+    cardInfoProjectBody: "Your virtual presentation card: share your contact, your information, and your Virtual Office with anyone, instantly, with a single link.",
     cardInfoCompanyHead: "Your Business card",
     cardInfoCompanyBody: "Your business card. Share it with clients and partners — show your brand, save contact, book meetings.",
     cardInfoPersonalHead: "Your Personal card",

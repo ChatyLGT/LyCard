@@ -1405,6 +1405,10 @@ export default function LyCardView({
   const leftPodiumConfig = getPodiumButton(podiumButtons, "left");
   const rightPodiumConfig = getPodiumButton(podiumButtons, "right");
   const vaultBlocks = parseModalBlocks(program?.vaultBlocks);
+  // Modal "[Programa] Card" (2026-10-05, pedido de Gunnar) -- solo tiene
+  // sentido para project (las únicas con Program real); company/personal
+  // siguen con su copy fijo de siempre.
+  const cardInfoBlocks = isProject ? parseModalBlocks(program?.cardInfoBlocks) : [];
   // "invite" sigue siendo host-only sin importar en qué slot se puso --
   // es el panel interno de Destinatarios (hallazgo de PASO 5, ver
   // PLAN.md) -- un visitante que lo vea cae al fallback de ESE slot
@@ -2968,6 +2972,15 @@ export default function LyCardView({
                     ))}
                   </div>
                 </div>
+              ) : modal === "cardInfo" && cardInfoBlocks.length > 0 ? (
+                // Modal "[Programa] Card" (2026-10-05, pedido de Gunnar:
+                // "ese modal es necesario que tenga una explicacion clara
+                // de que es la legacy Card.. a lo mejor tambien agregar
+                // un pequeño manual de uso.. o un video"). Mismo sistema
+                // de bloques libres que la Bóveda -- texto, imagen,
+                // video/audio, archivo-link, KPI. Sin bloques configurados
+                // cae al texto fijo de siempre (rama genérica de abajo).
+                <ModalBlocksRenderer blocks={cardInfoBlocks} />
               ) : modal === "od" || modal === "ancient" || modal === "medal" || modal === "contacts" ? (
                 // Formato visual tipo modal Info (2026-10-03) + grilla REAL
                 // de niveles (2026-10-04, reemplaza los 4 íconos de ejemplo

@@ -25,7 +25,7 @@ import { CHANNELS } from "@/lib/messaging";
 import { buildFunnelStages } from "@/lib/funnel";
 import { createPuestoAction, updatePuestoAction, deletePuestoAction } from "../puestos-actions";
 import { createInterviewSlotAction, updateInterviewSlotAction, deleteInterviewSlotAction } from "../interview-slots-actions";
-import { setPodiumButtonAction, updateVaultAction } from "../podium-actions";
+import { setPodiumButtonAction, updateVaultAction, updateCardInfoAction } from "../podium-actions";
 import { CARD_LABEL_FIELDS, defaultCardLabel } from "@/lib/cardLabels";
 import { parseEscala } from "@/lib/escalas";
 import { parseOfficeSkills, DEFAULT_OFFICE_SKILLS } from "@/lib/officeSkills";
@@ -134,6 +134,7 @@ export default async function AdminProgramDetailPage({
     motivationalPhrasesSaved?: string;
     podiumSaved?: string;
     vaultSaved?: string;
+    cardInfoSaved?: string;
     originSaved?: string;
     focus?: string;
     messageSent?: string;
@@ -170,6 +171,7 @@ export default async function AdminProgramDetailPage({
     motivationalPhrasesSaved,
     podiumSaved,
     vaultSaved,
+    cardInfoSaved,
     originSaved,
     focus,
   } = await searchParams;
@@ -229,6 +231,7 @@ export default async function AdminProgramDetailPage({
   const motivationalPhrases = parseMotivationalPhrases(program.motivationalPhrases);
   const podiumButtons = parsePodiumButtons(program.podiumButtons);
   const vaultBlocks = parseModalBlocks(program.vaultBlocks);
+  const cardInfoBlocks = parseModalBlocks(program.cardInfoBlocks);
 
   const registrations = await prisma.registration.findMany({
     where: { card: { programId: id } },
@@ -749,6 +752,29 @@ export default async function AdminProgramDetailPage({
             <ModalBlocksEditor name="vaultBlocks" initialBlocks={vaultBlocks} />
             <button type="submit" style={{ padding: 13, border: "none", borderRadius: 10, background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)", color: "#0D0D0D", font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", cursor: "pointer" }}>
               Guardar Bóveda
+            </button>
+          </form>
+        </AccordionSection>
+
+        {/* Modal "[Programa] Card" / "LyCard" (2026-10-05, pedido de
+            Gunnar: "ese modal es necesario que tenga una explicacion
+            clara de que es la legacy Card.. que hace para ti.. a lo
+            mejor tambien agregar un pequeño manual de uso.. o un
+            video.. algo top1%"). Mismo Editor de Modales que la Bóveda.
+            Es el modal que se abre al tocar la píldora de arriba
+            ("LyCard"/"[Programa] Card") -- solo aplica a las Cards de
+            proyecto (las únicas con este Programa real). */}
+        <AccordionSection
+          title='Modal "Qué es esta tarjeta"'
+          subtitle='El contenido del modal que se abre al tocar la píldora de arriba ("LyCard"/"[Programa] Card") -- armalo con bloques, igual que la Bóveda. Sin bloques, se muestra el texto genérico de siempre.'
+          meta={<span style={PILL}>{cardInfoBlocks.length}</span>}
+          defaultOpen={Boolean(cardInfoSaved)}
+        >
+          {cardInfoSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Guardado.</p>}
+          <form action={updateCardInfoAction.bind(null, program.id)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <ModalBlocksEditor name="cardInfoBlocks" initialBlocks={cardInfoBlocks} />
+            <button type="submit" style={{ padding: 13, border: "none", borderRadius: 10, background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)", color: "#0D0D0D", font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", cursor: "pointer" }}>
+              Guardar Modal
             </button>
           </form>
         </AccordionSection>

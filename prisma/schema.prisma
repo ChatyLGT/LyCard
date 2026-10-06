@@ -527,6 +527,18 @@ model Program {
   // reemplazo total al guardar.
   vaultBlocks         Json   @default("[]")
 
+  // Modal "[Programa] Card" / "LyCard" (2026-10-05, pedido de Gunnar:
+  // "lo primero que necesitamos.. tener la posibilidad de editar cada
+  // uno de los modales.. ese modal es necesario que tenga una
+  // explicacion clara de que es la legacy Card.. que hace para ti..
+  // a lo mejor tambien agregar un pequeño manual de uso.. o un video").
+  // Mismo Editor de Modales que vaultBlocks -- vacío (el default) cae
+  // al texto fijo de siempre (lib/i18n.ts, cardInfoProjectHead/Body),
+  // nunca a una sección vacía. Solo aplica a Cards kind:"project" (las
+  // únicas con Program real) -- company/personal siguen con su copy
+  // fijo de siempre, fuera de alcance de esta vuelta.
+  cardInfoBlocks      Json   @default("[]")
+
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 

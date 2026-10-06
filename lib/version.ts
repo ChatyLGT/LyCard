@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.76.0";
+export const APP_VERSION = "1.77.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.77.0",
+    date: "2026-10-06",
+    notes:
+      "Modal \"[Programa] Card\" editable: pedido de Gunnar sobre la tarjeta básica del Visitante -- \"ese modal es necesario que tenga una explicacion clara de que es la legacy Card.. que hace para ti.. a lo mejor tambien agregar un pequeño manual de uso.. o un video\". Mismo Editor de Modales por bloques que ya usa Bóveda Legacy (texto, imagen, video/audio, archivo-link, KPI), ahora también en el modal que se abre al tocar la píldora de arriba (\"LyCard\"/\"[Programa] Card\"). Sin bloques configurados, sigue mostrando el texto genérico de siempre -- actualizado con la explicación que propuso Gunnar (\"Tarjeta de presentación virtual que te permite compartir tu contacto, tu información y tu Oficina Virtual con otros al instante\"). Solo aplica a Cards de proyecto (las únicas con Programa real).",
+  },
   {
     version: "1.76.0",
     date: "2026-10-05",

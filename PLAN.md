@@ -9284,3 +9284,68 @@ manda a login (nunca a `/admin/[slug]`, confirmando que no es
 editable), el cubo central abre el modal con el botón de escanear real
 y la lista de Programas activos (fixture propio, `afterAll` limpio).
 Suite Playwright completa corrida de punta a punta.
+
+## 2026-10-06 -- Modal "[Programa] Card" editable con el Editor de Modales (v1.77.0)
+
+Gunnar, satisfecho con la pantalla Mirón/NA, pasó al siguiente paso:
+*"ahora necesito que trabajemos en la tarjeta basica.. en la que ve el
+Visitante (el que llega de la nada).. lo primero que necesitamos hacer
+es tener la posibilidad de editar cada uno de los modales... ej. en la
+tarjeta basica.. tenemos en la parte superior el primer Modal que dice
+Legacy Card.. bueno ese modal es necesario que tenga una explicacion
+clara de que es la legacy Card.. Que hace para ti.. Tarjeta de
+presentacion Virtual que te permite compartir tu contacto, informacion
+y tu oficina virtual con otros de forma ASAP.. por ejemplo puede ser
+buena explicacion.. y a lo mejor tambien agregar un pequeño manual de
+Uso.. o un video para ello.. no se.. algo top1%"*.
+
+"Lo primero" -- arranca por el modal "LyCard"/"[Programa] Card" (la
+píldora de arriba, `modal === "cardInfo"` en `LyCardView.tsx`), con
+más modales quedando para rondas futuras (no se tocó ningún otro modal
+esta vuelta).
+
+### Lo construido
+
+Mismo Editor de Modales por bloques que ya probó su valor con la
+Bóveda Legacy (`lib/modalBlocks.ts` -- texto, imagen, video/audio,
+archivo-link, KPI) -- reusado, no reinventado:
+
+- `Program.cardInfoBlocks` (schema nuevo, `Json @default("[]")`,
+  mismo patrón que `vaultBlocks`).
+- `updateCardInfoAction` (`app/admin/programs/podium-actions.ts`,
+  junto a `updateVaultAction`).
+- Sección nueva en `/admin/programs/[id]`: "Modal 'Qué es esta
+  tarjeta'", mismo `ModalBlocksEditor` que la Bóveda.
+- `LyCardView.tsx`: `cardInfoBlocks` parseado solo para Cards
+  `kind:"project"` (las únicas con Programa real -- company/personal
+  siguen con su copy fijo, fuera de alcance esta vuelta); nueva rama
+  de render (`modal === "cardInfo" && cardInfoBlocks.length > 0`) con
+  `ModalBlocksRenderer`; sin bloques, cae al texto fijo de siempre.
+- Copy del fallback actualizado (`lib/i18n.ts`,
+  `cardInfoProjectHead`/`Body`) con la explicación honesta que propuso
+  Gunnar: *"Tarjeta de presentación virtual: te permite compartir tu
+  contacto, tu información y tu Oficina Virtual con otros al instante,
+  con un solo link."*
+
+El "manual de uso o video" que Gunnar sugirió como idea ya está
+cubierto por el sistema de bloques en sí -- un bloque `video_audio`
+(embebe YouTube/Vimeo) o `archivo_link` (link a un manual/PDF externo)
+alcanza sin construir nada nuevo; queda a elección de Gunnar armarlo
+desde el dashboard cuando quiera.
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos, `pnpm build`
+limpio. `e2e/podium-vault-ai.spec.ts`: test nuevo -- el N0 arma un
+bloque de texto en el modal "Qué es esta tarjeta" desde el dashboard,
+la tarjeta pública lo muestra en vez del texto genérico (confirmado
+que el texto viejo YA NO aparece, no es que ambos convivan). Suite
+Playwright completa corrida de punta a punta sin regresiones.
+
+Un detalle real que apareció en el camino: el botón de guardar de esta
+sección nueva salió con el texto plano "Guardar", igual que el botón
+de "Identidad del Programa" ya existente en la misma página -- eso
+rompió 2 tests de `photo-positioner.spec.ts` que buscan ese botón sin
+ambigüedad. Renombrado a "Guardar Modal" (misma convención que "Guardar
+Bóveda"/"Guardar Textos"), y recorrida la suite completa (60/60) para
+confirmarlo antes de este commit.

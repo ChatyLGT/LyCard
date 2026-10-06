@@ -66,3 +66,25 @@ export async function updateVaultAction(programId: string, formData: FormData) {
   revalidatePath(`/admin/programs/${programId}`);
   redirect(`/admin/programs/${programId}?vaultSaved=1`);
 }
+
+// Modal "[Programa] Card" / "LyCard" (2026-10-05) -- mismo Editor de
+// Modales que la Bóveda, para el modal que explica qué es la tarjeta en
+// sí (la píldora de arriba, "Sobre esta tarjeta"). Solo tiene sentido
+// para Cards kind:"project" (las únicas con Program real); vacío cae al
+// texto fijo de siempre (lib/i18n.ts).
+export async function updateCardInfoAction(programId: string, formData: FormData) {
+  await requireProgramAccess(programId);
+
+  let blocksRaw: unknown = [];
+  try {
+    blocksRaw = JSON.parse(String(formData.get("cardInfoBlocks") || "[]"));
+  } catch {
+    blocksRaw = [];
+  }
+  const cardInfoBlocks = parseModalBlocks(blocksRaw);
+
+  await prisma.program.update({ where: { id: programId }, data: { cardInfoBlocks } });
+
+  revalidatePath(`/admin/programs/${programId}`);
+  redirect(`/admin/programs/${programId}?cardInfoSaved=1`);
+}
