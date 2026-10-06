@@ -9498,3 +9498,91 @@ nada nuevo que testear ahí). Test E2E nuevo
 sesión de Admin sigue intacta después (vuelve a
 `/admin/programs/[id]` sin que lo manden a loguearse de nuevo). Suite
 Playwright completa corrida de punta a punta.
+
+## 2026-10-06 -- Fix de login atascado + Traducción al vuelo con IA (v1.80.0)
+
+Dos pedidos "estéticos" de Gunnar, uno chico y uno grande:
+
+### Fix: /admin/login sin volver atrás
+
+*"El panel de administración para hacer login no tiene volver atrás y
+queda atascado en la tarjeta."* Causa real: el único link que manda a
+`/admin/login` en toda la app es el ícono de login que ve un visitante
+sin sesión (`badge === "NA"`, `components/LyCardView.tsx`) -- no
+mandaba ningún parámetro, y la pantalla de login no tenía ningún link
+de salida salvo el botón atrás del navegador (inexistente en modo PWA/
+standalone). Fix: el ícono manda `?back=<slug de la Card>`, y
+`/admin/login` ahora tiene un link real "← Volver" arriba del todo --
+a `/c/<back>` si vino de una Card, a `/` si no (nunca sin salida).
+
+### Traducción al vuelo con IA
+
+*"El sistema de traducción no traduce nada es importante traduzca
+todo. Si hay que habilitar ia para traducir contenido que se haga."*
+
+El selector ES/EN de siempre (`lib/i18n.ts`) solo traducía el texto
+fijo de la interfaz -- nombre/título/cita, "Mi camino", Bóveda,
+"[Programa] Card" y las descripciones de O.D./Ancient/Medalla/Valor
+son contenido real que escribe un N0, nunca pasaban por ahí. Se
+consultó el alcance con Gunnar (`AskUserQuestion`): **al vuelo con
+caché** (no precalculado al guardar) y **toda la tarjeta de proyecto**
+(no solo lo más visible), ambos recomendados, ambos elegidos.
+
+### Lo construido
+
+- `ContentTranslation` (schema nuevo): una fila por (hash del
+  contenido, idioma), content-addressed -- no por Card. Si el N0 edita
+  cualquier campo, el hash cambia solo y se retraduce; si dos Cards
+  tienen el mismo texto, comparten caché.
+- `lib/translation.ts` (puro, testeado 100%): `hashBundle()` (mismo
+  hash sin importar el orden de las claves) y `parseTranslationResponse()`
+  (mismo criterio robusto que `lib/aiAgent.ts` -- intenta JSON directo,
+  si no busca el primer `{...}`, descarta claves no pedidas).
+- `lib/translateActions.ts` (server action, mismo patrón que
+  `generatePodiumAiButtonAction`): arma UN bundle plano con todo el
+  contenido traducible de la Card, UN solo pedido a Claude (nunca uno
+  por campo), chequea el caché antes de llamar. Sin `ANTHROPIC_API_KEY`
+  o si Claude falla, devuelve `{}` -- cae honesto al texto original.
+- `components/LyCardView.tsx`: arma el bundle (solo `isProject`, mismo
+  alcance que `cardInfoBlocks`/`vaultBlocks`) con
+  `card.title/quote/storyQuote/storyBody`, la descripción del Puesto/
+  Escala actual, los textos introductorios del Editor de Modales
+  (v1.78.0), y cada bloque de la Bóveda/"[Programa] Card". Al tocar
+  EN, un solo `useEffect` dispara el pedido una vez por carga de
+  página; `tr(key, original)` resuelve cada campo.
+
+### Fuera de alcance esta vuelta (documentado, no construido)
+
+Company/personal quedan sin traducir (mismo alcance que cardInfoBlocks/
+vaultBlocks hoy). Ícono/denominación de O.D./Ancient/Medalla/Valor no
+entran (son nombres cortos de nivel, no prosa). El texto fijo de la
+interfaz sigue en `lib/i18n.ts`, sin tocar.
+
+### Verificación
+
+`npx tsc --noEmit` limpio, `pnpm lint` sin errores nuevos, `pnpm build`
+limpio, `pnpm test:unit:coverage` 100% (incluido `lib/translation.ts`
+nuevo en el ratchet de cobertura). Test E2E nuevo
+(`e2e/translation.spec.ts`): confirma que tocar EN dispara el pedido
+real a Claude (confirmado en los logs del server: la llamada sale,
+Anthropic responde) y que el resultado es siempre uno de los 2
+desenlaces honestos -- traducido de verdad (fila nueva en
+ContentTranslation + texto en pantalla cambia) o fallback honesto
+(sin fila nueva, el texto original se queda tal cual) -- nunca un
+hueco en blanco ni contenido roto, mismo criterio que el test del
+Agente de IA. Nota honesta: en este sandbox la cuenta de Anthropic no
+tiene crédito cargado (confirmado vía log: `"Your credit balance is
+too low"`), así que se verificó de punta a punta el camino de fallback
+honesto -- el camino de éxito está cubierto por los tests unitarios de
+`hashBundle`/`parseTranslationResponse` y por el mismo código ya
+probado en producción para `generatePodiumAiButtonAction`, pero no se
+pudo confirmar con una llamada real exitosa en este entorno.
+
+De paso, un fix chico no relacionado: `e2e/view-as-member.spec.ts`
+(v1.79.0) afirmaba `getByText("Hola, Miembro E2E ViewAs")` sin acotar a
+un rol -- el div accesible `#__next-route-announcer__` que Next.js
+inyecta en cada navegación client-side duplica el texto del `<h1>` de
+la página nueva, así que esa aserción podía chocar con "strict mode
+violation" (2 elementos con el mismo texto) según el timing. Se acotó a
+`getByRole("heading", ...)`, mismo criterio ya usado más abajo en el
+mismo test. Suite Playwright completa: 63/63 verde.

@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.79.0";
+export const APP_VERSION = "1.80.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.80.0",
+    date: "2026-10-06",
+    notes:
+      "Fix: /admin/login quedaba atascado sin volver atrás (reportado por Gunnar) -- el ícono de login de un visitante sin sesión ahora manda su slug como `back`, y la pantalla de login tiene un link real de vuelta. Traducción al vuelo con IA: el selector ES/EN solo traducía el texto fijo de la interfaz, nunca lo que un N0 escribe a mano (nombre/título/cita, Mi camino, Bóveda, \"[Programa] Card\", descripciones de niveles) -- \"si hay que habilitar ia para traducir contenido que se haga\". Ahora, al tocar EN en una Card de proyecto, todo ese contenido se manda en un solo pedido a Claude y se cachea por contenido en ContentTranslation -- la próxima vez que alguien lo vea en inglés (cualquier Card con ese mismo texto) sale de la DB, sin pegarle a la IA de nuevo. Sin ANTHROPIC_API_KEY o si Claude falla, cae honesto al texto original en español, nunca rompe la tarjeta.",
+  },
   {
     version: "1.79.0",
     date: "2026-10-06",

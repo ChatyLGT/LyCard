@@ -77,7 +77,7 @@ test.describe("Entrar como este Miembro — acceso real a /m/dashboard desde el 
     await page.getByRole("button", { name: "Entrar como este Miembro →" }).click();
 
     await page.waitForURL(`${BASE_URL}/m/dashboard`);
-    await expect(page.getByText("Hola, Miembro E2E ViewAs")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Hola, Miembro E2E ViewAs" })).toBeVisible();
 
     // La sesión propia de Admin sigue intacta -- no se perdió al entrar
     // como el Miembro (cookies distintas, ver lib/memberAuth.ts).

@@ -1,11 +1,20 @@
+import Link from "next/link";
 import { loginAction } from "@/app/admin/actions";
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; next?: string }>;
+  searchParams: Promise<{ error?: string; next?: string; back?: string }>;
 }) {
-  const { error, next } = await searchParams;
+  const { error, next, back } = await searchParams;
+  // Fix (2026-10-06, reportado por Gunnar: "no tiene volver atrás y
+  // queda atascado en la tarjeta") -- esta pantalla no tenía ninguna
+  // salida salvo el botón atrás del navegador (inexistente en modo
+  // PWA/standalone). El único link real que manda acá es el ícono
+  // "login" de LyCardView.tsx para un visitante sin relación con la
+  // Card (badge "NA"), que ahora manda su propio slug como `back` --
+  // sin ese param, cae a la raíz en vez de quedar sin salida.
+  const backHref = back ? `/c/${back}` : "/";
 
   return (
     <div
@@ -35,6 +44,21 @@ export default async function LoginPage({
         }}
       >
         <input type="hidden" name="next" value={next || "/admin"} />
+        <Link
+          href={backHref}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            alignSelf: "flex-start",
+            font: "600 11px 'Plus Jakarta Sans',sans-serif",
+            letterSpacing: ".04em",
+            color: "#8a8378",
+            textDecoration: "none",
+          }}
+        >
+          ← Volver
+        </Link>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 8 }}>
           <span
             style={{

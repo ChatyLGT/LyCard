@@ -56,6 +56,28 @@ model AdminLoginEvent {
   createdAt DateTime @default(now())
 }
 
+// Caché de traducciones con IA (2026-10-06, pedido de Gunnar: "el
+// sistema de traducción no traduce nada.. si hay que habilitar ia para
+// traducir contenido que se haga"). El selector ES/EN de siempre solo
+// traducía el texto fijo de la interfaz (lib/i18n.ts) -- esto traduce
+// el contenido REAL que escribe un N0 (nombre, Mi camino, Bóveda,
+// descripciones de niveles), bajo demanda vía Claude (ver
+// lib/translation.ts + app/c/[slug]/translate-actions.ts). Una fila por
+// (hash del contenido, idioma destino) -- content-addressed, no por
+// Card: si el N0 edita cualquier campo el hash cambia solo y se
+// retraduce; si dos Cards tienen el mismo contenido, comparten el
+// caché. `bundle` guarda el objeto {clave: texto traducido} completo
+// de una sola llamada a Claude (nunca una llamada por campo).
+model ContentTranslation {
+  id        String   @id @default(cuid())
+  hash      String
+  lang      String
+  bundle    Json
+  createdAt DateTime @default(now())
+
+  @@unique([hash, lang])
+}
+
 // One row per LyCard. Multi-tenant roster: the Admin
 // creates/edits every card; each card is publicly viewable at /c/[slug].
 model Card {

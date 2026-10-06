@@ -8,8 +8,10 @@ import { t, type Lang } from "@/lib/i18n";
 import { rankById, medalById } from "@/lib/data";
 import { parseEscala } from "@/lib/escalas";
 import { parsePodiumButtons, getPodiumButton, type PodiumButtonKind } from "@/lib/podiumButtons";
-import { parseModalBlocks } from "@/lib/modalBlocks";
+import { parseModalBlocks, type ModalBlock } from "@/lib/modalBlocks";
 import ModalBlocksRenderer from "@/components/ModalBlocksRenderer";
+import { TIER_MODAL_KEYS } from "@/lib/modalEditor";
+import { translateBundleAction } from "@/lib/translateActions";
 import { registerInterviewAction, sendContactMessageAction, sendQrByWhatsappAction } from "@/app/c/actions";
 import { startLegacyFunnelAction } from "@/app/c/legacy-funnel-actions";
 import { setCardTierAction, type CardTierField } from "@/app/c/card-tier-actions";
@@ -1431,6 +1433,83 @@ export default function LyCardView({
   // sentido para project (las únicas con Program real); company/personal
   // siguen con su copy fijo de siempre.
   const cardInfoBlocks = isProject ? parseModalBlocks(program?.cardInfoBlocks) : [];
+
+  // Traducción al vuelo con IA (2026-10-06, pedido de Gunnar: "el
+  // sistema de traducción no traduce nada.. si hay que habilitar ia
+  // para traducir contenido que se haga"). El selector ES/EN de abajo
+  // solo traducía el texto fijo de la interfaz (lib/i18n.ts) -- todo
+  // lo que escribe un N0 a mano (nombre/título/cita, Mi camino,
+  // Bóveda, "[Programa] Card", descripciones de niveles) se quedaba
+  // en el idioma en que se escribió. Acá se arma el bundle plano con
+  // TODO eso -- solo project (mismo alcance que cardInfoBlocks/
+  // vaultBlocks arriba, company/personal quedan fuera esta vuelta) --
+  // y el useEffect de más abajo lo manda a traducir una sola vez por
+  // carga de página, cacheado server-side por contenido (ver
+  // lib/translateActions.ts).
+  const translatableBundle: Record<string, string> = {};
+  if (isProject) {
+    if (card.title) translatableBundle["card.title"] = card.title;
+    if (card.quote) translatableBundle["card.quote"] = card.quote;
+    if (card.storyQuote) translatableBundle["card.storyQuote"] = card.storyQuote;
+    if (card.storyBody) translatableBundle["card.storyBody"] = card.storyBody;
+    if (displayDescripcion) translatableBundle["puesto.descripcion"] = displayDescripcion;
+    if (rankTier.descripcion) translatableBundle["rankTier.descripcion"] = rankTier.descripcion;
+    if (medalTier.descripcion) translatableBundle["medalTier.descripcion"] = medalTier.descripcion;
+    if (contactsTier.descripcion) translatableBundle["contactsTier.descripcion"] = contactsTier.descripcion;
+    for (const tierKey of TIER_MODAL_KEYS) {
+      const intro = tierIntroOverride(program, tierKey);
+      if (intro) translatableBundle[`tierIntro.${tierKey}`] = intro;
+    }
+    const collectBlockTexts = (blocks: ModalBlock[], prefix: string) => {
+      for (const block of blocks) {
+        if (block.heading) translatableBundle[`${prefix}.${block.id}.heading`] = block.heading;
+        if (block.body) translatableBundle[`${prefix}.${block.id}.body`] = block.body;
+        if (block.linkLabel) translatableBundle[`${prefix}.${block.id}.linkLabel`] = block.linkLabel;
+        if (block.kpiSub) translatableBundle[`${prefix}.${block.id}.kpiSub`] = block.kpiSub;
+      }
+    };
+    collectBlockTexts(vaultBlocks, "vault");
+    collectBlockTexts(cardInfoBlocks, "cardInfo");
+  }
+  const hasTranslatableContent = Object.keys(translatableBundle).length > 0;
+
+  // Un solo pedido a Claude por carga de página (nunca uno por campo) --
+  // dispara al tocar EN, se queda en null hasta entonces. El guard de
+  // `translatedEn !== null` evita repetir el pedido si el visitante
+  // vuelve a ES y a EN de nuevo sin recargar; el cacheo real (por
+  // contenido, no por sesión) vive server-side en translateBundleAction.
+  const [translatedEn, setTranslatedEn] = useState<Record<string, string> | null>(null);
+  const [, startTranslating] = useTransition();
+  useEffect(() => {
+    if (lang !== "en" || !hasTranslatableContent || translatedEn !== null) return;
+    startTranslating(async () => {
+      const result = await translateBundleAction(translatableBundle, "en");
+      setTranslatedEn(result);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang, hasTranslatableContent, translatedEn]);
+
+  // Fallback honesto: sin traducción cacheada todavía (recién tocó EN,
+  // el pedido sigue en vuelo) o sin ANTHROPIC_API_KEY configurada, se
+  // queda en el texto original en español -- nunca un hueco en blanco.
+  function tr(key: string, original: string): string {
+    if (lang !== "en") return original;
+    return translatedEn?.[key] || original;
+  }
+
+  // Mismas claves que collectBlockTexts de arriba -- ModalBlocksRenderer
+  // recibe el array ya traducido en vez de tener que enterarse de EN.
+  function translateBlocks(blocks: ModalBlock[], prefix: string): ModalBlock[] {
+    if (lang !== "en") return blocks;
+    return blocks.map((block) => ({
+      ...block,
+      heading: block.heading ? tr(`${prefix}.${block.id}.heading`, block.heading) : block.heading,
+      body: block.body ? tr(`${prefix}.${block.id}.body`, block.body) : block.body,
+      linkLabel: block.linkLabel ? tr(`${prefix}.${block.id}.linkLabel`, block.linkLabel) : block.linkLabel,
+      kpiSub: block.kpiSub ? tr(`${prefix}.${block.id}.kpiSub`, block.kpiSub) : block.kpiSub,
+    }));
+  }
+
   // "invite" sigue siendo host-only sin importar en qué slot se puso --
   // es el panel interno de Destinatarios (hallazgo de PASO 5, ver
   // PLAN.md) -- un visitante que lo vea cae al fallback de ESE slot
@@ -1600,7 +1679,7 @@ export default function LyCardView({
       // viven en este párrafo de texto -- se renderizan aparte, abajo,
       // en la rama visual de JSX (grilla real, ver tierTilesByModal),
       // igual que el modal Info.
-      body: displayDescripcion || t(lang, "odBody"),
+      body: displayDescripcion ? tr("puesto.descripcion", displayDescripcion) : t(lang, "odBody"),
       // meta condicional (2026-10-03): "Sin configurar" mientras el
       // Programa no definió su propio Puesto -- antes decía siempre
       // "Activo y Certificado" aunque el body ya avisara que no hay nada
@@ -1613,14 +1692,14 @@ export default function LyCardView({
       // Dynamic per the card's actual rank tier (PLAN.md Fase 9.5) — used
       // to always say "Ancient Pioneer" regardless of the real rank.
       head: `✦ ${rankTier.nombre} ✦`,
-      body: rankTier.descripcion || t(lang, "ancBody"),
+      body: rankTier.descripcion ? tr("rankTier.descripcion", rankTier.descripcion) : t(lang, "ancBody"),
       meta: rankTier.descripcion ? t(lang, "ancMeta") : t(lang, "ancMetaEmpty"),
     },
     medal: {
       icon: medalTier.icono || "workspace_premium",
       kicker: medalTier.subtitulo || t(lang, "medalKicker"),
       head: medalTier.nombre,
-      body: medalTier.descripcion || t(lang, "medalBody"),
+      body: medalTier.descripcion ? tr("medalTier.descripcion", medalTier.descripcion) : t(lang, "medalBody"),
       meta: medalTier.descripcion ? t(lang, "medalMeta") : t(lang, "medalMetaEmpty"),
     },
     // "Gente Contactada" pasó a ser Badge de Valor (2026-10-04, pedido de
@@ -1635,7 +1714,7 @@ export default function LyCardView({
       icon: contactsTier.icono || "military_tech",
       kicker: contactsTier.subtitulo || t(lang, "valueKicker"),
       head: contactsTier.nombre,
-      body: contactsTier.descripcion || t(lang, "valueBody"),
+      body: contactsTier.descripcion ? tr("contactsTier.descripcion", contactsTier.descripcion) : t(lang, "valueBody"),
       meta: contactsTier.descripcion ? t(lang, "valueMeta") : t(lang, "valueMetaEmpty"),
     },
     story: {
@@ -1645,8 +1724,8 @@ export default function LyCardView({
       // project falls back to the fixed Legacy copy until they write their
       // own; company/personal have no built-in lore to fall back to, so
       // theirs is a plain "not written yet" placeholder instead (2026-09-16).
-      head: card.storyQuote || (isProject ? t(lang, "storyHead") : t(lang, "storyHeadEmpty", { name: card.name })),
-      body: card.storyBody || (isProject ? t(lang, "storyBody") : t(lang, "storyBodyEmpty", { name: card.name })),
+      head: card.storyQuote ? tr("card.storyQuote", card.storyQuote) : (isProject ? t(lang, "storyHead") : t(lang, "storyHeadEmpty", { name: card.name })),
+      body: card.storyBody ? tr("card.storyBody", card.storyBody) : (isProject ? t(lang, "storyBody") : t(lang, "storyBodyEmpty", { name: card.name })),
       meta: isProject ? t(lang, "storyMeta") : undefined,
     },
     // PASO 4 (2026-10-02): con destinatario, "Info Legacy" pasa a ser
@@ -1847,7 +1926,7 @@ export default function LyCardView({
                       /admin/[slug] para cualquiera con badge real (N0..N,
                       donde sí tiene sentido personalizar). */}
                   {badge === "NA" ? (
-                    <Link href="/admin/login" aria-label={L("loginIcon")} style={ICON_BTN}>
+                    <Link href={`/admin/login?back=${card.slug}`} aria-label={L("loginIcon")} style={ICON_BTN}>
                       <Icon name="login" size={17} />
                     </Link>
                   ) : (
@@ -2038,7 +2117,7 @@ export default function LyCardView({
                       color: card.title ? "var(--goldtxt,#E5C378)" : "var(--ink2,#8A8680)",
                     }}
                   >
-                    {card.title || t(lang, "titlePlaceholder")}
+                    {card.title ? tr("card.title", card.title) : t(lang, "titlePlaceholder")}
                   </span>
                 </button>
 
@@ -2189,7 +2268,7 @@ export default function LyCardView({
                   overflow: "hidden",
                 }}
               >
-                {card.quote}
+                {tr("card.quote", card.quote)}
               </p>
             )}
             {/* -20% (2026-09-17, pedido de Gunnar). En project (Legacy),
@@ -2579,7 +2658,7 @@ export default function LyCardView({
                 // CodiceDossier de siempre. Visible para cualquier
                 // visitante, sin link de destinatario (?para=) y sin
                 // gate de palabra secreta.
-                <ModalBlocksRenderer blocks={vaultBlocks} />
+                <ModalBlocksRenderer blocks={translateBlocks(vaultBlocks, "vault")} />
               ) : modal === "info" && isProject ? (
                 <>
                   <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", borderRadius: 16, overflow: "hidden", border: "1px solid rgba(var(--accentRgb,200,161,90),.4)", background: "#000" }}>
@@ -3002,7 +3081,7 @@ export default function LyCardView({
                 // de bloques libres que la Bóveda -- texto, imagen,
                 // video/audio, archivo-link, KPI. Sin bloques configurados
                 // cae al texto fijo de siempre (rama genérica de abajo).
-                <ModalBlocksRenderer blocks={cardInfoBlocks} />
+                <ModalBlocksRenderer blocks={translateBlocks(cardInfoBlocks, "cardInfo")} />
               ) : modal === "od" || modal === "ancient" || modal === "medal" || modal === "contacts" ? (
                 // Formato visual tipo modal Info (2026-10-03) + grilla REAL
                 // de niveles (2026-10-04, reemplaza los 4 íconos de ejemplo
@@ -3021,8 +3100,12 @@ export default function LyCardView({
                     <span style={{ font: "700 17px var(--brandFont,'Playfair Display'),serif", color: "var(--accentLight,#E5C378)" }}>{activeModal.head}</span>
                   </div>
                   <p style={{ margin: 0, font: "400 12.5px/1.7 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "rgba(245,242,235,.92)" }}>
-                    {tierIntroOverride(program, modal) ||
-                      t(lang, modal === "od" ? "odIntro" : modal === "ancient" ? "ancIntro" : modal === "medal" ? "medalIntro" : "contactsIntro")}
+                    {(() => {
+                      const intro = tierIntroOverride(program, modal);
+                      return intro
+                        ? tr(`tierIntro.${modal}`, intro)
+                        : t(lang, modal === "od" ? "odIntro" : modal === "ancient" ? "ancIntro" : modal === "medal" ? "medalIntro" : "contactsIntro");
+                    })()}
                   </p>
                   {tierTilesByModal[modal].length === 0 ? (
                     <p style={{ margin: 0, font: "400 11.5px/1.6 var(--brandFont,'Plus Jakarta Sans'),sans-serif", color: "rgba(245,242,235,.7)" }}>{activeModal.body}</p>
