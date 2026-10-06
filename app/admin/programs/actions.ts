@@ -247,15 +247,27 @@ export async function deleteProgramSkinAction(programId: string, skinId: string)
 // card renders (lib/cardLabels.ts) — atajo version of the full per-Program
 // identity system in PLAN.md Fase 9. Blank field = revert to the i18n
 // default, so we only persist keys the N0 actually typed something into.
+//
+// MERGE, no reemplazo total (fix 2026-10-06, Editor de Modales
+// unificación): Program.cardLabels también guarda los kickers de los
+// modales que ahora se editan desde /admin/programs/[id]'s "Editor de
+// Modales" (cardInfoKicker, infoKicker, etc. -- lib/modalEditor.ts).
+// Si este form solo tocara/reemplazara el objeto completo, cada submit
+// de "Textos de Botones y Modales" borraría esos valores porque ya no
+// están en CARD_LABEL_FIELDS.
 export async function updateCardLabelsAction(programId: string, formData: FormData) {
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
   if (!canAccessProgram(scope, programId)) redirect("/admin");
 
-  const labels: Record<string, string> = {};
+  const program = await prisma.program.findUnique({ where: { id: programId }, select: { cardLabels: true } });
+  const labels: Record<string, string> =
+    program?.cardLabels && typeof program.cardLabels === "object" && !Array.isArray(program.cardLabels)
+      ? { ...(program.cardLabels as Record<string, string>) }
+      : {};
   for (const { key } of CARD_LABEL_FIELDS) {
     const v = String(formData.get(key) || "").trim();
-    if (v) labels[key] = v;
+    if (v) labels[key] = v; else delete labels[key];
   }
 
   await prisma.program.update({ where: { id: programId }, data: { cardLabels: labels } });

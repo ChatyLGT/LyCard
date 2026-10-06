@@ -5,6 +5,18 @@ import { STR } from "./i18n";
 // identity system (PLAN.md Fase 9): titles only, not full modal content,
 // not badge/rank scales, not per-language. Keys match lib/i18n.ts's `es`
 // dictionary exactly, since that's what an override replaces.
+// Editor de Modales -- Unificación completa (2026-10-06): los 6 campos
+// que eran el texto del botón/kicker de uno de los 14 modales reales
+// (cardInfoKicker, infoKicker, inviteKicker, contactKicker, storyKicker,
+// ancKicker) se MUDARON de esta lista a su fila correspondiente en
+// "Editor de Modales" (lib/modalEditor.ts, MODAL_EDITOR_ENTRIES) --
+// Gunnar los buscaba ahí sin encontrarlos, separados del resto de ese
+// mismo modal. Siguen guardándose en el mismo campo Program.cardLabels
+// de siempre (defaultCardLabel sigue resolviendo cualquier key por su
+// default de lib/i18n.ts); lo que cambió es SOLO dónde se editan. Lo
+// que queda acá son textos de botones puros (no abren un modal del
+// registro) y los de Virtual Office/Agendar, que no son parte de ese
+// sistema de 14.
 export const CARD_LABEL_FIELDS: { key: string; label: string; group: "Botones" | "Modales" }[] = [
   { key: "customize", label: "Ícono personalizar (arriba, esquina)", group: "Botones" },
   { key: "storyBtn", label: "Botón “Mi camino con…”", group: "Botones" },
@@ -13,23 +25,10 @@ export const CARD_LABEL_FIELDS: { key: string; label: string; group: "Botones" |
   { key: "scheduleBtnHost", label: "Botón Agendar — vista del dueño", group: "Botones" },
   { key: "createCardBtn", label: "Botón “Creá tu LyCard”", group: "Botones" },
   { key: "inviteBtn", label: "Botón Enviar Invitación", group: "Botones" },
-  { key: "ancKicker", label: "Modal Ancient — encabezado", group: "Modales" },
-  { key: "storyKicker", label: "Modal “Mi camino” — encabezado", group: "Modales" },
-  { key: "infoKicker", label: "Modal Info — etiqueta superior", group: "Modales" },
-  { key: "infoTitle", label: "Modal Info — título", group: "Modales" },
-  { key: "inviteKicker", label: "Modal Invitación — encabezado", group: "Modales" },
   { key: "scheduleKicker", label: "Modal Agendar — etiqueta superior", group: "Modales" },
   { key: "scheduleTitle", label: "Modal Agendar — título", group: "Modales" },
   { key: "officeKickerProject", label: "Modal Virtual Office — encabezado", group: "Modales" },
   { key: "officeSkillsKicker", label: "Nombre de la sección de Superpoderes (Oficina Virtual)", group: "Modales" },
-  // Editor de Modales -- Reorganización completa (2026-10-06): 2 huecos
-  // reales que quedaban sin override. cardInfoKicker es el único campo
-  // de este archivo con default DINÁMICO (`${program.name} Card`, no un
-  // string fijo de lib/i18n.ts) -- se resuelve a mano en LyCardView.tsx
-  // (cardIslandLabel), no vía cardLabel()/t(), por eso el placeholder de
-  // abajo es solo orientativo.
-  { key: "cardInfoKicker", label: "Nombre del botón “[Programa] Card” (arriba de la tarjeta)", group: "Modales" },
-  { key: "contactKicker", label: "Modal Mensaje — encabezado", group: "Modales" },
 ];
 
 export function defaultCardLabel(key: string): string {

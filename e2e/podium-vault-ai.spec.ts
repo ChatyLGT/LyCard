@@ -84,6 +84,10 @@ test.describe("Botones del Podio — dashboard + tarjeta pública", () => {
     await leftSection.getByRole("button", { name: "Guardar Botón" }).click();
     await page.waitForURL(/podiumSaved=left/);
 
+    // Editor de Modales -- Unificación (2026-10-06): "Bóveda Legacy" es
+    // una fila más dentro de "Editor de Modales" (ya no su propia
+    // sección), con título+palabra secreta+bloques en el mismo form.
+    await page.getByRole("button", { name: /^Editor de Modales/ }).click();
     // Sin exact:true -- el botón del acordeón concatena título + subtítulo
     // + badge en su nombre accesible, no es el texto pelado del título.
     // Anclado al INICIO (^) porque el subtítulo de "Botones del Podio"
@@ -112,16 +116,16 @@ test.describe("Botones del Podio — dashboard + tarjeta pública", () => {
     await vaultForm.getByPlaceholder("https://... (el link o archivo que abre)").fill("https://notebooklm.google.com/e2e-cuaderno");
     await vaultForm.getByPlaceholder("Texto del botón (ej. Abrir mi cuaderno)").fill("Abrir mi cuaderno");
 
-    await vaultForm.getByRole("button", { name: "Guardar Bóveda" }).click();
-    await page.waitForURL(/vaultSaved=1/);
+    await vaultForm.getByRole("button", { name: "Guardar" }).click();
+    await page.waitForURL(/modalSaved=vault/);
 
-    const saved = await e2eDb.query<{ vaultTitle: string; vaultPalabraSecreta: string; vaultBlocks: unknown }>(
-      `select "vaultTitle", "vaultPalabraSecreta", "vaultBlocks" from "Program" where id = $1`,
+    const saved = await e2eDb.query<{ vaultTitle: string; vaultPalabraSecreta: string; modalBlocks: unknown }>(
+      `select "vaultTitle", "vaultPalabraSecreta", "modalBlocks" from "Program" where id = $1`,
       [programId]
     );
     expect(saved.rows[0].vaultTitle).toBe("Bóveda de Gunnar");
     expect(saved.rows[0].vaultPalabraSecreta).toBe("mayancity");
-    expect(JSON.stringify(saved.rows[0].vaultBlocks)).toContain("notebooklm.google.com/e2e-cuaderno");
+    expect(JSON.stringify(saved.rows[0].modalBlocks)).toContain("notebooklm.google.com/e2e-cuaderno");
 
     await page.goto(`${BASE_URL}/c/${cardSlug}`, { waitUntil: "networkidle" });
     await page.getByRole("button", { name: "Bóveda de Gunnar", exact: true }).click();
@@ -219,18 +223,24 @@ test.describe("Botones del Podio — dashboard + tarjeta pública", () => {
     await page.keyboard.press("Escape").catch(() => {});
 
     await page.goto(`${BASE_URL}/admin/programs/${programId}`, { waitUntil: "networkidle" });
-    await page.getByRole("button", { name: /^Modal "Qué es esta tarjeta"/ }).click();
+    await page.getByRole("button", { name: /^Editor de Modales/ }).click();
+    // Nombre de la fila es el de MODAL_EDITOR_ENTRIES (lib/modalEditor.ts),
+    // no "Modal 'Qué es esta tarjeta'" -- esa sección vieja se plegó acá.
+    await page.getByRole("button", { name: /^"LyCard"/ }).click();
 
-    const cardInfoForm = page.locator("form").filter({ has: page.locator('input[name="cardInfoBlocks"]') });
+    // Scope por el texto único del bodyHint de esta fila (bodyKind:"bloques"
+    // de cardInfo, lib/modalEditor.ts) -- evita ambigüedad con "info", que
+    // también tiene campos icon+kicker+blocks.
+    const cardInfoForm = page.locator("form").filter({ hasText: "texto, imagen, video/audio, archivo, KPI" });
     await cardInfoForm.getByRole("button", { name: "Agregar bloque" }).click();
     await cardInfoForm.getByPlaceholder("Título (opcional)").fill("Manual rápido de uso");
     await cardInfoForm.getByPlaceholder("Texto").fill("Tocá cualquier botón para ver tu contacto, tu info y tu Oficina Virtual.");
 
     await cardInfoForm.getByRole("button", { name: "Guardar" }).click();
-    await page.waitForURL(/cardInfoSaved=1/);
+    await page.waitForURL(/modalSaved=cardInfo/);
 
-    const saved = await e2eDb.query<{ cardInfoBlocks: unknown }>(`select "cardInfoBlocks" from "Program" where id = $1`, [programId]);
-    expect(JSON.stringify(saved.rows[0].cardInfoBlocks)).toContain("Manual rápido de uso");
+    const saved = await e2eDb.query<{ modalBlocks: unknown }>(`select "modalBlocks" from "Program" where id = $1`, [programId]);
+    expect(JSON.stringify(saved.rows[0].modalBlocks)).toContain("Manual rápido de uso");
 
     await page.goto(`${BASE_URL}/c/${cardSlug}`, { waitUntil: "networkidle" });
     await page.getByRole("button", { name: "Sobre esta tarjeta" }).click();
@@ -242,12 +252,58 @@ test.describe("Botones del Podio — dashboard + tarjeta pública", () => {
     await context.close();
   });
 
-  // Editor de Modales -- hub (2026-10-06, pedido de Gunnar: "el modal
-  // pueda editarlo.. tanto los componentes que lo integran como el
-  // contenido.. en este modal y en todos los demás"). Cubre los 2 campos
-  // genéricos nuevos desde un solo submit: el ícono del botón disparador
-  // (cardInfo, de ícono fijo) y el texto introductorio de un modal de
-  // niveles reales (O.D., la selección real de Puesto sigue intacta).
+  // Modal "info" sin destinatario (2026-10-06, pedido de Gunnar tras no
+  // encontrar dónde vivía el contenido de cardInfo: "dale con todos los
+  // 14, hacelo bien completo") -- antes era el único modal sin ningún
+  // campo de contenido libre (el video/pilares de Legacy era 100% fijo).
+  // Ahora, con bloques propios, los pisa -- igual que cardInfo/vault.
+  test("el N0 arma el modal 'Info' (sin destinatario) con un bloque propio -- la tarjeta pública lo muestra en vez del video/pilares fijos de Legacy", async ({ browser }) => {
+    const context = await browser.newContext();
+    const cookie = await mintAdminCookie(adminId);
+    await context.addCookies([{ ...cookie, url: BASE_URL }]);
+    const page = await context.newPage();
+
+    await page.goto(`${BASE_URL}/c/${cardSlug}`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Info", exact: true }).click();
+    await expect(page.getByText("Construcción y Protección de Legado Patrimonial")).toBeVisible();
+    await page.keyboard.press("Escape").catch(() => {});
+
+    await page.goto(`${BASE_URL}/admin/programs/${programId}`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: /^Editor de Modales/ }).click();
+    await page.getByRole("button", { name: /^Info \(cubo dorado\)/ }).click();
+
+    // Scope por el texto único del bodyHint de esta fila -- "info" es la
+    // única que menciona "título\/cita reales" (el caso company, que no
+    // se pisa con bloques).
+    const infoForm = page.locator("form").filter({ hasText: "título/cita reales de esa Card" });
+    await infoForm.getByRole("button", { name: "Agregar bloque" }).click();
+    await infoForm.getByPlaceholder("Título (opcional)").fill("Por qué este botón importa");
+    await infoForm.getByPlaceholder("Texto").fill("Contenido propio del Programa, no el video genérico de Legacy.");
+    await infoForm.getByRole("button", { name: "Guardar" }).click();
+    await page.waitForURL(/modalSaved=info/);
+
+    const saved = await e2eDb.query<{ modalBlocks: unknown }>(`select "modalBlocks" from "Program" where id = $1`, [programId]);
+    expect(JSON.stringify(saved.rows[0].modalBlocks)).toContain("Por qué este botón importa");
+
+    await page.goto(`${BASE_URL}/c/${cardSlug}`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Info", exact: true }).click();
+    await expect(page.getByText("Por qué este botón importa")).toBeVisible();
+    await expect(page.getByText("Contenido propio del Programa, no el video genérico")).toBeVisible();
+    // El contenido fijo de Legacy (video/pilares) ya no aparece -- lo
+    // reemplazó el bloque.
+    await expect(page.getByText("Construcción y Protección de Legado Patrimonial")).not.toBeVisible();
+
+    await context.close();
+  });
+
+  // Editor de Modales -- Unificación completa (2026-10-06, pedido de
+  // Gunnar: "no se que has echo.. en ningun lado puedo leer ni se donde
+  // esta el texto del título o del contenido del modal de cardinfo" ->
+  // "dale con todos los 14, hacelo bien completo"). Cada modal es ahora
+  // su propia fila con su propio form/submit (ya no un solo submit para
+  // los 10 de antes) -- cubre el ícono de cardInfo (su propia fila) y el
+  // texto introductorio de O.D. (otra fila, bodyKind:"niveles" -- la
+  // selección real de Puesto sigue intacta).
   test("Editor de Modales: ícono de cardInfo y texto introductorio de O.D. se guardan y se ven en la tarjeta pública", async ({ browser }) => {
     const context = await browser.newContext();
     const cookie = await mintAdminCookie(adminId);
@@ -257,11 +313,21 @@ test.describe("Botones del Podio — dashboard + tarjeta pública", () => {
     await page.goto(`${BASE_URL}/admin/programs/${programId}`, { waitUntil: "networkidle" });
     await page.getByRole("button", { name: /^Editor de Modales/ }).click();
 
-    const modalEditorForm = page.locator("form").filter({ has: page.locator('input[name="icon_cardInfo"]') });
-    await modalEditorForm.locator('input[name="icon_cardInfo"]').fill("rocket_launch");
-    await modalEditorForm.locator('textarea[name="intro_od"]').fill("Texto introductorio propio del Programa para O.D.");
-    await modalEditorForm.getByRole("button", { name: "Guardar Editor de Modales" }).click();
-    await page.waitForURL(/modalEditorSaved=1/);
+    await page.getByRole("button", { name: /^"LyCard"/ }).click();
+    const cardInfoForm = page.locator("form").filter({ hasText: "texto, imagen, video/audio, archivo, KPI" });
+    await cardInfoForm.locator('input[name="icon"]').fill("rocket_launch");
+    await cardInfoForm.getByRole("button", { name: "Guardar" }).click();
+    await page.waitForURL(/modalSaved=cardInfo/);
+
+    await page.getByRole("button", { name: /^O\.D\./ }).click();
+    // Scope por el texto único del bodyHint de O.D. (menciona "Puesto",
+    // los otros 3 niveles reales dicen "nivel elegido") -- evita
+    // ambigüedad con ancient/medal/contacts, que también tienen
+    // textarea[name="intro"].
+    const odForm = page.locator("form").filter({ hasText: "Puesto elegido" });
+    await odForm.locator('textarea[name="intro"]').fill("Texto introductorio propio del Programa para O.D.");
+    await odForm.getByRole("button", { name: "Guardar" }).click();
+    await page.waitForURL(/modalSaved=od/);
 
     const saved = await e2eDb.query<{ modalIcons: unknown; tierIntros: unknown }>(
       `select "modalIcons", "tierIntros" from "Program" where id = $1`,

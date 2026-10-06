@@ -95,7 +95,11 @@ test.describe("PhotoPositioner — mover/zoom en el dashboard antes de subir", (
     // un paso anterior y "resolver" de inmediato sin esperar el POST
     // real -- esperamos la respuesta del submit en sí.
     const saveResponse = page.waitForResponse((r) => r.url().includes(`/admin/programs/${programId}`) && r.request().method() === "POST");
-    await page.getByRole("button", { name: "Guardar", exact: true }).click();
+    // Scope por el <form> de "Identidad del Programa" -- el Editor de
+    // Modales unificado (2026-10-06) agregó 12+ botones "Guardar" más
+    // a esta misma página, uno por fila/modal.
+    const identityForm = page.locator("form").filter({ has: page.locator('input[name="logo"]') });
+    await identityForm.getByRole("button", { name: "Guardar", exact: true }).click();
     await saveResponse;
     await page.waitForLoadState("networkidle");
 
@@ -156,7 +160,9 @@ test.describe("PhotoPositioner — mover/zoom en el dashboard antes de subir", (
     // resolvería de inmediato sin esperar ese POST real, dejando el
     // assert de abajo leyendo la DB antes de que el cambio llegara.
     const firstSave = page.waitForResponse((r) => r.url().includes(`/admin/programs/${programId}`) && r.request().method() === "POST");
-    await page.getByRole("button", { name: "Guardar", exact: true }).click();
+    // Scope por el <form> de "Identidad del Programa" -- ver nota arriba.
+    const identityForm = page.locator("form").filter({ has: page.locator('input[name="logo"]') });
+    await identityForm.getByRole("button", { name: "Guardar", exact: true }).click();
     await firstSave;
     await page.waitForLoadState("networkidle");
 

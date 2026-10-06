@@ -25,13 +25,13 @@ import { CHANNELS } from "@/lib/messaging";
 import { buildFunnelStages } from "@/lib/funnel";
 import { createPuestoAction, updatePuestoAction, deletePuestoAction } from "../puestos-actions";
 import { createInterviewSlotAction, updateInterviewSlotAction, deleteInterviewSlotAction } from "../interview-slots-actions";
-import { setPodiumButtonAction, updateVaultAction, updateCardInfoAction, updateModalEditorAction } from "../podium-actions";
+import { setPodiumButtonAction, updateVaultAction, updateModalContentAction } from "../podium-actions";
 import { CARD_LABEL_FIELDS, defaultCardLabel } from "@/lib/cardLabels";
 import { parseEscala } from "@/lib/escalas";
 import { parseOfficeSkills, DEFAULT_OFFICE_SKILLS } from "@/lib/officeSkills";
 import { parseMotivationalPhrases } from "@/lib/oficinaExtras";
 import { parsePodiumButtons, getPodiumButton } from "@/lib/podiumButtons";
-import { parseModalBlocks } from "@/lib/modalBlocks";
+import { parseModalBlocksMap } from "@/lib/modalBlocks";
 import { MODAL_EDITOR_ENTRIES, parseModalIcons, parseTierIntros } from "@/lib/modalEditor";
 import EscalaEditor from "@/components/EscalaEditor";
 import OfficeSkillsEditor from "@/components/OfficeSkillsEditor";
@@ -134,9 +134,7 @@ export default async function AdminProgramDetailPage({
     officeSkillsError?: string;
     motivationalPhrasesSaved?: string;
     podiumSaved?: string;
-    vaultSaved?: string;
-    cardInfoSaved?: string;
-    modalEditorSaved?: string;
+    modalSaved?: string;
     originSaved?: string;
     focus?: string;
     messageSent?: string;
@@ -172,9 +170,7 @@ export default async function AdminProgramDetailPage({
     officeSkillsError,
     motivationalPhrasesSaved,
     podiumSaved,
-    vaultSaved,
-    cardInfoSaved,
-    modalEditorSaved,
+    modalSaved,
     originSaved,
     focus,
   } = await searchParams;
@@ -234,8 +230,7 @@ export default async function AdminProgramDetailPage({
   const officeSkills = parseOfficeSkills(program.officeSkills);
   const motivationalPhrases = parseMotivationalPhrases(program.motivationalPhrases);
   const podiumButtons = parsePodiumButtons(program.podiumButtons);
-  const vaultBlocks = parseModalBlocks(program.vaultBlocks);
-  const cardInfoBlocks = parseModalBlocks(program.cardInfoBlocks);
+  const modalBlocksMap = parseModalBlocksMap(program.modalBlocks);
   const modalIcons = parseModalIcons(program.modalIcons);
   const tierIntros = parseTierIntros(program.tierIntros);
 
@@ -375,75 +370,112 @@ export default async function AdminProgramDetailPage({
           </form>
         </AccordionSection>
 
-        {/* Editor de Modales -- Reorganización completa (2026-10-06,
-            pedido de Gunnar tras ver el modal "Legacy Card": "necesito que
-            el modal pueda editarlo.. tanto los componentes que lo
-            integran como el contenido.. en este modal y en todos los
-            demás.. organizarlo bien top1% para que sea fácil para el
-            usuario e intuitivo identificar cada placeholder". Hub único:
-            un vistazo de los 10 modales que un N0 puede tocar, con su
-            ícono de disparador editable acá mismo (los 4 de niveles
-            reales usan en cambio un texto introductorio, su ícono sigue
-            siendo el de la Puesto/EscalaItem elegida en Categorización,
-            editarlo acá los pisaría). El TEXTO del botón (ej. "Legacy
-            Card") y el CONTENIDO pesado (bloques, niveles) siguen en sus
-            secciones de siempre -- esta no las duplica, las resume y
-            apunta a cada una, ver lib/modalEditor.ts para el porqué. */}
+        {/* Editor de Modales -- Unificación completa (2026-10-06, pedido
+            de Gunnar tras no encontrar dónde vivía el título/contenido
+            de "cardInfo": "no se que has echo.. en ningun lado puedo
+            leer ni se donde esta el texto del título o del contenido
+            del modal de cardinfo" -> "dale con todos los 14, hacelo
+            bien completo"). Antes esto era ícono+intro nomás, con el
+            texto del botón en "Textos de Botones y Modales" y el
+            contenido pesado (Bóveda/cardInfo) en 2 secciones más --
+            3 lugares para entender UN modal. Ahora cada una de las 14
+            filas trae TODO lo que ese modal tiene (ícono, texto del
+            botón, contenido), un solo "Guardar" por fila -- ver
+            lib/modalEditor.ts (MODAL_EDITOR_ENTRIES) para qué campo
+            aplica a cada bodyKind. */}
         <AccordionSection
           title="Editor de Modales"
-          subtitle='Los 10 modales que podés tocar desde acá, en un solo lugar: qué ícono abre cada uno, y dónde editar el resto. El texto del botón (ej. "Legacy Card") sigue en "Textos de Botones y Modales", el contenido pesado en su propia sección -- esta solo resume y apunta.'
+          subtitle="Los 14 modales reales de la tarjeta, cada uno con todo lo que lo compone en su propia fila: ícono, texto del botón que lo abre, y contenido. Tocá uno para abrirlo y editarlo -- un solo Guardar por modal."
           meta={<span style={PILL}>{MODAL_EDITOR_ENTRIES.length}</span>}
-          defaultOpen={Boolean(modalEditorSaved)}
+          defaultOpen={Boolean(modalSaved)}
         >
-          {modalEditorSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Editor de Modales guardado.</p>}
-          <form action={updateModalEditorAction.bind(null, program.id)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {MODAL_EDITOR_ENTRIES.map((entry) => (
-              <div
+          {MODAL_EDITOR_ENTRIES.map((entry) => {
+            const blocks = modalBlocksMap[entry.key] || [];
+            const justSaved = modalSaved === entry.key;
+            return (
+              <AccordionRow
                 key={entry.key}
-                style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, borderRadius: 12, background: "#141414", border: "1px solid rgba(200,161,90,.15)" }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: 20, color: "#C8A15A", flex: "none" }}>
+                defaultOpen={justSaved}
+                leading={
+                  <span className="material-symbols-outlined" style={{ fontSize: 18, color: "#C8A15A", flex: "none" }}>
                     {modalIcons[entry.key] || entry.defaultIcon}
                   </span>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
-                    <span style={{ font: "700 12px 'Plus Jakarta Sans',sans-serif", color: "#F5F2EB" }}>{entry.name}</span>
-                    <span
-                      style={{
-                        font: "600 9px 'Plus Jakarta Sans',sans-serif",
-                        letterSpacing: ".08em",
-                        textTransform: "uppercase",
-                        color: entry.contentKind === "bloques" ? "#8fd19e" : entry.contentKind === "niveles" ? "#C8A15A" : "#8a8378",
-                      }}
+                }
+                title={entry.name}
+                subtitle={
+                  entry.bodyKind === "bloques"
+                    ? `${blocks.length} bloque${blocks.length === 1 ? "" : "s"}`
+                    : entry.bodyKind === "niveles"
+                    ? tierIntros[entry.key]
+                      ? "Intro propia cargada"
+                      : "Intro de siempre"
+                    : "Automático"
+                }
+              >
+                {justSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Guardado.</p>}
+                <form
+                  action={entry.key === "vault" ? updateVaultAction.bind(null, program.id) : updateModalContentAction.bind(null, program.id, entry.key)}
+                  style={{ display: "flex", flexDirection: "column", gap: 10 }}
+                >
+                  {entry.iconEditable && (
+                    <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>Ícono del botón (nombre Material Symbol)</span>
+                      <input name="icon" defaultValue={modalIcons[entry.key] || ""} placeholder={entry.defaultIcon} style={INPUT} />
+                    </label>
+                  )}
+
+                  {entry.key === "vault" ? (
+                    <>
+                      <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>Título</span>
+                        <input name="vaultTitle" defaultValue={program.vaultTitle} placeholder="Bóveda Legacy" style={INPUT} />
+                      </label>
+                      <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>Palabra secreta (guardada para más adelante -- ya no bloquea el contenido)</span>
+                        <input name="vaultPalabraSecreta" defaultValue={program.vaultPalabraSecreta} style={INPUT} />
+                      </label>
+                    </>
+                  ) : entry.kickerFieldKey ? (
+                    <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>Texto del botón</span>
+                      <input name="kicker" defaultValue={cardLabels[entry.kickerFieldKey] || ""} placeholder={defaultCardLabel(entry.kickerFieldKey)} style={INPUT} />
+                    </label>
+                  ) : null}
+
+                  {entry.bodyKind === "bloques" && <ModalBlocksEditor name="blocks" initialBlocks={blocks} />}
+
+                  {entry.bodyKind === "niveles" && (
+                    <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>Texto introductorio (arriba de los niveles)</span>
+                      <textarea
+                        name="intro"
+                        defaultValue={tierIntros[entry.key] || ""}
+                        rows={2}
+                        placeholder="Vacío = texto fijo de siempre"
+                        style={{ ...INPUT, resize: "vertical" }}
+                      />
+                    </label>
+                  )}
+
+                  <span style={{ font: "400 10.5px/1.5 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>{entry.bodyHint}</span>
+
+                  {(entry.iconEditable || entry.key === "vault" || entry.kickerFieldKey || entry.bodyKind !== "fijo") && (
+                    // aria-label único por fila (2026-10-06) -- con 14
+                    // filas, un simple "Guardar" repetido 14 veces rompe
+                    // cualquier locator exacto en otras secciones de esta
+                    // misma página (ya pasó: fotos de perfil, mensajería).
+                    <button
+                      type="submit"
+                      aria-label={`Guardar ${entry.name}`}
+                      style={{ padding: 11, border: "none", borderRadius: 10, background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)", color: "#0D0D0D", font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", cursor: "pointer" }}
                     >
-                      {entry.contentKind === "bloques" ? "Bloques" : entry.contentKind === "niveles" ? "Niveles reales" : "Automático"}
-                    </span>
-                  </div>
-                </div>
-                {entry.contentKind === "niveles" ? (
-                  <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>Texto introductorio (arriba de los niveles)</span>
-                    <textarea
-                      name={`intro_${entry.key}`}
-                      defaultValue={tierIntros[entry.key] || ""}
-                      rows={2}
-                      placeholder="Vacío = texto fijo de siempre"
-                      style={{ ...INPUT, resize: "vertical" }}
-                    />
-                  </label>
-                ) : (
-                  <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>Ícono del botón (nombre Material Symbol)</span>
-                    <input name={`icon_${entry.key}`} defaultValue={modalIcons[entry.key] || ""} placeholder={entry.defaultIcon} style={INPUT} />
-                  </label>
-                )}
-                <span style={{ font: "400 10.5px/1.5 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>{entry.contentHint}</span>
-              </div>
-            ))}
-            <button type="submit" style={{ marginTop: 4, padding: 13, border: "none", borderRadius: 10, background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)", color: "#0D0D0D", font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", cursor: "pointer" }}>
-              Guardar Editor de Modales
-            </button>
-          </form>
+                      Guardar
+                    </button>
+                  )}
+                </form>
+              </AccordionRow>
+            );
+          })}
         </AccordionSection>
 
         {/* Linaje de Programas (2026-10-05, caso Juancho/Digital Kingdom):
@@ -592,11 +624,17 @@ export default async function AdminProgramDetailPage({
         </AccordionSection>
 
         {/* Card labels — title-only override for buttons/modals on project
-            cards under this Program (PLAN.md Fase 9, atajo). Blank = default. */}
+            cards under this Program (PLAN.md Fase 9, atajo). Blank = default.
+            Los 6 textos que eran el botón/kicker de uno de los 14 modales
+            del "Editor de Modales" se mudaron a su fila ahí (2026-10-06) --
+            lo que queda acá son botones puros y los 4 de Virtual
+            Office/Agendar, que no son parte de ese sistema. */}
         <AccordionSection title="Textos de Botones y Modales" defaultOpen={Boolean(labelsSaved)}>
           <p style={{ margin: 0, font: "400 11.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
             Aplica a las tarjetas de Proyecto de este Programa. Dejá un campo
-            vacío para usar el texto original.
+            vacío para usar el texto original. Los textos de cada modal del
+            &quot;Editor de Modales&quot; (de arriba) se editan en su propia
+            fila, no acá.
           </p>
           {labelsSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Textos guardados.</p>}
           <form action={updateCardLabelsAction.bind(null, program.id)} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -807,54 +845,6 @@ export default async function AdminProgramDetailPage({
           </section>
         </AccordionSection>
 
-        {/* Bóveda Legacy / "Legacy Vault" (2026-10-04, pedido de Gunnar:
-            "la Boveda es lo que en la tarjeta de rogelio dice Info
-            Rogelio.. es lo mismo pero para todos"). El contenido ahora
-            se arma con el Editor de Modales (ModalBlocksEditor, ver
-            lib/modalBlocks.ts) -- piloto de "poder crear un editor de
-            modales.. como el editor de un formulario" (pedido
-            2026-10-04). La palabra secreta sigue guardada pero ya NO
-            bloquea el acceso (sacada a pedido explícito de Gunnar --
-            "luego vemos donde y como lo usamos"). */}
-        <AccordionSection
-          title="Bóveda Legacy"
-          subtitle="El contenido que se muestra cuando alguien toca el botón 'Bóveda Legacy' -- armalo con bloques (texto, imagen, video/audio, archivo/botón, KPI), igual que un formulario."
-          meta={<span style={PILL}>{vaultBlocks.length}</span>}
-          defaultOpen={Boolean(vaultSaved)}
-        >
-          {vaultSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Bóveda guardada.</p>}
-          <form action={updateVaultAction.bind(null, program.id)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <input name="vaultTitle" defaultValue={program.vaultTitle} placeholder="Título (ej. Bóveda Legacy)" style={INPUT} />
-            <input name="vaultPalabraSecreta" defaultValue={program.vaultPalabraSecreta} placeholder="Palabra secreta (guardada para más adelante -- ya no bloquea el contenido)" style={INPUT} />
-            <ModalBlocksEditor name="vaultBlocks" initialBlocks={vaultBlocks} />
-            <button type="submit" style={{ padding: 13, border: "none", borderRadius: 10, background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)", color: "#0D0D0D", font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", cursor: "pointer" }}>
-              Guardar Bóveda
-            </button>
-          </form>
-        </AccordionSection>
-
-        {/* Modal "[Programa] Card" / "LyCard" (2026-10-05, pedido de
-            Gunnar: "ese modal es necesario que tenga una explicacion
-            clara de que es la legacy Card.. que hace para ti.. a lo
-            mejor tambien agregar un pequeño manual de uso.. o un
-            video.. algo top1%"). Mismo Editor de Modales que la Bóveda.
-            Es el modal que se abre al tocar la píldora de arriba
-            ("LyCard"/"[Programa] Card") -- solo aplica a las Cards de
-            proyecto (las únicas con este Programa real). */}
-        <AccordionSection
-          title='Modal "Qué es esta tarjeta"'
-          subtitle='El contenido del modal que se abre al tocar la píldora de arriba ("LyCard"/"[Programa] Card") -- armalo con bloques, igual que la Bóveda. Sin bloques, se muestra el texto genérico de siempre.'
-          meta={<span style={PILL}>{cardInfoBlocks.length}</span>}
-          defaultOpen={Boolean(cardInfoSaved)}
-        >
-          {cardInfoSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Guardado.</p>}
-          <form action={updateCardInfoAction.bind(null, program.id)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <ModalBlocksEditor name="cardInfoBlocks" initialBlocks={cardInfoBlocks} />
-            <button type="submit" style={{ padding: 13, border: "none", borderRadius: 10, background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)", color: "#0D0D0D", font: "700 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", cursor: "pointer" }}>
-              Guardar Modal
-            </button>
-          </form>
-        </AccordionSection>
 
         {/* Horarios de Entrevista — cupo real por Programa (Auditoría
             2026-09-23, hallazgo 1.4). Sin filas acá, "Agendar tu

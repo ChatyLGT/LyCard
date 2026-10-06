@@ -8,7 +8,7 @@ import { t, type Lang } from "@/lib/i18n";
 import { rankById, medalById } from "@/lib/data";
 import { parseEscala } from "@/lib/escalas";
 import { parsePodiumButtons, getPodiumButton, type PodiumButtonKind } from "@/lib/podiumButtons";
-import { parseModalBlocks, type ModalBlock } from "@/lib/modalBlocks";
+import { parseModalBlocksMap, type ModalBlock } from "@/lib/modalBlocks";
 import ModalBlocksRenderer from "@/components/ModalBlocksRenderer";
 import { TIER_MODAL_KEYS } from "@/lib/modalEditor";
 import { translateBundleAction } from "@/lib/translateActions";
@@ -1428,11 +1428,24 @@ export default function LyCardView({
   const podiumButtons = parsePodiumButtons(program?.podiumButtons);
   const leftPodiumConfig = getPodiumButton(podiumButtons, "left");
   const rightPodiumConfig = getPodiumButton(podiumButtons, "right");
-  const vaultBlocks = parseModalBlocks(program?.vaultBlocks);
+  // Editor de Modales -- Unificación completa (2026-10-06, pedido de
+  // Gunnar: "no se que has echo.. en ningun lado puedo leer ni se donde
+  // esta el texto del título o del contenido del modal de cardinfo" ->
+  // "dale con todos los 14, hacelo bien completo"). Un solo mapa
+  // (Program.modalBlocks) reemplaza las columnas vaultBlocks/
+  // cardInfoBlocks de antes -- agregar bloques a "info" no necesitó
+  // ninguna migración nueva.
+  const modalBlocksMap = parseModalBlocksMap(program?.modalBlocks);
+  const vaultBlocks = modalBlocksMap.vault || [];
   // Modal "[Programa] Card" (2026-10-05, pedido de Gunnar) -- solo tiene
   // sentido para project (las únicas con Program real); company/personal
   // siguen con su copy fijo de siempre.
-  const cardInfoBlocks = isProject ? parseModalBlocks(program?.cardInfoBlocks) : [];
+  const cardInfoBlocks = isProject ? modalBlocksMap.cardInfo || [] : [];
+  // Modal "info" sin destinatario (2026-10-06) -- vacío cae al contenido
+  // fijo de siempre (el video/pilares de Legacy en project, título/cita
+  // reales de la Card en company); con destinatario sigue siendo el
+  // dossier del Códice de siempre, nunca se pisa.
+  const infoBlocks = recipient ? [] : modalBlocksMap.info || [];
 
   // Traducción al vuelo con IA (2026-10-06, pedido de Gunnar: "el
   // sistema de traducción no traduce nada.. si hay que habilitar ia
@@ -1470,6 +1483,7 @@ export default function LyCardView({
     };
     collectBlockTexts(vaultBlocks, "vault");
     collectBlockTexts(cardInfoBlocks, "cardInfo");
+    collectBlockTexts(infoBlocks, "info");
   }
   const hasTranslatableContent = Object.keys(translatableBundle).length > 0;
 
@@ -2646,6 +2660,12 @@ export default function LyCardView({
                   cuadernoUrl={recipient.cuadernoUrl}
                   borradoHref={socialHref("wa", card.wa) ? `${socialHref("wa", card.wa)}?text=${encodeURIComponent(`Hola, soy ${recipient.nombre}. Quiero pedir que borren mi información del Códice.`)}` : null}
                 />
+              ) : modal === "info" && infoBlocks.length > 0 ? (
+                // Modal "info" sin destinatario, con bloques propios
+                // (2026-10-06) -- mismo sistema que cardInfo/vault.
+                // Aplica tanto a project como a company; sin bloques,
+                // cada uno cae a su contenido fijo de siempre (más abajo).
+                <ModalBlocksRenderer blocks={translateBlocks(infoBlocks, "info")} />
               ) : modal === "vault" && program ? (
                 // Bóveda Legacy / "Legacy Vault" (2026-10-04, pedido de
                 // Gunnar: "podamos crear un editor de modales.. como el

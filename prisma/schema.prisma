@@ -538,43 +538,26 @@ model Program {
   // otro Programa.
   vaultTitle          String @default("Bóveda Legacy")
   vaultPalabraSecreta String @default("")
-  // Editor de Modales (2026-10-04, pedido de Gunnar: "podamos crear un
-  // editor de modales.. no solo el contenido sino tambien los
-  // elementos.. si se muestra un video, o un audio, o un archivo, o un
-  // texto.. como el editor de un formulario"). ModalBlock[] -- ver
-  // lib/modalBlocks.ts. Reemplaza lo que antes eran vaultSources +
-  // vaultCuadernoUrl (ambos eran, en el fondo, un tipo de bloque cada
-  // uno) por un único array de bloques libres que el N0 compone en el
-  // dashboard. Mismo patrón que medalScale/officeSkills: array plano,
-  // reemplazo total al guardar.
-  vaultBlocks         Json   @default("[]")
 
-  // Modal "[Programa] Card" / "LyCard" (2026-10-05, pedido de Gunnar:
-  // "lo primero que necesitamos.. tener la posibilidad de editar cada
-  // uno de los modales.. ese modal es necesario que tenga una
-  // explicacion clara de que es la legacy Card.. que hace para ti..
-  // a lo mejor tambien agregar un pequeño manual de uso.. o un video").
-  // Mismo Editor de Modales que vaultBlocks -- vacío (el default) cae
-  // al texto fijo de siempre (lib/i18n.ts, cardInfoProjectHead/Body),
-  // nunca a una sección vacía. Solo aplica a Cards kind:"project" (las
-  // únicas con Program real) -- company/personal siguen con su copy
-  // fijo de siempre, fuera de alcance de esta vuelta.
-  cardInfoBlocks      Json   @default("[]")
+  // Editor de Modales -- Unificación completa (2026-10-06, pedido de
+  // Gunnar: "no se que has echo.. en ningun lado puedo leer ni se donde
+  // esta el texto del título o del contenido del modal de cardinfo" ->
+  // "dale con todos los 14, hacelo bien completo"). Reemplaza las
+  // columnas vaultBlocks/cardInfoBlocks de antes (una por modal, no
+  // escalaba) por UN mapa Record<ModalKey, ModalBlock[]> -- agregar
+  // bloques a un modal nuevo (ej. "info") ya no necesita una migración.
+  // Ver lib/modalBlocks.ts (parseModalBlocksMap) y lib/modalEditor.ts
+  // (MODAL_EDITOR_ENTRIES, qué modal tiene bodyKind:"bloques").
+  modalBlocks Json @default("{}")
 
-  // Editor de Modales -- Reorganización completa (2026-10-06, pedido de
-  // Gunnar tras ver cardInfo: "necesito que el modal pueda editarlo..
-  // tanto los componentes que lo integran como el contenido.. en este
-  // modal y en todos los demás.. organizarlo bien top1%"). Dos campos
-  // genéricos, aditivos -- no reemplazan vaultBlocks/cardInfoBlocks ni
-  // lib/cardLabels.ts, los complementan:
-  //
   // modalIcons: Record<modalKey, icono Material Symbol> -- el ícono del
   // botón disparador de un modal (ej. "military_tech" en el botón
   // "Legacy Card"), hoy fijo por tipo de Card. Solo para los modales de
-  // ícono fijo (cardInfo/vault/info/invite/contactMessage/story) --
-  // od/ancient/medal/contacts tienen ícono DINÁMICO (el de la Puesto/
-  // EscalaItem seleccionada en Categorización) y no entran acá, se
-  // pisarían entre sí.
+  // ícono editable (lib/modalEditor.ts, iconEditable:true) -- los de
+  // ícono DINÁMICO (od/ancient/medal/contacts, el de la Puesto/
+  // EscalaItem seleccionada en Categorización) y los de sistema
+  // (na/versionInfo/ai_agent) no entran, se pisarían entre sí o no
+  // tiene sentido.
   //
   // tierIntros: Record<"od"|"ancient"|"medal"|"contacts", texto> -- el
   // párrafo introductorio de los 4 modales de niveles reales, hoy fijo

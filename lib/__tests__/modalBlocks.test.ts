@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseModalBlocks, isEmbedVideoUrl, toEmbedVideoUrl, type ModalBlock } from "@/lib/modalBlocks";
+import { parseModalBlocks, parseModalBlocksMap, isEmbedVideoUrl, toEmbedVideoUrl, type ModalBlock } from "@/lib/modalBlocks";
 
 const BLANK: Omit<ModalBlock, "id" | "kind"> = { heading: "", body: "", mediaUrl: "", mediaType: "video", linkLabel: "", kpiValue: "", kpiSub: "" };
 
@@ -67,6 +67,29 @@ describe("parseModalBlocks", () => {
     ]);
     expect(result.map((b) => b.id)).toEqual(["1", "2"]);
     expect(result[1].mediaUrl).toBe("https://img.example/a.png");
+  });
+});
+
+describe("parseModalBlocksMap", () => {
+  it("devuelve {} si no es un objeto, es null/undefined, o es un array", () => {
+    expect(parseModalBlocksMap(null)).toEqual({});
+    expect(parseModalBlocksMap(undefined)).toEqual({});
+    expect(parseModalBlocksMap("no es un objeto")).toEqual({});
+    expect(parseModalBlocksMap([{ id: "x", kind: "texto" }])).toEqual({});
+  });
+
+  it("parsea cada clave como su propio array de bloques", () => {
+    const result = parseModalBlocksMap({
+      vault: [{ id: "a", kind: "texto", heading: "Hola" }],
+      cardInfo: [{ id: "b", kind: "kpi", kpiValue: "10" }],
+    });
+    expect(Object.keys(result).sort()).toEqual(["cardInfo", "vault"]);
+    expect(result.vault[0].heading).toBe("Hola");
+    expect(result.cardInfo[0].kpiValue).toBe("10");
+  });
+
+  it("omite claves cuyo valor parsea a un array vacío", () => {
+    expect(parseModalBlocksMap({ info: [], vault: "no es un array" })).toEqual({});
   });
 });
 

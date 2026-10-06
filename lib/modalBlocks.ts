@@ -47,6 +47,24 @@ export type ModalBlock = {
   kpiSub: string; // kpi: aclaración chica debajo del valor.
 };
 
+// Editor de Modales -- Unificación (2026-10-06, pedido de Gunnar tras
+// no encontrar dónde vivía el título/contenido de "cardInfo": "no se
+// que has echo.. en ningun lado puedo leer ni se donde esta el texto
+// del título o del contenido"). Antes cada modal con bloques tenía su
+// propia columna (Program.vaultBlocks, Program.cardInfoBlocks) -- un
+// mapa único (Program.modalBlocks, clave = ModalKey) deja agregar
+// bloques a cualquier modal (info, etc.) sin una migración nueva cada
+// vez, y los agrupa todos bajo el mismo "Editor de Modales".
+export function parseModalBlocksMap(value: unknown): Record<string, ModalBlock[]> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const out: Record<string, ModalBlock[]> = {};
+  for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
+    const blocks = parseModalBlocks(raw);
+    if (blocks.length > 0) out[key] = blocks;
+  }
+  return out;
+}
+
 export function parseModalBlocks(value: unknown): ModalBlock[] {
   if (!Array.isArray(value)) return [];
   return value

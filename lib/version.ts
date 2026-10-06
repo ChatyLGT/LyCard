@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.80.0";
+export const APP_VERSION = "1.81.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.81.0",
+    date: "2026-10-06",
+    notes:
+      "Editor de Modales -- Unificación completa: Gunnar no encontraba dónde vivía el título/contenido del modal \"cardInfo\" (\"en ningun lado puedo leer... dale con todos los 14, hacelo bien completo\"). Antes el ícono, el texto del botón y el contenido pesado de un mismo modal vivían en 3 secciones separadas de /admin/programs/[id]. Ahora los 14 modales reales de la tarjeta (cardInfo, Bóveda, Info, Invitación, Mensaje, Mi camino, O.D./Ancient/Medalla/Valor, Deja tu Legado, Escanear QR, Versión, Agente de IA) son filas de un solo \"Editor de Modales\", cada una con todo lo que ese modal tiene junto -- ícono, texto del botón, y contenido -- un solo Guardar por fila. De paso, 2 modales que antes no tenían ningún contenido libre (\"info\" sin destinatario, el default de project/company) ahora aceptan bloques propios igual que cardInfo/Bóveda.",
+  },
   {
     version: "1.80.0",
     date: "2026-10-06",

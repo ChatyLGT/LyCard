@@ -87,12 +87,17 @@ test.describe("Mensajería Interna", () => {
     await adminPage.goto(`${BASE_URL}/admin/programs/${legacyProgramId}`, { waitUntil: "networkidle" });
     await adminPage.getByRole("button", { name: /Mensajería/ }).click();
 
-    await adminPage.locator('textarea[name="body"]').fill(messageBody);
+    // Scope por el <form> de "Mensajería" -- el Editor de Modales
+    // unificado (2026-10-06) agregó una fila "Enviar Mensaje" (el modal
+    // contactMessage) cuyo nombre accesible contiene "Enviar mensaje"
+    // como substring, y este locator no usaba exact:true.
+    const messagingForm = adminPage.locator("form").filter({ has: adminPage.locator('textarea[name="body"]') });
+    await messagingForm.locator('textarea[name="body"]').fill(messageBody);
     await adminPage.getByLabel(/Telegram/).check();
     await adminPage.getByLabel(/WhatsApp/).check();
     await adminPage.getByLabel("Equipo E2E Uno").check();
     await adminPage.getByLabel("Equipo E2E Dos").check();
-    await adminPage.getByRole("button", { name: "Enviar mensaje" }).click();
+    await messagingForm.getByRole("button", { name: "Enviar mensaje", exact: true }).click();
     await adminPage.waitForURL(/messageSent=1/);
     await adminContext.close();
 

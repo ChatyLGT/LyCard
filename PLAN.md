@@ -9586,3 +9586,88 @@ la página nueva, así que esa aserción podía chocar con "strict mode
 violation" (2 elementos con el mismo texto) según el timing. Se acotó a
 `getByRole("heading", ...)`, mismo criterio ya usado más abajo en el
 mismo test. Suite Playwright completa: 63/63 verde.
+
+## 2026-10-06 -- Editor de Modales: Unificación completa (v1.81.0)
+
+Gunnar, tras pedirle el inventario completo de los 14 modales de la
+tarjeta: *"lo que necesito es una forma de editar cada uno de esos
+Modales.. lo hemos intentado pero no se que has echo.. me diste la
+opcion de cambiar el icono.. pero ne ningun lado puedo leer ni se donde
+esta el texto del titulo o del contenido del modal de cardinfo"*.
+Diagnóstico honesto que le di antes de tocar código: el "Editor de
+Modales" de la v1.80.0 (y antes) solo cubría ícono + intro de niveles;
+el título/botón vivía en "Textos de Botones y Modales" (sección
+distinta) y el contenido pesado en "Bóveda Legacy"/`Modal "Qué es esta
+tarjeta"` (2 secciones más) -- 3 lugares para entender UN modal, y una
+porción (odBody/ancBody/medalBody/valueBody) ni tenía campo en ningún
+form, harcodeada en `lib/i18n.ts`. Confirmado: *"Dale con todos los 14,
+hacelo bien completo"*.
+
+### Lo construido
+
+- `lib/modalEditor.ts`: registro único de los **14 modales reales**
+  (`ModalKey` de `components/LyCardView.tsx`) -- cada entrada declara
+  `iconEditable`, `kickerFieldKey` (clave en `cardLabels` para el texto
+  del botón), `bodyKind` (`"bloques"` | `"niveles"` | `"fijo"`) y
+  `bodyHint` (explica siempre dónde vive/por qué no hay contenido
+  libre, nunca un hueco sin explicación).
+- `Program.modalBlocks` (Json, nuevo): un solo mapa
+  `Record<ModalKey, ModalBlock[]>` reemplaza las columnas
+  `vaultBlocks`/`cardInfoBlocks` de antes (una por modal no escalaba) --
+  agregar bloques a un modal nuevo ya no pide migración. Migración con
+  backfill real de los datos existentes antes de borrar las columnas
+  viejas.
+- `/admin/programs/[id]`: una sola sección "Editor de Modales", **14
+  filas** (una por modal), cada una con TODO lo que ese modal tiene
+  junto -- ícono, texto del botón, contenido -- un solo "Guardar" por
+  fila (`updateModalContentAction`, genérico, parametrizado por `key`).
+  Los 6 textos de botón/kicker que vivían en "Textos de Botones y
+  Modales" (cardInfoKicker, infoKicker, inviteKicker, contactKicker,
+  storyKicker, ancKicker) se mudaron a la fila de su modal -- siguen en
+  el mismo campo `Program.cardLabels`, cambió solo dónde se editan.
+  `updateCardLabelsAction` pasó de reemplazo total a merge (si no, cada
+  submit de esa sección borraría los kickers movidos).
+- **2 modales que antes no tenían ningún contenido libre** ahora lo
+  tienen, mismo patrón que cardInfo/Bóveda (bloques, vacío = fallback
+  de siempre, nunca una sección en blanco):
+  - **"info" sin destinatario** (el cubo "Info" default, tanto en
+    project como en company): antes 100% fijo (el video/pilares de
+    Legacy, o título/cita de la Card en company) -- ahora bloques
+    propios lo pisan si el N0 los armó.
+  - (cardInfo y vault ya tenían bloques desde v1.78-v1.80, solo se
+    unificó su lugar en el nuevo hub.)
+- **Fuera de alcance, documentado con su porqué** (bodyKind:"fijo" en
+  el registro, nunca un campo fantasma): invite/contactMessage
+  (formularios funcionales), story (lo escribe el dueño en
+  /m/dashboard, no el N0), legado (contenido del destinatario), na
+  (pantalla fija del sistema), versionInfo (el CHANGELOG real),
+  ai_agent (se genera desde "Botones del Podio"). od/ancient/medal/
+  contacts mantienen su mecanismo de siempre (intro + roster real en
+  Categorización) con ícono dinámico, no editable acá -- solo se
+  movieron a la misma fila en el hub nuevo.
+
+### Regresión encontrada y corregida antes de shippear
+
+Con 14 filas, cada una con su propio botón "Guardar" (texto idéntico),
+2 tests ajenos que ya hacían `getByRole("button", {name:"Guardar",
+exact:true})` **sin** scopear a su propio `<form>` (photo-positioner,
+mensajería) empezaron a fallar por "strict mode violation" -- y la fila
+nueva "Enviar Mensaje" (contactMessage) colisionaba por substring con
+el botón real "Enviar mensaje" de Mensajería Interna. Fix de raíz: cada
+botón "Guardar" de la fila lleva ahora `aria-label={"Guardar " +
+nombre del modal}` (texto visible sigue siendo "Guardar", mismo truco
+ya usado en el toggle de idioma) -- vuelve a haber un solo "Guardar"
+sin calificar en toda la página. Los 2 tests ajenos, de paso, quedaron
+scopeados a su propio form (debieron estarlo desde siempre).
+
+### Verificación
+
+`npx tsc --noEmit`, `pnpm lint`, `pnpm test:unit:coverage` 100% (incluye
+`parseModalBlocksMap` nuevo en `lib/modalBlocks.ts`, registro completo
+de los 14 en `lib/modalEditor.ts`), `pnpm build` limpio. Tests E2E
+nuevos: edición de `info` sin destinatario con bloques propios
+(confirma que pisa el contenido fijo de Legacy, tanto en la UI como en
+`Program.modalBlocks` en DB); reescritura de los tests existentes de
+Bóveda/cardInfo/Editor de Modales para el nuevo hub de 1 fila por
+modal. Suite Playwright completa: 64/64 verde (incluye el fix de las 2
+regresiones ajenas encontradas en el camino).
