@@ -31,6 +31,20 @@ Este índice es el punto de entrada para cualquiera que se sume al proyecto
   funcionalidad/diseño/arquitectura/seguridad, con una sección viva (F)
   de reportes de usuario real en dispositivo.
 
+## Adendas al WHITEPAPER (diseño/negocio, por fecha — no reemplazan el
+## documento base, lo completan o corrigen en puntos puntuales)
+
+- **[WHITEPAPER-ADENDA-2026-09.md](./WHITEPAPER-ADENDA-2026-09.md)** —
+  marco de verificación "no es MLM", equipo fundador (6 socios), foco
+  estratégico (Legacy es el producto, lo demás es infraestructura/leads).
+- **[WHITEPAPER-ADENDA-2026-10-07.md](./WHITEPAPER-ADENDA-2026-10-07.md)** —
+  radiografía completa de la Tarjeta de Programa (inventario real de
+  componentes), metodología LGT (dolor/cómo/costo, Carbono, RPI/pilares),
+  linaje fractal de Programas, funnel de creación de tarjeta (personal →
+  empresarial → gemelo digital), los 5 Canales de monetización, y la
+  investigación de arquitecturas top 1% (Shopify Sections&Blocks, Beacons,
+  Notion) para slots configurables por Programa.
+
 ## Otros documentos en la raíz del repo
 
 - **`../WHITEPAPER.md`** — la visión completa del ecosistema EinarOS del que
