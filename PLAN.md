@@ -9835,3 +9835,49 @@ Playwright completa: 69/69 verde.
 Con esto, los 4 slot types del plan original quedan completos -- el
 patrón "Slot + Shape + Payload" aplica a todo lo que Gunnar pidió
 cubrir en esta ronda.
+
+## 2026-10-07 (noche, segunda vuelta) -- Viaje del Cliente: puerta de acceso sobre el pipeline existente (v1.85.0)
+
+Gunnar pidió pensar cómo entregarle la plataforma a un colaborador
+entrenado para que venda, en pocos pasos, uno de los productos del
+`MENU_ACCESO_LEGACY v1.1` (Drive, MAMEN, 2026-10-07 -- ver
+`docs/WHITEPAPER-ADENDA-2026-10-07.md` sección 9). Primera propuesta
+(modelo `AccessDoor` + modelo `Sale` + wizard nuevo + rol "vendedor"
+nuevo) fue frenada por Gunnar con criterio correcto: "veo esto
+complejo... yo me iría por el Viaje del Cliente... como un cliente
+llega a la entrevista... y a partir de ahí lo agarro y manejo el
+proceso hasta el final" -- explorando el repo, ese viaje **ya existe**
+(`Registration` -> `completeInterviewAction` -> `ProgramMembership`
+-> toggle de "Marcar como pagada", y el Embudo de Conversión de
+`lib/funnel.ts` ya grafica exactamente esas etapas). Esta vuelta
+extiende ese pipeline en vez de duplicarlo:
+
+- `ProgramMembership` suma 6 campos (`doorKey`, `priceAgreedUsd`,
+  `paymentModel`, `traidoPor`, `doorAssignedAt`, `soldByAdminId`) --
+  cero modelo nuevo.
+- `lib/accessDoors.ts` -- catálogo de las 8 puertas del
+  `MENU_ACCESO_LEGACY v1.1` (mismo patrón plano que
+  `lib/legacyProgramDurations.ts`), con `findAccessDoor`/
+  `isValidPaymentModel`, 100% cobertura unitaria.
+- `assignDoorAction` (nueva, en `app/admin/interviews/actions.ts`, al
+  lado de `completeInterviewAction`) -- valida puerta/forma de
+  pago/quién trajo/precio y guarda sobre la Membership. Independiente
+  de "Marcar entrevista hecha": se puede llenar antes o después.
+- UI: un form chico dentro de la misma tarjeta de "Inscriptos a
+  Entrevistas" en `/admin/programs/[id]` -- sin wizard nuevo, sin rol
+  nuevo, el mismo N0/colaborador que ya marca la entrevista hecha.
+
+**Verificación**: Postgres local estaba caído (contenedor reiniciado
+desde la sesión anterior) -- se levantó con `pg_ctlcluster 16 main
+start` antes de migrar. `npx tsc --noEmit`, `pnpm lint` (0 errores),
+`pnpm test:unit:coverage` (100%, 349 tests), `pnpm build`, nuevo
+`e2e/access-door.spec.ts` (el N0 marca la entrevista hecha y asigna la
+puerta "Arquitecto" con precio/forma de pago/traído por, confirma en
+DB), suite Playwright completa: 70/70 verde.
+
+**Fuera de alcance de esta ronda (Fase 2, diferido a propósito)**: el
+"registro de campo" completo de la sección 8 del menú (horas de
+oreja/maestro/consultor, resultado, siguiente peldaño, ciclo de mejora
+con métricas por puerta) y el desglose del Embudo por puerta -- primero
+se valida con ventas reales que el flujo de elegir-puerta-y-precio
+funciona.

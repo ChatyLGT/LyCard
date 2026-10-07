@@ -821,6 +821,20 @@ model ProgramMembership {
   // pasar por ese funnel. Sin precios todavía, pedido textual de Gunnar.
   programDuracion String @default("")
 
+  // Viaje del Cliente -- puerta de acceso (2026-10-07, lib/accessDoors.ts,
+  // MENU_ACCESO_LEGACY v1.1 de MAMEN/Drive, ver docs/WHITEPAPER-ADENDA-
+  // 2026-10-07.md sección 9). El colaborador la asigna sobre esta misma
+  // fila después de la entrevista -- no es un modelo nuevo, es la
+  // extensión mínima del pipeline que ya existe (invited -> interviewed
+  // -> active -> paid). precioAgreedUsd es el número REAL negociado, no
+  // el "precioDefault" (hipótesis) del catálogo.
+  doorKey        String?   // key de ACCESS_DOORS: "empezar"|"armar"|"emprendedor"|"constructor"|"arquitecto"|"pyme"|"pyme_plus"|"programa"
+  priceAgreedUsd Int?
+  paymentModel   String?   // "unico"|"cuotas"|"suscripcion"|"bolsa_horas"|"abono_ascenso"|"retainer"|"participacion"
+  traidoPor      String?   // "empresa"|"oreja" -- define el costo humano real, sección 5.1 del menú
+  doorAssignedAt DateTime?
+  soldByAdminId  String?   // qué Admin (colaborador) cerró la puerta
+
   registrations Registration[]
 
   @@unique([memberId, programId])

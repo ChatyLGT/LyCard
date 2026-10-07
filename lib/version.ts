@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.84.0";
+export const APP_VERSION = "1.85.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.85.0",
+    date: "2026-10-07",
+    notes:
+      "Viaje del Cliente -- puerta de acceso: el colaborador que gestiona las entrevistas de un Programa ya puede registrar, sobre la misma Membership que hoy viaja por el Embudo de Conversión (invited -> interviewed -> active -> paid), qué puerta del MENU_ACCESO_LEGACY v1.1 (Empezar/Armar/Con Expertos Emprendedor o Constructor/Arquitecto/Pyme/Pyme+/Programa) eligió el cliente, a qué precio, con qué forma de pago y quién lo trajo (empresa u oreja) -- sin crear ningún modelo nuevo ni un rol nuevo, extiende directo el pipeline de /admin/programs/[id] que ya existía, al lado del botón \"Marcar entrevista hecha\".",
+  },
   {
     version: "1.84.0",
     date: "2026-10-07",
