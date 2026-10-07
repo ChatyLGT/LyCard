@@ -963,6 +963,36 @@ model WowAppInstall {
   @@unique([cardId, wowAppId])
 }
 
+// Librería "elegir o armar" (2026-10-07, diseño de sesión -- ver
+// docs/WHITEPAPER-ADENDA-2026-10-07.md): cada lugar configurable de la
+// tarjeta (Medallón, Rango, Contactos hoy; modales/Puestos/officeSkills
+// en una fase futura) es un "Slot" con una forma de datos fija. Un N0 lo
+// llena ARMANDO su propio JSON (ya existía, ver lib/escalas.ts
+// parseImportedEscala) o ELIGIENDO uno de acá -- mismo motor de catálogo
+// rubro+dolor que WowApp arriba (ver lib/slotTemplates.ts), aplicado a
+// plantillas de contenido en vez de apps instalables. Catálogo global,
+// no scoped a ningún Programa -- mismo criterio que WowApp.
+model SlotTemplate {
+  id          String @id @default(cuid())
+  // "escala" en esta fase (medal/rank/contacts, shape EscalaItem[] de
+  // lib/escalas.ts) -- "modal"/"puesto"/"officeSkill" quedan para cuando
+  // se generalice el patrón a esos slot types.
+  slotType    String
+  nombre      String
+  descripcion String @default("")
+  // Mismo vocabulario/shape que WowApp.industryTags/painPointTags
+  // (lib/wowApps.ts RUBROS/PAIN_POINTS), parseados en lib/slotTemplates.ts.
+  industryTags  Json @default("[]")
+  painPointTags Json @default("[]")
+  // El contenido real que se aplica al elegir este template -- para
+  // slotType:"escala", un EscalaItem[] tal cual (mismo shape que ya
+  // acepta "Importar JSON" en EscalaEditor.tsx).
+  payload Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 // --- Especialistas y Expertos (Fase 5, 2026-09-30) ---
 // Ver PLAN.md "Fase 4: DISEÑO -- Especialistas y Expertos" para el
 // porqué completo. Resumen: WowStore deja de vender solo "apps" (WowApp

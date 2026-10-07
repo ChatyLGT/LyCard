@@ -9732,3 +9732,64 @@ Legacy duplicado, y setear el origen real de HeroSuite desde su propia
 sección Linaje); `OriginMemento` como modelo separado (sigue pendiente
 de deprecar); modelado de los campos dolor/cómo/costo (puro diseño
 todavía, sin esquema).
+
+## 2026-10-07 (noche) -- Librería de Slots: Fase 1, aplicada a Escalas (v1.83.0)
+
+Primera aplicación real del patrón de arquitectura diseñado esta misma
+sesión (ver `docs/WHITEPAPER-ADENDA-2026-10-07.md` secciones 6-8):
+**Slot + Shape + Payload**. Cada lugar configurable de la tarjeta tiene
+una forma de datos fija (`Shape`); un N0 lo llena **ARMANDO** su propio
+JSON o **ELIGIENDO** uno de una librería curada por rubro/dolor -- mismo
+motor de catálogo que ya corría en WowStore
+(`lib/wowApps.ts#matchWowApps`), ahora generalizado.
+
+Se decidió explícitamente NO construir las 4 aplicaciones del patrón
+(Escalas/modales/Puestos/officeSkills) de una sola vez -- plan escrito y
+aprobado primero (modo plan del harness), separado en etapas, Fase 1
+acotada a un solo slot type para probar el mecanismo de punta a punta
+antes de generalizar.
+
+**Lo construido:**
+
+- `Program.medalScale`/`programas-actions.ts "Importar JSON"` (ya
+  existía) sigue siendo el camino "Armar".
+- Modelo nuevo `SlotTemplate` (`slotType`, `nombre`, `descripcion`,
+  `industryTags`, `painPointTags`, `payload:Json`) -- catálogo global,
+  MasterN0-only, mismo criterio que `WowApp`.
+- `lib/slotTemplates.ts`: `toCatalogEntry`/`matchSlotTemplates` --
+  calcado de `lib/wowApps.ts`, con una diferencia a propósito: sin
+  filtro de rubro/dolor devuelve TODOS los templates de ese `slotType`
+  (no un top-3 curado) porque acá el N0 está armando su propia tarjeta,
+  no explorando un catálogo grande. 100% cobertura unitaria.
+- `/admin/slot-templates`: CRUD completo (crear/editar/borrar), el
+  `payload` se valida con el mismo `parseImportedEscala` que ya usa el
+  Editor de Escalas antes de guardarlo -- un template mal armado no
+  llega a romperle la tarjeta a otro N0 que lo elija después.
+- `EscalaEditor.tsx`: nuevo botón "Elegir de la librería" al lado de
+  "Importar JSON" -- lista los templates reales, un click reemplaza
+  toda la escala (mismo `parseEscala` que sanitiza `medalScale` al leer
+  de la DB, no un parser nuevo).
+- Fix de paso: `lib/programLineage.ts` (shippeado en v1.82.0) nunca
+  había entrado al ratchet de cobertura de `vitest.config.mts` -- se
+  corrige junto con sumar `lib/slotTemplates.ts`.
+
+**Verificación**: `npx tsc --noEmit`, `pnpm lint`, `pnpm
+test:unit:coverage` (100%, 338 tests), `pnpm build`, nuevo
+`e2e/slot-templates.spec.ts` (MasterN0 arma 2 templates reales, un N0
+elige uno para su Medalla Rango, confirma en DB y en la tarjeta
+pública de un Miembro real), suite Playwright completa: 66/66 verde.
+
+**Fuera de alcance de esta ronda** (Fase 2+, documentado en el plan
+aprobado): el mismo patrón `SlotTemplate` aplicado a los 14 modales, a
+`Puesto` y a `officeSkills` -- una vez validado esto en producción, esas
+3 extensiones son paralelizables entre sí (mismo modelo, mismo
+mecanismo, distinto `slotType`).
+
+Nota aparte, anotada a pedido explícito de Gunnar mientras se construía
+esto ("no lo tomes en cuenta para el código actual, tenlo en cuenta
+para el desarrollo futuro"): diseño completo del sistema de Agentes
+EinarOS (escalera fractal en potencias de 12, N0→N1→Guardianas N2→144
+Expertos→Especialistas, fórmula z=z2+t3, cada agente con su propio
+"cerebro" en NotebookLM) -- documentado en
+`docs/WHITEPAPER-ADENDA-2026-10-07.md` sección 12, sin ningún trabajo
+de código asociado a esta sesión.

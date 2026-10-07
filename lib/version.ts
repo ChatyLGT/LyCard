@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.82.0";
+export const APP_VERSION = "1.83.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.83.0",
+    date: "2026-10-07",
+    notes:
+      "Librería de Slots -- Fase 1 (Escalas): primera aplicación real del patrón \"Slot + Shape + Payload\" diseñado esta sesión (ver docs/WHITEPAPER-ADENDA-2026-10-07.md) -- cada lugar configurable de la tarjeta se llena ARMANDO el propio JSON (ya existía, \"Importar JSON\" en el Editor de Escalas) o ELIGIENDO uno de una librería curada, mismo motor de catálogo rubro+dolor que ya corría en WowStore. Nuevo modelo SlotTemplate + /admin/slot-templates (CRUD MasterN0-only) + un botón \"Elegir de la librería\" al lado de \"Importar JSON\" en Medalla KPIs/Medalla Rango/Badge de Rangos -- un click reemplaza toda la escala con el payload de un template real, sin que el N0 tenga que escribir nada a mano. Fase 1 de N: por ahora solo Escalas; los 14 modales, Puestos y Superpoderes quedan documentados para una fase futura con el mismo mecanismo.",
+  },
   {
     version: "1.82.0",
     date: "2026-10-07",

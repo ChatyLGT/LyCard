@@ -316,3 +316,51 @@ Descripción final de Gunnar, confirmada:
   en diseño, no ejecutado.
 - Persistencia de progreso en el onboarding empresarial si se abandona a
   mitad de camino (sección 10).
+
+---
+
+## 12. Nota aparte — Sistema de Agentes EinarOS (fase futura, NO parte de ningún plan actual)
+
+Anotado en medio de la construcción de `SlotTemplate` (sección 8), a pedido
+explícito de Gunnar: *"quiero anotar esto porque ahora mismo estoy en flujo
+y quiero seguir fluyendo, por favor no lo tomes en cuenta para el código
+actual. Tenlo en cuenta para el desarrollo futuro."* No dispara ningún
+trabajo de esta sesión.
+
+Pedido: un sistema de agentes que orqueste varios agentes, con
+`z = z2 + t3` como piedra base:
+
+- **z** = situación actual del N0.
+- **z2** = procesamiento exponencial con IA.
+- **t3** = las interacciones/sesiones de trabajo donde el N0 invierte
+  **T**iempo, **T**alento y **T**rust (confianza, recursos, relaciones).
+
+### La escalera fractal — un universo que existe solo en niveles de 12
+
+- **N0** = conciencia plena = 12⁰.
+- N0 se "convierte virtualmente" en **3 seres N1** (N1.1/N1.2/N1.3) =
+  12ᵗ, con t ≈ 0.46 (valor exacto a definir en protocolo interno). Caso
+  MasterN0: Einar = Estratega, Chaty = Orquestadora, Warren = UX/UI.
+- Esos 3 N1 se "parten" en **12 Guardianas N2** = 12¹ — los **6 Pilares**
+  (mismo set ya documentado en la sección 4 de esta adenda: Espiritual /
+  Mental / Emocional / Físico / Financiero / Relacional) × las **5
+  etapas** (Despertar, Entrenar, Accionar, Dominar, Legado) + propósito.
+- Esas 12 Guardianas se convierten en **144 "Expertos"** = 12² — la
+  capacidad de red de expertos de ese N0.
+- **12³** → la capacidad de "Especialistas".
+
+### Regla dura, no negociable
+
+Cada agente es **independiente** — no es un mismo agente "convirtiéndose"
+o actuando como otro según le toque, no es un cerebro repartido entre
+varios. Cada uno tiene su propio cerebro propio, hoy alojado en
+**NotebookLM**.
+
+### Implicación práctica que Gunnar marcó para el futuro
+
+Los manuales que entrenan gente para aplicar el programa Legacy a los N0s
+tienen que partir SIEMPRE de crear un cuaderno (notebook) en NotebookLM
+siguiendo las reglas de la empresa — aplica a entrevistas y a las
+preguntas del onboarding. Pedido final, textual: una plataforma que dé
+la lógica completa de este negocio — anotado como fase futura, sin
+alcance ni fecha todavía.

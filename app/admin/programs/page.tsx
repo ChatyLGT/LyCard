@@ -194,6 +194,12 @@ export default async function AdminProgramsPage({
             WowStore →
           </Link>
           <Link
+            href="/admin/slot-templates"
+            style={{ alignSelf: "flex-start", color: "#8a8378", font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase" }}
+          >
+            Librería de Slots →
+          </Link>
+          <Link
             href="/admin/demo-data"
             style={{ alignSelf: "flex-start", color: "#8a8378", font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase" }}
           >

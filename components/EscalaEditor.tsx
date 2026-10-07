@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { type EscalaItem, parseImportedEscala } from "@/lib/escalas";
+import { type EscalaItem, parseEscala, parseImportedEscala } from "@/lib/escalas";
 import { AccordionRow, AccordionAddRow } from "@/components/Accordion";
 
 type EditableItem = EscalaItem & { _uid: string };
@@ -31,10 +31,17 @@ const FIELD: React.CSSProperties = {
 export default function EscalaEditor({
   type,
   initialItems,
+  templates,
   action,
 }: {
   type: "medal" | "rank" | "contacts";
   initialItems: EscalaItem[];
+  // Librería "elegir o armar" (2026-10-07) -- plantillas de slotType
+  // "escala" que cualquier N0 puede aplicar con un click, en vez de
+  // armar la suya desde cero. Opcional: si no llega (callers viejos, o
+  // todavía no hay ninguna cargada en /admin/slot-templates), la sección
+  // "Elegir" simplemente no se muestra.
+  templates?: { id: string; nombre: string; descripcion: string; payload: unknown }[];
   action: (formData: FormData) => Promise<void>;
 }) {
   const [items, setItems] = useState<EditableItem[]>(() => initialItems.map((it) => ({ ...it, _uid: uid() })));
@@ -71,6 +78,17 @@ export default function EscalaEditor({
     setItems(parsed.map((it) => ({ ...it, _uid: uid() })));
     setImportText("");
     setImportError(null);
+    setOpenUid(null);
+  }
+
+  // "Elegir de la librería" (2026-10-07) -- mismo reemplazo que
+  // runImport(), pero el JSON no lo pega el N0, lo elige de una
+  // plantilla ya armada (ver /admin/slot-templates). parseEscala
+  // sanitiza el payload (unknown, viene de Json de Prisma) igual que
+  // cuando se carga medalScale/rankScale/contactsScale desde la DB.
+  function applyTemplate(payload: unknown) {
+    const parsed = parseEscala(payload);
+    setItems(parsed.map((it) => ({ ...it, _uid: uid() })));
     setOpenUid(null);
   }
 
@@ -194,6 +212,30 @@ export default function EscalaEditor({
         <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add</span>
         Agregar nivel
       </button>
+
+      {templates && templates.length > 0 && (
+        <AccordionAddRow label="Elegir de la librería (reemplaza toda la escala)">
+          <p style={{ margin: 0, font: "400 11px/1.5 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>
+            Plantillas armadas por MasterN0 en <code>/admin/slot-templates</code> -- un click reemplaza todos los
+            niveles de acá abajo, igual que pegar un JSON a mano.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {templates.map((tpl) => (
+              <button
+                key={tpl.id}
+                type="button"
+                onClick={() => applyTemplate(tpl.payload)}
+                style={{ textAlign: "left", padding: "10px 12px", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, background: "rgba(200,161,90,.06)", cursor: "pointer" }}
+              >
+                <span style={{ display: "block", font: "700 12px 'Plus Jakarta Sans',sans-serif", color: "#E5C378" }}>{tpl.nombre}</span>
+                {tpl.descripcion && (
+                  <span style={{ display: "block", font: "400 11px/1.4 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>{tpl.descripcion}</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </AccordionAddRow>
+      )}
 
       <AccordionAddRow label="Importar JSON (reemplaza toda la escala)">
         <p style={{ margin: 0, font: "400 11px/1.5 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>

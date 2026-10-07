@@ -33,6 +33,7 @@ import { parseMotivationalPhrases } from "@/lib/oficinaExtras";
 import { parsePodiumButtons, getPodiumButton } from "@/lib/podiumButtons";
 import { parseModalBlocksMap } from "@/lib/modalBlocks";
 import { wouldCreateCycle } from "@/lib/programLineage";
+import { toCatalogEntry as toSlotTemplateCatalogEntry, matchSlotTemplates } from "@/lib/slotTemplates";
 import { MODAL_EDITOR_ENTRIES, parseModalIcons, parseTierIntros } from "@/lib/modalEditor";
 import EscalaEditor from "@/components/EscalaEditor";
 import OfficeSkillsEditor from "@/components/OfficeSkillsEditor";
@@ -244,6 +245,15 @@ export default async function AdminProgramDetailPage({
   const medalScale = parseEscala(program.medalScale);
   const rankScale = parseEscala(program.rankScale);
   const contactsScale = parseEscala(program.contactsScale);
+  // Librería "elegir o armar" (2026-10-07) -- los 3 editores de Escala
+  // comparten el mismo slotType ("escala"): medal/rank/contacts tienen
+  // exactamente el mismo shape (EscalaItem[]), así que un template sirve
+  // para cualquiera de los 3. Sin filtro de rubro/dolor acá -- la lista
+  // completa, ver lib/slotTemplates.ts.
+  const slotTemplateCatalog = (await prisma.slotTemplate.findMany({ orderBy: { createdAt: "asc" } })).map(
+    toSlotTemplateCatalogEntry
+  );
+  const escalaTemplates = matchSlotTemplates(slotTemplateCatalog, "escala", null, null);
   const officeSkills = parseOfficeSkills(program.officeSkills);
   const motivationalPhrases = parseMotivationalPhrases(program.motivationalPhrases);
   const podiumButtons = parsePodiumButtons(program.podiumButtons);
@@ -729,7 +739,7 @@ export default async function AdminProgramDetailPage({
           defaultOpen={escalaSaved === "contacts"}
         >
           {escalaSaved === "contacts" && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Escala guardada.</p>}
-          <EscalaEditor type="contacts" initialItems={contactsScale} action={updateEscalaAction.bind(null, program.id, "contacts")} />
+          <EscalaEditor type="contacts" initialItems={contactsScale} templates={escalaTemplates} action={updateEscalaAction.bind(null, program.id, "contacts")} />
         </AccordionSection>
 
         {/* "Escala de Medallón" → Medalla Rango (2026-10-04 -- primero
@@ -745,7 +755,7 @@ export default async function AdminProgramDetailPage({
           defaultOpen={escalaSaved === "medal"}
         >
           {escalaSaved === "medal" && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Escala guardada.</p>}
-          <EscalaEditor type="medal" initialItems={medalScale} action={updateEscalaAction.bind(null, program.id, "medal")} />
+          <EscalaEditor type="medal" initialItems={medalScale} templates={escalaTemplates} action={updateEscalaAction.bind(null, program.id, "medal")} />
         </AccordionSection>
 
         {/* Puestos — Badge de Puestos (2026-10-04, antes "Escalera de
@@ -831,7 +841,7 @@ export default async function AdminProgramDetailPage({
           defaultOpen={escalaSaved === "rank"}
         >
           {escalaSaved === "rank" && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Escala guardada.</p>}
-          <EscalaEditor type="rank" initialItems={rankScale} action={updateEscalaAction.bind(null, program.id, "rank")} />
+          <EscalaEditor type="rank" initialItems={rankScale} templates={escalaTemplates} action={updateEscalaAction.bind(null, program.id, "rank")} />
         </AccordionSection>
         </AccordionSection>
 
