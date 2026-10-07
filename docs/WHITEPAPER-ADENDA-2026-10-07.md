@@ -245,23 +245,74 @@ concreto todavía para LyCard. Próximo paso cuando él lo retome.
 
 ---
 
-## 9. Canales comerciales (pricing) — tal como los describió Gunnar
+## 9. Canales comerciales (pricing) — MENU_ACCESO_LEGACY v1.1 (Drive, MAMEN, 2026-10-07) — fuente oficial, reemplaza la tabla anterior de esta misma adenda
 
-Tabla tal como se documentó en conversación, sin cambios de mi parte salvo
-la ambigüedad marcada abajo:
+**Corrección sobre una primera vuelta de esta misma sesión**: inicialmente
+armé una tabla de 5 canales ($50 Express / $250 Pyme / $500 Legacy Corp)
+a partir de la narración verbal de Gunnar, sin ir a buscar el documento
+real. Gunnar la marcó incorrecta y señaló el documento fuente real en
+Drive: `MENU_ACCESO_LEGACY_v1_1_20261007_MAMEN.md` (autora MAMEN/HorusEye
+N3, creado hoy mismo, `authority: SIN_FIRMA`, `Estado de Sincronización:
+PENDIENTE DE RECONCILIAR` — es el borrador correcto según Gunnar, pero
+formalmente todavía no está firmado ni en su propio metadata). Esta
+sección reemplaza la tabla vieja con el contenido real de ese documento,
+citado, no inventado.
 
-| Canal | Duración/cadencia | N0s | Precio | Enfoque |
-|---|---|---|---|---|
-| **Express** | 3 días chat (ver ambigüedad abajo) | Ninguno | $50 + $10/mes | Gemelo Digital con Reino de Carbono (agentes N1 Estratega/Orquestadora/UX-IA, N2 Guardianas armando el Códice) — **estos agentes están diferidos, ver sección 5** |
-| **Personal** | 2 semanas (2 sesiones de 45min semana 1 + cierre semana 2) | — | — | "Solo agentes" |
-| **Pyme** | 45 días (15+15+15: diagnóstico/implementación/pruebas), 45min×2/semana | 1 | $250 + $50/mes | Hasta 5 agentes |
-| **Legacy Corp** | 3 meses (1+1+1) | 3 | $500 setup (cubre 3 meses) + $100/mes desde el mes 2 | — |
-| **Legacy Org** | A medida en todo | — | — | — |
+**Principio rector del documento, textual**: *"Lo que sube de peldaño NO
+es la cantidad de agentes ni el tiempo (tope: 3 meses). Es el anclaje a
+la realidad del N0: cuántas horas de humano real trabajan para que los
+agentes conozcan de verdad a la persona o al negocio. Entra mierda, sale
+mierda: más anclaje = mejor rendimiento y menos alucinación (Protocolo
+Dharma)."* El cliente ve 4 puertas para personas + 1 para negocios, nunca
+la escalera completa.
 
-**Ambigüedad sin resolver, señalada y no confirmada por Gunnar todavía:**
-el Canal Express dice "3 días" de duración pero también "entrega después
-de las 2 horas" — contradicción de timing real, pendiente de que Gunnar la
-aclare antes de publicar cualquier precio.
+| Puerta | Para quién | Qué recibe | Tiempo | Humanos | Precio (USD) |
+|---|---|---|---|---|---|
+| **1. Empezar** (Gratis) | Sin saber a dónde ir | Tarjeta personal (3-4 preguntas del Códice) + empresa si tiene. Oficina genérica. Wowapps a la carta. | Inmediato | 0 | $0 + a la carta |
+| **2. Armar** (Express) | Hacerlo solo, rápido | Edición 100%, Gemelo en ~2h, Protocolo de Adrea (≥3 días), hasta 5 agentes | 2h + ≥3 días | 0 — todo IA | $49–$99 (hipótesis) |
+| **3a. Con Expertos — Emprendedor** | Humanos al lado, sin comprometerse a 3 meses | 3 días onboarding, 2 sesiones de 45min con la oreja, hasta 3 expertos + 5 agentes c/u | 2 semanas | Expertos | $149–$249 (hipótesis) |
+| **3b. Con Expertos — Constructor** | Idem, más tiempo | 10 días onboarding, resto armando oficina, más horas de experto | 1 mes | Expertos | $299–$399 (hipótesis) |
+| **4. Arquitecto** (Legacy completo, = "Legacy Personal" de la narrativa de Gunnar) | La metodología entera | **Mes 1 (onboarding):** 8 sesiones de 45min con la oreja + 1 reunión de 45min con el maestro (entrega el Códice + pase al consultor de negocio). **Mes 2 (setup):** el consultor de negocio diseña la oficina virtual. **Mes 3:** pruebas. | 3 meses | Oreja, maestro, consultor de negocio | **$500 fijo (definido por N0, no hipótesis)** |
+| Negocio — Pyme | Pymes | Setup, consultores reales | 3 meses | Real | desde $1,500 (N0) |
+| Negocio — Pyme+ | Pymes más grandes | Expertos/especialistas EinarOS anclando los equipos IA | 3 meses | Real, creciente | desde $3,500 (ejemplo de N0) |
+| Negocio — Programa | A medida | Expertos/especialistas full-time | Continuo | Real | A medida (referencia: Tier 2 de `LEGACY_CORP_COMPLETO`, $10,000) |
+
+**Nomenclatura interna vs. pública (regla del documento):** "oreja" es el
+término interno para quien antes llamábamos "psicólogo entrenado" —
+sugerencia pública: "acompañante". Da apoyo supervisado por el "maestro"
+(psicólogo maestro), no terapia — consentimiento por escrito, el Códice
+es perfil de procesamiento declarado, no diagnóstico. Términos internos
+(Mirón, Vividor, Chido, Einar, Chaty, Warren, Guardianas, N0-N12) nunca se
+muestran al cliente — etiquetas públicas: "Explorando", "Registrado",
+"tú" en vez de "N0".
+
+**La cuenta real detrás del $500 de Arquitecto (sección 5.1 del
+documento, ya calculada y confirmada por N0 el mismo día)**:
+
+| | Cliente lo trae la empresa | Cliente lo trae la oreja |
+|---|---|---|
+| 9 sesiones de oreja ($16 o $32 c/u) | $144 | $288 |
+| 1 reunión de maestro | $50 | $50 |
+| **Costo humano hasta el pase** | **$194** | **$338** |
+| **Margen sobre $500** | **~61%** | **~32%** |
+
+No incluye horas del consultor de negocio (meses 2-3, hoy las pone N0 sin
+costo imputado, por eso se registran) ni plataforma/tokens/comisiones.
+
+**Modelos de pago (7 definidos, máximo 3 visibles por puerta):** pago
+único · cuotas (3, o 6 en Arquitecto) · suscripción mensual (wowapps a la
+carta) · bolsa de horas prepagas · abono de ascenso (lo pagado se
+descuenta del peldaño siguiente: 100% dentro de 30 días, 70% hasta 90
+días — esto es lo que resuelve "3 meses es un chingo") · retainer
+mensual (Pyme+/Programa) · participación en resultados (hipótesis, solo
+Programa, requiere revisión legal, nunca en Express).
+
+**Hueco real, explícito en el propio documento, sección 7, punto 1**:
+*"APLAZADO por decisión de N0: tope de horas de consultor. Se define con
+datos de campo..."* — es el mismo defecto que yo señalé a ciegas en mi
+primera tabla incorrecta (Arquitecto por encima de Pyme sin explicación)
+solo que acá ya está aplazado a propósito, documentado, no roto por
+descuido.
 
 ---
 
@@ -302,7 +353,10 @@ Descripción final de Gunnar, confirmada:
 
 ## 11. Preguntas abiertas (pendientes de Gunnar — no repreguntar, resolver una vez)
 
-- Ambigüedad de timing en el Canal Express (3 días vs. 2 horas).
+- ~~Ambigüedad de timing en el Canal Express (3 días vs. 2 horas)~~ —
+  **resuelto** (ver sección 9, MENU_ACCESO_LEGACY v1.1): no es una
+  contradicción, son 2 etapas secuenciales de la Puerta "Armar" (2h para
+  el Gemelo, luego ≥3 días para el Protocolo de Adrea/oficina).
 - Si el "gemelo digital"/Robotito de las 2 horas ya es un robot real
   (LLM + preguntas estructuradas) o es la meta a construir.
 - Significado real de "Medallón 1" (y, por extensión, de cualquier slot)
@@ -379,7 +433,25 @@ versión final:
    La tarjeta del Programa (el host que invitó al N0) sigue sin control
    del N0 -- es la del Programa, no la suya; todos los indicadores se
    manejan por el proyecto host.
-3. *(pendiente -- Gunnar sigue narrando)*
+
+   **Reconciliado (ver sección 9, MENU_ACCESO_LEGACY v1.1):** "Legacy
+   Personal" de esta narrativa ES la Puerta 4 "Arquitecto" del menú
+   oficial -- mismo $500 fijo, mismas 8 sesiones + 1 de entrega (9 en
+   total, con la "oreja" y el "maestro"), mismos 3 meses. No es un canal
+   nuevo a definir, es el nombre de trabajo de Gunnar para un canal que
+   ya existe y ya tiene su costo real calculado (sección 9).
+3. **Etapa 3 -- Elegir modalidad de acceso.** Terminado el masterclass,
+   el N0 elige **la puerta** (no la escalera completa, por regla del
+   menú): Empezar / Armar (Express) / Con Expertos (Emprendedor o
+   Constructor) / Arquitecto -- cada una dispara su propio protocolo de
+   onboarding (ver tabla completa en sección 9). El Dashboard de esta
+   etapa necesita, como mínimo, un selector de puerta por N0 y el
+   registro de campo que el propio MENU_ACCESO_LEGACY v1.1 ya pide en su
+   sección 8 (cliente, puerta elegida, quién lo trajo, horas de
+   consultor/oreja/maestro, resultado, siguiente peldaño) -- eso es lo
+   que después permite el "Ciclo de mejora" (métricas y señales de
+   falla por puerta) que el documento define.
+4. *(pendiente -- Gunnar sigue narrando)*
 
 ### Implicación práctica que Gunnar marcó para el futuro
 
