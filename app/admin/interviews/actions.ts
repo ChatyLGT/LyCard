@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { currentAdminScope, canAccessProgram } from "@/lib/auth";
+import { resolveActingScope, canAccessProgram } from "@/lib/auth";
 import { activateMembershipAndSpawnCards } from "@/lib/activateMembership";
 import { findAccessDoor, isValidPaymentModel } from "@/lib/accessDoors";
 
@@ -17,7 +17,9 @@ import { findAccessDoor, isValidPaymentModel } from "@/lib/accessDoors";
 // 2026-09-23, the only difference being markInterviewed: true here, since
 // this IS a real interview and must count for the Embudo).
 export async function completeInterviewAction(registrationId: string, returnTo: string = "/admin/interviews") {
-  const scope = await currentAdminScope();
+  // Panel de Empleados (2026-10-07): resolveActingScope también acepta
+  // la cookie de empleado -- misma acción, mismo guard, sin duplicar.
+  const scope = await resolveActingScope();
   if (!scope) redirect("/admin/login");
 
   const registration = await prisma.registration.findUnique({
@@ -49,7 +51,7 @@ export async function completeInterviewAction(registrationId: string, returnTo: 
 // entrevista hecha" (se puede llenar antes o después). lib/accessDoors.ts
 // es el mismo validador que usa este form y la UI, no uno nuevo.
 export async function assignDoorAction(membershipId: string, programId: string, returnTo: string, formData: FormData) {
-  const scope = await currentAdminScope();
+  const scope = await resolveActingScope();
   if (!scope) redirect("/admin/login");
   if (!canAccessProgram(scope, programId)) redirect(returnTo);
 

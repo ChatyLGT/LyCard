@@ -41,6 +41,24 @@ export async function mintAdminCookie(adminId: string) {
   return { name: COOKIE_NAME, value: token, httpOnly: true, sameSite: "Lax" as const };
 }
 
+// Panel de Empleados (2026-10-07) -- mismo mecanismo que mintAdminCookie,
+// bajo la cookie propia de lib/auth.ts#createEmployeeSession. Nombre/TTL/
+// algoritmo deben seguir idénticos a los de ahí si cambian.
+const EMPLOYEE_COOKIE_NAME = "lycard_empleado";
+
+export async function mintEmployeeCookie(adminId: string) {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) throw new Error("SESSION_SECRET no está seteado — necesario para los E2E de Empleado");
+
+  const token = await new SignJWT({ sub: adminId })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("30d")
+    .sign(new TextEncoder().encode(secret));
+
+  return { name: EMPLOYEE_COOKIE_NAME, value: token, httpOnly: true, sameSite: "Lax" as const };
+}
+
 // Mismo mecanismo que lib/memberAuth.ts#createMemberSession, reimplementado
 // acá por el mismo motivo que mintAdminCookie de arriba (next/headers no
 // existe fuera de una request real de Next). Cookie name/payload/TTL deben

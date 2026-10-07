@@ -1,0 +1,90 @@
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { currentEmployeeScope } from "@/lib/auth";
+import { employeeLogoutAction } from "@/app/empleados/actions";
+import MembersPanel from "@/components/MembersPanel";
+
+export const dynamic = "force-dynamic";
+
+// Panel de Empleados (2026-10-07) -- pantalla propia, mínima: un
+// colaborador entrenado ve SOLO lo que necesita para vender/gestionar
+// el Viaje del Cliente (Agregar Miembro, puerta de acceso, marcar
+// pagada). Nada de Categorización/Modales/Superpoderes/Skins/
+// Mensajería/Embudo/ajustes del Programa/otros Admins -- ese es el
+// dashboard completo de /admin/programs/[id], un sistema aparte.
+export default async function EmployeePanelPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    memberAdded?: string;
+    memberError?: string;
+    doorAssigned?: string;
+    doorError?: string;
+  }>;
+}) {
+  const { memberAdded, memberError, doorAssigned, doorError } = await searchParams;
+
+  const scope = await currentEmployeeScope();
+  if (!scope) redirect("/empleados/login");
+
+  const program = await prisma.program.findUnique({
+    where: { id: scope.programId },
+    select: {
+      id: true,
+      name: true,
+      memberships: {
+        orderBy: { createdAt: "desc" },
+        include: { member: { include: { cards: true } }, referredBy: { include: { member: true } } },
+      },
+    },
+  });
+  if (!program) redirect("/empleados/login");
+
+  const returnTo = "/empleados";
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#131313", color: "#e5e2e1", fontFamily: "'Plus Jakarta Sans',sans-serif", padding: "0 0 60px" }}>
+      <div
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 10,
+          background: "rgba(20,20,20,.96)",
+          borderBottom: "1px solid rgba(200,161,90,.22)",
+          padding: "calc(env(safe-area-inset-top,0px) + 16px) 20px 16px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+        }}
+      >
+        <span style={{ color: "#C8A15A", font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".18em", textTransform: "uppercase" }}>
+          Empleado · {program.name}
+        </span>
+        <h1 style={{ margin: 0, font: "500 18px 'Playfair Display',serif", color: "#F5F2EB" }}>Panel de Empleados</h1>
+        <form action={employeeLogoutAction}>
+          <button
+            type="submit"
+            style={{ background: "none", border: "1px solid rgba(200,161,90,.3)", borderRadius: 999, padding: "8px 14px", color: "#C2BEB5", font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", cursor: "pointer" }}
+          >
+            Cerrar sesión
+          </button>
+        </form>
+      </div>
+
+      <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+        <MembersPanel
+          programId={program.id}
+          memberships={program.memberships}
+          returnTo={returnTo}
+          minimal
+          defaultOpen
+          memberAdded={memberAdded}
+          memberError={memberError}
+          doorAssigned={doorAssigned}
+          doorError={doorError}
+        />
+      </div>
+    </div>
+  );
+}

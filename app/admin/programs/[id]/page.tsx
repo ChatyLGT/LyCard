@@ -4,8 +4,7 @@ import PhotoPositioner from "@/components/PhotoPositioner";
 import { prisma } from "@/lib/prisma";
 import { currentAdminScope, isMasterN0Scope, canAccessProgram } from "@/lib/auth";
 import { logoutAction } from "@/app/admin/actions";
-import { completeInterviewAction, assignDoorAction } from "@/app/admin/interviews/actions";
-import { ACCESS_DOORS, findAccessDoor } from "@/lib/accessDoors";
+import { completeInterviewAction } from "@/app/admin/interviews/actions";
 import {
   updateProgramAction,
   setProgramOriginAction,
@@ -20,8 +19,8 @@ import {
   setOfficeSkillIconAction,
   updateMotivationalPhrasesAction,
 } from "../actions";
-import { addMemberToProgramAction, updateMemberAction, deleteMemberAction, messageMemberAction, markMembershipPaidAction, viewAsMemberAction } from "../members-actions";
 import { sendMassMessageAction } from "../messages-actions";
+import MembersPanel from "@/components/MembersPanel";
 import { CHANNELS } from "@/lib/messaging";
 import { buildFunnelStages } from "@/lib/funnel";
 import { createPuestoAction, updatePuestoAction, deletePuestoAction, applyPuestoTemplateAction } from "../puestos-actions";
@@ -206,22 +205,6 @@ export default async function AdminProgramDetailPage({
     templateNotFound: "Ese template ya no existe.",
     templateEmpty: "Ese template no tiene niveles válidos (sigla + denominación por fila).",
   };
-  const DOOR_ERROR_COPY: Record<string, string> = {
-    doorKey: "Elegí una puerta real del menú.",
-    paymentModel: "Esa forma de pago no está permitida para la puerta elegida.",
-    traidoPor: "Elegí quién trajo al cliente: empresa u oreja.",
-    priceAgreedUsd: "El precio tiene que ser un número entero, cero o mayor.",
-  };
-  const MEMBER_ERROR_COPY: Record<string, string> = {
-    addName: "El nombre es obligatorio.",
-    hasCards: "No se puede borrar — ya tiene tarjetas activas con links circulando.",
-    messageEmpty: "Completá asunto y mensaje.",
-    messageNotConfigured: "Este miembro no tiene email cargado, o el envío de correos no está activado.",
-    messageFailed: "No se pudo enviar el mensaje, probá de nuevo.",
-    paidRequiresActive: "Solo se puede marcar como pagada una membresía ya activa.",
-    viewAsRequiresOwnLogin: "Para entrar como un Miembro necesitás tu propia sesión de Admin (no la del puente Chido→Programa) -- vos ya tenés tu /m/dashboard a un click, sin este atajo.",
-  };
-
   const scope = await currentAdminScope();
   if (!scope) redirect("/admin/login");
   const isMasterN0 = isMasterN0Scope(scope);
@@ -1087,15 +1070,29 @@ export default async function AdminProgramDetailPage({
                     <span style={{ color: "#5A5A5A" }}>(vía su cuenta, sin password propio)</span>
                   </>
                 )}
+                {a.email && a.role === "empleado" && (
+                  <span style={{ marginLeft: 8, font: "700 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#C8A15A", background: "rgba(200,161,90,.12)", borderRadius: 6, padding: "2px 6px" }}>
+                    Empleado -- /empleados/login
+                  </span>
+                )}
               </div>
             ))}
-            <AccordionAddRow label="Agregar N0 delegado" defaultOpen={Boolean(adminError)}>
+            {/* Panel de Empleados (2026-10-07) -- mismo form, un select
+                más: "Empleado" da de alta una cuenta que solo entra por
+                /empleados/login (acceso independiente, nunca ve este
+                dashboard). Default Owner, cero cambio para quien no lo
+                toca. */}
+            <AccordionAddRow label="Agregar N0 delegado o Empleado" defaultOpen={Boolean(adminError)}>
               <form action={createProgramAdminAction} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <input type="hidden" name="programId" value={program.id} />
-                <input name="email" type="email" placeholder="Email del N0" required style={{ flex: "1 1 160px", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "9px 12px", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
+                <input name="email" type="email" placeholder="Email" required style={{ flex: "1 1 160px", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "9px 12px", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
                 <input name="password" type="password" placeholder="Contraseña (8+ caracteres)" required style={{ flex: "1 1 160px", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "9px 12px", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
+                <select name="role" defaultValue="owner" style={{ flex: "1 1 140px", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "9px 12px", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none" }}>
+                  <option value="owner">N0 (dashboard completo)</option>
+                  <option value="empleado">Empleado (/empleados, acceso mínimo)</option>
+                </select>
                 <button type="submit" style={SAVE_BTN}>
-                  Crear N0
+                  Crear cuenta
                 </button>
               </form>
             </AccordionAddRow>
@@ -1133,214 +1130,20 @@ export default async function AdminProgramDetailPage({
           </div>
         </AccordionSection>
 
-        {/* Members */}
-        <AccordionSection
-          title="Miembros"
-          meta={<span style={PILL}>{program.memberships.length}</span>}
-          defaultOpen={Boolean(memberSaved || memberDeleted || memberMessaged || memberError || memberAdded || doorAssigned || doorError)}
-        >
-          {memberSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Miembro actualizado.</p>}
-          {memberDeleted && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Miembro eliminado.</p>}
-          {memberMessaged && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Mensaje enviado.</p>}
-          {memberAdded && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Miembro agregado -- ya tiene sus 3 tarjetas.</p>}
-          {doorAssigned && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Puerta asignada.</p>}
-          {doorError && (
-            <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>{DOOR_ERROR_COPY[doorError] || "No se pudo asignar la puerta."}</p>
-          )}
-          {memberError && (
-            <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>
-              {MEMBER_ERROR_COPY[memberError] || "Algo falló."}
-            </p>
-          )}
-
-          {/* Alta directa (2026-10-07) -- hasta ahora un Member solo
-              nacía por el funnel self-service público, que además
-              siempre aterriza en Legacy. Esto deja al N0 sumar gente
-              real a SU Programa sin pasar por ahí -- si el WhatsApp ya
-              existe como Member de otro Programa, lo suma en vez de
-              duplicarlo. */}
-          <AccordionAddRow label="Agregar Miembro" defaultOpen={program.memberships.length === 0}>
-            <form action={addMemberToProgramAction.bind(null, program.id)} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <input name="name" placeholder="Nombre" required style={INPUT} />
-              <input name="whatsapp" placeholder="WhatsApp (opcional -- si ya existe, lo suma en vez de duplicar)" style={INPUT} />
-              <input name="email" type="email" placeholder="Email (opcional)" style={INPUT} />
-              <button type="submit" style={SAVE_BTN}>
-                Agregar Miembro
-              </button>
-            </form>
-          </AccordionAddRow>
-
-          {program.memberships.length === 0 && <p style={{ margin: 0, color: "#5A5A5A", font: "400 12.5px 'Plus Jakarta Sans',sans-serif" }}>Todavía no hay miembros.</p>}
-          {program.memberships.map((m) => {
-            const projectCard = m.member.cards.find((c) => c.kind === "project");
-            return (
-              <AccordionRow
-                key={m.id}
-                title={m.member.name || "(sin nombre)"}
-                subtitle={[m.member.whatsapp, m.member.email].filter(Boolean).join(" · ") || undefined}
-                leading={
-                  <span
-                    style={{
-                      flex: "none",
-                      font: "700 9px 'Plus Jakarta Sans',sans-serif",
-                      letterSpacing: ".06em",
-                      textTransform: "uppercase",
-                      color: m.status === "active" ? "#7BC98E" : "#C8A15A",
-                      background: m.status === "active" ? "rgba(123,201,142,.12)" : "rgba(200,161,90,.12)",
-                      borderRadius: 6,
-                      padding: "3px 6px",
-                    }}
-                  >
-                    {m.status === "active" ? "Activo" : "Invitado"}
-                  </span>
-                }
-                trailing={
-                  <form action={deleteMemberAction.bind(null, m.member.id, program.id)}>
-                    <button type="submit" aria-label="Borrar" style={DELETE_ICON_BTN}>
-                      <span className="material-symbols-outlined" style={{ fontSize: 15 }}>delete</span>
-                    </button>
-                  </form>
-                }
-              >
-                {m.referredBy && (
-                  <p style={{ margin: 0, font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>Referido por: {m.referredBy.member.name}</p>
-                )}
-                {projectCard && (
-                  <Link href={`/c/${projectCard.slug}`} style={{ font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#C8A15A" }}>
-                    /c/{projectCard.slug}
-                  </Link>
-                )}
-
-                {/* "Entrar como este Miembro" (2026-10-06, pedido de Gunnar:
-                    "necesito que todas las pantallas sean accesibles en el
-                    Dashboard") -- único acceso real a /m/dashboard y todo lo
-                    que cuelga de ahí (WowStore, WowHead, Mensajes, Red de
-                    Clientes) para un Admin clásico, que nunca tiene sesión
-                    de Member propia. Solo para membresías activas -- las
-                    "Invitado" todavía no tienen las 3 Cards creadas, no hay
-                    nada que ver. */}
-                {m.status === "active" && (
-                  <form action={viewAsMemberAction.bind(null, m.member.id, program.id)}>
-                    <button
-                      type="submit"
-                      style={{ background: "none", border: "1px solid rgba(200,161,90,.3)", borderRadius: 999, padding: "6px 12px", color: "#C8A15A", font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", cursor: "pointer", width: "fit-content" }}
-                    >
-                      Entrar como este Miembro →
-                    </button>
-                  </form>
-                )}
-
-                {m.status === "active" && (
-                  <form action={markMembershipPaidAction.bind(null, m.member.id, program.id)}>
-                    <button
-                      type="submit"
-                      style={{
-                        background: m.membershipPaidAt ? "rgba(123,201,142,.12)" : "none",
-                        border: `1px solid ${m.membershipPaidAt ? "rgba(123,201,142,.4)" : "rgba(200,161,90,.3)"}`,
-                        borderRadius: 999,
-                        padding: "6px 12px",
-                        color: m.membershipPaidAt ? "#7BC98E" : "#C2BEB5",
-                        font: "700 10px 'Plus Jakarta Sans',sans-serif",
-                        letterSpacing: ".06em",
-                        textTransform: "uppercase",
-                        cursor: "pointer",
-                        width: "fit-content",
-                      }}
-                    >
-                      {m.membershipPaidAt ? "✓ Pagada -- marcar como no pagada" : "Marcar como pagada"}
-                    </button>
-                  </form>
-                )}
-
-                {/* Viaje del Cliente -- puerta de acceso (2026-10-07,
-                    movido acá desde "Inscriptos a Entrevistas": esa
-                    sección solo lista a quien entró por el funnel público
-                    de Agendar Entrevista -- un Miembro que el colaborador
-                    agrega directo con "Agregar Miembro" nunca aparecía
-                    ahí, así que nunca podía recibir una puerta. "Miembros"
-                    lista a TODOS, vengan de donde vengan -- único lugar
-                    correcto para esto). El colaborador registra qué
-                    puerta del MENU_ACCESO_LEGACY v1.1 eligió el cliente y
-                    a qué precio -- ver docs/WHITEPAPER-ADENDA-2026-10-07.md
-                    sección 9. */}
-                {m.status === "active" && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 6, borderTop: "1px solid rgba(255,255,255,.06)" }}>
-                    <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#5A5A5A" }}>Puerta de acceso</span>
-                    {m.doorKey ? (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                        <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#7BC98E" }}>
-                          ✓ {findAccessDoor(m.doorKey)?.nombre || m.doorKey}
-                        </span>
-                        <span style={{ font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
-                          ${m.priceAgreedUsd} -- {m.paymentModel} -- traído por {m.traidoPor}
-                        </span>
-                      </div>
-                    ) : (
-                      <form action={assignDoorAction.bind(null, m.id, program.id, returnTo)} style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "flex-end" }}>
-                        <select name="doorKey" defaultValue="" required style={{ ...INPUT, flex: "1 1 220px" }}>
-                          <option value="" disabled>
-                            Elegí la puerta...
-                          </option>
-                          {ACCESS_DOORS.map((d) => (
-                            <option key={d.key} value={d.key}>
-                              {d.nombre} -- {d.tiempo}
-                            </option>
-                          ))}
-                        </select>
-                        <input name="priceAgreedUsd" type="number" min={0} step={1} placeholder="Precio USD" required style={{ ...INPUT, width: 110 }} />
-                        <select name="paymentModel" defaultValue="unico" style={INPUT}>
-                          <option value="unico">Pago único</option>
-                          <option value="cuotas">Cuotas</option>
-                          <option value="suscripcion">Suscripción</option>
-                          <option value="bolsa_horas">Bolsa de horas</option>
-                          <option value="abono_ascenso">Abono de ascenso</option>
-                          <option value="retainer">Retainer</option>
-                          <option value="participacion">Participación en resultados</option>
-                        </select>
-                        <select name="traidoPor" defaultValue="empresa" style={INPUT}>
-                          <option value="empresa">Traído por la empresa</option>
-                          <option value="oreja">Traído por la oreja</option>
-                        </select>
-                        <button type="submit" style={SAVE_BTN}>
-                          Asignar puerta
-                        </button>
-                      </form>
-                    )}
-                  </div>
-                )}
-
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#5A5A5A" }}>Editar</span>
-                  <form
-                    action={updateMemberAction.bind(null, m.member.id, program.id)}
-                    style={{ display: "flex", flexDirection: "column", gap: 8 }}
-                  >
-                    <input name="name" defaultValue={m.member.name} placeholder="Nombre" style={INPUT} />
-                    <input name="whatsapp" defaultValue={m.member.whatsapp || ""} placeholder="WhatsApp" style={INPUT} />
-                    <input name="email" type="email" defaultValue={m.member.email} placeholder="Email" style={INPUT} />
-                    <button type="submit" style={SAVE_BTN}>
-                      Guardar
-                    </button>
-                  </form>
-                </div>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 6, borderTop: "1px solid rgba(255,255,255,.06)" }}>
-                  <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#5A5A5A" }}>Mensaje</span>
-                  <form
-                    action={messageMemberAction.bind(null, m.member.id, program.id)}
-                    style={{ display: "flex", flexDirection: "column", gap: 8 }}
-                  >
-                    <input name="subject" placeholder="Asunto" style={INPUT} />
-                    <textarea name="message" placeholder="Mensaje" rows={3} style={{ ...INPUT, resize: "vertical" }} />
-                    <button type="submit" style={SAVE_BTN}>
-                      Enviar
-                    </button>
-                  </form>
-                </div>
-              </AccordionRow>
-            );
-          })}
-        </AccordionSection>
+        {/* Members -- extraído a components/MembersPanel.tsx (2026-10-07)
+            para reusarse tal cual en el Panel de Empleados. */}
+        <MembersPanel
+          programId={program.id}
+          memberships={program.memberships}
+          returnTo={returnTo}
+          memberSaved={memberSaved}
+          memberDeleted={memberDeleted}
+          memberMessaged={memberMessaged}
+          memberAdded={memberAdded}
+          memberError={memberError}
+          doorAssigned={doorAssigned}
+          doorError={doorError}
+        />
 
         {/* Mensajería Interna (2026-09-24) -- solo N0 llega hasta acá
             (requireProgramAccess ya lo filtra en la action). Sin

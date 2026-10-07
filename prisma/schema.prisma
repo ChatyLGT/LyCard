@@ -41,6 +41,16 @@ model Admin {
   // sin Member vinculado) manda como este Admin en vez de como un
   // Member, ver Message.senderAdminId.
   sentMessages Message[]
+
+  // Panel de Empleados (2026-10-07, pedido de Gunnar: "un panel de
+  // control para 'empleados' es un sistema aparte, tratalo como tal, y
+  // dame un acceso independiente") -- "owner" cubre tanto a MasterN0
+  // como a un N0 de Programa clásico (default, cero cambio de
+  // comportamiento para toda fila existente); "empleado" solo puede
+  // loguearse en /empleados/login (cookie propia, lib/auth.ts#
+  // currentEmployeeScope) y nunca en /admin/login. Un Admin "empleado"
+  // siempre tiene programId seteado -- nunca es MasterN0-global.
+  role String @default("owner")
 }
 
 // Bitácora de todo intento de login de Admin, exitoso o no (2026-09-19,

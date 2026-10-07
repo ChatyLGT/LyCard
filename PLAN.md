@@ -9920,3 +9920,63 @@ el Programa Legacy, sin ninguna Card/Member real -- `prisma/seed.ts` y
 anterior) -- el ensayo con Juancho/Digital Kingdom de punta a punta
 (incluida la auto-promoción a Programa) queda pendiente para cuando
 Gunnar confirme que quiere avanzar con eso.
+
+## 2026-10-07 (madrugada siguiente) -- Panel de Empleados: acceso independiente (v1.86.0)
+
+Gunnar probó v1.85.1 y cortó en seco: "sigue exactamente todo igual..
+necesito que te armes algo diferente un acceso distinto.. un panel de
+control para 'empleados' es un sistema aparte, tratalo como tal, y
+dame un acceso independiente.. creame la cuenta.. o hazme la forma de
+que yo tenga una cuenta de 'empleado' también como MasterN0". No era
+pedir otro formulario adentro del dashboard completo -- era pedir una
+pantalla propia, de acceso mínimo, con login propio.
+
+**Diseño** (ver plan completo: `/root/.claude/plans/ticklish-whistling-hickey.md`):
+separación real en dos niveles, reusando la lógica de negocio sin
+duplicarla.
+
+- `Admin.role` (`"owner"` default | `"empleado"`) -- migración manual
+  `ALTER TABLE "Admin" ADD COLUMN "role"`.
+- `lib/auth.ts`: cookie propia `lycard_empleado` (nunca la misma que
+  `lycard_admin`) + `createEmployeeSession`/`destroyEmployeeSession`/
+  `currentEmployeeId`/`currentEmployeeScope` (exige `role==="empleado"`
+  y `programId` no nulo) + `verifyEmployeeCredentials` (espejo de
+  `verifyAdminCredentials`, que a su vez ahora rechaza un `role===
+  "empleado"` -- separación real en los dos sentidos, no solo cookies
+  distintas). `resolveActingScope()` prueba `currentAdminScope()` y si
+  no hay, `currentEmployeeScope()` -- lo usan SOLO las 3 acciones que
+  el Panel de Empleados invoca (`requireProgramAccess` en
+  members-actions.ts, `completeInterviewAction`/`assignDoorAction` en
+  interviews/actions.ts), nunca las páginas de `/admin/*` o
+  `/empleados/*`, que siguen cada una con su resolver exclusivo -- así
+  la cookie de empleado nunca destraba el dashboard completo, y
+  viceversa.
+- `addMemberToProgramAction`/`markMembershipPaidAction`
+  (members-actions.ts) sumaron un parámetro `returnTo` (default
+  `/admin/programs/${programId}`, igual que ya tenían
+  `completeInterviewAction`/`assignDoorAction`) -- sin esto, estas dos
+  acciones hardcodeaban el redirect a `/admin/programs/[id]` y
+  hubieran expulsado a cualquier empleado de vuelta a `/admin/login`
+  justo después de usarlas.
+- `components/MembersPanel.tsx` (nuevo): el bloque "Agregar Miembro" +
+  lista de "Miembros" (puerta de acceso, marcar pagada), extraído tal
+  cual de `/admin/programs/[id]/page.tsx` y reusado ahí mismo y en
+  `/empleados`. Prop `minimal` oculta Borrar/Editar/Mensaje/"Entrar
+  como este Miembro" -- herramientas administrativas, no de venta.
+- `/empleados/login` + `/empleados` + `app/empleados/actions.ts`
+  (nuevos): pantalla mínima, sin Categorización/Modales/Superpoderes/
+  Skins/Mensajería/Embudo/ajustes del Programa/otros Admins.
+- `/admin/programs/[id]`: el form de "Crear Admin" ganó un selector
+  Owner/Empleado (default Owner, cero cambio para quien no lo toca) --
+  así Gunnar mismo crea su propia cuenta de empleado, con el
+  email/password que elija, sin que ninguna contraseña real pase por
+  este chat.
+
+**Verificación**: `npx tsc --noEmit`, `pnpm lint` (0 errores nuevos),
+`pnpm test:unit:coverage` (100%, 349 tests -- sin módulos puros nuevos
+que requieran unit test, mismo criterio que `currentAdminScope` hoy),
+`pnpm build`, `e2e/empleados.spec.ts` nuevo (login real, agregar
+Miembro + asignar puerta desde `/empleados`, cookie de empleado
+rebotada en `/admin/programs/[id]`, credenciales de empleado
+rechazadas en `/admin/login`), suite Playwright completa: 75/75
+verde.

@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.85.1";
+export const APP_VERSION = "1.86.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.86.0",
+    date: "2026-10-07",
+    notes:
+      "Panel de Empleados: Gunnar probó la puerta de acceso movida a \"Miembros\" (v1.85.1) y fue tajante -- \"sigue exactamente todo igual.. necesito un acceso distinto.. un panel de control para 'empleados' es un sistema aparte, tratalo como tal, y dame un acceso independiente\". Nuevo /empleados/login + /empleados: pantalla propia, mínima (Agregar Miembro + lista de Miembros con puerta de acceso y \"Marcar como pagada\"), con su propia cookie (lycard_empleado, nunca la misma que lycard_admin de /admin) -- un MasterN0 puede estar logueado en /admin Y en /empleados al mismo tiempo, con cuentas distintas. Admin.role (\"owner\" default | \"empleado\") separa las dos cosas en los dos sentidos: un Admin empleado nunca entra por /admin/login, y la cookie de empleado nunca destraba el dashboard completo. Por debajo, cero pipeline de negocio duplicada -- lib/auth.ts#resolveActingScope deja que un empleado ejecute las MISMAS acciones que ya existían (addMemberToProgramAction, assignDoorAction, markMembershipPaidAction), solo que las páginas de /admin/* y /empleados/* siguen resolviendo su scope cada una por su cuenta, sin cruzarse. El bloque de \"Agregar Miembro\" + \"Miembros\" se extrajo a components/MembersPanel.tsx, reusado tal cual en las dos pantallas. La cuenta de empleado la crea el propio MasterN0 desde /admin/programs/[id] (mismo form de siempre, con un selector Owner/Empleado nuevo) -- ninguna contraseña real pasó por este chat.",
+  },
   {
     version: "1.85.1",
     date: "2026-10-07",

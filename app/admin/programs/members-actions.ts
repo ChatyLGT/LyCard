@@ -3,16 +3,19 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { currentAdminScope, canAccessProgram, currentAdminId } from "@/lib/auth";
+import { resolveActingScope, canAccessProgram, currentAdminId } from "@/lib/auth";
 import { checkAndPromoteToPrograma } from "@/lib/programPromotion";
 import { createMemberSession } from "@/lib/memberAuth";
 import { activateMembershipAndSpawnCards } from "@/lib/activateMembership";
 
 // MasterN0 can manage any Program's members; a scoped N0 only their own —
 // and only members who actually belong to that Program (checked at the
-// membership level below, not just trusted from the form).
+// membership level below, not just trusted from the form). Panel de
+// Empleados (2026-10-07): resolveActingScope también acepta la cookie
+// de empleado (lib/auth.ts), así que un empleado ejecuta exactamente
+// estas mismas acciones sobre su Programa, sin pipeline duplicada.
 async function requireProgramAccess(programId: string) {
-  const scope = await currentAdminScope();
+  const scope = await resolveActingScope();
   if (!scope) redirect("/admin/login");
   if (!canAccessProgram(scope, programId)) redirect(`/admin/programs/${scope.programId}`);
   return scope;
@@ -34,13 +37,13 @@ async function requireMembership(memberId: string, programId: string) {
 // real sin pasar por ese funnel ajeno. Si el WhatsApp ya existe (Member
 // de otro Programa), lo suma a este en vez de duplicarlo -- mismo
 // criterio idempotente que el resto del alta (ver activateMembership.ts).
-export async function addMemberToProgramAction(programId: string, formData: FormData) {
+export async function addMemberToProgramAction(programId: string, returnTo: string = `/admin/programs/${programId}`, formData: FormData) {
   await requireProgramAccess(programId);
 
   const name = String(formData.get("name") || "").trim();
   const whatsapp = String(formData.get("whatsapp") || "").trim() || null;
   const email = String(formData.get("email") || "").trim();
-  if (!name) redirect(`/admin/programs/${programId}?memberError=addName`);
+  if (!name) redirect(`${returnTo}?memberError=addName`);
 
   const existingMember = whatsapp ? await prisma.member.findUnique({ where: { whatsapp } }) : null;
   const member = existingMember ?? (await prisma.member.create({ data: { name, whatsapp, email } }));
@@ -53,8 +56,8 @@ export async function addMemberToProgramAction(programId: string, formData: Form
 
   await activateMembershipAndSpawnCards(membership.id, { markInterviewed: false });
 
-  revalidatePath(`/admin/programs/${programId}`);
-  redirect(`/admin/programs/${programId}?memberAdded=1`);
+  revalidatePath(returnTo);
+  redirect(`${returnTo}?memberAdded=1`);
 }
 
 export async function updateMemberAction(memberId: string, programId: string, formData: FormData) {
@@ -124,12 +127,12 @@ export async function messageMemberAction(memberId: string, programId: string, f
 // (cáscara honesta: esto es un flag, no una confirmación de cobro).
 // Solo tiene sentido sobre una membresía ya activa (Oficina Virtual
 // creada); togglea entre pagado/no-pagado.
-export async function markMembershipPaidAction(memberId: string, programId: string) {
+export async function markMembershipPaidAction(memberId: string, programId: string, returnTo: string = `/admin/programs/${programId}`) {
   await requireProgramAccess(programId);
   const membership = await requireMembership(memberId, programId);
 
   if (membership.status !== "active") {
-    redirect(`/admin/programs/${programId}?memberError=paidRequiresActive`);
+    redirect(`${returnTo}?memberError=paidRequiresActive`);
   }
 
   const willBePaid = !membership.membershipPaidAt;
@@ -147,8 +150,8 @@ export async function markMembershipPaidAction(memberId: string, programId: stri
     await checkAndPromoteToPrograma(membership.id);
   }
 
-  revalidatePath(`/admin/programs/${programId}`);
-  redirect(`/admin/programs/${programId}?memberPaidToggled=1`);
+  revalidatePath(returnTo);
+  redirect(`${returnTo}?memberPaidToggled=1`);
 }
 
 // "Entrar como este Miembro" (2026-10-06, pedido de Gunnar: "necesito
