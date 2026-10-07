@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { currentAdminScope, isMasterN0Scope } from "@/lib/auth";
 import { createSlotTemplateAction, updateSlotTemplateAction, deleteSlotTemplateAction } from "./actions";
+import { SLOT_TYPES, SLOT_TYPE_LABELS } from "@/lib/slotTemplates";
 import { AccordionSection, AccordionRow, AccordionAddRow } from "@/components/Accordion";
 
 export const dynamic = "force-dynamic";
@@ -63,7 +64,13 @@ function SlotTemplateFields({
   return (
     <>
       <div style={{ display: "flex", gap: 8 }}>
-        <input name="slotType" defaultValue={defaults?.slotType ?? "escala"} placeholder="Tipo de slot (ej. escala)" style={{ ...INPUT, flex: 1, minWidth: 0 }} />
+        <select name="slotType" defaultValue={defaults?.slotType ?? "escala"} style={{ ...INPUT, flex: 1, minWidth: 0 }}>
+          {SLOT_TYPES.map((t) => (
+            <option key={t} value={t}>
+              {SLOT_TYPE_LABELS[t]}
+            </option>
+          ))}
+        </select>
         <input name="nombre" defaultValue={defaults?.nombre} placeholder="Nombre (ej. Madurez Operativa)" required style={{ ...INPUT, flex: 2, minWidth: 0 }} />
       </div>
       <textarea name="descripcion" defaultValue={defaults?.descripcion} placeholder="Descripción -- para qué sirve este template" rows={2} style={{ ...INPUT, resize: "vertical" }} />

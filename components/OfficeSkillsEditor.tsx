@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { OfficeSkill, OfficeSkillAppType } from "@/lib/officeSkills";
-import { AccordionRow } from "@/components/Accordion";
+import { type OfficeSkill, type OfficeSkillAppType, parseOfficeSkills } from "@/lib/officeSkills";
+import { AccordionRow, AccordionAddRow } from "@/components/Accordion";
 
 type EditableSkill = OfficeSkill & { _uid: string };
 
@@ -39,9 +39,14 @@ const APP_TYPE_OPTIONS: { value: OfficeSkillAppType; label: string }[] = [
 // colores de modo claro de un Skin.
 export default function OfficeSkillsEditor({
   initialSkills,
+  templates,
   action,
 }: {
   initialSkills: OfficeSkill[];
+  // Librería "elegir o armar" (2026-10-07, Fase 2) -- opcional: sin
+  // templates cargados en /admin/slot-templates, la sección "Elegir"
+  // simplemente no se muestra.
+  templates?: { id: string; nombre: string; descripcion: string; payload: unknown }[];
   action: (formData: FormData) => Promise<void>;
 }) {
   const [skills, setSkills] = useState<EditableSkill[]>(() => initialSkills.map((s) => ({ ...s, _uid: uid() })));
@@ -61,6 +66,16 @@ export default function OfficeSkillsEditor({
   function removeSkill(uidToRemove: string) {
     setSkills((ss) => ss.filter((s) => s._uid !== uidToRemove));
     setOpenUid((cur) => (cur === uidToRemove ? null : cur));
+  }
+
+  // "Elegir de la librería" (2026-10-07, Fase 2) -- reemplaza TODOS los
+  // superpoderes propios por los del template elegido, mismo criterio
+  // "reemplaza, no suma" que Escalas. parseOfficeSkills sanitiza el
+  // payload (unknown, viene de Json de Prisma).
+  function applyTemplate(payload: unknown) {
+    const parsed = parseOfficeSkills(payload);
+    setSkills(parsed.map((s) => ({ ...s, _uid: uid() })));
+    setOpenUid(null);
   }
 
   return (
@@ -169,6 +184,29 @@ export default function OfficeSkillsEditor({
         <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add</span>
         Agregar superpoder
       </button>
+
+      {templates && templates.length > 0 && (
+        <AccordionAddRow label="Elegir de la librería (reemplaza todos los superpoderes)">
+          <p style={{ margin: 0, font: "400 11px/1.5 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>
+            Plantillas armadas por MasterN0 en <code>/admin/slot-templates</code>.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {templates.map((tpl) => (
+              <button
+                key={tpl.id}
+                type="button"
+                onClick={() => applyTemplate(tpl.payload)}
+                style={{ textAlign: "left", padding: "10px 12px", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, background: "rgba(200,161,90,.06)", cursor: "pointer" }}
+              >
+                <span style={{ display: "block", font: "700 12px 'Plus Jakarta Sans',sans-serif", color: "#E5C378" }}>{tpl.nombre}</span>
+                {tpl.descripcion && (
+                  <span style={{ display: "block", font: "400 11px/1.4 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>{tpl.descripcion}</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </AccordionAddRow>
+      )}
 
       <button
         type="submit"

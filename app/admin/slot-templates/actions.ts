@@ -5,6 +5,9 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { currentAdminScope, isMasterN0Scope } from "@/lib/auth";
 import { parseImportedEscala } from "@/lib/escalas";
+import { parseModalBlocks } from "@/lib/modalBlocks";
+import { parseOfficeSkills } from "@/lib/officeSkills";
+import { parsePuestoTemplatePayload } from "@/lib/puestos";
 
 // Librería "elegir o armar" (2026-10-07) -- catálogo global de
 // SlotTemplate, MasterN0-only, no scoped a ningún Programa. Mismo
@@ -29,13 +32,21 @@ async function requireSlotTemplate(id: string) {
   return template;
 }
 
-// El payload se valida según slotType antes de persistir -- para
-// "escala" reusa el mismo validador que ya usa EscalaEditor.tsx
-// ("Importar JSON"), no uno nuevo: si el N0 arma un template mal armado,
-// mejor que falle acá, no cuando otro N0 lo elija para su tarjeta.
+// El payload se valida según slotType antes de persistir -- reusa el
+// mismo validador que ya usa cada editor real (EscalaEditor/
+// ModalBlocksEditor/OfficeSkillsEditor/Puestos), no uno nuevo: si el N0
+// arma un template mal armado, mejor que falle acá, no cuando otro N0
+// lo elija para su tarjeta.
 function parsePayload(slotType: string, raw: FormDataEntryValue | null): unknown {
   const text = String(raw || "");
   if (slotType === "escala") return parseImportedEscala(text);
+  if (slotType === "modal") return parseModalBlocks(safeJsonParse(text));
+  if (slotType === "officeSkill") return parseOfficeSkills(safeJsonParse(text));
+  if (slotType === "puesto") return parsePuestoTemplatePayload(safeJsonParse(text));
+  return safeJsonParse(text);
+}
+
+function safeJsonParse(text: string): unknown {
   try {
     return JSON.parse(text);
   } catch {

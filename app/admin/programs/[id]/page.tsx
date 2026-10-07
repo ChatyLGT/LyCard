@@ -23,7 +23,7 @@ import { addMemberToProgramAction, updateMemberAction, deleteMemberAction, messa
 import { sendMassMessageAction } from "../messages-actions";
 import { CHANNELS } from "@/lib/messaging";
 import { buildFunnelStages } from "@/lib/funnel";
-import { createPuestoAction, updatePuestoAction, deletePuestoAction } from "../puestos-actions";
+import { createPuestoAction, updatePuestoAction, deletePuestoAction, applyPuestoTemplateAction } from "../puestos-actions";
 import { createInterviewSlotAction, updateInterviewSlotAction, deleteInterviewSlotAction } from "../interview-slots-actions";
 import { setPodiumButtonAction, updateVaultAction, updateModalContentAction } from "../podium-actions";
 import { CARD_LABEL_FIELDS, defaultCardLabel } from "@/lib/cardLabels";
@@ -125,6 +125,7 @@ export default async function AdminProgramDetailPage({
     puestoSaved?: string;
     puestoDeleted?: string;
     puestoError?: string;
+    puestoTemplateApplied?: string;
     slotCreated?: string;
     slotSaved?: string;
     slotDeleted?: string;
@@ -163,6 +164,7 @@ export default async function AdminProgramDetailPage({
     puestoSaved,
     puestoDeleted,
     puestoError,
+    puestoTemplateApplied,
     slotCreated,
     slotSaved,
     slotDeleted,
@@ -193,6 +195,11 @@ export default async function AdminProgramDetailPage({
     email: "Ingresá un email válido.",
     password: "La contraseña debe tener al menos 8 caracteres.",
     exists: "Ese email ya es una cuenta de Admin — si es el tuyo, no hace falta agregarlo: ya administrás este Programa como MasterN0. Para delegarlo, usá el email de otra persona.",
+  };
+  const PUESTO_ERROR_COPY: Record<string, string> = {
+    required: "Sigla y denominación son obligatorias.",
+    templateNotFound: "Ese template ya no existe.",
+    templateEmpty: "Ese template no tiene niveles válidos (sigla + denominación por fila).",
   };
   const MEMBER_ERROR_COPY: Record<string, string> = {
     addName: "El nombre es obligatorio.",
@@ -254,6 +261,12 @@ export default async function AdminProgramDetailPage({
     toSlotTemplateCatalogEntry
   );
   const escalaTemplates = matchSlotTemplates(slotTemplateCatalog, "escala", null, null);
+  // Fase 2 (misma noche) -- mismo catálogo ya cargado arriba, derivado
+  // para los otros 3 slot types reales: modal (cardInfo/vault/info,
+  // bodyKind:"bloques"), officeSkill, puesto.
+  const modalTemplates = matchSlotTemplates(slotTemplateCatalog, "modal", null, null);
+  const officeSkillTemplates = matchSlotTemplates(slotTemplateCatalog, "officeSkill", null, null);
+  const puestoTemplates = matchSlotTemplates(slotTemplateCatalog, "puesto", null, null);
   const officeSkills = parseOfficeSkills(program.officeSkills);
   const motivationalPhrases = parseMotivationalPhrases(program.motivationalPhrases);
   const podiumButtons = parsePodiumButtons(program.podiumButtons);
@@ -469,7 +482,7 @@ export default async function AdminProgramDetailPage({
                     </label>
                   ) : null}
 
-                  {entry.bodyKind === "bloques" && <ModalBlocksEditor name="blocks" initialBlocks={blocks} />}
+                  {entry.bodyKind === "bloques" && <ModalBlocksEditor name="blocks" initialBlocks={blocks} templates={modalTemplates} />}
 
                   {entry.bodyKind === "niveles" && (
                     <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -768,13 +781,39 @@ export default async function AdminProgramDetailPage({
           title="Badge de Puestos"
           subtitle="Ej. O.D. / Founders / Experts / Specialists / Partners — cada uno con sigla, ícono, denominación y descripción. Orden más bajo aparece primero."
           meta={<span style={PILL}>{program.puestos.length}</span>}
-          defaultOpen={Boolean(puestoCreated || puestoSaved || puestoDeleted || puestoError)}
+          defaultOpen={Boolean(puestoCreated || puestoSaved || puestoDeleted || puestoError || puestoTemplateApplied)}
         >
           {puestoCreated && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Puesto creado.</p>}
           {puestoSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Puesto actualizado.</p>}
           {puestoDeleted && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Puesto eliminado.</p>}
+          {puestoTemplateApplied && (
+            <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Escalera reemplazada con el template elegido.</p>
+          )}
           {puestoError && (
-            <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>Sigla y denominación son obligatorias.</p>
+            <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>{PUESTO_ERROR_COPY[puestoError] || "Sigla y denominación son obligatorias."}</p>
+          )}
+
+          {puestoTemplates.length > 0 && (
+            <AccordionAddRow label="Elegir de la librería (reemplaza toda la escalera)">
+              <p style={{ margin: 0, font: "400 11px/1.5 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>
+                Plantillas armadas por MasterN0 en <code>/admin/slot-templates</code>.
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {puestoTemplates.map((tpl) => (
+                  <form key={tpl.id} action={applyPuestoTemplateAction.bind(null, program.id, tpl.id)}>
+                    <button
+                      type="submit"
+                      style={{ width: "100%", textAlign: "left", padding: "10px 12px", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, background: "rgba(200,161,90,.06)", cursor: "pointer" }}
+                    >
+                      <span style={{ display: "block", font: "700 12px 'Plus Jakarta Sans',sans-serif", color: "#E5C378" }}>{tpl.nombre}</span>
+                      {tpl.descripcion && (
+                        <span style={{ display: "block", font: "400 11px/1.4 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>{tpl.descripcion}</span>
+                      )}
+                    </button>
+                  </form>
+                ))}
+              </div>
+            </AccordionAddRow>
           )}
 
           <AccordionAddRow label="Agregar Puesto" defaultOpen={program.puestos.length === 0}>
@@ -964,7 +1003,7 @@ export default async function AdminProgramDetailPage({
         >
           {officeSkillsSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Guardado.</p>}
           {officeSkillsError === "empty" && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>Elegí un archivo de imagen primero.</p>}
-          <OfficeSkillsEditor initialSkills={officeSkills} action={updateOfficeSkillsAction.bind(null, program.id)} />
+          <OfficeSkillsEditor initialSkills={officeSkills} templates={officeSkillTemplates} action={updateOfficeSkillsAction.bind(null, program.id)} />
           {officeSkills.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 4 }}>
               <span style={{ font: "600 10px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A", letterSpacing: ".08em", textTransform: "uppercase" }}>

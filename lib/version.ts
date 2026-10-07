@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.83.0";
+export const APP_VERSION = "1.84.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.84.0",
+    date: "2026-10-07",
+    notes:
+      "Librería de Slots -- Fase 2: el patrón \"Slot + Shape + Payload\" (ver v1.83.0 y docs/WHITEPAPER-ADENDA-2026-10-07.md) se generaliza a los 3 slot types que habían quedado pendientes -- Editor de Modales (los 3 modales bodyKind:\"bloques\": cardInfo/Bóveda Legacy/Info), Superpoderes (Program.officeSkills) y Badge de Puestos. Mismo botón \"Elegir de la librería\" al lado de \"Importar JSON\" en cada uno, mismo criterio \"reemplaza, no suma\". Puestos es distinto a los otros 3 (filas reales de DB, no un campo Json) -- aplicar un template ahí borra y recrea toda la escalera en una transacción. Con esto, los 4 slot types de la Fase 1 del plan quedan completos: cualquier lugar configurable de la tarjeta se arma a mano o se elige de la librería.",
+  },
   {
     version: "1.83.0",
     date: "2026-10-07",

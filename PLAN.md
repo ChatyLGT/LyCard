@@ -9793,3 +9793,45 @@ Expertos→Especialistas, fórmula z=z2+t3, cada agente con su propio
 "cerebro" en NotebookLM) -- documentado en
 `docs/WHITEPAPER-ADENDA-2026-10-07.md` sección 12, sin ningún trabajo
 de código asociado a esta sesión.
+
+## 2026-10-07 (noche) -- Librería de Slots: Fase 2, los 3 slot types restantes (v1.84.0)
+
+Cierra el plan aprobado de "Librería de Slots" -- lo que había quedado
+fuera de alcance en la Fase 1 (Escalas, v1.83.0): los otros 3 lugares
+configurables de la tarjeta se suman al mismo patrón Armar/Elegir.
+
+- `lib/slotTemplates.ts`: `SLOT_TYPES`/`SLOT_TYPE_LABELS` (escala/
+  modal/officeSkill/puesto) -- el `<select>` de `/admin/slot-templates`
+  deja de ser texto libre.
+- `app/admin/slot-templates/actions.ts`: `parsePayload` dispatcha por
+  `slotType` al parser real de cada editor (`parseModalBlocks`/
+  `parseOfficeSkills`/`parsePuestoTemplatePayload`) -- mismo criterio de
+  Fase 1, un template mal armado falla al guardarlo, no cuando otro N0
+  lo elige.
+- `lib/puestos.ts` (nuevo): `parsePuestoTemplatePayload` se movió acá
+  desde `puestos-actions.ts` porque un archivo `"use server"` no puede
+  exportar una función síncrona -- mismo patrón que ya usan
+  `lib/escalas.ts`/`lib/modalBlocks.ts`/`lib/officeSkills.ts` (parser
+  puro separado de su `*-actions.ts`).
+- `ModalBlocksEditor.tsx`/`OfficeSkillsEditor.tsx`: mismo botón "Elegir
+  de la librería" que ya tenía `EscalaEditor.tsx`, al lado de "Importar
+  JSON"/"Agregar bloque".
+- Badge de Puestos (`app/admin/programs/[id]/page.tsx` +
+  `applyPuestoTemplateAction` en `puestos-actions.ts`): mecánica
+  distinta a los otros 3 -- son filas reales de `Puesto` en DB, no un
+  campo Json, así que "elegir" borra todos los Puestos del Programa y
+  crea los del template en una sola transacción (mismo criterio
+  "reemplaza, no suma").
+- Fix de cobertura de paso: `lib/puestos.ts` sumado al ratchet de
+  `vitest.config.mts` (100% líneas/branches/funcs/statements).
+
+**Verificación**: `npx tsc --noEmit`, `pnpm lint` (0 errores), `pnpm
+test:unit:coverage` (100%, 343 tests), `pnpm build`, nuevo
+`e2e/slot-templates-fase2.spec.ts` (3 tests: Puesto/officeSkill/modal,
+cada uno de punta a punta por la UI real -- MasterN0 arma un template,
+un N0 lo elige, confirma en DB que reemplazó lo que había antes), suite
+Playwright completa: 69/69 verde.
+
+Con esto, los 4 slot types del plan original quedan completos -- el
+patrón "Slot + Shape + Payload" aplica a todo lo que Gunnar pidió
+cubrir en esta ronda.

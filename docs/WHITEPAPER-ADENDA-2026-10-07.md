@@ -356,6 +356,31 @@ o actuando como otro según le toque, no es un cerebro repartido entre
 varios. Cada uno tiene su propio cerebro propio, hoy alojado en
 **NotebookLM**.
 
+### 12.1 Dashboard operativo interno -- funnel del N0 dentro de Legacy (en curso, narrado en vivo por Gunnar, incompleto -- "Continuo...")
+
+Pedido nuevo, explícitamente "solo para que anotes" mientras seguía la
+Fase 2 de la Librería de Slots -- narrativa en curso, Gunnar avisó que
+sigue ("Continuo..."), así que esto es un registro parcial, no la
+versión final:
+
+1. **Etapa 1 -- Masterclass/Entrevista.** Un lead llega a Legacy y se
+   inscribe a un masterclass (dictado por Gunnar o Juancho al inicio,
+   después por alguien capacitado para explicar qué es Legacy). Cada
+   masterclass dura 45 min y ES la "entrevista" que ya existe en los
+   botones de Agendar Entrevista -- primera etapa del funnel. Necesita
+   un Dashboard propio que dé espacio de trabajo a esta etapa.
+2. **Etapa 2 -- Legacy Personal (programa de venta, $500 setup / 3
+   meses).** Terminado el masterclass, el objetivo es que el N0 se
+   inscriba a Legacy Personal: 8 sesiones de 45 min (2 por semana × 4
+   semanas) con un psicólogo entrenado para recolectar datos para el
+   Gemelo Digital, más una sesión final de entrega donde se le da el
+   CÓDICE al N0. En esas mismas sesiones se levanta también la
+   información para armar la tarjeta personal y la tarjeta de negocio.
+   La tarjeta del Programa (el host que invitó al N0) sigue sin control
+   del N0 -- es la del Programa, no la suya; todos los indicadores se
+   manejan por el proyecto host.
+3. *(pendiente -- Gunnar sigue narrando)*
+
 ### Implicación práctica que Gunnar marcó para el futuro
 
 Los manuales que entrenan gente para aplicar el programa Legacy a los N0s

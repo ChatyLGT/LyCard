@@ -6,6 +6,21 @@
 // y en una fase futura modal/puesto/officeSkill).
 import { parseTags } from "@/lib/wowApps";
 
+// Fase 2 (2026-10-07) -- los 4 slot types reales hoy. "escala" es
+// medal/rank/contacts (EscalaItem[]); "modal" son los 3 modales
+// bodyKind:"bloques" -- cardInfo/vault/info (ModalBlock[]); "officeSkill"
+// es Program.officeSkills (OfficeSkill[]); "puesto" es la escalera de
+// Puesto (filas de DB, no un campo Json -- se aplica con un bulk-create,
+// ver app/admin/programs/puestos-actions.ts#applyPuestoTemplateAction).
+export const SLOT_TYPES = ["escala", "modal", "officeSkill", "puesto"] as const;
+export type SlotType = (typeof SLOT_TYPES)[number];
+export const SLOT_TYPE_LABELS: Record<SlotType, string> = {
+  escala: "Escala (Medalla/Rango/Contactos)",
+  modal: "Modal de bloques (cardInfo/Bóveda/Info)",
+  officeSkill: "Superpoder de la Oficina",
+  puesto: "Escalera de Puestos",
+};
+
 export type SlotTemplateCatalogEntry = {
   id: string;
   slotType: string;

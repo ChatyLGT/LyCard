@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { currentAdminScope, canAccessProgram } from "@/lib/auth";
+import { parsePuestoTemplatePayload } from "@/lib/puestos";
 
 // MasterN0 can manage any Program's Puestos; a scoped N0 only their own —
 // same guard as the rest of this Program dashboard.
@@ -53,6 +54,33 @@ export async function updatePuestoAction(puestoId: string, programId: string, fo
 
   revalidatePath(`/admin/programs/${programId}`);
   redirect(`/admin/programs/${programId}?puestoSaved=1`);
+}
+
+// "Elegir de la librería" (2026-10-07, Fase 2 de la Librería de Slots)
+// -- a diferencia de Escalas/Superpoderes/Modales (un campo Json que se
+// reemplaza), la escalera de Puestos son filas reales de DB. Aplicar un
+// template reemplaza TODA la escalera existente (mismo criterio
+// "reemplaza, no suma" que el resto de la librería) -- borra los
+// Puestos actuales de este Programa y crea los del template, en una
+// transacción.
+export async function applyPuestoTemplateAction(programId: string, templateId: string) {
+  await requireProgramAccess(programId);
+
+  const template = await prisma.slotTemplate.findUnique({ where: { id: templateId } });
+  if (!template || template.slotType !== "puesto") redirect(`/admin/programs/${programId}?puestoError=templateNotFound`);
+
+  const items = parsePuestoTemplatePayload(template.payload);
+  if (items.length === 0) redirect(`/admin/programs/${programId}?puestoError=templateEmpty`);
+
+  await prisma.$transaction([
+    prisma.puesto.deleteMany({ where: { programId } }),
+    prisma.puesto.createMany({
+      data: items.map((item) => ({ programId, siglas: item.siglas, denominacion: item.denominacion, descripcion: item.descripcion, icono: item.icono, order: item.order })),
+    }),
+  ]);
+
+  revalidatePath(`/admin/programs/${programId}`);
+  redirect(`/admin/programs/${programId}?puestoTemplateApplied=1`);
 }
 
 export async function deletePuestoAction(puestoId: string, programId: string) {

@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import type { ModalBlock, ModalBlockKind } from "@/lib/modalBlocks";
-import { MODAL_BLOCK_KINDS, MODAL_BLOCK_LABELS } from "@/lib/modalBlocks";
-import { AccordionRow } from "@/components/Accordion";
+import { MODAL_BLOCK_KINDS, MODAL_BLOCK_LABELS, parseModalBlocks } from "@/lib/modalBlocks";
+import { AccordionRow, AccordionAddRow } from "@/components/Accordion";
 
 type EditableBlock = ModalBlock & { _uid: string };
 
@@ -38,9 +38,30 @@ const BLOCK_ICON: Record<ModalBlockKind, string> = {
 // dentro del form del modal que lo use (hoy, Bóveda Legacy).
 // Reordenar es con flechas arriba/abajo (decisión explícita de
 // Gunnar, no drag&drop -- más simple y confiable en mobile).
-export default function ModalBlocksEditor({ name, initialBlocks }: { name: string; initialBlocks: ModalBlock[] }) {
+export default function ModalBlocksEditor({
+  name,
+  initialBlocks,
+  templates,
+}: {
+  name: string;
+  initialBlocks: ModalBlock[];
+  // Librería "elegir o armar" (2026-10-07, Fase 2) -- opcional: sin
+  // templates cargados en /admin/slot-templates, la sección "Elegir"
+  // simplemente no se muestra.
+  templates?: { id: string; nombre: string; descripcion: string; payload: unknown }[];
+}) {
   const [items, setItems] = useState<EditableBlock[]>(() => initialBlocks.map((b) => ({ ...b, _uid: uid() })));
   const [openUid, setOpenUid] = useState<string | null>(null);
+
+  // "Elegir de la librería" -- reemplaza TODOS los bloques por los del
+  // template elegido, mismo criterio "reemplaza, no suma". No hay
+  // submit propio acá (este editor vive embebido en el <form> del modal
+  // que lo use) -- el N0 todavía tiene que tocar "Guardar" afuera.
+  function applyTemplate(payload: unknown) {
+    const parsed = parseModalBlocks(payload);
+    setItems(parsed.map((b) => ({ ...b, _uid: uid() })));
+    setOpenUid(null);
+  }
 
   function addItem() {
     const newUid = uid();
@@ -180,6 +201,29 @@ export default function ModalBlocksEditor({ name, initialBlocks }: { name: strin
         <span className="material-symbols-outlined" style={{ fontSize: 14 }}>add</span>
         Agregar bloque
       </button>
+
+      {templates && templates.length > 0 && (
+        <AccordionAddRow label="Elegir de la librería (reemplaza todos los bloques)">
+          <p style={{ margin: 0, font: "400 11px/1.5 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>
+            Plantillas armadas por MasterN0 en <code>/admin/slot-templates</code>.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {templates.map((tpl) => (
+              <button
+                key={tpl.id}
+                type="button"
+                onClick={() => applyTemplate(tpl.payload)}
+                style={{ textAlign: "left", padding: "10px 12px", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, background: "rgba(200,161,90,.06)", cursor: "pointer" }}
+              >
+                <span style={{ display: "block", font: "700 12px 'Plus Jakarta Sans',sans-serif", color: "#E5C378" }}>{tpl.nombre}</span>
+                {tpl.descripcion && (
+                  <span style={{ display: "block", font: "400 11px/1.4 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>{tpl.descripcion}</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </AccordionAddRow>
+      )}
     </div>
   );
 }
