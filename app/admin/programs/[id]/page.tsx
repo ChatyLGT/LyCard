@@ -1137,12 +1137,16 @@ export default async function AdminProgramDetailPage({
         <AccordionSection
           title="Miembros"
           meta={<span style={PILL}>{program.memberships.length}</span>}
-          defaultOpen={Boolean(memberSaved || memberDeleted || memberMessaged || memberError || memberAdded)}
+          defaultOpen={Boolean(memberSaved || memberDeleted || memberMessaged || memberError || memberAdded || doorAssigned || doorError)}
         >
           {memberSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Miembro actualizado.</p>}
           {memberDeleted && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Miembro eliminado.</p>}
           {memberMessaged && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Mensaje enviado.</p>}
           {memberAdded && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Miembro agregado -- ya tiene sus 3 tarjetas.</p>}
+          {doorAssigned && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Puerta asignada.</p>}
+          {doorError && (
+            <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>{DOOR_ERROR_COPY[doorError] || "No se pudo asignar la puerta."}</p>
+          )}
           {memberError && (
             <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>
               {MEMBER_ERROR_COPY[memberError] || "Algo falló."}
@@ -1248,6 +1252,63 @@ export default async function AdminProgramDetailPage({
                   </form>
                 )}
 
+                {/* Viaje del Cliente -- puerta de acceso (2026-10-07,
+                    movido acá desde "Inscriptos a Entrevistas": esa
+                    sección solo lista a quien entró por el funnel público
+                    de Agendar Entrevista -- un Miembro que el colaborador
+                    agrega directo con "Agregar Miembro" nunca aparecía
+                    ahí, así que nunca podía recibir una puerta. "Miembros"
+                    lista a TODOS, vengan de donde vengan -- único lugar
+                    correcto para esto). El colaborador registra qué
+                    puerta del MENU_ACCESO_LEGACY v1.1 eligió el cliente y
+                    a qué precio -- ver docs/WHITEPAPER-ADENDA-2026-10-07.md
+                    sección 9. */}
+                {m.status === "active" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 6, borderTop: "1px solid rgba(255,255,255,.06)" }}>
+                    <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#5A5A5A" }}>Puerta de acceso</span>
+                    {m.doorKey ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#7BC98E" }}>
+                          ✓ {findAccessDoor(m.doorKey)?.nombre || m.doorKey}
+                        </span>
+                        <span style={{ font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
+                          ${m.priceAgreedUsd} -- {m.paymentModel} -- traído por {m.traidoPor}
+                        </span>
+                      </div>
+                    ) : (
+                      <form action={assignDoorAction.bind(null, m.id, program.id, returnTo)} style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "flex-end" }}>
+                        <select name="doorKey" defaultValue="" required style={{ ...INPUT, flex: "1 1 220px" }}>
+                          <option value="" disabled>
+                            Elegí la puerta...
+                          </option>
+                          {ACCESS_DOORS.map((d) => (
+                            <option key={d.key} value={d.key}>
+                              {d.nombre} -- {d.tiempo}
+                            </option>
+                          ))}
+                        </select>
+                        <input name="priceAgreedUsd" type="number" min={0} step={1} placeholder="Precio USD" required style={{ ...INPUT, width: 110 }} />
+                        <select name="paymentModel" defaultValue="unico" style={INPUT}>
+                          <option value="unico">Pago único</option>
+                          <option value="cuotas">Cuotas</option>
+                          <option value="suscripcion">Suscripción</option>
+                          <option value="bolsa_horas">Bolsa de horas</option>
+                          <option value="abono_ascenso">Abono de ascenso</option>
+                          <option value="retainer">Retainer</option>
+                          <option value="participacion">Participación en resultados</option>
+                        </select>
+                        <select name="traidoPor" defaultValue="empresa" style={INPUT}>
+                          <option value="empresa">Traído por la empresa</option>
+                          <option value="oreja">Traído por la oreja</option>
+                        </select>
+                        <button type="submit" style={SAVE_BTN}>
+                          Asignar puerta
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                )}
+
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#5A5A5A" }}>Editar</span>
                   <form
@@ -1337,13 +1398,9 @@ export default async function AdminProgramDetailPage({
         <AccordionSection
           title="Inscriptos a Entrevistas"
           meta={<span style={PILL}>{registrations.length}</span>}
-          defaultOpen={Boolean(activated || doorAssigned || doorError)}
+          defaultOpen={Boolean(activated)}
         >
           {activated && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Membership activada.</p>}
-          {doorAssigned && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Puerta asignada.</p>}
-          {doorError && (
-            <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>{DOOR_ERROR_COPY[doorError] || "No se pudo asignar la puerta."}</p>
-          )}
           {registrations.length === 0 && <p style={{ margin: 0, color: "#5A5A5A", font: "400 12.5px 'Plus Jakarta Sans',sans-serif" }}>Todavía no hay inscripciones.</p>}
           {registrations.map((r) => {
             const isActive = r.membership?.status === "active";
@@ -1358,70 +1415,18 @@ export default async function AdminProgramDetailPage({
                   {r.email && <span>Email: {r.email}</span>}
                 </div>
                 {r.membership && (
-                  <>
-                    <div style={{ marginTop: 8, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,.06)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                      <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: isActive ? "#7BC98E" : "#C8A15A" }}>
-                        {isActive ? "✓ Membership activa" : "Membership: invitado"}
-                      </span>
-                      {!isActive && (
-                        <form action={completeInterviewAction.bind(null, r.id, returnTo)}>
-                          <button type="submit" style={{ background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)", border: "none", borderRadius: 999, padding: "7px 14px", color: "#0D0D0D", font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", cursor: "pointer" }}>
-                            Marcar entrevista hecha
-                          </button>
-                        </form>
-                      )}
-                    </div>
-
-                    {/* Viaje del Cliente -- puerta de acceso (2026-10-07):
-                        el colaborador registra, sobre esta misma
-                        Membership, qué puerta del MENU_ACCESO_LEGACY v1.1
-                        eligió el cliente y a qué precio -- independiente
-                        de "Marcar entrevista hecha", se puede llenar antes
-                        o después. Ver docs/WHITEPAPER-ADENDA-2026-10-07.md
-                        sección 9. */}
-                    <div style={{ marginTop: 8, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,.06)" }}>
-                      {r.membership.doorKey ? (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                          <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#7BC98E" }}>
-                            ✓ Puerta asignada: {findAccessDoor(r.membership.doorKey)?.nombre || r.membership.doorKey}
-                          </span>
-                          <span style={{ font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
-                            ${r.membership.priceAgreedUsd} -- {r.membership.paymentModel} -- traído por {r.membership.traidoPor}
-                          </span>
-                        </div>
-                      ) : (
-                        <form action={assignDoorAction.bind(null, r.membership.id, program.id, returnTo)} style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "flex-end" }}>
-                          <select name="doorKey" defaultValue="" required style={{ ...INPUT, flex: "1 1 220px" }}>
-                            <option value="" disabled>
-                              Elegí la puerta...
-                            </option>
-                            {ACCESS_DOORS.map((d) => (
-                              <option key={d.key} value={d.key}>
-                                {d.nombre} -- {d.tiempo}
-                              </option>
-                            ))}
-                          </select>
-                          <input name="priceAgreedUsd" type="number" min={0} step={1} placeholder="Precio USD" required style={{ ...INPUT, width: 110 }} />
-                          <select name="paymentModel" defaultValue="unico" style={INPUT}>
-                            <option value="unico">Pago único</option>
-                            <option value="cuotas">Cuotas</option>
-                            <option value="suscripcion">Suscripción</option>
-                            <option value="bolsa_horas">Bolsa de horas</option>
-                            <option value="abono_ascenso">Abono de ascenso</option>
-                            <option value="retainer">Retainer</option>
-                            <option value="participacion">Participación en resultados</option>
-                          </select>
-                          <select name="traidoPor" defaultValue="empresa" style={INPUT}>
-                            <option value="empresa">Traído por la empresa</option>
-                            <option value="oreja">Traído por la oreja</option>
-                          </select>
-                          <button type="submit" style={SAVE_BTN}>
-                            Asignar puerta
-                          </button>
-                        </form>
-                      )}
-                    </div>
-                  </>
+                  <div style={{ marginTop: 8, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,.06)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                    <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: isActive ? "#7BC98E" : "#C8A15A" }}>
+                      {isActive ? "✓ Membership activa" : "Membership: invitado"}
+                    </span>
+                    {!isActive && (
+                      <form action={completeInterviewAction.bind(null, r.id, returnTo)}>
+                        <button type="submit" style={{ background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)", border: "none", borderRadius: 999, padding: "7px 14px", color: "#0D0D0D", font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", cursor: "pointer" }}>
+                          Marcar entrevista hecha
+                        </button>
+                      </form>
+                    )}
+                  </div>
                 )}
               </div>
             );

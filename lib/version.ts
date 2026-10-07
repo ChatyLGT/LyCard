@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.85.0";
+export const APP_VERSION = "1.85.1";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.85.1",
+    date: "2026-10-07",
+    notes:
+      "Fix real sobre v1.85.0, encontrado armando el ensayo del caso Juancho/Digital Kingdom: la puerta de acceso vivía en \"Inscriptos a Entrevistas\", que solo lista a quien entró por el funnel público de Agendar Entrevista -- un Miembro que el colaborador agrega directo con \"Agregar Miembro\" (el camino más común para trabajar 1:1 con un cliente conocido) queda activo de inmediato y nunca aparecía ahí, así que nunca podía recibir una puerta. Se movió el form a \"Miembros\", donde SÍ aparece cualquier Miembro sin importar cómo entró. Nuevo test E2E que prueba exactamente ese camino (alta directa, sin Registration de por medio).",
+  },
   {
     version: "1.85.0",
     date: "2026-10-07",

@@ -9881,3 +9881,42 @@ oreja/maestro/consultor, resultado, siguiente peldaño, ciclo de mejora
 con métricas por puerta) y el desglose del Embudo por puerta -- primero
 se valida con ventas reales que el flujo de elegir-puerta-y-precio
 funciona.
+
+## 2026-10-07 (noche, tercera vuelta) -- Fix v1.85.0: la puerta vivía en el lugar equivocado (v1.85.1)
+
+Gunnar pidió armar un ensayo real -- "al final de cuentas el
+colaborador debe trabajar para crear ese programa... tengo un cliente
+que se llama Juancho (Juan Sebastián Restrepo) que quiere crear una
+empresa con ánimos de convertirse en Programa, llamada Digital
+Kingdom" -- para probar de punta a punta la herramienta de v1.85.0.
+Antes de tocar nada, se exploró el mecanismo real de auto-promoción
+Chido→Programa (`lib/programPromotion.ts#checkAndPromoteToPrograma`,
+confirmado: pagó + 1+ referido activo, el Programa nuevo nace con el
+nombre de la Card "company" del Chido y queda ligado por
+`originProgramId` a Legacy -- el propio código ya tiene comentarios
+citando "caso Juancho/Digital Kingdom" de una sesión anterior, 2026-10-05).
+
+Al diseñar el ensayo salió un hallazgo real: el camino más realista
+para un colaborador trabajando 1:1 con un cliente conocido (como
+Juancho) es "Agregar Miembro" (alta directa, ya existe desde el
+2026-10-07 temprano) -- y ese camino activa la Membership de inmediato
+(`activateMembershipAndSpawnCards`, `status: "active"` sin importar
+`markInterviewed`), sin pasar nunca por "Inscriptos a Entrevistas". La
+puerta de acceso de v1.85.0 vivía exactamente ahí -- así que un Miembro
+agregado directo nunca podía recibir una puerta asignada. Se movió el
+form completo a "Miembros" (donde ya vive "Marcar como pagada", y que
+lista a CUALQUIER Miembro sin importar cómo entró), y se agregó un
+segundo test E2E que prueba ese camino específicamente.
+
+**Verificación**: `npx tsc --noEmit`, `pnpm lint` (0 errores), `pnpm
+test:unit:coverage` (100%, 349 tests), `pnpm build`,
+`e2e/access-door.spec.ts` ahora con 2 tests (entrevista pública + alta
+directa), suite Playwright completa: 71/71 verde.
+
+**Nota aparte**: durante este ensayo se encontró que la DB local
+estaba prácticamente vacía de datos reales (solo el Admin de Gunnar y
+el Programa Legacy, sin ninguna Card/Member real -- `prisma/seed.ts` y
+`prisma/seed-legacy-program.ts` nunca se re-corrieron tras algún reset
+anterior) -- el ensayo con Juancho/Digital Kingdom de punta a punta
+(incluida la auto-promoción a Programa) queda pendiente para cuando
+Gunnar confirme que quiere avanzar con eso.
