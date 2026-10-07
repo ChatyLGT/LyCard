@@ -19,7 +19,7 @@ import {
   setOfficeSkillIconAction,
   updateMotivationalPhrasesAction,
 } from "../actions";
-import { updateMemberAction, deleteMemberAction, messageMemberAction, markMembershipPaidAction, viewAsMemberAction } from "../members-actions";
+import { addMemberToProgramAction, updateMemberAction, deleteMemberAction, messageMemberAction, markMembershipPaidAction, viewAsMemberAction } from "../members-actions";
 import { sendMassMessageAction } from "../messages-actions";
 import { CHANNELS } from "@/lib/messaging";
 import { buildFunnelStages } from "@/lib/funnel";
@@ -32,6 +32,7 @@ import { parseOfficeSkills, DEFAULT_OFFICE_SKILLS } from "@/lib/officeSkills";
 import { parseMotivationalPhrases } from "@/lib/oficinaExtras";
 import { parsePodiumButtons, getPodiumButton } from "@/lib/podiumButtons";
 import { parseModalBlocksMap } from "@/lib/modalBlocks";
+import { wouldCreateCycle } from "@/lib/programLineage";
 import { MODAL_EDITOR_ENTRIES, parseModalIcons, parseTierIntros } from "@/lib/modalEditor";
 import EscalaEditor from "@/components/EscalaEditor";
 import OfficeSkillsEditor from "@/components/OfficeSkillsEditor";
@@ -136,9 +137,11 @@ export default async function AdminProgramDetailPage({
     podiumSaved?: string;
     modalSaved?: string;
     originSaved?: string;
+    error?: string;
     focus?: string;
     messageSent?: string;
     messageError?: string;
+    memberAdded?: string;
   }>;
 }) {
   const { id } = await params;
@@ -172,8 +175,15 @@ export default async function AdminProgramDetailPage({
     podiumSaved,
     modalSaved,
     originSaved,
+    error,
     focus,
+    memberAdded,
   } = await searchParams;
+  const ORIGIN_ERROR_COPY: Record<string, string> = {
+    "origin-self": "Un Programa no puede ser su propio origen.",
+    "origin-required": "Solo Legacy (la raíz) puede quedarse sin origen -- elegí uno real.",
+    "origin-cycle": "Ese origen crearía un ciclo (A deriva de B que ya deriva de A) -- elegí otro.",
+  };
   const SKIN_ERROR_COPY: Record<string, string> = {
     max: "Ya tenés los 3 skins guardados — borrá uno para subir otro.",
     empty: "Subí un archivo design.md.",
@@ -184,6 +194,7 @@ export default async function AdminProgramDetailPage({
     exists: "Ese email ya es una cuenta de Admin — si es el tuyo, no hace falta agregarlo: ya administrás este Programa como MasterN0. Para delegarlo, usá el email de otra persona.",
   };
   const MEMBER_ERROR_COPY: Record<string, string> = {
+    addName: "El nombre es obligatorio.",
     hasCards: "No se puede borrar — ya tiene tarjetas activas con links circulando.",
     messageEmpty: "Completá asunto y mensaje.",
     messageNotConfigured: "Este miembro no tiene email cargado, o el envío de correos no está activado.",
@@ -214,10 +225,16 @@ export default async function AdminProgramDetailPage({
   if (!program) notFound();
 
   // Linaje (2026-10-05) -- lista de candidatos para "Programa de origen",
-  // solo para el selector MasterN0 de abajo: todos salvo este mismo.
-  const originCandidates = isMasterN0
-    ? await prisma.program.findMany({ where: { id: { not: program.id } }, select: { id: true, name: true }, orderBy: { name: "asc" } })
+  // solo para el selector MasterN0 de abajo: todos salvo este mismo y,
+  // desde el 2026-10-07, salvo cualquiera que crearía un ciclo (ej. un
+  // descendiente de este Programa -- elegirlo como origen lo pondría a
+  // derivar de su propio hijo).
+  const allProgramsForLineage = isMasterN0
+    ? await prisma.program.findMany({ select: { id: true, name: true, originProgramId: true }, orderBy: { name: "asc" } })
     : [];
+  const originCandidates = allProgramsForLineage.filter(
+    (p) => p.id !== program.id && !wouldCreateCycle(allProgramsForLineage, program.id, p.id)
+  );
 
   const cardLabels: Record<string, string> =
     program.cardLabels && typeof program.cardLabels === "object" && !Array.isArray(program.cardLabels)
@@ -483,18 +500,29 @@ export default async function AdminProgramDetailPage({
             No es parte de "Identidad" porque es un dato de plataforma, no
             de marca -- un N0 scoped no debería ni verlo. */}
         {isMasterN0 && (
-          <AccordionSection title="Linaje" meta={program.originProgram ? <span style={PILL}>desde {program.originProgram.name}</span> : undefined}>
+          <AccordionSection title="Linaje" meta={program.originProgram ? <span style={PILL}>desde {program.originProgram.name}</span> : program.isRoot ? <span style={PILL}>raíz</span> : undefined}>
             {originSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Guardado.</p>}
+            {error && ORIGIN_ERROR_COPY[error] && (
+              <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>{ORIGIN_ERROR_COPY[error]}</p>
+            )}
             <p style={{ margin: 0, font: "400 11.5px/1.5 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>
               De qué Programa salió este -- se setea solo cuando se promueve un Chido a su propio Programa; acá se puede linkear a mano uno creado directo (ej. Digital Kingdom → Legacy).
+              {!program.isRoot && " Todo Programa que no sea la raíz (Legacy) tiene que tener uno."}
             </p>
             <form action={setProgramOriginAction.bind(null, program.id)} style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <select
                 name="originProgramId"
                 defaultValue={program.originProgramId ?? ""}
+                required={!program.isRoot}
                 style={{ flex: "1 1 200px", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "10px 14px", color: "#F5F2EB", font: "400 13px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
               >
-                <option value="">Sin origen (raíz)</option>
+                {program.isRoot ? (
+                  <option value="">Sin origen (raíz)</option>
+                ) : (
+                  <option value="" disabled>
+                    Elegí un origen...
+                  </option>
+                )}
                 {originCandidates.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
@@ -1049,16 +1077,35 @@ export default async function AdminProgramDetailPage({
         <AccordionSection
           title="Miembros"
           meta={<span style={PILL}>{program.memberships.length}</span>}
-          defaultOpen={Boolean(memberSaved || memberDeleted || memberMessaged || memberError)}
+          defaultOpen={Boolean(memberSaved || memberDeleted || memberMessaged || memberError || memberAdded)}
         >
           {memberSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Miembro actualizado.</p>}
           {memberDeleted && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Miembro eliminado.</p>}
           {memberMessaged && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Mensaje enviado.</p>}
+          {memberAdded && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Miembro agregado -- ya tiene sus 3 tarjetas.</p>}
           {memberError && (
             <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>
               {MEMBER_ERROR_COPY[memberError] || "Algo falló."}
             </p>
           )}
+
+          {/* Alta directa (2026-10-07) -- hasta ahora un Member solo
+              nacía por el funnel self-service público, que además
+              siempre aterriza en Legacy. Esto deja al N0 sumar gente
+              real a SU Programa sin pasar por ahí -- si el WhatsApp ya
+              existe como Member de otro Programa, lo suma en vez de
+              duplicarlo. */}
+          <AccordionAddRow label="Agregar Miembro" defaultOpen={program.memberships.length === 0}>
+            <form action={addMemberToProgramAction.bind(null, program.id)} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <input name="name" placeholder="Nombre" required style={INPUT} />
+              <input name="whatsapp" placeholder="WhatsApp (opcional -- si ya existe, lo suma en vez de duplicar)" style={INPUT} />
+              <input name="email" type="email" placeholder="Email (opcional)" style={INPUT} />
+              <button type="submit" style={SAVE_BTN}>
+                Agregar Miembro
+              </button>
+            </form>
+          </AccordionAddRow>
+
           {program.memberships.length === 0 && <p style={{ margin: 0, color: "#5A5A5A", font: "400 12.5px 'Plus Jakarta Sans',sans-serif" }}>Todavía no hay miembros.</p>}
           {program.memberships.map((m) => {
             const projectCard = m.member.cards.find((c) => c.kind === "project");

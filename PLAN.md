@@ -9671,3 +9671,64 @@ nuevos: edición de `info` sin destinatario con bloques propios
 Bóveda/cardInfo/Editor de Modales para el nuevo hub de 1 fila por
 modal. Suite Playwright completa: 64/64 verde (incluye el fix de las 2
 regresiones ajenas encontradas en el camino).
+
+## 2026-10-07 -- Linaje de Programas + alta directa de Miembros (v1.82.0)
+
+Diagnóstico real de Gunnar: "tenemos un desmadre... hay dos Legacys,
+HeroSuite no se conecta a ninguno, no puedo poner un miembro". Tres
+huecos reales en el código, no solo datos de prueba sueltos:
+
+1. **Raíz sin garantía en DB**: quién era "la raíz" se resolvía
+   comparando `slug === "legacy"` a mano en 3-4 lugares
+   (`lib/legacyMembership.ts`, `app/c/legacy-funnel-actions.ts`,
+   `lib/programPromotion.ts`) -- nada impedía que naciera una segunda
+   raíz. Ahora `Program.isRoot` existe de verdad, con un índice único
+   parcial (`CREATE UNIQUE INDEX ... WHERE "isRoot" = true`) que
+   garantiza a nivel Postgres que solo puede haber una. La migración
+   marcó la Legacy real existente.
+2. **Crear un Programa huérfano era un click**: el form de
+   `/admin/programs` ofrecía "Sin origen (raíz)" siempre, sin
+   distinguir el caso real (plataforma recién reseteada) del peligroso
+   (ya hay Programas, y éste se vuelve una segunda raíz sin querer).
+   Ahora esa opción solo aparece cuando la plataforma está vacía;
+   cualquier otro caso exige elegir un origen real, validado también
+   server-side en `createProgramAction`/`setProgramOriginAction`. Se
+   agregó además detección real de ciclos multi-hop (no solo
+   self-reference directo) en `lib/programLineage.ts`
+   (`wouldCreateCycle`, 100% de cobertura unitaria) -- el selector de
+   Linaje nunca ofrece como origen a un Programa que crearía un ciclo.
+3. **No había forma de agregar un Miembro directo**: la única puerta de
+   entrada a `Member` era el funnel self-service público
+   (WhatsApp/Google), que además siempre aterriza en Legacy
+   (`ensureLegacyMembershipAndCards`). Un N0 que recién creaba su propio
+   Programa (ej. HeroSuite) no tenía cómo sumar gente real sin pasar por
+   ahí. Nueva `addMemberToProgramAction` en
+   `app/admin/programs/members-actions.ts`: crea (o reusa, si el
+   WhatsApp ya existe en otro Programa) un Member, lo activa en el
+   Programa y le spawnea sus 3 Cards de una -- mismo
+   `activateMembershipAndSpawnCards` que usa el resto de la plataforma.
+   UI nueva: "Agregar Miembro" en la sección Miembros de
+   `/admin/programs/[id]`.
+
+De paso, fix al bug reportado de sesión ("cada vez que cierro la app me
+vuelve a pedir que me conecte"): la cookie de Admin
+(`lib/auth.ts#createAdminSession`) tenía un TTL de 12 horas, hardcodeado
+dos veces (el JWT y el `maxAge` de la cookie, que no estaban ni
+sincronizados entre sí). Pasó a 30 días, mismo criterio que ya usa la
+cookie de Member.
+
+Verificación: `npx tsc --noEmit`, `pnpm lint`, `pnpm test:unit:coverage`
+(100%, incluye `lib/__tests__/programLineage.test.ts`), `pnpm build`,
+nuevo `e2e/program-lineage.spec.ts` (crear Programa exige origen real,
+el selector nunca ofrece un ciclo, agregar Miembro directo + reuso por
+WhatsApp entre dos Programas distintos), suite Playwright completa:
+65/65 verde.
+
+No tocado en esta ronda (fuera de alcance, documentado para después):
+limpiar los datos reales duplicados en producción/Neon (sigue sin
+acceso de red desde este entorno a Neon -- Gunnar puede hacerlo ya
+mismo desde el admin UI real una vez deployado: desactivar/borrar el
+Legacy duplicado, y setear el origen real de HeroSuite desde su propia
+sección Linaje); `OriginMemento` como modelo separado (sigue pendiente
+de deprecar); modelado de los campos dolor/cómo/costo (puro diseño
+todavía, sin esquema).

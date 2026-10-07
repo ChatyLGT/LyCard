@@ -580,6 +580,14 @@ model Program {
   originProgramId String?
   originProgram   Program?  @relation("ProgramLineage", fields: [originProgramId], references: [id], onDelete: SetNull)
   derivedPrograms Program[] @relation("ProgramLineage")
+  // La única Program sin origin — hoy Legacy (2026-10-07, diagnóstico
+  // "dos Legacys/HeroSuite no se conecta"): antes esto se resolvía
+  // comparando `slug === "legacy"` a mano en 3-4 lugares del código, sin
+  // nada en la DB que impidiera un segundo huérfano. Un índice único
+  // parcial (ver migración) garantiza que nunca puede haber dos filas
+  // con isRoot:true — createProgramAction/setProgramOriginAction (ver
+  // app/admin/programs/actions.ts) son la única puerta que lo setea.
+  isRoot Boolean @default(false)
 
   memberships ProgramMembership[]
   cards       Card[]

@@ -66,6 +66,11 @@ export default async function AdminProgramsPage({
           {error === "name" && (
             <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>El nombre del Programa es obligatorio.</p>
           )}
+          {error === "origin" && (
+            <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>
+              Todo Programa nuevo deriva de uno existente — elegí un origen. La única raíz es Legacy, y ya existe.
+            </p>
+          )}
           <form action={createProgramAction} style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <input
               name="name"
@@ -81,10 +86,22 @@ export default async function AdminProgramsPage({
             <select
               name="originProgramId"
               defaultValue=""
-              title="Programa de origen (linaje) -- opcional"
+              required={programs.length > 0}
+              title={programs.length > 0 ? "Programa de origen (linaje) -- obligatorio" : "Programa de origen (linaje) -- vacío es la raíz, Legacy"}
               style={{ flex: "1 1 160px", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "10px 14px", color: "#F5F2EB", font: "400 13px 'Plus Jakarta Sans',sans-serif", outline: "none" }}
             >
-              <option value="">Sin origen (raíz)</option>
+              {/* Solo con la plataforma vacía (recién reseteada) tiene
+                  sentido crear un Programa sin origen -- ese va a ser la
+                  raíz (Legacy). Si ya hay al menos un Programa, siempre
+                  hay que elegir uno real: no queremos una segunda raíz
+                  (diagnóstico "dos Legacys", 2026-10-07). */}
+              {programs.length === 0 ? (
+                <option value="">Sin origen (raíz)</option>
+              ) : (
+                <option value="" disabled>
+                  Elegí un origen...
+                </option>
+              )}
               {programs.map((p) => (
                 <option key={p.id} value={p.id}>
                   Origen: {p.name}

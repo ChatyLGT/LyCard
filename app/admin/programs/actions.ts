@@ -12,6 +12,7 @@ import { parseOfficeSkills } from "@/lib/officeSkills";
 import { parseMotivationalPhrases } from "@/lib/oficinaExtras";
 import { saveUpload } from "@/lib/storage";
 import { parseDesignMd } from "@/lib/designMd";
+import { wouldCreateCycle } from "@/lib/programLineage";
 
 // Only MasterN0 (programId === null) can create Programs or their scoped N0
 // admins — PLAN.md Fase 6 is explicit that this is the one thing a Program
@@ -33,13 +34,22 @@ export async function createProgramAction(formData: FormData) {
     prisma.program.findUnique({ where: { slug }, select: { id: true } }).then(Boolean)
   );
 
-  // Linaje opcional (2026-10-05): MasterN0 puede linkear a mano un Programa
-  // nuevo a su Programa de origen -- mismo campo que promoteToPrograma()
-  // setea sola, pero acá es a mano para los casos creados desde este form
-  // (ej. retroactivamente ligar Digital Kingdom a Legacy).
+  // Linaje (2026-10-05, a mano desde este form; 2026-10-07 lo volvimos
+  // obligatorio): todo Programa nuevo deriva de uno previo -- la única
+  // excepción real es la raíz (Legacy), que ya existe desde el primer
+  // registro self-service (lib/legacyMembership.ts) o nace acá mismo si
+  // la plataforma está recién reseteada (cero Programs todavía). Fuera de
+  // ese caso, un origen vacío era el hueco que dejaba crear Programas
+  // huérfanos/segundas-raíces sin querer (diagnóstico "dos Legacys").
   const originProgramId = String(formData.get("originProgramId") || "").trim() || null;
+  const existingCount = await prisma.program.count();
+  if (!originProgramId && existingCount > 0) {
+    redirect("/admin/programs?error=origin");
+  }
 
-  const program = await prisma.program.create({ data: { slug, name, originProgramId } });
+  const program = await prisma.program.create({
+    data: { slug, name, originProgramId, isRoot: !originProgramId },
+  });
 
   revalidatePath("/admin/programs");
   redirect(`/admin/programs/${program.id}`);
@@ -76,8 +86,25 @@ export async function createProgramAdminAction(formData: FormData) {
 export async function setProgramOriginAction(programId: string, formData: FormData) {
   await requireMasterN0();
 
+  const program = await prisma.program.findUnique({ where: { id: programId }, select: { isRoot: true } });
+  if (!program) redirect("/admin/programs");
+
   const originProgramId = String(formData.get("originProgramId") || "").trim() || null;
   if (originProgramId === programId) redirect(`/admin/programs/${programId}?error=origin-self`);
+
+  // Solo la raíz real puede quedarse sin origen -- cualquier otro Programa
+  // que se intente desligar vuelve a dejar un huérfano suelto, el mismo
+  // hueco de siempre.
+  if (!originProgramId && !program.isRoot) {
+    redirect(`/admin/programs/${programId}?error=origin-required`);
+  }
+
+  if (originProgramId) {
+    const allPrograms = await prisma.program.findMany({ select: { id: true, originProgramId: true } });
+    if (wouldCreateCycle(allPrograms, programId, originProgramId)) {
+      redirect(`/admin/programs/${programId}?error=origin-cycle`);
+    }
+  }
 
   await prisma.program.update({ where: { id: programId }, data: { originProgramId } });
 

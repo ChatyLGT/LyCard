@@ -5,7 +5,13 @@ import { prisma } from "@/lib/prisma";
 import { currentMemberId } from "@/lib/memberAuth";
 
 const COOKIE_NAME = "lycard_admin";
-const SESSION_TTL = "12h";
+// Era "12h" (2026-10-07, reportado por Gunnar: "cada vez que cierro la
+// app me vuelve a pedir que me conecte") -- 30 días, mismo criterio que
+// ya usa la cookie de Member (lib/memberAuth.ts). Esto es un MVP sin
+// datos reales todavía; la ventana de riesgo de una cookie robada vive
+// bien con el resto de las prioridades de seguridad pendientes (ver
+// PLAN.md), no vale la pena forzar reconexión diaria por esto.
+const SESSION_TTL = "30d";
 
 function secretKey() {
   const secret = process.env.SESSION_SECRET;
@@ -37,7 +43,7 @@ export async function createAdminSession(adminId: string) {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 12,
+    maxAge: 60 * 60 * 24 * 30,
   });
 }
 

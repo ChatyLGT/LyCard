@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.81.0";
+export const APP_VERSION = "1.82.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.82.0",
+    date: "2026-10-07",
+    notes:
+      "Linaje de Programas + alta directa de Miembros: Gunnar reportó un desmadre real -- \"hay dos Legacys, HeroSuite no se conecta a ninguno, no puedo poner un miembro\". El código resolvía quién era la raíz comparando slug === \"legacy\" a mano en 4 lugares, sin nada en la base que impidiera una segunda raíz -- ahora Program.isRoot lo marca de verdad, con un índice único que garantiza que solo puede existir una (la migración marcó la Legacy real). Crear un Programa nuevo exige elegir un origen real (ya no hay \"Sin origen (raíz)\" disponible salvo plataforma vacía), y el selector de Linaje nunca ofrece un candidato que crearía un ciclo (A derivando de su propio descendiente), con el chequeo real en lib/programLineage.ts. Y el hueco más urgente: un N0 ya puede agregar un Miembro directo a SU Programa desde /admin/programs/[id] (reusa el Member si el WhatsApp ya existe en otro Programa) -- antes la única puerta de entrada era el funnel público de WhatsApp/Google, que además siempre aterrizaba en Legacy. De paso, la cookie de sesión de Admin pasó de 12 horas a 30 días (\"cada vez que cierro la app me vuelve a pedir que me conecte\") -- mismo criterio que ya usaba la de Member.",
+  },
   {
     version: "1.81.0",
     date: "2026-10-06",

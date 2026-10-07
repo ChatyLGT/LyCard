@@ -35,7 +35,7 @@ export async function mintAdminCookie(adminId: string) {
   const token = await new SignJWT({ sub: adminId })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("12h")
+    .setExpirationTime("30d")
     .sign(new TextEncoder().encode(secret));
 
   return { name: COOKIE_NAME, value: token, httpOnly: true, sameSite: "Lax" as const };

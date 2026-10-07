@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { currentAdminScope, canAccessProgram, currentAdminId } from "@/lib/auth";
 import { checkAndPromoteToPrograma } from "@/lib/programPromotion";
 import { createMemberSession } from "@/lib/memberAuth";
+import { activateMembershipAndSpawnCards } from "@/lib/activateMembership";
 
 // MasterN0 can manage any Program's members; a scoped N0 only their own —
 // and only members who actually belong to that Program (checked at the
@@ -23,6 +24,37 @@ async function requireMembership(memberId: string, programId: string) {
   });
   if (!membership) redirect(`/admin/programs/${programId}`);
   return membership;
+}
+
+// Agregar un Miembro directo desde el admin (2026-10-07, pedido de
+// Gunnar: "no puedo poner un miembro" en un Programa nuevo) -- hasta
+// ahora un Member solo nacía por el funnel self-service público
+// (WhatsApp/Google, que además aterriza siempre en Legacy). Un N0 que
+// recién crea su Programa (ej. HeroSuite) no tenía forma de sumar gente
+// real sin pasar por ese funnel ajeno. Si el WhatsApp ya existe (Member
+// de otro Programa), lo suma a este en vez de duplicarlo -- mismo
+// criterio idempotente que el resto del alta (ver activateMembership.ts).
+export async function addMemberToProgramAction(programId: string, formData: FormData) {
+  await requireProgramAccess(programId);
+
+  const name = String(formData.get("name") || "").trim();
+  const whatsapp = String(formData.get("whatsapp") || "").trim() || null;
+  const email = String(formData.get("email") || "").trim();
+  if (!name) redirect(`/admin/programs/${programId}?memberError=addName`);
+
+  const existingMember = whatsapp ? await prisma.member.findUnique({ where: { whatsapp } }) : null;
+  const member = existingMember ?? (await prisma.member.create({ data: { name, whatsapp, email } }));
+
+  const membership = await prisma.programMembership.upsert({
+    where: { memberId_programId: { memberId: member.id, programId } },
+    update: {},
+    create: { memberId: member.id, programId, status: "invited" },
+  });
+
+  await activateMembershipAndSpawnCards(membership.id, { markInterviewed: false });
+
+  revalidatePath(`/admin/programs/${programId}`);
+  redirect(`/admin/programs/${programId}?memberAdded=1`);
 }
 
 export async function updateMemberAction(memberId: string, programId: string, formData: FormData) {
