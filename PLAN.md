@@ -10232,3 +10232,68 @@ Sin mergear a main -- sigue en `feature/asistente-configura-tu-lycard`
 con Vercel Preview, a la espera de que Gunnar lo pruebe desde el
 celular antes del Paso 4 (S3, vista previa real del espacio de
 medalla).
+
+## 2026-10-08 (de madrugada) -- Asistente: botón desde el Dashboard + "Volver al Dashboard" (v1.91.0)
+
+Orden de trabajo formal de Gunnar (vía MAMEN, memo con formato
+DE/PARA/PIDO/NO HAGAS), mientras sigue pendiente su prueba del Paso
+2b+3 y la confirmación de Neon.
+
+**1. Tile "Tu Tarjeta" en `/admin`** -- tercer botón dorado junto a
+Ver/Editar: "Configura tu LyCard" → `/c/mastern0/asistente`, o "Seguir
+configurando" si ya existe una `AssistantSession` para ese Admin+Card
+(mismo criterio que el botón de la tarjeta pública). Sin chequeo
+aparte de MasterN0 -- toda `/admin` ya está detrás de ese guard desde
+el Centro de Mando (v1.87.0).
+
+**2. "Volver al Dashboard" en S0, S1, S2 y S5** -- un link más,
+siempre a `/admin`, sin tocar ningún flujo de guardado existente (S2
+sigue volviendo a la pista/S1/S5 como ya estaba; este es un camino
+aparte para salir del todo).
+
+**3. Regla nueva + mapa de clics desde `/admin`** (toda pantalla
+nueva, alcanzable con botones desde el Dashboard):
+- `/admin` → tile "Tu Tarjeta" → **S0** (`/asistente`)
+- S0 → cualquiera de las 3 pistas, o "Ver todo" → **S1** (`/asistente/indice`)
+- S1 → tocar cualquier pregunta (respondida o no) → **S2**
+  (`/asistente/pista/[pistaId]?pregunta=<id>&volver=indice`)
+- S1 → botón "Decisiones abiertas" → **S5** (`/asistente/decisiones-abiertas`)
+- S5 → tocar una fila → **S2** (mismo, `volver=abiertas`)
+- Las 4 pantallas → "Volver al Dashboard" → `/admin`
+
+  **Duda honesta**: el modo "avance normal" de S2 (sin `?pregunta=`,
+  el que resuelve sola la siguiente pregunta sin responder y al
+  guardar sigue de largo por la pista) quedó **sin ningún botón que
+  lo abra** -- antes de este Paso 3, el tile de pista en S0 llevaba
+  ahí directo; ahora lleva a S1, y desde S1 cada pregunta se abre
+  puntual con `volver=indice`. Ese modo sigue andando (accesible solo
+  por URL directa, y cubierto por los primeros tests de
+  `assistant-s2.spec.ts`) pero hoy es código sin ningún link real que
+  lo use. No lo toqué sin que Gunnar lo pida -- lo marco para que
+  decida si hace falta un botón "Continuar" por espacio en S1, o si
+  el camino uno-por-uno actual (volviendo a S1 entre pregunta y
+  pregunta) es el que quiere.
+
+**4. Confirmaciones pedidas**:
+- Las capturas que mandé en los últimos 2 reportes (S0, S2, S1, S5, y
+  el tile del Dashboard) salieron todas de la **base local de este
+  sandbox** (Postgres en `localhost:5432`, la del `.env` de desarrollo),
+  nunca de la rama de Neon -- el sandbox no puede conectarse a Neon en
+  absoluto (ver nota de la consulta pendiente, más arriba).
+- El modal `ai_agent` **no quedó afuera** -- está en
+  `lib/assistantScript.ts#MODAL_ESPACIOS` igual que los otros 12
+  modales sin guion todavía, con `preguntas: []`. Es el modal #14 de
+  los 14 reales de `lib/modalEditor.ts` (el documento de diseño original
+  solo lista 13 en la sección 5.2, un desfase del documento contra el
+  código real -- Tarea 0 ya había modelado los 14 reales, no los 13 del
+  texto).
+
+**Verificación**: `npx tsc --noEmit`, `pnpm lint` (0 errores nuevos),
+`pnpm test:unit:coverage` (100%, sin lógica pura nueva), `pnpm build`,
+2 tests nuevos (`admin-home.spec.ts`: el botón del tile +
+"Seguir configurando"; `assistant-s1-s5.spec.ts`: los 4 links "Volver
+al Dashboard"), suite Playwright completa: 98/98 verde. Captura real
+del tile "Tu Tarjeta" con los 3 botones.
+
+Sigue sin mergear a main. Nada de Paso 4 todavía -- esperando la
+confirmación de Neon y la prueba de Gunnar desde el celular.

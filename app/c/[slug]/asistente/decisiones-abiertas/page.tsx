@@ -93,6 +93,15 @@ export default async function AsistenteS5Page({ params }: { params: Promise<{ sl
             );
           })
         )}
+
+        {/* Pedido de Gunnar (2026-10-08, vía MAMEN): toda pantalla del
+            asistente necesita un camino de vuelta al Dashboard. */}
+        <Link
+          href="/admin"
+          style={{ textAlign: "center", font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A", textDecoration: "none" }}
+        >
+          Volver al Dashboard
+        </Link>
       </div>
     </div>
   );

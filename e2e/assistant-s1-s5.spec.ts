@@ -170,6 +170,24 @@ test.describe("Asistente Configura tu LyCard -- S1 (índice) + S5 (decisiones ab
     expect(answer.rows[0].valor).toEqual({ opcionId: "miembro" });
   });
 
+  test("S0, S1, S2 y S5 tienen un link 'Volver al Dashboard' (pedido de Gunnar, 2026-10-08)", async ({ browser }) => {
+    const context = await browser.newContext();
+    await context.addCookies([{ ...(await mintAdminCookie(masterN0AdminId)), url: BASE_URL }]);
+    const page = await context.newPage();
+
+    await page.goto(`${BASE_URL}/c/mastern0/asistente`, { waitUntil: "networkidle" });
+    await expect(page.getByRole("link", { name: "Volver al Dashboard" })).toHaveAttribute("href", "/admin");
+
+    await page.goto(`${BASE_URL}/c/mastern0/asistente/indice`, { waitUntil: "networkidle" });
+    await expect(page.getByRole("link", { name: "Volver al Dashboard" })).toHaveAttribute("href", "/admin");
+
+    await page.goto(`${BASE_URL}/c/mastern0/asistente/pista/programa?pregunta=medal.mide&volver=indice`, { waitUntil: "networkidle" });
+    await expect(page.getByRole("link", { name: "Volver al Dashboard" })).toHaveAttribute("href", "/admin");
+
+    await page.goto(`${BASE_URL}/c/mastern0/asistente/decisiones-abiertas`, { waitUntil: "networkidle" });
+    await expect(page.getByRole("link", { name: "Volver al Dashboard" })).toHaveAttribute("href", "/admin");
+  });
+
   test("un N0 escopeado no entra a S1 ni a S5 de mastern0", async ({ browser }) => {
     const context = await browser.newContext();
     await context.addCookies([{ ...(await mintAdminCookie(scopedAdminId)), url: BASE_URL }]);

@@ -194,6 +194,14 @@ export default async function AsistenteS2Page({
         <Link href={volverUrl} style={{ textAlign: "center", font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A", textDecoration: "none" }}>
           {volver === "siguiente" ? "Salir al mapa" : "Volver sin guardar"}
         </Link>
+
+        {/* Pedido de Gunnar (2026-10-08, vía MAMEN): al guardar, S2
+            sigue volviendo a la pista/S1/S5 como ya estaba -- esto es
+            SOLO para salir sin perder el lugar, un camino aparte al
+            Dashboard. */}
+        <Link href="/admin" style={{ textAlign: "center", font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A", textDecoration: "none" }}>
+          Volver al Dashboard
+        </Link>
       </div>
     </div>
   );

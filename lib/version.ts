@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.90.0";
+export const APP_VERSION = "1.91.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.91.0",
+    date: "2026-10-08",
+    notes:
+      "Asistente \"Configura tu LyCard\" v2 -- también entra desde el Dashboard: el tile \"Tu Tarjeta\" de /admin suma un tercer botón dorado (\"Configura tu LyCard\" o \"Seguir configurando\" si ya hay una sesión), y S0/S1/S2/S5 suman un link \"Volver al Dashboard\" -- toda pantalla del asistente tiene ahora un camino de vuelta a /admin, no solo a la tarjeta pública.",
+  },
   {
     version: "1.90.0",
     date: "2026-10-08",
