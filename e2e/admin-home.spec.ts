@@ -83,6 +83,31 @@ test.describe("Centro de Mando -- Home real de MasterN0", () => {
     await context.close();
   });
 
+  test("Tu Tarjeta también ofrece 'Configura tu LyCard', y cambia a 'Seguir configurando' con sesión existente (pedido de Gunnar, 2026-10-08)", async ({ browser }) => {
+    const mastern0 = await e2eDb.query<{ id: string }>(`select id from "Card" where slug = 'mastern0'`);
+    test.skip(!mastern0.rows[0], "No existe la Card mastern0 en esta DB");
+
+    const context = await browser.newContext();
+    await context.addCookies([{ ...(await mintAdminCookie(adminId)), url: BASE_URL }]);
+    const page = await context.newPage();
+
+    await page.goto(`${BASE_URL}/admin`, { waitUntil: "networkidle" });
+    const btn = page.getByRole("link", { name: "Configura tu LyCard" });
+    await expect(btn).toBeVisible();
+    await expect(btn).toHaveAttribute("href", "/c/mastern0/asistente");
+    await btn.click();
+    await page.waitForURL(/\/c\/mastern0\/asistente$/);
+
+    await page.goto(`${BASE_URL}/admin`, { waitUntil: "networkidle" });
+    await expect(page.getByRole("link", { name: "Seguir configurando" })).toBeVisible();
+
+    await context.close();
+    // Limpieza propia -- la sesión creada acá no la toca el afterAll
+    // del describe (que solo borra el Admin), y la FK de AssistantSession
+    // no tiene onDelete: Cascade.
+    await e2eDb.query(`delete from "AssistantSession" where "adminId" = $1`, [adminId]);
+  });
+
   test("el link del tile de Empleados abre directo la sección 'N0 de este Programa'", async ({ browser }) => {
     const context = await browser.newContext();
     await context.addCookies([{ ...(await mintAdminCookie(adminId)), url: BASE_URL }]);

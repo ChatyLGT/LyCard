@@ -5,11 +5,41 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.87.0";
+export const APP_VERSION = "1.92.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.92.0",
+    date: "2026-10-08",
+    notes:
+      "Asistente \"Configura tu LyCard\" v2 -- S1 suma el botón \"Continuar\" (uno por pista, solo donde hay de verdad una pregunta sin responder): abre el modo que avanza solo, el mismo que ya existía pero se había quedado sin ningún botón real que lo abriera desde que S0 empezó a mandar a S1 en vez de a S2 directo. El camino de una pregunta por vez (tocar cada fila) sigue exactamente igual.",
+  },
+  {
+    version: "1.91.0",
+    date: "2026-10-08",
+    notes:
+      "Asistente \"Configura tu LyCard\" v2 -- también entra desde el Dashboard: el tile \"Tu Tarjeta\" de /admin suma un tercer botón dorado (\"Configura tu LyCard\" o \"Seguir configurando\" si ya hay una sesión), y S0/S1/S2/S5 suman un link \"Volver al Dashboard\" -- toda pantalla del asistente tiene ahora un camino de vuelta a /admin, no solo a la tarjeta pública.",
+  },
+  {
+    version: "1.90.0",
+    date: "2026-10-08",
+    notes:
+      "Asistente \"Configura tu LyCard\" v2, Paso 2b + Paso 3: presets del programa + S1 (índice completo) + S5 (decisiones abiertas), con edición de respuestas ya guardadas. S1 muestra el mapa entero -- las 3 pistas, los 13 modales y los campos del programa, cada uno con su estado real (Pendiente / Propuesto / Decisión abierta), incluidos los que todavía no tienen guion (\"Sin guion aún\", en vez de ocultarlos). Desde ahí, tocar cualquier pregunta -- respondida o no -- la abre en S2 precargada con lo último guardado y, al guardar, vuelve al índice en vez de seguir avanzando por la pista (pedido de Gunnar al aprobar el Paso 2). S5 junta todo lo marcado \"Todavía no sé\", más antiguo primero, con el mismo mecanismo de edición -- resolverla ahí la saca de la lista. La prioridad al mostrar una propuesta es ahora la del documento: respuesta del usuario > preset del Programa > propuesta del guion -- el preset real de Legacy queda vacío a propósito (nada de inventar valores de negocio; eso se carga después, con N0, usando el propio asistente).",
+  },
+  {
+    version: "1.89.0",
+    date: "2026-10-08",
+    notes:
+      "Asistente \"Configura tu LyCard\" v2, Paso 2: el lector del guion + S2, la pantalla de una pregunta por vez. Desde S0, la pista \"Tu programa\" ya es un link real (tiene las 2 preguntas de ejemplo de \"medalla\" del documento de diseño) -- al tocarla entra directo a la primera sin responder. Cada pregunta se guarda en el borrador (AssistantAnswer), nunca toca la configuración publicada; \"Todavía no sé\" la guarda como Decisión abierta en vez de forzar una respuesta. Al terminar una pista vuelve sola a S0, que ahora muestra el progreso real (\"1 de 2\", \"Todo respondido por ahora\") en vez de un contador fijo en cero. De paso, el pedido de Gunnar tras probar el Paso 1: donde el guion todavía no tiene ninguna pregunta cargada, ya no dice \"0 de 0\" -- dice \"Sin preguntas aún\".",
+  },
+  {
+    version: "1.88.0",
+    date: "2026-10-08",
+    notes:
+      "Asistente \"Configura tu LyCard\" v2, Paso 1: en la tarjeta mastern0, MasterN0 ve un botón dorado (reemplaza el QR) que abre S0, la pantalla de entrada del asistente paso a paso. Crea una AssistantSession real al entrar (o retoma la que ya existía -- el botón cambia a \"Seguir configurando\"), muestra las 3 pistas (personal/negocio/programa) con su conteo, el selector Rápido/Detallado (Detallado marcado \"Próximamente\", sin acción), y el modo negocio fijo en \"Pendiente, sin tarjeta todavía\" por ahora. 3 tablas nuevas en la base (AssistantSession/AssistantAnswer/AssistantDraft), ninguna existente tocada -- probado primero en una rama de Neon antes de aplicarse acá. El lector del guion (S2, con las dos preguntas de ejemplo de \"medalla\") y el resto de las pantallas quedan para los próximos pasos.",
+  },
   {
     version: "1.87.0",
     date: "2026-10-08",

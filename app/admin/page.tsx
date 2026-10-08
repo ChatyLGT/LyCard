@@ -91,6 +91,20 @@ export default async function AdminHomePage() {
     prisma.program.findFirst({ where: { isRoot: true } }),
   ]);
 
+  // Pedido de Gunnar (2026-10-08, vía MAMEN): el botón del Asistente
+  // también desde el Dashboard, no solo desde la tarjeta -- mismo
+  // criterio que components/LyCardView.tsx (una AssistantSession
+  // existente cambia el texto a "Seguir configurando"). El tile entero
+  // ya está detrás del `isMasterN0Scope` de arriba -- no hace falta un
+  // chequeo aparte.
+  const assistantSession = mastern0Card
+    ? await prisma.assistantSession.findFirst({
+        where: { adminId: scope.id, cardId: mastern0Card.id },
+        orderBy: { updatedAt: "desc" },
+        select: { id: true },
+      })
+    : null;
+
   const grouped = groupByProgram(cards);
   const programById = new Map(programs.map((p) => [p.id, p]));
   // Programs with cards first (most useful), each internally newest-first;
@@ -284,6 +298,9 @@ export default async function AdminHomePage() {
                 </Link>
                 <Link href={`/admin/${mastern0Card.slug}`} style={TILE_BTN_GOLD}>
                   Editar
+                </Link>
+                <Link href={`/c/${mastern0Card.slug}/asistente`} style={TILE_BTN_GOLD}>
+                  {assistantSession ? "Seguir configurando" : "Configura tu LyCard"}
                 </Link>
               </>
             )}

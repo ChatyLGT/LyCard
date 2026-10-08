@@ -10029,3 +10029,319 @@ que usa toda la plataforma. Cero funcionalidad perdida.
 viejo sigue funcionando colapsado, `focus=admins` abre la sección de
 un tirón, Metodología muestra contenido real del Whitepaper -- no un
 placeholder), suite Playwright completa: 78/78 verde.
+
+## 2026-10-08 (tarde) -- Asistente "Configura tu LyCard" v2, Paso 1: botón + S0 (v1.88.0)
+
+Orden de trabajo de Gunnar: construir el asistente paso a paso del
+documento `DISENO_COMPLETO_ASISTENTE_CONFIGURA_TU_LYCARD_v2` (Drive),
+en el orden que marcó (botón+S0, lector del guion+S2, presets del
+programa, S1+S5, S3, S4), solo modos Rápido (Detallado queda
+"Próximamente"), con paradas obligatorias antes de migrar y antes de
+unir a main, y trabajando en rama con Vercel Preview.
+
+**Tarea 0 (lectura)**: confirmado dónde vive cada pieza que el
+asistente necesita tocar -- el QR en `components/LyCardView.tsx`
+(rama central del podio), los modales vía
+`lib/modalEditor.ts`/`MODAL_EDITOR_ENTRIES` (14 entradas), los campos
+del Programa como `Json` directo en `Program` (sin tabla de borrador
+separada hoy), y que no existe ningún mecanismo de borrador
+desacoplado de lo publicado -- confirmando que hacía falta schema
+nuevo para eso. `Card` no tiene tabla propia de "tarjeta de negocio":
+es `kind` sobre el mismo modelo `Card`.
+
+**Decisiones de Gunnar tras el reporte**: migración aprobada (solo
+tablas nuevas, cero `ALTER` sobre lo existente), probarla primero en
+una rama de Neon, mostrarle el SQL antes de aplicarla en la base
+compartida, y que Publicar (S4, a futuro) escriba siempre a través de
+las acciones de servidor existentes. "Puestos" queda afuera como
+decisión abierta. Pista de negocio: sin crear tarjeta, fija en
+"Pendiente, sin tarjeta todavía". Textos en tuteo ("tú").
+
+**Schema nuevo** (3 tablas, cero `ALTER` sobre tablas existentes):
+`AssistantSession` (una por Admin+Card, estado "en_curso"),
+`AssistantAnswer` (respuesta por pregunta, versionada), y
+`AssistantDraft` (borrador por espacio, con su contenido publicado
+anterior para poder comparar en S3/S4 a futuro). Migración a mano
+probada primero contra una rama real de Neon vía un build de Vercel
+Preview (este sandbox no puede hacer conexiones Postgres de TCP crudo
+-- limitación categórica del entorno, no por host -- así que el Preview
+de Vercel con un `DATABASE_URL` de Preview apuntado a la rama de Neon
+fue el vehículo de prueba real), SQL revisado por Gunnar antes de
+aplicarla en la base compartida.
+
+**`lib/assistantScript.ts`** -- el guion como dato puro (sin DB, sin
+`"use server"`): 3 pistas (personal/negocio/programa), el catálogo de
+espacios editables (los 14 modales + 8 campos de Programa + 2
+personales), y de momento solo 2 preguntas reales de ejemplo (medalla:
+qué mide, de dónde sale el dato) -- el resto del guion llega en el
+Paso 2. 100% cobertura.
+
+**Botón + S0**: en la Card `isOrigin` (hoy `mastern0`), un viewer
+MasterN0 (`isMasterN0Scope`, más estricto que `isAdmin`/`isHost`) ve
+un botón dorado "Configura tu LyCard" en el lugar del QR -- o "Seguir
+configurando" si ya tiene una sesión. Abre `/c/[slug]/asistente` (S0):
+crea la `AssistantSession` si no existe (nunca pisa una existente),
+muestra las 3 pistas con su conteo real, el selector
+Rápido/Detallado (Detallado inerte), y un aviso honesto de que el
+índice completo (S1) llega en el próximo paso. "Dueño de esa tarjeta"
+se resuelve en esta fase como `card.isOrigin` -- no hay hoy un
+mecanismo genérico de "tarjeta propia de un Admin clásico", y
+resolverlo de forma general queda fuera de alcance de este paso.
+
+**Verificación**: `npx tsc --noEmit`, `pnpm lint` (0 errores nuevos),
+`pnpm test:unit:coverage` (100%), `pnpm build`, nuevo
+`e2e/assistant-s0.spec.ts` (MasterN0 ve el botón y S0 crea la sesión
+real; al volver dice "Seguir configurando" sin duplicar sesión; un N0
+escopeado a un Programa no ve el botón ni entra a S0; un visitante
+anónimo ve el QR real de siempre), suite Playwright completa: 82/82
+verde. Verificación visual además con captura real de navegador
+(Chromium headless, cookie de sesión real) de ambas pantallas.
+
+Sin mergear a main -- queda en `feature/asistente-configura-tu-lycard`
+con Vercel Preview, a la espera de que Gunnar lo pruebe desde el
+celular antes del Paso 2 (lector del guion + S2).
+
+## 2026-10-08 (noche) -- Asistente "Configura tu LyCard" v2, Paso 2: lector del guion + S2 (v1.89.0)
+
+Gunnar probó el Paso 1 desde el celular y aprobó, con un pedido chico:
+"Tu tarjeta personal" mostraba "0 DE 0" en S0 -- un contador sin
+sentido mientras esa pista no tenga ninguna pregunta real cargada.
+Arreglado antes de seguir: `PistaTile` ahora distingue "sin guion
+todavía" ("Sin preguntas aún") de "con guion, ningún avance" (que ya
+no puede pasar en falso -- el contador de arriba pasó a ser real,
+`{respondidas} de {total}`, calculado por sesión en vez de hardcodeado
+en cero).
+
+**Lector del guion** -- dos funciones puras nuevas en
+`lib/assistantScript.ts`: `preguntasDePista` (todas las preguntas de
+una pista, en el mismo orden del guion) y
+`primeraPreguntaSinResponder` (dado un set de IDs de preguntas ya
+respondidas en la sesión, cuál es "la de ahora"). S2 no necesita saber
+nada de orden -- solo pide la siguiente.
+
+**S2** (`app/c/[slug]/asistente/pista/[pistaId]/page.tsx`) -- una
+pregunta por vez, sin el id de la pregunta en la URL (siempre resuelve
+la pista completa contra la sesión). Mismas guardas que S0 (MasterN0 +
+`card.isOrigin`) más la verificación extra de que la sesión encontrada
+es la de este Admin (nunca confía en el sessionId del form sin
+comprobar dueño -- mismo criterio que `requireProgramAccess` en el
+resto de la app). Cada respuesta se guarda en el borrador
+(`AssistantAnswer`, `app/c/[slug]/asistente/actions.ts`,
+`responderPreguntaAction`) -- nunca toca ningún modal, campo de
+Program o Card real, eso es S4 (todavía no existe). "Todavía no sé"
+(`permiteNoSe`, siempre `true` en esta fase) guarda con
+`estado: "abierto"` -- el mismo nombre que ya usa el guion para
+"Decisión abierta" -- en vez de forzar una respuesta.
+
+Con las 2 preguntas de ejemplo de "medalla" ya cargadas en el guion
+(Paso anterior), desde S0 la pista "Tu programa" pasó de ser un texto
+inerte a un link real; al terminarlas, la pista vuelve sola a S0 con
+el progreso real y deja de ser un link ("Todo respondido por ahora").
+Las otras 20 espacios de "Tu programa" y las 2 de "Tu tarjeta
+personal" siguen en `preguntas: []` a propósito -- cargar el resto del
+guion real es trabajo de N0 con el propio asistente, no de este Paso.
+
+**Verificación**: `npx tsc --noEmit`, `pnpm lint` (0 errores nuevos),
+`pnpm test:unit:coverage` (100%, 361 tests -- 4 nuevos sobre el lector
+del guion), `pnpm build`, nuevo `e2e/assistant-s2.spec.ts` (8 tests:
+el link real desde S0, responder con opción + porqué, "Todavía no sé"
+como decisión abierta, vuelta sola a S0 al terminar la pista, reentrar
+a una pista ya completa o sin preguntas no revienta, guardas de
+MasterN0/escopeado/anónimo, una `pistaId` inválida da 404 real), suite
+Playwright completa: 90/90 verde (sin regresión en
+`e2e/assistant-s0.spec.ts` pese al cambio de `PistaTile`).
+
+Sin mergear a main -- sigue en `feature/asistente-configura-tu-lycard`
+con Vercel Preview, a la espera de que Gunnar lo pruebe y dé luz verde
+para el Paso 3 (presets del programa).
+
+## 2026-10-08 (madrugada siguiente) -- Asistente: Paso 2b + Paso 3, S1 + S5 + edición (v1.90.0)
+
+Gunnar aprobó el Paso 2 y pidió, en el mismo mensaje, saltar directo a
+2b (presets) y 3 (S1+S5) del documento, con un agregado propio: poder
+volver a editar una respuesta ya guardada desde S1 -- el doc original
+solo preveía S2 avanzando hacia adelante. Antes de construir, releí el
+documento completo de nuevo (Drive) para no improvisar el diseño de
+S1/S5/presets con la memoria de la Tarea 0.
+
+**Consulta pendiente de Gunnar**: pidió confirmar en la base de la
+rama de Neon que `medal.fuente` quedó como "Todavía no sé". No pude
+hacerlo yo mismo -- los hosts de Neon siguen bloqueados para este
+sandbox por política de organización (confirmado de nuevo, esta vez
+probando también la vía HTTP del driver serverless de Neon, rechazada
+igual, 403 por política, no por TCP crudo). Le pasé el SQL de una
+línea para que lo corra él mismo en el editor de Neon.
+
+**Paso 2b -- presets del programa** (`lib/assistantPresets.ts`, doc
+6.2.1): archivo de datos aparte del guion, `PRESETS` por slug de
+Programa. Prioridad al mostrar una propuesta en S2: respuesta del
+usuario (si ya existe) > preset del Programa > propuesta del guion.
+El único preset real, el de Legacy, queda **vacío a propósito** -- el
+documento mismo dice "puede estar casi vacío" y marca varios niveles
+(como de dónde sale el Resultado de un negocio) como todavía sin
+decidir; no se inventó ningún valor de negocio para llenarlo. Duda
+honesta: la Card `mastern0` (la única que usa el asistente hoy) tiene
+`programId: null` -- no tiene un "programa que la invitó" -- así que
+el preset de Legacy no tiene hoy ningún lugar real donde aplicarse
+para Gunnar. El mecanismo está construido y probado (unit tests con
+datos sintéticos); se vuelve visible el día que el asistente trabaje
+sobre la tarjeta de un Miembro real de un Programa.
+
+**Paso 3 -- S1 · Índice** (`app/c/[slug]/asistente/indice/page.tsx`,
+doc 5.2): el mapa completo, agrupado por pista -- las 3 pistas, los 13
+modales y los 8 campos del Programa, cada espacio con su chip de
+estado real (`Pendiente` / `Propuesto` / `Decisión abierta`, calculado
+por `lib/assistantScript.ts#estadoEspacio` a partir de las respuestas
+de la sesión). Los espacios sin guion todavía aparecen igual, con
+"Sin guion aún" (criterio de aceptación #8 del doc), en vez de
+esconderse. S0 cambió para mandar acá en vez de a S2 directo (doc:
+"elegir una pista lleva a S1 filtrado a esa pista") -- las 3 tarjetas
+de S0 son ahora siempre un link, negocio incluida.
+
+**Edición de respuestas ya guardadas** (pedido de Gunnar): S2
+(`.../pista/[pistaId]`) acepta `?pregunta=<id>&volver=indice|abiertas`
+-- abre ESA pregunta puntual, respondida o no, precargada con lo
+último guardado (no con la propuesta estática), y al guardar vuelve a
+S1 o S5 en vez de seguir avanzando por la pista. `responderPreguntaAction`
+ahora recibe `volver` para saber adónde redirigir. Verificado con un
+ciclo completo: responder → volver a tocar la misma pregunta → ver el
+valor guardado precargado (no la propuesta del guion) → cambiarlo →
+confirmar que sigue siendo la misma fila en la base (no duplicó).
+
+**Paso 3 -- S5 · Decisiones abiertas**
+(`app/c/[slug]/asistente/decisiones-abiertas/page.tsx`, doc 5.6): lista
+de todo lo marcado "Todavía no sé" en la sesión, más antiguo primero,
+cada fila con su espacio y pregunta reales. Tocar una fila abre esa
+pregunta en S2 (mismo mecanismo de edición) y, al resolverla, vuelve a
+S5 -- ya no aparece en la lista. "Exportar lista" (opcional en el doc,
+"si es barato") se dejó afuera de esta entrega.
+
+**Verificación**: `npx tsc --noEmit`, `pnpm lint` (0 errores nuevos),
+`pnpm test:unit:coverage` (100%, 371 tests -- 8 nuevos sobre
+`estadoEspacio`/`espacioDePregunta`/`presetDePrograma`), `pnpm build`,
+nuevo `e2e/assistant-s1-s5.spec.ts` (6 tests: mapa completo real,
+responder desde S1 vuelve a S1, reeditar una respuesta la precarga y
+la actualiza sin duplicar fila, decisión abierta aparece en S5 y
+resolverla la saca, guardas de escopeado/anónimo), `e2e/assistant-s2.spec.ts`
+ajustado al nuevo flujo S0→S1→S2 (seguía probando el link directo
+viejo), suite Playwright completa: 96/96 verde. Verificación visual
+con capturas reales de S1 y S5 con datos sembrados a propósito
+(`AssistantAnswer` propuesta + decisión abierta).
+
+Sin mergear a main -- sigue en `feature/asistente-configura-tu-lycard`
+con Vercel Preview, a la espera de que Gunnar lo pruebe desde el
+celular antes del Paso 4 (S3, vista previa real del espacio de
+medalla).
+
+## 2026-10-08 (de madrugada) -- Asistente: botón desde el Dashboard + "Volver al Dashboard" (v1.91.0)
+
+Orden de trabajo formal de Gunnar (vía MAMEN, memo con formato
+DE/PARA/PIDO/NO HAGAS), mientras sigue pendiente su prueba del Paso
+2b+3 y la confirmación de Neon.
+
+**1. Tile "Tu Tarjeta" en `/admin`** -- tercer botón dorado junto a
+Ver/Editar: "Configura tu LyCard" → `/c/mastern0/asistente`, o "Seguir
+configurando" si ya existe una `AssistantSession` para ese Admin+Card
+(mismo criterio que el botón de la tarjeta pública). Sin chequeo
+aparte de MasterN0 -- toda `/admin` ya está detrás de ese guard desde
+el Centro de Mando (v1.87.0).
+
+**2. "Volver al Dashboard" en S0, S1, S2 y S5** -- un link más,
+siempre a `/admin`, sin tocar ningún flujo de guardado existente (S2
+sigue volviendo a la pista/S1/S5 como ya estaba; este es un camino
+aparte para salir del todo).
+
+**3. Regla nueva + mapa de clics desde `/admin`** (toda pantalla
+nueva, alcanzable con botones desde el Dashboard):
+- `/admin` → tile "Tu Tarjeta" → **S0** (`/asistente`)
+- S0 → cualquiera de las 3 pistas, o "Ver todo" → **S1** (`/asistente/indice`)
+- S1 → tocar cualquier pregunta (respondida o no) → **S2**
+  (`/asistente/pista/[pistaId]?pregunta=<id>&volver=indice`)
+- S1 → botón "Decisiones abiertas" → **S5** (`/asistente/decisiones-abiertas`)
+- S5 → tocar una fila → **S2** (mismo, `volver=abiertas`)
+- Las 4 pantallas → "Volver al Dashboard" → `/admin`
+
+  **Duda honesta**: el modo "avance normal" de S2 (sin `?pregunta=`,
+  el que resuelve sola la siguiente pregunta sin responder y al
+  guardar sigue de largo por la pista) quedó **sin ningún botón que
+  lo abra** -- antes de este Paso 3, el tile de pista en S0 llevaba
+  ahí directo; ahora lleva a S1, y desde S1 cada pregunta se abre
+  puntual con `volver=indice`. Ese modo sigue andando (accesible solo
+  por URL directa, y cubierto por los primeros tests de
+  `assistant-s2.spec.ts`) pero hoy es código sin ningún link real que
+  lo use. No lo toqué sin que Gunnar lo pida -- lo marco para que
+  decida si hace falta un botón "Continuar" por espacio en S1, o si
+  el camino uno-por-uno actual (volviendo a S1 entre pregunta y
+  pregunta) es el que quiere.
+
+**4. Confirmaciones pedidas**:
+- Las capturas que mandé en los últimos 2 reportes (S0, S2, S1, S5, y
+  el tile del Dashboard) salieron todas de la **base local de este
+  sandbox** (Postgres en `localhost:5432`, la del `.env` de desarrollo),
+  nunca de la rama de Neon -- el sandbox no puede conectarse a Neon en
+  absoluto (ver nota de la consulta pendiente, más arriba).
+- El modal `ai_agent` **no quedó afuera** -- está en
+  `lib/assistantScript.ts#MODAL_ESPACIOS` igual que los otros 12
+  modales sin guion todavía, con `preguntas: []`. Es el modal #14 de
+  los 14 reales de `lib/modalEditor.ts` (el documento de diseño original
+  solo lista 13 en la sección 5.2, un desfase del documento contra el
+  código real -- Tarea 0 ya había modelado los 14 reales, no los 13 del
+  texto).
+
+**Verificación**: `npx tsc --noEmit`, `pnpm lint` (0 errores nuevos),
+`pnpm test:unit:coverage` (100%, sin lógica pura nueva), `pnpm build`,
+2 tests nuevos (`admin-home.spec.ts`: el botón del tile +
+"Seguir configurando"; `assistant-s1-s5.spec.ts`: los 4 links "Volver
+al Dashboard"), suite Playwright completa: 98/98 verde. Captura real
+del tile "Tu Tarjeta" con los 3 botones.
+
+Sigue sin mergear a main. Nada de Paso 4 todavía -- esperando la
+confirmación de Neon y la prueba de Gunnar desde el celular.
+
+## 2026-10-08 (de madrugada, segunda vuelta) -- Asistente: botón "Continuar" en S1 (v1.92.0)
+
+Respuesta de Gunnar a la duda del reporte anterior: sí al botón, uno
+por pista, que abra el modo que avanza solo. El camino de una pregunta
+por vez (tocar cada fila) no se toca.
+
+**"Continuar"** -- en `app/c/[slug]/asistente/indice/page.tsx`, junto
+al título de cada pista, un botón dorado chico que aparece **solo**
+si `primeraPreguntaSinResponder` (lib/assistantScript.ts, ya existía
+desde el Paso 2) encuentra algo pendiente en esa pista. Link directo a
+`/asistente/pista/[pistaId]` **sin** `?pregunta=` ni `volver=` --
+exactamente el mismo modo de avance normal de S2 que ya estaba
+construido y probado desde el Paso 2, solo que hasta ahora ningún
+botón lo abría. Al guardar, S2 sigue de largo sola hacia la próxima
+pregunta sin responder de esa pista (comportamiento sin cambios); si
+ya no queda ninguna, vuelve a S0, también sin cambios.
+
+Hoy en la práctica solo "Tu programa" puede mostrar el botón (es la
+única pista con preguntas reales cargadas) -- "Tu tarjeta personal" y
+"Tu tarjeta de negocio" no lo muestran nunca, porque no tienen ninguna
+pregunta a la que avanzar (mismo criterio honesto que el resto del
+índice). Una vez respondidas las 2 preguntas de Medalla, el botón
+desaparece solo.
+
+**Mapa de clics hasta el botón nuevo**: `/admin` → tile "Tu Tarjeta" →
+S0 → cualquier pista o "Ver todo" → **S1** → botón "Continuar" (junto
+al título de la pista, si hay algo pendiente) → S2 en modo avance
+normal.
+
+**Confirmado**: S1 muestra los **14 modales reales** (los 13 que lista
+el documento más `ai_agent`, que el documento no menciona en su texto
+pero que sí existe en `lib/modalEditor.ts` y ya estaba en el guion
+desde la Tarea 0) -- conté `ESPACIOS.filter(e => e.tipo === "modal")`
+directo contra el código: 14, ni uno más ni uno menos.
+
+**Verificación**: `npx tsc --noEmit`, `pnpm lint` (0 errores nuevos),
+`pnpm test:unit:coverage` (100%, sin lógica pura nueva -- el botón usa
+una función que ya tenía sus tests), `pnpm build`, 3 tests nuevos en
+`assistant-s1-s5.spec.ts` (el botón aparece solo en "Tu programa" con
+el href correcto, entrar por él muestra el modo de avance normal --
+sin "Editando una respuesta guardada" ni "Volver sin guardar" --, y
+desaparece una vez respondidas las 2 preguntas), suite Playwright
+completa: 99/99 verde. Captura real de S1 con el botón visible junto a
+"Tu programa" y ausente en las otras dos pistas.
+
+Sigue sin mergear a main. Nada de Paso 4 todavía -- esperando la
+confirmación de Neon y la prueba de Gunnar desde el celular.
