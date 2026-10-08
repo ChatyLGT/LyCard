@@ -42,6 +42,10 @@ model Admin {
   // Member, ver Message.senderAdminId.
   sentMessages Message[]
 
+  // Asistente "Configura tu LyCard" v2 (2026-10-08) -- qué sesiones del
+  // asistente inició este Admin (Fase 1: siempre MasterN0).
+  assistantSessions AssistantSession[]
+
   // Panel de Empleados (2026-10-07, pedido de Gunnar: "un panel de
   // control para 'empleados' es un sistema aparte, tratalo como tal, y
   // dame un acceso independiente") -- "owner" cubre tanto a MasterN0
@@ -255,6 +259,10 @@ model Card {
   // Tarjeta personalizada por destinatario (2026-10-02) — ver modelo
   // CardRecipient más abajo.
   recipients CardRecipient[]
+
+  // Asistente "Configura tu LyCard" v2 (2026-10-08) -- sesiones del
+  // asistente abiertas sobre esta Card.
+  assistantSessions AssistantSession[]
 }
 
 // Tarjeta personalizada por destinatario (2026-10-02, pedido de Gunnar:
@@ -1291,4 +1299,79 @@ model NashMeshRun {
   participants  Json // [{cardId?, name, declaredContributionPct, psiTier}]
   outputs       Json // [{cardId?, name, phi, psi, payment}]
   createdAt     DateTime @default(now())
+}
+
+// Asistente "Configura tu LyCard" v2 (2026-10-08, propuesta MAMEN,
+// aprobada por N0 vía orden de trabajo del mismo día) -- 3 tablas
+// nuevas, cero cambio a nada existente. El borrador NUNCA comparte
+// lugar con Program/Card (la configuración publicada) -- solo S4
+// (revisión y publicar) escribe ahí, y únicamente a través de las
+// server actions existentes (updateEscalaAction, updateModalContentAction,
+// etc.), nunca con un prisma.update suelto. Ver doc de diseño v2 en
+// Drive (DISENO_COMPLETO_ASISTENTE_CONFIGURA_TU_LYCARD_v2).
+//
+// Una sesión por dueño+Card -- en esta fase, siempre el propio N0/
+// MasterN0 sobre su propia Card. `pistaActiva`/`preguntaActualId`
+// son lo mínimo para "si cierra y vuelve, retoma donde estaba"
+// (criterio de aceptación #4 del doc).
+model AssistantSession {
+  id               String   @id @default(cuid())
+  adminId          String
+  admin            Admin    @relation(fields: [adminId], references: [id])
+  cardId           String
+  card             Card     @relation(fields: [cardId], references: [id])
+  pistaActiva      String? // "personal" | "negocio" | "programa"
+  preguntaActualId String?
+  estado           String   @default("en_curso") // en_curso | pausada | terminada
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  respuestas AssistantAnswer[]
+  borradores AssistantDraft[]
+}
+
+// Una fila por pregunta del guion respondida (o marcada "Todavía no
+// sé") en una sesión -- `preguntaId` es el id del guion (ej.
+// "medal.mide"), no una FK: el guion vive en código (sección 6 del
+// doc), no en la base. Única por (sesión, pregunta) -- volver a
+// responder la misma pregunta actualiza la fila y sube `version`, no
+// crea una nueva.
+model AssistantAnswer {
+  id          String   @id @default(cuid())
+  sessionId   String
+  session     AssistantSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  preguntaId  String
+  valor       Json? // texto, o {opcionId}/{opcionIds}, según el tipo de pregunta
+  porque      String?
+  estado      String   @default("propuesto") // propuesto | aprobado | abierto | publicado
+  version     Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([sessionId, preguntaId])
+}
+
+// Una fila por "espacio" (un modal, un campo de Program, o un campo
+// de la Card personal/negocio) con contenido propuesto todavía sin
+// publicar. `tipo` + `claveDestino` identifican a qué apunta (ej.
+// tipo:"modal_scale", claveDestino:"medalScale") -- interpretado por
+// la action de S4 correspondiente al publicar, nunca escrito crudo.
+// `contenidoAnteriorPublicado` es el "deshacer una vez" de S4: una
+// copia de lo que había ANTES de este publish, no un historial
+// completo (decisión explícita de MAMEN, alcance mínimo).
+model AssistantDraft {
+  id                          String    @id @default(cuid())
+  sessionId                   String
+  session                     AssistantSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  espacioId                   String // ej. "medal", "cardInfo", "datos_basicos"
+  tipo                        String // "modal_scale" | "modal_blocks" | "program_field" | "card_field" | ...
+  claveDestino                String // nombre del campo/clave real que esto va a pisar al publicar
+  contenido                   Json
+  contenidoAnteriorPublicado  Json?
+  estado                      String    @default("pendiente") // pendiente | propuesto | aprobado | publicado
+  publishedAt                 DateTime?
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime  @updatedAt
+
+  @@unique([sessionId, espacioId])
 }
