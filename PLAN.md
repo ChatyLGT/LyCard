@@ -10100,3 +10100,57 @@ verde. Verificación visual además con captura real de navegador
 Sin mergear a main -- queda en `feature/asistente-configura-tu-lycard`
 con Vercel Preview, a la espera de que Gunnar lo pruebe desde el
 celular antes del Paso 2 (lector del guion + S2).
+
+## 2026-10-08 (noche) -- Asistente "Configura tu LyCard" v2, Paso 2: lector del guion + S2 (v1.89.0)
+
+Gunnar probó el Paso 1 desde el celular y aprobó, con un pedido chico:
+"Tu tarjeta personal" mostraba "0 DE 0" en S0 -- un contador sin
+sentido mientras esa pista no tenga ninguna pregunta real cargada.
+Arreglado antes de seguir: `PistaTile` ahora distingue "sin guion
+todavía" ("Sin preguntas aún") de "con guion, ningún avance" (que ya
+no puede pasar en falso -- el contador de arriba pasó a ser real,
+`{respondidas} de {total}`, calculado por sesión en vez de hardcodeado
+en cero).
+
+**Lector del guion** -- dos funciones puras nuevas en
+`lib/assistantScript.ts`: `preguntasDePista` (todas las preguntas de
+una pista, en el mismo orden del guion) y
+`primeraPreguntaSinResponder` (dado un set de IDs de preguntas ya
+respondidas en la sesión, cuál es "la de ahora"). S2 no necesita saber
+nada de orden -- solo pide la siguiente.
+
+**S2** (`app/c/[slug]/asistente/pista/[pistaId]/page.tsx`) -- una
+pregunta por vez, sin el id de la pregunta en la URL (siempre resuelve
+la pista completa contra la sesión). Mismas guardas que S0 (MasterN0 +
+`card.isOrigin`) más la verificación extra de que la sesión encontrada
+es la de este Admin (nunca confía en el sessionId del form sin
+comprobar dueño -- mismo criterio que `requireProgramAccess` en el
+resto de la app). Cada respuesta se guarda en el borrador
+(`AssistantAnswer`, `app/c/[slug]/asistente/actions.ts`,
+`responderPreguntaAction`) -- nunca toca ningún modal, campo de
+Program o Card real, eso es S4 (todavía no existe). "Todavía no sé"
+(`permiteNoSe`, siempre `true` en esta fase) guarda con
+`estado: "abierto"` -- el mismo nombre que ya usa el guion para
+"Decisión abierta" -- en vez de forzar una respuesta.
+
+Con las 2 preguntas de ejemplo de "medalla" ya cargadas en el guion
+(Paso anterior), desde S0 la pista "Tu programa" pasó de ser un texto
+inerte a un link real; al terminarlas, la pista vuelve sola a S0 con
+el progreso real y deja de ser un link ("Todo respondido por ahora").
+Las otras 20 espacios de "Tu programa" y las 2 de "Tu tarjeta
+personal" siguen en `preguntas: []` a propósito -- cargar el resto del
+guion real es trabajo de N0 con el propio asistente, no de este Paso.
+
+**Verificación**: `npx tsc --noEmit`, `pnpm lint` (0 errores nuevos),
+`pnpm test:unit:coverage` (100%, 361 tests -- 4 nuevos sobre el lector
+del guion), `pnpm build`, nuevo `e2e/assistant-s2.spec.ts` (8 tests:
+el link real desde S0, responder con opción + porqué, "Todavía no sé"
+como decisión abierta, vuelta sola a S0 al terminar la pista, reentrar
+a una pista ya completa o sin preguntas no revienta, guardas de
+MasterN0/escopeado/anónimo, una `pistaId` inválida da 404 real), suite
+Playwright completa: 90/90 verde (sin regresión en
+`e2e/assistant-s0.spec.ts` pese al cambio de `PistaTile`).
+
+Sin mergear a main -- sigue en `feature/asistente-configura-tu-lycard`
+con Vercel Preview, a la espera de que Gunnar lo pruebe y dé luz verde
+para el Paso 3 (presets del programa).

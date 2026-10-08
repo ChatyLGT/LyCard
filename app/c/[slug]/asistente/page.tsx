@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { currentAdminScope, isMasterN0Scope } from "@/lib/auth";
-import { PISTAS, espaciosDePista, totalPreguntas, type PistaId } from "@/lib/assistantScript";
+import { PISTAS, espaciosDePista, totalPreguntas, preguntasDePista, type PistaId } from "@/lib/assistantScript";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +44,14 @@ export default async function AsistenteS0Page({ params }: { params: Promise<{ sl
       data: { adminId: scope.id, cardId: card.id, estado: "en_curso" },
     });
   }
+
+  // Paso 2: progreso real por pista -- cuántas de las preguntas del
+  // guion ya tienen una AssistantAnswer en ESTA sesión.
+  const respuestas = await prisma.assistantAnswer.findMany({
+    where: { sessionId: session.id },
+    select: { preguntaId: true },
+  });
+  const respondidasIds = new Set(respuestas.map((r) => r.preguntaId));
 
   return (
     <div style={{ minHeight: "100vh", background: "#131313", color: "#e5e2e1", fontFamily: "'Plus Jakarta Sans',sans-serif", padding: "0 0 60px" }}>
@@ -117,7 +125,13 @@ export default async function AsistenteS0Page({ params }: { params: Promise<{ sl
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {PISTAS.map((pista) => (
-            <PistaTile key={pista.id} pistaId={pista.id} titulo={pista.titulo} />
+            <PistaTile
+              key={pista.id}
+              slug={slug}
+              pistaId={pista.id}
+              titulo={pista.titulo}
+              respondidasIds={respondidasIds}
+            />
           ))}
         </div>
 
@@ -149,7 +163,17 @@ export default async function AsistenteS0Page({ params }: { params: Promise<{ sl
   );
 }
 
-function PistaTile({ pistaId, titulo }: { pistaId: PistaId; titulo: string }) {
+function PistaTile({
+  slug,
+  pistaId,
+  titulo,
+  respondidasIds,
+}: {
+  slug: string;
+  pistaId: PistaId;
+  titulo: string;
+  respondidasIds: Set<string>;
+}) {
   if (pistaId === "negocio") {
     return (
       <div style={CARD}>
@@ -163,17 +187,34 @@ function PistaTile({ pistaId, titulo }: { pistaId: PistaId; titulo: string }) {
 
   const total = totalPreguntas(pistaId);
   const espacios = espaciosDePista(pistaId);
-  return (
+  // Gunnar (2026-10-08): "0 de 0" era un número sin sentido -- si el
+  // guion todavía no tiene ninguna pregunta cargada en esta pista, se
+  // dice así de claro en vez de fingir un avance 0/0.
+  const respondidas = total === 0 ? 0 : preguntasDePista(pistaId).filter((p) => respondidasIds.has(p.id)).length;
+  const faltan = total > 0 && respondidas < total;
+
+  const contenido = (
     <div style={CARD}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
         <span style={{ font: "600 15px 'Playfair Display',serif", color: "#F5F2EB" }}>{titulo}</span>
         <span style={{ font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#C8A15A" }}>
-          0 de {total}
+          {total === 0 ? "Sin preguntas aún" : `${respondidas} de ${total}`}
         </span>
       </div>
       <span style={{ font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
-        {espacios.length} espacio{espacios.length === 1 ? "" : "s"} · Próximamente
+        {total === 0
+          ? `${espacios.length} espacio${espacios.length === 1 ? "" : "s"} · Próximamente`
+          : faltan
+            ? `${espacios.length} espacio${espacios.length === 1 ? "" : "s"} · Toca para continuar`
+            : "Todo respondido por ahora"}
       </span>
     </div>
+  );
+
+  if (!faltan) return contenido;
+  return (
+    <Link href={`/c/${slug}/asistente/pista/${pistaId}`} style={{ textDecoration: "none" }}>
+      {contenido}
+    </Link>
   );
 }

@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { PISTAS, ESPACIOS, espaciosDePista, totalPreguntas, findPregunta } from "@/lib/assistantScript";
+import {
+  PISTAS,
+  ESPACIOS,
+  espaciosDePista,
+  totalPreguntas,
+  findPregunta,
+  preguntasDePista,
+  primeraPreguntaSinResponder,
+} from "@/lib/assistantScript";
 
 describe("lib/assistantScript", () => {
   it("define las 3 pistas en orden: personal, negocio, programa", () => {
@@ -50,5 +58,20 @@ describe("lib/assistantScript", () => {
   it("todos los ids de pregunta son únicos en todo el guion", () => {
     const ids = ESPACIOS.flatMap((e) => e.preguntas.map((p) => p.id));
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("preguntasDePista devuelve las preguntas de la pista, en orden", () => {
+    expect(preguntasDePista("programa").map((p) => p.id)).toEqual(["medal.mide", "medal.fuente"]);
+    expect(preguntasDePista("personal")).toEqual([]);
+  });
+
+  it("primeraPreguntaSinResponder da la primera que falta responder", () => {
+    expect(primeraPreguntaSinResponder("programa", new Set())?.id).toBe("medal.mide");
+    expect(primeraPreguntaSinResponder("programa", new Set(["medal.mide"]))?.id).toBe("medal.fuente");
+  });
+
+  it("primeraPreguntaSinResponder da null si ya están todas respondidas, o si la pista no tiene ninguna", () => {
+    expect(primeraPreguntaSinResponder("programa", new Set(["medal.mide", "medal.fuente"]))).toBeNull();
+    expect(primeraPreguntaSinResponder("personal", new Set())).toBeNull();
   });
 });

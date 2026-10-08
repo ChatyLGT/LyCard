@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.88.0";
+export const APP_VERSION = "1.89.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.89.0",
+    date: "2026-10-08",
+    notes:
+      "Asistente \"Configura tu LyCard\" v2, Paso 2: el lector del guion + S2, la pantalla de una pregunta por vez. Desde S0, la pista \"Tu programa\" ya es un link real (tiene las 2 preguntas de ejemplo de \"medalla\" del documento de diseño) -- al tocarla entra directo a la primera sin responder. Cada pregunta se guarda en el borrador (AssistantAnswer), nunca toca la configuración publicada; \"Todavía no sé\" la guarda como Decisión abierta en vez de forzar una respuesta. Al terminar una pista vuelve sola a S0, que ahora muestra el progreso real (\"1 de 2\", \"Todo respondido por ahora\") en vez de un contador fijo en cero. De paso, el pedido de Gunnar tras probar el Paso 1: donde el guion todavía no tiene ninguna pregunta cargada, ya no dice \"0 de 0\" -- dice \"Sin preguntas aún\".",
+  },
   {
     version: "1.88.0",
     date: "2026-10-08",

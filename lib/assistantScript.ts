@@ -171,3 +171,16 @@ export function findPregunta(preguntaId: string): Pregunta | null {
   }
   return null;
 }
+
+// Paso 2 -- el lector del guion: todas las preguntas de una pista, en
+// el mismo orden en que aparecen los espacios (ESPACIOS arriba), y
+// cuál es "la pregunta de ahora" dado el set de IDs ya respondidas en
+// esta sesión. S2 (una pregunta por vez) se apoya en esto para no
+// tener que saber nada de orden -- solo pide "la siguiente".
+export function preguntasDePista(pista: PistaId): Pregunta[] {
+  return espaciosDePista(pista).flatMap((e) => e.preguntas);
+}
+
+export function primeraPreguntaSinResponder(pista: PistaId, respondidasIds: ReadonlySet<string>): Pregunta | null {
+  return preguntasDePista(pista).find((p) => !respondidasIds.has(p.id)) ?? null;
+}
