@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.91.0";
+export const APP_VERSION = "1.92.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.92.0",
+    date: "2026-10-08",
+    notes:
+      "Asistente \"Configura tu LyCard\" v2 -- S1 suma el botón \"Continuar\" (uno por pista, solo donde hay de verdad una pregunta sin responder): abre el modo que avanza solo, el mismo que ya existía pero se había quedado sin ningún botón real que lo abriera desde que S0 empezó a mandar a S1 en vez de a S2 directo. El camino de una pregunta por vez (tocar cada fila) sigue exactamente igual.",
+  },
   {
     version: "1.91.0",
     date: "2026-10-08",

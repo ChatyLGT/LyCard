@@ -10297,3 +10297,51 @@ del tile "Tu Tarjeta" con los 3 botones.
 
 Sigue sin mergear a main. Nada de Paso 4 todavía -- esperando la
 confirmación de Neon y la prueba de Gunnar desde el celular.
+
+## 2026-10-08 (de madrugada, segunda vuelta) -- Asistente: botón "Continuar" en S1 (v1.92.0)
+
+Respuesta de Gunnar a la duda del reporte anterior: sí al botón, uno
+por pista, que abra el modo que avanza solo. El camino de una pregunta
+por vez (tocar cada fila) no se toca.
+
+**"Continuar"** -- en `app/c/[slug]/asistente/indice/page.tsx`, junto
+al título de cada pista, un botón dorado chico que aparece **solo**
+si `primeraPreguntaSinResponder` (lib/assistantScript.ts, ya existía
+desde el Paso 2) encuentra algo pendiente en esa pista. Link directo a
+`/asistente/pista/[pistaId]` **sin** `?pregunta=` ni `volver=` --
+exactamente el mismo modo de avance normal de S2 que ya estaba
+construido y probado desde el Paso 2, solo que hasta ahora ningún
+botón lo abría. Al guardar, S2 sigue de largo sola hacia la próxima
+pregunta sin responder de esa pista (comportamiento sin cambios); si
+ya no queda ninguna, vuelve a S0, también sin cambios.
+
+Hoy en la práctica solo "Tu programa" puede mostrar el botón (es la
+única pista con preguntas reales cargadas) -- "Tu tarjeta personal" y
+"Tu tarjeta de negocio" no lo muestran nunca, porque no tienen ninguna
+pregunta a la que avanzar (mismo criterio honesto que el resto del
+índice). Una vez respondidas las 2 preguntas de Medalla, el botón
+desaparece solo.
+
+**Mapa de clics hasta el botón nuevo**: `/admin` → tile "Tu Tarjeta" →
+S0 → cualquier pista o "Ver todo" → **S1** → botón "Continuar" (junto
+al título de la pista, si hay algo pendiente) → S2 en modo avance
+normal.
+
+**Confirmado**: S1 muestra los **14 modales reales** (los 13 que lista
+el documento más `ai_agent`, que el documento no menciona en su texto
+pero que sí existe en `lib/modalEditor.ts` y ya estaba en el guion
+desde la Tarea 0) -- conté `ESPACIOS.filter(e => e.tipo === "modal")`
+directo contra el código: 14, ni uno más ni uno menos.
+
+**Verificación**: `npx tsc --noEmit`, `pnpm lint` (0 errores nuevos),
+`pnpm test:unit:coverage` (100%, sin lógica pura nueva -- el botón usa
+una función que ya tenía sus tests), `pnpm build`, 3 tests nuevos en
+`assistant-s1-s5.spec.ts` (el botón aparece solo en "Tu programa" con
+el href correcto, entrar por él muestra el modo de avance normal --
+sin "Editando una respuesta guardada" ni "Volver sin guardar" --, y
+desaparece una vez respondidas las 2 preguntas), suite Playwright
+completa: 99/99 verde. Captura real de S1 con el botón visible junto a
+"Tu programa" y ausente en las otras dos pistas.
+
+Sigue sin mergear a main. Nada de Paso 4 todavía -- esperando la
+confirmación de Neon y la prueba de Gunnar desde el celular.

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { currentAdminScope, isMasterN0Scope } from "@/lib/auth";
-import { PISTAS, espaciosDePista, estadoEspacio, type Espacio, type EstadoEspacio } from "@/lib/assistantScript";
+import { PISTAS, espaciosDePista, estadoEspacio, primeraPreguntaSinResponder, type Espacio, type EstadoEspacio } from "@/lib/assistantScript";
 
 export const dynamic = "force-dynamic";
 
@@ -81,6 +81,7 @@ export default async function AsistenteS1Page({ params }: { params: Promise<{ sl
     select: { preguntaId: true, estado: true },
   });
   const estadosRespuestas = new Map(respuestas.map((r) => [r.preguntaId, r.estado]));
+  const respondidasIds = new Set(estadosRespuestas.keys());
 
   return (
     <div style={{ minHeight: "100vh", background: "#131313", color: "#e5e2e1", fontFamily: "'Plus Jakarta Sans',sans-serif", padding: "0 0 60px" }}>
@@ -122,11 +123,40 @@ export default async function AsistenteS1Page({ params }: { params: Promise<{ sl
           Decisiones abiertas
         </Link>
 
-        {PISTAS.map((pista) => (
+        {PISTAS.map((pista) => {
+          // Pedido de Gunnar (2026-10-08, vía MAMEN): "Continuar" --
+          // el modo que avanza solo (sin `?pregunta=`, ver S2) sigue
+          // existiendo, pero antes de este botón no tenía ningún link
+          // real que lo abriera. Uno por pista, solo si de verdad hay
+          // una pregunta sin responder a la que avanzar; el camino de
+          // una pregunta por vez (tocar cada fila) sigue igual, sin
+          // tocarlo.
+          const siguientePendiente = primeraPreguntaSinResponder(pista.id, respondidasIds);
+          return (
           <div key={pista.id} id={`pista-${pista.id}`} style={{ display: "flex", flexDirection: "column", gap: 10, scrollMarginTop: 90 }}>
-            <h2 style={{ margin: 0, font: "600 13px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#C8A15A" }}>
-              {pista.titulo}
-            </h2>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+              <h2 style={{ margin: 0, font: "600 13px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#C8A15A" }}>
+                {pista.titulo}
+              </h2>
+              {siguientePendiente && (
+                <Link
+                  href={`/c/${slug}/asistente/pista/${pista.id}`}
+                  style={{
+                    padding: "5px 12px",
+                    borderRadius: 999,
+                    background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)",
+                    color: "#0D0D0D",
+                    font: "700 9.5px 'Plus Jakarta Sans',sans-serif",
+                    letterSpacing: ".06em",
+                    textTransform: "uppercase",
+                    textDecoration: "none",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Continuar →
+                </Link>
+              )}
+            </div>
 
             {pista.id === "negocio" ? (
               <div style={CARD}>
@@ -140,7 +170,8 @@ export default async function AsistenteS1Page({ params }: { params: Promise<{ sl
               ))
             )}
           </div>
-        ))}
+          );
+        })}
 
         {/* Pedido de Gunnar (2026-10-08, vía MAMEN): toda pantalla del
             asistente necesita un camino de vuelta al Dashboard. */}

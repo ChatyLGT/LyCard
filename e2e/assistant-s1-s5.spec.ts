@@ -77,6 +77,30 @@ test.describe("Asistente Configura tu LyCard -- S1 (índice) + S5 (decisiones ab
     await expect(page.getByText("Datos básicos")).toBeVisible();
     await expect(page.getByText("Pendiente, sin tarjeta todavía")).toBeVisible();
     await expect(page.getByRole("link", { name: "Decisiones abiertas" })).toBeVisible();
+
+    // Pedido de Gunnar (2026-10-08, vía MAMEN): "Continuar" por pista,
+    // solo donde de verdad hay una pregunta pendiente -- "Tu programa"
+    // (medal.mide/medal.fuente sin responder), nunca en "Tu tarjeta
+    // personal" ni "Tu tarjeta de negocio" (sin guion/sin tarjeta).
+    await expect(page.getByRole("link", { name: "Continuar →" })).toHaveCount(1);
+    await expect(page.getByRole("link", { name: "Continuar →" })).toHaveAttribute("href", "/c/mastern0/asistente/pista/programa");
+  });
+
+  test("'Continuar' entra al modo que avanza solo (sin volver a S1 entre pregunta y pregunta)", async ({ browser }) => {
+    const context = await browser.newContext();
+    await context.addCookies([{ ...(await mintAdminCookie(masterN0AdminId)), url: BASE_URL }]);
+    const page = await context.newPage();
+
+    await page.goto(`${BASE_URL}/c/mastern0/asistente/indice`, { waitUntil: "networkidle" });
+    await page.getByRole("link", { name: "Continuar →" }).click();
+
+    // Sin "Editando una respuesta guardada" ni "Volver sin guardar" --
+    // es el modo de avance normal, no una edición puntual.
+    await page.waitForURL(`${BASE_URL}/c/mastern0/asistente/pista/programa`);
+    await expect(page.getByRole("heading", { name: "¿Qué mide el Medallón de Resultados en Legacy?" })).toBeVisible();
+    await expect(page.getByText("Pregunta 1 de 2")).toBeVisible();
+    await expect(page.getByText("Editando una respuesta guardada")).not.toBeVisible();
+    await expect(page.getByText("Salir al mapa")).toBeVisible();
   });
 
   test("responder medal.mide desde S1 guarda y vuelve a S1 (no sigue avanzando por la pista)", async ({ browser }) => {
@@ -180,6 +204,10 @@ test.describe("Asistente Configura tu LyCard -- S1 (índice) + S5 (decisiones ab
 
     await page.goto(`${BASE_URL}/c/mastern0/asistente/indice`, { waitUntil: "networkidle" });
     await expect(page.getByRole("link", { name: "Volver al Dashboard" })).toHaveAttribute("href", "/admin");
+    // Las 2 preguntas de Medalla ya están respondidas a esta altura de
+    // la suite (tests anteriores) -- "Continuar" ya no tiene nada a
+    // donde avanzar, así que desaparece.
+    await expect(page.getByRole("link", { name: "Continuar →" })).toHaveCount(0);
 
     await page.goto(`${BASE_URL}/c/mastern0/asistente/pista/programa?pregunta=medal.mide&volver=indice`, { waitUntil: "networkidle" });
     await expect(page.getByRole("link", { name: "Volver al Dashboard" })).toHaveAttribute("href", "/admin");
