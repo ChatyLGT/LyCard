@@ -9980,3 +9980,52 @@ Miembro + asignar puerta desde `/empleados`, cookie de empleado
 rebotada en `/admin/programs/[id]`, credenciales de empleado
 rechazadas en `/admin/login`), suite Playwright completa: 75/75
 verde.
+
+## 2026-10-08 -- Centro de Mando: el Home real donde aterriza Gunnar (v1.87.0)
+
+Gunnar mandó un screenshot de lo que ve al entrar con su cuenta de
+Google: "Roster Legacy" (`/admin`, la pantalla CRUD plana de Cards
+sueltas, de ANTES de que existiera el sistema de Programas). Su
+reclamo: "no tenemos un Dashboard donde aterrice yo y pueda ver temas
+de la tarjeta o el Dashboard o empleados o metodología". Diagnóstico
+confirmado: todo lo que pedía ya existía (su Card `mastern0`, el
+Dashboard de Legacy en `/admin/programs/[id]`, el Panel de Empleados
+de v1.86.0, el Whitepaper/Menú de Acceso en
+`docs/WHITEPAPER-ADENDA-2026-10-07.md`) -- faltaba el lugar que lo
+reuniera, porque login (clásico y Google) manda a `/admin` por
+default, y `/admin` seguía siendo ese Roster viejo.
+
+Consultado sobre qué va en "Metodología" (no había contenido con ese
+nombre), Gunnar eligió linkear el Whitepaper ya escrito en vez de
+redactar contenido nuevo.
+
+**Diseño**: `app/admin/page.tsx` pasa de Roster a Centro de Mando, sin
+tocar login/OAuth (ya mandaban a `/admin` por default -- arreglar qué
+hay ADENTRO alcanzaba). 4 tiles arriba:
+- **Tu Tarjeta** -- Card `slug: "mastern0"` (el identificador fijo que
+  usa todo el historial del proyecto desde v1.68.x), Ver/Editar.
+- **Dashboard** -- el `Program` con `isRoot: true` (Legacy), directo a
+  `/admin/programs/{id}`, sin que Gunnar tenga que buscarlo en una
+  lista.
+- **Panel de Empleados** -- link a `/empleados/login` + un atajo
+  "Crear cuenta →" a `/admin/programs/{id}?focus=admins`, un
+  `focus` nuevo que suma una condición al `defaultOpen` ya existente
+  de la sección "N0 de este Programa" (mismo patrón que
+  `officeSkills`/`motivationalPhrases` ya usaban con ese query param).
+- **Metodología** -- nueva `/admin/metodologia`, lee
+  `docs/WHITEPAPER-ADENDA-2026-10-07.md` del filesystem
+  (`fs/promises.readFile`, `path.join(process.cwd(), ...)`) y lo
+  muestra `pre-wrap` -- cero librería de markdown nueva, con fallback
+  honesto si el archivo no está trazado en el deploy.
+
+El Roster viejo (form "Nueva LyCard" + Cards agrupadas por Programa +
+"Sin Programa") no se borró -- bajó a una `AccordionSection`
+colapsada "Administración clásica", mismo `components/Accordion.tsx`
+que usa toda la plataforma. Cero funcionalidad perdida.
+
+**Verificación**: `npx tsc --noEmit`, `pnpm lint` (0 errores nuevos),
+`pnpm test:unit:coverage` (100%, 349 tests), `pnpm build`, nuevo
+`e2e/admin-home.spec.ts` (los 4 tiles con sus links reales, el Roster
+viejo sigue funcionando colapsado, `focus=admins` abre la sección de
+un tirón, Metodología muestra contenido real del Whitepaper -- no un
+placeholder), suite Playwright completa: 78/78 verde.

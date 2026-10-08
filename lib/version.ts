@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.86.0";
+export const APP_VERSION = "1.87.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.87.0",
+    date: "2026-10-08",
+    notes:
+      "Centro de Mando: Gunnar mandó screenshot de lo que ve al loguearse con Google -- el Roster Legacy viejo (la pantalla CRUD plana de Cards sueltas, de antes de que existiera el sistema de Programas) -- y fue directo: \"no tenemos un Dashboard donde aterrice yo y pueda ver temas de la tarjeta o el Dashboard o empleados o metodología\". Todo lo que pedía ya existía en la plataforma (su Card, el Dashboard de Legacy, el Panel de Empleados de v1.86.0, el Whitepaper/Menú de Acceso) -- solo faltaba un lugar que lo reuniera, porque /admin (donde cae todo login por default) seguía siendo ese Roster viejo. Ahora /admin abre con 4 tiles reales: Tu Tarjeta (mastern0), Dashboard (el Programa isRoot -- Legacy -- directo, sin buscarlo), Panel de Empleados (link a /empleados/login + atajo \"Crear cuenta\" que abre de una la sección de N0 vía un nuevo focus=admins) y Metodología (nueva pantalla /admin/metodologia que lee docs/WHITEPAPER-ADENDA-2026-10-07.md del filesystem y lo muestra tal cual -- cero librería de markdown nueva, el doc ya es texto plano legible). El Roster viejo no se borró -- bajó a una sección colapsada \"Administración clásica\", mismo form \"Nueva LyCard\" y mismas Cards de siempre, un click más lejos en vez de ser lo primero que se ve.",
+  },
   {
     version: "1.86.0",
     date: "2026-10-07",

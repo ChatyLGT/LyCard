@@ -1048,7 +1048,7 @@ export default async function AdminProgramDetailPage({
           <AccordionSection
             title="N0 de este Programa"
             meta={<span style={PILL}>{program.admins.length}</span>}
-            defaultOpen={Boolean(adminCreated || adminError)}
+            defaultOpen={Boolean(adminCreated || adminError || focus === "admins")}
           >
             {adminCreated && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ N0 creado.</p>}
             {adminError && (
