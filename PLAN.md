@@ -10029,3 +10029,74 @@ que usa toda la plataforma. Cero funcionalidad perdida.
 viejo sigue funcionando colapsado, `focus=admins` abre la sección de
 un tirón, Metodología muestra contenido real del Whitepaper -- no un
 placeholder), suite Playwright completa: 78/78 verde.
+
+## 2026-10-08 (tarde) -- Asistente "Configura tu LyCard" v2, Paso 1: botón + S0 (v1.88.0)
+
+Orden de trabajo de Gunnar: construir el asistente paso a paso del
+documento `DISENO_COMPLETO_ASISTENTE_CONFIGURA_TU_LYCARD_v2` (Drive),
+en el orden que marcó (botón+S0, lector del guion+S2, presets del
+programa, S1+S5, S3, S4), solo modos Rápido (Detallado queda
+"Próximamente"), con paradas obligatorias antes de migrar y antes de
+unir a main, y trabajando en rama con Vercel Preview.
+
+**Tarea 0 (lectura)**: confirmado dónde vive cada pieza que el
+asistente necesita tocar -- el QR en `components/LyCardView.tsx`
+(rama central del podio), los modales vía
+`lib/modalEditor.ts`/`MODAL_EDITOR_ENTRIES` (14 entradas), los campos
+del Programa como `Json` directo en `Program` (sin tabla de borrador
+separada hoy), y que no existe ningún mecanismo de borrador
+desacoplado de lo publicado -- confirmando que hacía falta schema
+nuevo para eso. `Card` no tiene tabla propia de "tarjeta de negocio":
+es `kind` sobre el mismo modelo `Card`.
+
+**Decisiones de Gunnar tras el reporte**: migración aprobada (solo
+tablas nuevas, cero `ALTER` sobre lo existente), probarla primero en
+una rama de Neon, mostrarle el SQL antes de aplicarla en la base
+compartida, y que Publicar (S4, a futuro) escriba siempre a través de
+las acciones de servidor existentes. "Puestos" queda afuera como
+decisión abierta. Pista de negocio: sin crear tarjeta, fija en
+"Pendiente, sin tarjeta todavía". Textos en tuteo ("tú").
+
+**Schema nuevo** (3 tablas, cero `ALTER` sobre tablas existentes):
+`AssistantSession` (una por Admin+Card, estado "en_curso"),
+`AssistantAnswer` (respuesta por pregunta, versionada), y
+`AssistantDraft` (borrador por espacio, con su contenido publicado
+anterior para poder comparar en S3/S4 a futuro). Migración a mano
+probada primero contra una rama real de Neon vía un build de Vercel
+Preview (este sandbox no puede hacer conexiones Postgres de TCP crudo
+-- limitación categórica del entorno, no por host -- así que el Preview
+de Vercel con un `DATABASE_URL` de Preview apuntado a la rama de Neon
+fue el vehículo de prueba real), SQL revisado por Gunnar antes de
+aplicarla en la base compartida.
+
+**`lib/assistantScript.ts`** -- el guion como dato puro (sin DB, sin
+`"use server"`): 3 pistas (personal/negocio/programa), el catálogo de
+espacios editables (los 14 modales + 8 campos de Programa + 2
+personales), y de momento solo 2 preguntas reales de ejemplo (medalla:
+qué mide, de dónde sale el dato) -- el resto del guion llega en el
+Paso 2. 100% cobertura.
+
+**Botón + S0**: en la Card `isOrigin` (hoy `mastern0`), un viewer
+MasterN0 (`isMasterN0Scope`, más estricto que `isAdmin`/`isHost`) ve
+un botón dorado "Configura tu LyCard" en el lugar del QR -- o "Seguir
+configurando" si ya tiene una sesión. Abre `/c/[slug]/asistente` (S0):
+crea la `AssistantSession` si no existe (nunca pisa una existente),
+muestra las 3 pistas con su conteo real, el selector
+Rápido/Detallado (Detallado inerte), y un aviso honesto de que el
+índice completo (S1) llega en el próximo paso. "Dueño de esa tarjeta"
+se resuelve en esta fase como `card.isOrigin` -- no hay hoy un
+mecanismo genérico de "tarjeta propia de un Admin clásico", y
+resolverlo de forma general queda fuera de alcance de este paso.
+
+**Verificación**: `npx tsc --noEmit`, `pnpm lint` (0 errores nuevos),
+`pnpm test:unit:coverage` (100%), `pnpm build`, nuevo
+`e2e/assistant-s0.spec.ts` (MasterN0 ve el botón y S0 crea la sesión
+real; al volver dice "Seguir configurando" sin duplicar sesión; un N0
+escopeado a un Programa no ve el botón ni entra a S0; un visitante
+anónimo ve el QR real de siempre), suite Playwright completa: 82/82
+verde. Verificación visual además con captura real de navegador
+(Chromium headless, cookie de sesión real) de ambas pantallas.
+
+Sin mergear a main -- queda en `feature/asistente-configura-tu-lycard`
+con Vercel Preview, a la espera de que Gunnar lo pruebe desde el
+celular antes del Paso 2 (lector del guion + S2).

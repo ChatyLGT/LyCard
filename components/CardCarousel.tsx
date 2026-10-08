@@ -30,12 +30,20 @@ export default function CardCarousel({
   isAdmin,
   isHost,
   isAuthenticatedOwner,
+  isMasterN0,
+  assistantSessionEstado,
 }: {
   cards: CarouselBundle[];
   initialSlug: string;
   isAdmin: boolean;
   isHost: boolean;
   isAuthenticatedOwner: boolean;
+  // Asistente "Configura tu LyCard" v2 (2026-10-08) -- ver
+  // components/LyCardView.tsx. Compartido por las 3 Cards del
+  // carrusel (es sobre el VIEWER, no por Card puntual); cada
+  // LyCardView decide si lo muestra según su propio `card.isOrigin`.
+  isMasterN0?: boolean;
+  assistantSessionEstado?: string | null;
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const initialIndex = Math.max(
@@ -132,6 +140,8 @@ export default function CardCarousel({
               isAdmin={isAdmin}
               isHost={isHost}
               isAuthenticatedOwner={isAuthenticatedOwner}
+              isMasterN0={isMasterN0}
+              assistantSessionEstado={assistantSessionEstado}
               badge={c.badge}
               originMemento={c.originMemento}
               program={c.program}

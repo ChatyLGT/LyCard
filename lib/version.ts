@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.87.0";
+export const APP_VERSION = "1.88.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.88.0",
+    date: "2026-10-08",
+    notes:
+      "Asistente \"Configura tu LyCard\" v2, Paso 1: en la tarjeta mastern0, MasterN0 ve un botón dorado (reemplaza el QR) que abre S0, la pantalla de entrada del asistente paso a paso. Crea una AssistantSession real al entrar (o retoma la que ya existía -- el botón cambia a \"Seguir configurando\"), muestra las 3 pistas (personal/negocio/programa) con su conteo, el selector Rápido/Detallado (Detallado marcado \"Próximamente\", sin acción), y el modo negocio fijo en \"Pendiente, sin tarjeta todavía\" por ahora. 3 tablas nuevas en la base (AssistantSession/AssistantAnswer/AssistantDraft), ninguna existente tocada -- probado primero en una rama de Neon antes de aplicarse acá. El lector del guion (S2, con las dos preguntas de ejemplo de \"medalla\") y el resto de las pantallas quedan para los próximos pasos.",
+  },
   {
     version: "1.87.0",
     date: "2026-10-08",

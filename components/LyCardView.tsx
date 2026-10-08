@@ -881,6 +881,8 @@ export default function LyCardView({
   isAdmin,
   isHost,
   isAuthenticatedOwner,
+  isMasterN0,
+  assistantSessionEstado,
   badge,
   originMemento,
   program,
@@ -903,6 +905,16 @@ export default function LyCardView({
   // sea sin sesión; esto es solo para gatear detalles que son "para el
   // dueño real", como la islita de versión.
   isAuthenticatedOwner: boolean;
+  // Asistente "Configura tu LyCard" v2 (2026-10-08) -- el botón de
+  // entrada reemplaza el QR SOLO en la Card marcada isOrigin para un
+  // viewer MasterN0 (Fase 1 del asistente: "en su propia tarjeta el
+  // botón reemplaza al QR, porque no tiene que invitarse a sí mismo a
+  // nada"). `isMasterN0` es más angosto que `isAdmin` (que incluye
+  // también a un N0 escopeado a un Programa) -- ver isMasterN0Scope en
+  // lib/authScope.ts. Opcional porque CardCarousel (varias Cards del
+  // mismo Member) todavía no resuelve la sesión por Card individual.
+  isMasterN0?: boolean;
+  assistantSessionEstado?: string | null;
   // Viewer-relative N0/N1/.../NA (2026-09-16) — replaces the old
   // isAdmin-only "N0" badge; see lib/badge.ts for how it's computed.
   badge: string;
@@ -2402,6 +2414,51 @@ export default function LyCardView({
                   Escanear QR
                 </span>
               </button>
+            ) : isMasterN0 && isHost && card.isOrigin ? (
+              // Asistente "Configura tu LyCard" v2 (2026-10-08, Paso 1) --
+              // reemplaza el QR SOLO acá: la Card marcada isOrigin (hoy
+              // "mastern0"), vista por su propio MasterN0. "En su propia
+              // tarjeta el botón reemplaza al QR, porque no tiene que
+              // invitarse a sí mismo a nada" (doc de diseño, sección 2.1).
+              // Fase 1 -- restringido a esta Card puntual a propósito, no
+              // a "cualquier Card que un MasterN0 pueda administrar": la
+              // resolución genérica de "dueño real" por peldaño queda
+              // [PEND] (sección 2.2/12.5 del doc), no se resuelve acá.
+              <Link
+                href={`/c/${card.slug}/asistente`}
+                aria-label={assistantSessionEstado ? "Seguir configurando" : "Configura tu LyCard"}
+                style={{
+                  position: "relative",
+                  flex: "none",
+                  width: "clamp(calc(84px*var(--scale-qrBtn,1)),calc(15dvh*var(--scale-qrBtn,1)),calc(140px*var(--scale-qrBtn,1)))",
+                  height: "clamp(calc(84px*var(--scale-qrBtn,1)),calc(15dvh*var(--scale-qrBtn,1)),calc(140px*var(--scale-qrBtn,1)))",
+                  borderRadius: 20,
+                  background: "linear-gradient(160deg,var(--accentLight,#E5C378),var(--accentMid,#C8A15A) 55%,var(--accentDeep,#99732B))",
+                  border: "1px solid rgba(255,230,163,.5)",
+                  boxShadow: "0 12px 36px rgba(var(--accentRgb,200,161,90),.45)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  padding: 10,
+                  color: "var(--onAccent,#141414)",
+                  textDecoration: "none",
+                }}
+              >
+                <Icon name="auto_awesome" size={32} />
+                <span
+                  style={{
+                    font: "800 10.5px var(--brandFont,'Plus Jakarta Sans'),sans-serif",
+                    letterSpacing: ".06em",
+                    textTransform: "uppercase",
+                    textAlign: "center",
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {assistantSessionEstado ? "Seguir configurando" : "Configura tu LyCard"}
+                </span>
+              </Link>
             ) : isHost ? (
               <button
                 type="button"

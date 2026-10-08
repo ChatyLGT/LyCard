@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { currentAdminScope } from "@/lib/auth";
+import { currentAdminScope, isMasterN0Scope } from "@/lib/auth";
 import { currentMemberId } from "@/lib/memberAuth";
 import { buildCardMetadata } from "@/lib/cardMetadata";
 import { parseShareScope } from "@/lib/shareScope";
@@ -77,6 +77,23 @@ export default async function CardPage({
   // debería ver la islita de versión.
   const isAuthenticatedOwner = isAdmin || (memberId !== null && memberId === card.memberId);
 
+  // Asistente "Configura tu LyCard" v2 (2026-10-08) -- el botón solo
+  // existe en la Card isOrigin para un viewer MasterN0 (ver
+  // components/LyCardView.tsx para el porqué de restringirlo a esa
+  // Card puntual en esta fase). La sesión se busca, nunca se crea acá
+  // -- crearla es trabajo de S0 (app/c/[slug]/asistente), esto es solo
+  // para que el botón sepa decir "Configura tu LyCard" o "Seguir
+  // configurando".
+  const isMasterN0 = isAdmin && adminScope !== null && isMasterN0Scope(adminScope);
+  const assistantSession =
+    isMasterN0 && card.isOrigin && adminScope
+      ? await prisma.assistantSession.findFirst({
+          where: { adminId: adminScope.id, cardId: card.id },
+          orderBy: { updatedAt: "desc" },
+          select: { estado: true },
+        })
+      : null;
+
   // Gate de tarjeta completa para Invitado/Visitante Especial (2026-10-05,
   // pedido de Gunnar) -- si este link `?para=` tiene palabra secreta
   // cargada, la Card ENTERA queda detrás de ese gate hasta confirmarla
@@ -117,6 +134,8 @@ export default async function CardPage({
         isAdmin={isAdmin}
         isHost={isHost}
         isAuthenticatedOwner={isAuthenticatedOwner}
+        isMasterN0={isMasterN0}
+        assistantSessionEstado={assistantSession?.estado ?? null}
         badge={b.badge}
         originMemento={b.originMemento}
         program={b.program}
@@ -127,5 +146,15 @@ export default async function CardPage({
     );
   }
 
-  return <CardCarousel cards={bundles} initialSlug={slug} isAdmin={isAdmin} isHost={isHost} isAuthenticatedOwner={isAuthenticatedOwner} />;
+  return (
+    <CardCarousel
+      cards={bundles}
+      initialSlug={slug}
+      isAdmin={isAdmin}
+      isHost={isHost}
+      isAuthenticatedOwner={isAuthenticatedOwner}
+      isMasterN0={isMasterN0}
+      assistantSessionEstado={assistantSession?.estado ?? null}
+    />
+  );
 }
