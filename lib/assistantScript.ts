@@ -184,3 +184,20 @@ export function preguntasDePista(pista: PistaId): Pregunta[] {
 export function primeraPreguntaSinResponder(pista: PistaId, respondidasIds: ReadonlySet<string>): Pregunta | null {
   return preguntasDePista(pista).find((p) => !respondidasIds.has(p.id)) ?? null;
 }
+
+export function espacioDePregunta(preguntaId: string): Espacio | null {
+  return ESPACIOS.find((e) => e.preguntas.some((p) => p.id === preguntaId)) ?? null;
+}
+
+// Paso 3 -- S1 (doc, 5.2): el chip de estado de un espacio. "aprobado"
+// no es alcanzable todavía (hace falta S3, Paso 4) -- no se construye
+// un estado que nada en el código puede producir hoy.
+export type EstadoEspacio = "pendiente" | "propuesto" | "abierto";
+
+export function estadoEspacio(espacio: Espacio, estadosRespuestas: ReadonlyMap<string, string>): EstadoEspacio {
+  if (espacio.preguntas.length === 0) return "pendiente";
+  const estados = espacio.preguntas.map((p) => estadosRespuestas.get(p.id) ?? null);
+  if (estados.some((e) => e === "abierto")) return "abierto";
+  if (estados.some((e) => e !== null)) return "propuesto";
+  return "pendiente";
+}

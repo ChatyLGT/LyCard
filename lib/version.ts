@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.89.0";
+export const APP_VERSION = "1.90.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.90.0",
+    date: "2026-10-08",
+    notes:
+      "Asistente \"Configura tu LyCard\" v2, Paso 2b + Paso 3: presets del programa + S1 (índice completo) + S5 (decisiones abiertas), con edición de respuestas ya guardadas. S1 muestra el mapa entero -- las 3 pistas, los 13 modales y los campos del programa, cada uno con su estado real (Pendiente / Propuesto / Decisión abierta), incluidos los que todavía no tienen guion (\"Sin guion aún\", en vez de ocultarlos). Desde ahí, tocar cualquier pregunta -- respondida o no -- la abre en S2 precargada con lo último guardado y, al guardar, vuelve al índice en vez de seguir avanzando por la pista (pedido de Gunnar al aprobar el Paso 2). S5 junta todo lo marcado \"Todavía no sé\", más antiguo primero, con el mismo mecanismo de edición -- resolverla ahí la saca de la lista. La prioridad al mostrar una propuesta es ahora la del documento: respuesta del usuario > preset del Programa > propuesta del guion -- el preset real de Legacy queda vacío a propósito (nada de inventar valores de negocio; eso se carga después, con N0, usando el propio asistente).",
+  },
   {
     version: "1.89.0",
     date: "2026-10-08",

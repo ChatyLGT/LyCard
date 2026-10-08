@@ -10154,3 +10154,81 @@ Playwright completa: 90/90 verde (sin regresión en
 Sin mergear a main -- sigue en `feature/asistente-configura-tu-lycard`
 con Vercel Preview, a la espera de que Gunnar lo pruebe y dé luz verde
 para el Paso 3 (presets del programa).
+
+## 2026-10-08 (madrugada siguiente) -- Asistente: Paso 2b + Paso 3, S1 + S5 + edición (v1.90.0)
+
+Gunnar aprobó el Paso 2 y pidió, en el mismo mensaje, saltar directo a
+2b (presets) y 3 (S1+S5) del documento, con un agregado propio: poder
+volver a editar una respuesta ya guardada desde S1 -- el doc original
+solo preveía S2 avanzando hacia adelante. Antes de construir, releí el
+documento completo de nuevo (Drive) para no improvisar el diseño de
+S1/S5/presets con la memoria de la Tarea 0.
+
+**Consulta pendiente de Gunnar**: pidió confirmar en la base de la
+rama de Neon que `medal.fuente` quedó como "Todavía no sé". No pude
+hacerlo yo mismo -- los hosts de Neon siguen bloqueados para este
+sandbox por política de organización (confirmado de nuevo, esta vez
+probando también la vía HTTP del driver serverless de Neon, rechazada
+igual, 403 por política, no por TCP crudo). Le pasé el SQL de una
+línea para que lo corra él mismo en el editor de Neon.
+
+**Paso 2b -- presets del programa** (`lib/assistantPresets.ts`, doc
+6.2.1): archivo de datos aparte del guion, `PRESETS` por slug de
+Programa. Prioridad al mostrar una propuesta en S2: respuesta del
+usuario (si ya existe) > preset del Programa > propuesta del guion.
+El único preset real, el de Legacy, queda **vacío a propósito** -- el
+documento mismo dice "puede estar casi vacío" y marca varios niveles
+(como de dónde sale el Resultado de un negocio) como todavía sin
+decidir; no se inventó ningún valor de negocio para llenarlo. Duda
+honesta: la Card `mastern0` (la única que usa el asistente hoy) tiene
+`programId: null` -- no tiene un "programa que la invitó" -- así que
+el preset de Legacy no tiene hoy ningún lugar real donde aplicarse
+para Gunnar. El mecanismo está construido y probado (unit tests con
+datos sintéticos); se vuelve visible el día que el asistente trabaje
+sobre la tarjeta de un Miembro real de un Programa.
+
+**Paso 3 -- S1 · Índice** (`app/c/[slug]/asistente/indice/page.tsx`,
+doc 5.2): el mapa completo, agrupado por pista -- las 3 pistas, los 13
+modales y los 8 campos del Programa, cada espacio con su chip de
+estado real (`Pendiente` / `Propuesto` / `Decisión abierta`, calculado
+por `lib/assistantScript.ts#estadoEspacio` a partir de las respuestas
+de la sesión). Los espacios sin guion todavía aparecen igual, con
+"Sin guion aún" (criterio de aceptación #8 del doc), en vez de
+esconderse. S0 cambió para mandar acá en vez de a S2 directo (doc:
+"elegir una pista lleva a S1 filtrado a esa pista") -- las 3 tarjetas
+de S0 son ahora siempre un link, negocio incluida.
+
+**Edición de respuestas ya guardadas** (pedido de Gunnar): S2
+(`.../pista/[pistaId]`) acepta `?pregunta=<id>&volver=indice|abiertas`
+-- abre ESA pregunta puntual, respondida o no, precargada con lo
+último guardado (no con la propuesta estática), y al guardar vuelve a
+S1 o S5 en vez de seguir avanzando por la pista. `responderPreguntaAction`
+ahora recibe `volver` para saber adónde redirigir. Verificado con un
+ciclo completo: responder → volver a tocar la misma pregunta → ver el
+valor guardado precargado (no la propuesta del guion) → cambiarlo →
+confirmar que sigue siendo la misma fila en la base (no duplicó).
+
+**Paso 3 -- S5 · Decisiones abiertas**
+(`app/c/[slug]/asistente/decisiones-abiertas/page.tsx`, doc 5.6): lista
+de todo lo marcado "Todavía no sé" en la sesión, más antiguo primero,
+cada fila con su espacio y pregunta reales. Tocar una fila abre esa
+pregunta en S2 (mismo mecanismo de edición) y, al resolverla, vuelve a
+S5 -- ya no aparece en la lista. "Exportar lista" (opcional en el doc,
+"si es barato") se dejó afuera de esta entrega.
+
+**Verificación**: `npx tsc --noEmit`, `pnpm lint` (0 errores nuevos),
+`pnpm test:unit:coverage` (100%, 371 tests -- 8 nuevos sobre
+`estadoEspacio`/`espacioDePregunta`/`presetDePrograma`), `pnpm build`,
+nuevo `e2e/assistant-s1-s5.spec.ts` (6 tests: mapa completo real,
+responder desde S1 vuelve a S1, reeditar una respuesta la precarga y
+la actualiza sin duplicar fila, decisión abierta aparece en S5 y
+resolverla la saca, guardas de escopeado/anónimo), `e2e/assistant-s2.spec.ts`
+ajustado al nuevo flujo S0→S1→S2 (seguía probando el link directo
+viejo), suite Playwright completa: 96/96 verde. Verificación visual
+con capturas reales de S1 y S5 con datos sembrados a propósito
+(`AssistantAnswer` propuesta + decisión abierta).
+
+Sin mergear a main -- sigue en `feature/asistente-configura-tu-lycard`
+con Vercel Preview, a la espera de que Gunnar lo pruebe desde el
+celular antes del Paso 4 (S3, vista previa real del espacio de
+medalla).

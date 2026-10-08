@@ -2,8 +2,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { currentAdminScope, isMasterN0Scope } from "@/lib/auth";
-import { PISTAS, preguntasDePista, primeraPreguntaSinResponder, type PistaId } from "@/lib/assistantScript";
-import { responderPreguntaAction } from "../../actions";
+import { PISTAS, preguntasDePista, primeraPreguntaSinResponder, findPregunta, type PistaId } from "@/lib/assistantScript";
+import { presetDePrograma } from "@/lib/assistantPresets";
+import { responderPreguntaAction, type VolverDestino } from "../../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -34,20 +35,33 @@ function isPistaId(value: string): value is PistaId {
   return PISTAS.some((p) => p.id === value);
 }
 
-// S2 -- una pregunta por vez (Paso 2 del plan). No necesita el id de
-// la pregunta en la URL: siempre muestra "la pregunta de ahora" de
-// esta pista para esta sesión -- el lector del guion
-// (primeraPreguntaSinResponder) resuelve cuál es. Mismas guardas que
-// S0 (MasterN0 + card.isOrigin) más la verificación extra de que la
-// sesión encontrada es realmente la de este Admin.
+function isVolverDestino(value: string | undefined): value is VolverDestino {
+  return value === "indice" || value === "abiertas";
+}
+
+// S2 -- una pregunta por vez (Paso 2 del plan). Dos modos, misma
+// pantalla:
+// - Avance normal (sin `?pregunta=`): muestra "la pregunta de ahora"
+//   de esta pista -- el lector del guion (primeraPreguntaSinResponder)
+//   resuelve cuál es, y al guardar sigue a la próxima.
+// - Edición (Paso 3, pedido de N0): `?pregunta=<id>&volver=indice|abiertas`
+//   abre ESA pregunta puntual -- ya respondida o no -- precargada con
+//   lo que ya se guardó, y al guardar vuelve a S1 o S5 en vez de seguir
+//   avanzando por la pista.
+// Mismas guardas que S0 (MasterN0 + card.isOrigin) más la verificación
+// extra de que la sesión encontrada es realmente la de este Admin.
 export default async function AsistenteS2Page({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string; pistaId: string }>;
+  searchParams: Promise<{ pregunta?: string; volver?: string }>;
 }) {
   const { slug, pistaId: pistaIdParam } = await params;
+  const { pregunta: preguntaIdParam, volver: volverParam } = await searchParams;
   if (!isPistaId(pistaIdParam)) notFound();
   const pistaId = pistaIdParam;
+  const volver: VolverDestino = isVolverDestino(volverParam) ? volverParam : "siguiente";
 
   const scope = await currentAdminScope();
   if (!scope || !isMasterN0Scope(scope)) redirect(`/c/${slug}`);
@@ -66,17 +80,35 @@ export default async function AsistenteS2Page({
 
   const respuestas = await prisma.assistantAnswer.findMany({
     where: { sessionId: session.id },
-    select: { preguntaId: true },
+    select: { preguntaId: true, valor: true, porque: true },
   });
   const respondidasIds = new Set(respuestas.map((r) => r.preguntaId));
 
-  const pregunta = primeraPreguntaSinResponder(pistaId, respondidasIds);
-  // Ya está todo respondido en esta pista (o nunca tuvo preguntas) --
-  // nada que hacer acá, volvé al mapa.
+  const todas = preguntasDePista(pistaId);
+  const pidiendoEspecifica = typeof preguntaIdParam === "string" && todas.some((p) => p.id === preguntaIdParam);
+  const pregunta = pidiendoEspecifica ? findPregunta(preguntaIdParam!) : primeraPreguntaSinResponder(pistaId, respondidasIds);
+  // Avance normal: ya está todo respondido en esta pista (o nunca tuvo
+  // preguntas) -- nada que hacer acá, volvé al mapa. Edición: el id no
+  // existe (no debería pasar desde nuestros propios links) -- mismo
+  // destino honesto, sin reventar.
   if (!pregunta) redirect(`/c/${slug}/asistente`);
 
-  const todas = preguntasDePista(pistaId);
-  const numero = todas.length - todas.filter((p) => !respondidasIds.has(p.id)).length + 1;
+  const numero = todas.findIndex((p) => p.id === pregunta.id) + 1;
+
+  const respuestaExistente = respuestas.find((r) => r.preguntaId === pregunta.id);
+  const valorExistente = respuestaExistente?.valor as { opcionId?: string } | null | undefined;
+
+  // Paso 2b -- prioridad: respuesta del usuario > preset del programa
+  // (Program.slug de la Card que se está configurando) > propuesta del
+  // guion. "" cuenta como "sin propuesta" (medal.fuente la deja vacía
+  // a propósito, ver lib/assistantScript.ts).
+  const programSlug = card.programId
+    ? ((await prisma.program.findUnique({ where: { id: card.programId }, select: { slug: true } }))?.slug ?? null)
+    : null;
+  const opcionPreseleccionada = valorExistente?.opcionId || presetDePrograma(programSlug, pregunta.id) || pregunta.propuesta || null;
+
+  const volverUrl =
+    volver === "indice" ? `/c/${slug}/asistente/indice` : volver === "abiertas" ? `/c/${slug}/asistente/decisiones-abiertas` : `/c/${slug}/asistente`;
 
   return (
     <div style={{ minHeight: "100vh", background: "#131313", color: "#e5e2e1", fontFamily: "'Plus Jakarta Sans',sans-serif", padding: "0 0 60px" }}>
@@ -103,9 +135,17 @@ export default async function AsistenteS2Page({
       </div>
 
       <div style={{ maxWidth: 560, margin: "0 auto", padding: "24px 20px", display: "flex", flexDirection: "column", gap: 22 }}>
+        {respuestaExistente && (
+          <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".12em", textTransform: "uppercase", color: "#C8A15A" }}>
+            Editando una respuesta guardada
+          </span>
+        )}
         <h1 style={{ margin: 0, font: "500 21px/1.4 'Playfair Display',serif", color: "#F5F2EB" }}>{pregunta.texto}</h1>
 
-        <form action={responderPreguntaAction.bind(null, session.id, slug, pistaId, pregunta.id)} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+        <form
+          action={responderPreguntaAction.bind(null, session.id, slug, pistaId, pregunta.id, volver)}
+          style={{ display: "flex", flexDirection: "column", gap: 18 }}
+        >
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {pregunta.opciones.map((opcion) => (
               <label key={opcion.id} style={OPCION}>
@@ -113,7 +153,7 @@ export default async function AsistenteS2Page({
                   type="radio"
                   name="opcion"
                   value={opcion.id}
-                  defaultChecked={pregunta.propuesta === opcion.id}
+                  defaultChecked={opcionPreseleccionada === opcion.id}
                   style={{ accentColor: "#C8A15A", width: 18, height: 18 }}
                 />
                 <span style={{ font: "500 14px 'Plus Jakarta Sans',sans-serif", color: "#E5E2E1" }}>{opcion.texto}</span>
@@ -129,6 +169,7 @@ export default async function AsistenteS2Page({
               <textarea
                 name="porque"
                 rows={2}
+                defaultValue={respuestaExistente?.porque ?? ""}
                 style={{ resize: "vertical", padding: 12, borderRadius: 10, border: "1px solid rgba(255,255,255,.14)", background: "#1a1919", color: "#E5E2E1", font: "400 14px/1.5 'Plus Jakarta Sans',sans-serif" }}
               />
             </label>
@@ -150,11 +191,8 @@ export default async function AsistenteS2Page({
           )}
         </form>
 
-        <Link
-          href={`/c/${slug}/asistente`}
-          style={{ textAlign: "center", font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A", textDecoration: "none" }}
-        >
-          Salir al mapa
+        <Link href={volverUrl} style={{ textAlign: "center", font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A", textDecoration: "none" }}>
+          {volver === "siguiente" ? "Salir al mapa" : "Volver sin guardar"}
         </Link>
       </div>
     </div>

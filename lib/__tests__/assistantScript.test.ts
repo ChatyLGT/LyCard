@@ -7,6 +7,8 @@ import {
   findPregunta,
   preguntasDePista,
   primeraPreguntaSinResponder,
+  espacioDePregunta,
+  estadoEspacio,
 } from "@/lib/assistantScript";
 
 describe("lib/assistantScript", () => {
@@ -73,5 +75,36 @@ describe("lib/assistantScript", () => {
   it("primeraPreguntaSinResponder da null si ya están todas respondidas, o si la pista no tiene ninguna", () => {
     expect(primeraPreguntaSinResponder("programa", new Set(["medal.mide", "medal.fuente"]))).toBeNull();
     expect(primeraPreguntaSinResponder("personal", new Set())).toBeNull();
+  });
+
+  it("espacioDePregunta encuentra el espacio dueño de una pregunta real", () => {
+    expect(espacioDePregunta("medal.mide")?.id).toBe("medal");
+    expect(espacioDePregunta("medal.fuente")?.id).toBe("medal");
+  });
+
+  it("espacioDePregunta da null si la pregunta no existe", () => {
+    expect(espacioDePregunta("no.existe")).toBeNull();
+  });
+
+  it("estadoEspacio da 'pendiente' si el espacio no tiene guion todavía", () => {
+    const cardInfo = ESPACIOS.find((e) => e.id === "cardInfo")!;
+    expect(estadoEspacio(cardInfo, new Map())).toBe("pendiente");
+  });
+
+  it("estadoEspacio da 'pendiente' si tiene guion pero nada respondido", () => {
+    const medal = ESPACIOS.find((e) => e.id === "medal")!;
+    expect(estadoEspacio(medal, new Map())).toBe("pendiente");
+  });
+
+  it("estadoEspacio da 'propuesto' con al menos una respuesta y ninguna decisión abierta", () => {
+    const medal = ESPACIOS.find((e) => e.id === "medal")!;
+    expect(estadoEspacio(medal, new Map([["medal.mide", "propuesto"]]))).toBe("propuesto");
+    expect(estadoEspacio(medal, new Map([["medal.mide", "propuesto"], ["medal.fuente", "propuesto"]]))).toBe("propuesto");
+  });
+
+  it("estadoEspacio da 'abierto' si al menos una respuesta quedó como decisión abierta", () => {
+    const medal = ESPACIOS.find((e) => e.id === "medal")!;
+    expect(estadoEspacio(medal, new Map([["medal.mide", "propuesto"], ["medal.fuente", "abierto"]]))).toBe("abierto");
+    expect(estadoEspacio(medal, new Map([["medal.fuente", "abierto"]]))).toBe("abierto");
   });
 });

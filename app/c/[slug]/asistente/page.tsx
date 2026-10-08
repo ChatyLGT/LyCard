@@ -135,12 +135,14 @@ export default async function AsistenteS0Page({ params }: { params: Promise<{ sl
           ))}
         </div>
 
-        {/* S1 (el índice completo) todavía no existe -- Paso 3 del
-            plan. Honesto: ni "Ver todo" ni las pistas navegan a nada
-            todavía, en vez de un link roto. */}
-        <p style={{ margin: 0, textAlign: "center", font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
-          El mapa completo de preguntas (S1) llega en el próximo paso.
-        </p>
+        {/* S1 (doc, 5.2): "Ver todo" abre el índice completo sin
+            filtrar a ninguna pista en particular. */}
+        <Link
+          href={`/c/${slug}/asistente/indice`}
+          style={{ textAlign: "center", font: "600 11px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#C8A15A", textDecoration: "none" }}
+        >
+          Ver todo
+        </Link>
 
         <Link
           href={`/c/${slug}`}
@@ -174,14 +176,19 @@ function PistaTile({
   titulo: string;
   respondidasIds: Set<string>;
 }) {
+  // Paso 3 (doc, 5.1): "elegir una pista lleva a S1 filtrado a esa
+  // pista" -- las 3 pistas son siempre un link al índice, negocio
+  // incluida (antes quedaba inerte porque S1 todavía no existía).
   if (pistaId === "negocio") {
     return (
-      <div style={CARD}>
-        <span style={{ font: "600 15px 'Playfair Display',serif", color: "#F5F2EB" }}>{titulo}</span>
-        <span style={{ font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#5A5A5A" }}>
-          Pendiente, sin tarjeta todavía
-        </span>
-      </div>
+      <Link href={`/c/${slug}/asistente/indice#pista-negocio`} style={{ textDecoration: "none" }}>
+        <div style={CARD}>
+          <span style={{ font: "600 15px 'Playfair Display',serif", color: "#F5F2EB" }}>{titulo}</span>
+          <span style={{ font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#5A5A5A" }}>
+            Pendiente, sin tarjeta todavía
+          </span>
+        </div>
+      </Link>
     );
   }
 
@@ -193,28 +200,23 @@ function PistaTile({
   const respondidas = total === 0 ? 0 : preguntasDePista(pistaId).filter((p) => respondidasIds.has(p.id)).length;
   const faltan = total > 0 && respondidas < total;
 
-  const contenido = (
-    <div style={CARD}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-        <span style={{ font: "600 15px 'Playfair Display',serif", color: "#F5F2EB" }}>{titulo}</span>
-        <span style={{ font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#C8A15A" }}>
-          {total === 0 ? "Sin preguntas aún" : `${respondidas} de ${total}`}
+  return (
+    <Link href={`/c/${slug}/asistente/indice#pista-${pistaId}`} style={{ textDecoration: "none" }}>
+      <div style={CARD}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+          <span style={{ font: "600 15px 'Playfair Display',serif", color: "#F5F2EB" }}>{titulo}</span>
+          <span style={{ font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#C8A15A" }}>
+            {total === 0 ? "Sin preguntas aún" : `${respondidas} de ${total}`}
+          </span>
+        </div>
+        <span style={{ font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
+          {total === 0
+            ? `${espacios.length} espacio${espacios.length === 1 ? "" : "s"} · Próximamente`
+            : faltan
+              ? `${espacios.length} espacio${espacios.length === 1 ? "" : "s"} · Toca para continuar`
+              : "Todo respondido por ahora"}
         </span>
       </div>
-      <span style={{ font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
-        {total === 0
-          ? `${espacios.length} espacio${espacios.length === 1 ? "" : "s"} · Próximamente`
-          : faltan
-            ? `${espacios.length} espacio${espacios.length === 1 ? "" : "s"} · Toca para continuar`
-            : "Todo respondido por ahora"}
-      </span>
-    </div>
-  );
-
-  if (!faltan) return contenido;
-  return (
-    <Link href={`/c/${slug}/asistente/pista/${pistaId}`} style={{ textDecoration: "none" }}>
-      {contenido}
     </Link>
   );
 }

@@ -53,7 +53,7 @@ test.describe("Asistente Configura tu LyCard -- lector del guion + S2", () => {
     await e2eDb.end();
   });
 
-  test("S0: 'Tu programa' es un link real (hay preguntas) y entra a S2 en medal.mide", async ({ browser }) => {
+  test("S0: 'Tu programa' lleva a S1 (índice), y la primera pregunta de ahí entra a S2 en medal.mide", async ({ browser }) => {
     const context = await browser.newContext();
     await context.addCookies([{ ...(await mintAdminCookie(masterN0AdminId)), url: BASE_URL }]);
     const page = await context.newPage();
@@ -63,7 +63,11 @@ test.describe("Asistente Configura tu LyCard -- lector del guion + S2", () => {
     await expect(link).toBeVisible();
     await link.click();
 
-    await page.waitForURL(/\/c\/mastern0\/asistente\/pista\/programa$/);
+    await page.waitForURL(/\/c\/mastern0\/asistente\/indice/);
+    await expect(page.getByText("Medalla", { exact: true })).toBeVisible();
+
+    await page.getByText("¿Qué mide el Medallón de Resultados en Legacy?").click();
+    await page.waitForURL(/\/c\/mastern0\/asistente\/pista\/programa\?pregunta=medal\.mide&volver=indice$/);
     await expect(page.getByRole("heading", { name: "¿Qué mide el Medallón de Resultados en Legacy?" })).toBeVisible();
     await expect(page.getByText("Pregunta 1 de 2")).toBeVisible();
 
@@ -107,7 +111,6 @@ test.describe("Asistente Configura tu LyCard -- lector del guion + S2", () => {
     await page.waitForURL(/\/c\/mastern0\/asistente$/);
     await expect(page.getByText("2 de 2", { exact: true })).toBeVisible();
     await expect(page.getByText("Todo respondido por ahora")).toBeVisible();
-    await expect(page.getByRole("link", { name: /Tu programa/ })).not.toBeVisible();
 
     const answer = await e2eDb.query<{ valor: unknown; estado: string }>(
       `select valor, estado from "AssistantAnswer" where "sessionId" = $1 and "preguntaId" = 'medal.fuente'`,
