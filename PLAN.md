@@ -10493,6 +10493,20 @@ Programa). Suite completa de E2E corrida: 101/102 -- el único fallo
 `main`, ya confirmado en una sesión anterior como no relacionado a
 ningún cambio de esta ronda.
 
+**Deuda técnica anotada (no es de BizToCard):** el mismo fallo apareció
+también en el CI del PR #5 en GitHub, con retry automático incluido --
+no es un flake de una sola corrida local. Cuando se construyó
+`e2e/photo-positioner.spec.ts` (ver entrada de esa fase, más arriba en
+este documento) el flujo completo de "Reposicionar" había quedado
+estable en 3 corridas consecutivas tras un fix de `key={initialUrl ??
+"empty"}` -- este fallo intermitente que reaparece ahora (el botón
+"Confirmar" queda `disabled` al reabrir una foto ya subida, sin elegir
+archivo nuevo) sugiere que esa condición de carrera no quedó
+completamente resuelta, o resurgió por un cambio posterior no
+relacionado. Pendiente: investigar por qué el remount vía `key` no
+siempre alcanza a que `Confirmar` se habilite a tiempo, antes de que
+este flake empiece a esconder una falla real en otro PR.
+
 **Explícitamente afuera de esta entrega, para cuando Gunnar lo
 apruebe:** Nivel 3 de Pista Personal (preguntas de esencia, "con
 Oreja"), Pista Negocio, Pista Programa.
