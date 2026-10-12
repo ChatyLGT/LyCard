@@ -80,6 +80,10 @@ jobs:
       NEXT_PUBLIC_BASE_URL: "http://localhost:3000"
       PLAYWRIGHT_BASE_URL: "http://localhost:3000"
       CI: "true"
+      # Solo para el seed -- prisma/seed.ts las exige, no las lee nadie
+      # más en este job.
+      SEED_ADMIN_EMAIL: "ci-seed@example.com"
+      SEED_ADMIN_PASSWORD: "ci-only-dummy-password-nunca-usar-en-produccion"
     steps:
       - uses: actions/checkout@v4
 
@@ -100,6 +104,9 @@ jobs:
 
       - name: Build (incluye prisma migrate deploy)
         run: pnpm build
+
+      - name: Seed (Card "mastern0" real -- varios specs E2E la asumen)
+        run: pnpm db:seed
 
       - name: Levantar server en background
         run: nohup pnpm start > server.log 2>&1 &
