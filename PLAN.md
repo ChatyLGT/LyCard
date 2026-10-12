@@ -10434,3 +10434,65 @@ concreto** -- queda anotado para retomarlo cuando defina precios de
 acceso, confirme si el matching de Rene es real, y decida el diseño
 del rol Oreja como ciudadano de primera clase (no solo un valor de
 `traidoPor`).
+
+---
+
+## 2026-10-12 -- BizToCard, primera entrega: Pista Personal, Niveles 1 y 2 (v1.93.0)
+
+Gunnar pidió el "Protocolo para crear los programas de forma
+Agéntica" -- BizToCard: "un protocolo de preguntas tipo protocolo de
+excelencia... hagamos las preguntas suficientes a profundas (en un
+modo tipo protocolo escalonado, progresivo y humano) y de esa forma
+vamos construyendo las tarjetas personal, negocio y programas." Al
+aprobar el esqueleto de preguntas, acotó el alcance de esta primera
+vuelta: *"arrancá con la pista personal nivel 1 y 2 nomás pero quiero
+que se desarrolle el dashboard para la oreja."*
+
+**Qué se construyó:**
+
+- `lib/bizToCardScript.ts` -- el guion: 6 preguntas (4 de Nivel 1 --
+  nombre/título/frase/WhatsApp; 2 de Nivel 2 -- el camino, en una
+  frase y en una historia completa), cada una mapeada a un campo real
+  de `Card` (name/title/quote/wa/storyQuote/storyBody). Helpers puros
+  (`primeraPreguntaSinResponder`, `preguntaPorId`, `preguntaPorPaso`),
+  100% cubiertos por `lib/__tests__/bizToCardScript.test.ts` (10
+  tests).
+- **Decisión de arquitectura, documentada en el código**: BizToCard
+  NO reusa `AssistantSession`/`AssistantAnswer` (el motor del
+  Asistente "Configura tu LyCard", v1.88-1.92) -- ese motor guarda un
+  borrador que se publica después, pensado para que alguien configure
+  su propia tarjeta, solo. BizToCard es la Oreja sentada EN VIVO con
+  el Miembro: cada respuesta confirmada se escribe DIRECTO en la Card
+  (mismo criterio que `updateMemberAction`/`MemberCardEditor`), sin
+  paso de "publicar" aparte. Si más adelante conviene unificar ambos
+  motores, es decisión de Gunnar, no algo asumido acá.
+- `app/empleados/biztocard-actions.ts` (`guardarBizToCardAction`) +
+  `app/empleados/biztocard/[cardId]/page.tsx` -- la pantalla guiada,
+  una pregunta por vez, con barra de progreso, opción real de
+  "Prefiero no responder ahora" (nunca fuerza una respuesta), campos
+  precargados con lo ya guardado (editable), y pantalla de cierre con
+  link a la tarjeta pública. Guarda de seguridad real (no solo de
+  nombre): la Card tiene que ser `kind: "personal"` Y pertenecer a un
+  Member con membership del MISMO Programa que la Oreja logueada --
+  nunca confía en el `cardId` de la URL por sí solo.
+- `components/MembersPanel.tsx` -- cada Miembro con tarjeta personal
+  ya muestra el link "BizToCard: tarjeta personal →", en el mismo
+  Panel de Empleados (`/empleados`) que ya existía desde v1.86.0 --
+  "el dashboard para la oreja" que pidió Gunnar ya es ese panel, con
+  esta entrada nueva.
+
+**Verificado:** `tsc --noEmit`, `pnpm lint` (0 errores), `pnpm
+test:unit:coverage` (100%, 381/381), `pnpm build` limpio,
+`e2e/biztocard.spec.ts` nuevo (3/3: el link aparece con el href
+correcto; el recorrido completo de las 6 preguntas -- respondiendo,
+saltando una a propósito, y usando el textarea de la historia larga --
+termina escribiendo exactamente lo esperado en la Card real; la Oreja
+de un Programa recibe 404 al intentar abrir la Card personal de otro
+Programa). Suite completa de E2E corrida: 101/102 -- el único fallo
+(`photo-positioner.spec.ts`, "Reposicionar") es un bug preexistente en
+`main`, ya confirmado en una sesión anterior como no relacionado a
+ningún cambio de esta ronda.
+
+**Explícitamente afuera de esta entrega, para cuando Gunnar lo
+apruebe:** Nivel 3 de Pista Personal (preguntas de esencia, "con
+Oreja"), Pista Negocio, Pista Programa.
