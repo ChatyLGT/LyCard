@@ -2,7 +2,8 @@ import Link from "next/link";
 import { ACCESS_DOORS, findAccessDoor } from "@/lib/accessDoors";
 import { AccordionSection, AccordionRow, AccordionAddRow } from "@/components/Accordion";
 import { addMemberToProgramAction, updateMemberAction, deleteMemberAction, messageMemberAction, markMembershipPaidAction, viewAsMemberAction } from "@/app/admin/programs/members-actions";
-import { assignDoorAction } from "@/app/admin/interviews/actions";
+import { assignDoorAction, quickAssignDoorAction, logSessionAction } from "@/app/admin/interviews/actions";
+import { parseSessionLog } from "@/lib/sessionLog";
 
 const INPUT = {
   background: "#0D0D0D",
@@ -73,6 +74,7 @@ type Membership = {
   priceAgreedUsd: number | null;
   paymentModel: string | null;
   traidoPor: string | null;
+  sessionLog: unknown;
   referredBy: { member: { name: string } } | null;
   member: {
     id: string;
@@ -103,6 +105,8 @@ export default function MembersPanel({
   memberError,
   doorAssigned,
   doorError,
+  sessionLogged,
+  sessionError,
 }: {
   programId: string;
   memberships: Membership[];
@@ -116,12 +120,17 @@ export default function MembersPanel({
   memberError?: string;
   doorAssigned?: string;
   doorError?: string;
+  sessionLogged?: string;
+  sessionError?: string;
 }) {
   return (
     <AccordionSection
       title="Miembros"
       meta={<span style={PILL}>{memberships.length}</span>}
-      defaultOpen={defaultOpen || Boolean(memberSaved || memberDeleted || memberMessaged || memberError || memberAdded || doorAssigned || doorError)}
+      defaultOpen={
+        defaultOpen ||
+        Boolean(memberSaved || memberDeleted || memberMessaged || memberError || memberAdded || doorAssigned || doorError || sessionLogged || sessionError)
+      }
     >
       {memberSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Miembro actualizado.</p>}
       {memberDeleted && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Miembro eliminado.</p>}
@@ -131,6 +140,8 @@ export default function MembersPanel({
       {doorError && (
         <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>{DOOR_ERROR_COPY[doorError] || "No se pudo asignar la puerta."}</p>
       )}
+      {sessionLogged && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Sesión registrada.</p>}
+      {sessionError && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>Escribí algo en las notas antes de registrar la sesión.</p>}
       {memberError && (
         <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>
           {MEMBER_ERROR_COPY[memberError] || "Algo falló."}
@@ -257,38 +268,104 @@ export default function MembersPanel({
                     </span>
                   </div>
                 ) : (
-                  <form action={assignDoorAction.bind(null, m.id, programId, returnTo)} style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "flex-end" }}>
-                    <select name="doorKey" defaultValue="" required style={{ ...INPUT, flex: "1 1 220px" }}>
-                      <option value="" disabled>
-                        Elegí la puerta...
-                      </option>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {/* Matriz de oferta de cierre, un tap (2026-10-12) --
+                        mismo assignDoorAction, con los defaults reales de
+                        la puerta (su precioDefault + primer paymentModel
+                        permitido). Pensada para cerrar en vivo, sin
+                        tipear nada con el cliente esperando. */}
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                       {ACCESS_DOORS.map((d) => (
-                        <option key={d.key} value={d.key}>
-                          {d.nombre} -- {d.tiempo}
-                        </option>
+                        <form key={d.key} action={quickAssignDoorAction.bind(null, m.id, programId, returnTo, d.key)}>
+                          <button
+                            type="submit"
+                            style={{
+                              background: "#14161c",
+                              border: "1px solid rgba(200,161,90,.3)",
+                              borderRadius: 10,
+                              padding: "7px 10px",
+                              color: "#C8A15A",
+                              font: "700 10.5px 'Plus Jakarta Sans',sans-serif",
+                              cursor: "pointer",
+                              textAlign: "left",
+                            }}
+                          >
+                            {d.nombre}
+                            <br />
+                            <span style={{ color: "#8a8378", fontWeight: 400 }}>${d.precioDefault} USD</span>
+                          </button>
+                        </form>
                       ))}
-                    </select>
-                    <input name="priceAgreedUsd" type="number" min={0} step={1} placeholder="Precio USD" required style={{ ...INPUT, width: 110 }} />
-                    <select name="paymentModel" defaultValue="unico" style={INPUT}>
-                      <option value="unico">Pago único</option>
-                      <option value="cuotas">Cuotas</option>
-                      <option value="suscripcion">Suscripción</option>
-                      <option value="bolsa_horas">Bolsa de horas</option>
-                      <option value="abono_ascenso">Abono de ascenso</option>
-                      <option value="retainer">Retainer</option>
-                      <option value="participacion">Participación en resultados</option>
-                    </select>
-                    <select name="traidoPor" defaultValue="empresa" style={INPUT}>
-                      <option value="empresa">Traído por la empresa</option>
-                      <option value="oreja">Traído por la oreja</option>
-                    </select>
-                    <button type="submit" style={SAVE_BTN}>
-                      Asignar puerta
-                    </button>
-                  </form>
+                    </div>
+
+                    <div>
+                      <span style={{ font: "600 10.5px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>O con precio/forma de pago a medida:</span>
+                      <form
+                        action={assignDoorAction.bind(null, m.id, programId, returnTo)}
+                        style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "flex-end", marginTop: 8 }}
+                      >
+                        <select name="doorKey" defaultValue="" required style={{ ...INPUT, flex: "1 1 220px" }}>
+                          <option value="" disabled>
+                            Elegí la puerta...
+                          </option>
+                          {ACCESS_DOORS.map((d) => (
+                            <option key={d.key} value={d.key}>
+                              {d.nombre} -- {d.tiempo}
+                            </option>
+                          ))}
+                        </select>
+                        <input name="priceAgreedUsd" type="number" min={0} step={1} placeholder="Precio USD" required style={{ ...INPUT, width: 110 }} />
+                        <select name="paymentModel" defaultValue="unico" style={INPUT}>
+                          <option value="unico">Pago único</option>
+                          <option value="cuotas">Cuotas</option>
+                          <option value="suscripcion">Suscripción</option>
+                          <option value="bolsa_horas">Bolsa de horas</option>
+                          <option value="abono_ascenso">Abono de ascenso</option>
+                          <option value="retainer">Retainer</option>
+                          <option value="participacion">Participación en resultados</option>
+                        </select>
+                        <select name="traidoPor" defaultValue="empresa" style={INPUT}>
+                          <option value="empresa">Traído por la empresa</option>
+                          <option value="oreja">Traído por la oreja</option>
+                        </select>
+                        <button type="submit" style={SAVE_BTN}>
+                          Asignar puerta
+                        </button>
+                      </form>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
+
+            {m.status === "active" && (() => {
+              const sessionLog = parseSessionLog(m.sessionLog);
+              return (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 6, borderTop: "1px solid rgba(255,255,255,.06)" }}>
+                  <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#5A5A5A" }}>
+                    Sesiones ({sessionLog.length})
+                  </span>
+                  {sessionLog.length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 140, overflowY: "auto" }}>
+                      {[...sessionLog].reverse().map((s) => (
+                        <div key={s.sessionNumber} style={{ background: "#151414", borderRadius: 8, padding: "6px 10px" }}>
+                          <span style={{ font: "700 10.5px 'Plus Jakarta Sans',sans-serif", color: "#C8A15A" }}>
+                            Sesión {s.sessionNumber} -- {new Date(s.loggedAt).toLocaleDateString("es-MX")}
+                          </span>
+                          <p style={{ margin: "2px 0 0", font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{s.notes}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <form action={logSessionAction.bind(null, m.id, programId, returnTo)} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <textarea name="notes" placeholder="Notas de la sesión..." rows={2} required style={{ ...INPUT, resize: "vertical" }} />
+                    <button type="submit" style={SAVE_BTN}>
+                      Registrar sesión
+                    </button>
+                  </form>
+                </div>
+              );
+            })()}
 
             {!minimal && (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>

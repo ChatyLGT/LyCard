@@ -10510,3 +10510,76 @@ este flake empiece a esconder una falla real en otro PR.
 **Explícitamente afuera de esta entrega, para cuando Gunnar lo
 apruebe:** Nivel 3 de Pista Personal (preguntas de esencia, "con
 Oreja"), Pista Negocio, Pista Programa.
+
+---
+
+## 2026-10-12 -- Óculo de la Oreja: demo independiente + los 3 puntos "gettables" construidos (v1.94.0)
+
+Gunnar compartió un mockup hecho con Gemini, "Óculo de la Oreja" --
+panel de operaciones gótico/cripto (Cinzel, `#d4af37`, "STAKING",
+"Node-Share", bot "Adrea", secuencias "BirdBrain") con 4 tabs: Comando
+(wallet MRR + embudo), Bolsa de Leads (claim estilo Uber), Sala de 8
+Entrevistas (checklist clínico + notas), y Matriz de Oferta de cierre.
+Pidió primero verlo corriendo ("no lo conectes, ponlo como app
+independiente pero quiero correrlo") -- se publicó tal cual, sin
+tocar nada del código real, como Artifact aparte
+(`https://claude.ai/artifact/2Nq3mb5yQHZCv5UgGmBCYC`).
+
+**Evaluación honesta que se le dio antes de construir nada:** la
+demo es 100% teatro de cliente -- cada botón dispara un `toast()`,
+cero dato real detrás. Tres problemas reales encontrados: (1) pricing
+propio del mockup ($15/mes, $100+$50, $500, $1500 Corp) es un TERCER
+esquema de precios, distinto del catálogo real (`lib/accessDoors.ts`)
+y de lo que Gunnar mismo recordaba antes en esta sesión -- nunca se
+construyó nada de precios desde el mockup, se usó siempre
+`ACCESS_DOORS` real. (2) El checklist clínico de "8 entrevistas" con
+ítems como "firma de bifurcación de Gemelo Digital" es ambientación
+de producto, no metodología real de Legacy -- no se construyó ningún
+checklist ni se fijó ningún número de sesiones. (3) Adrea, staking/
+Node-Share, BirdBrain, los hooks "en vivo" a Fathom/NotebookLM quedan
+fuera por completo -- ninguno es real todavía.
+
+De los 4 tabs, se identificaron 3 piezas reales/construibles
+("gettables") y Gunnar aprobó arrancar con ellas, sobre el Panel de
+Empleados que ya existía (v1.86.0+), nunca como app separada:
+
+1. **Bolsa de Leads** (`components/LeadsPanel.tsx`, nuevo) --
+   `Registration.claimedByAdminId`/`claimedAt` (columnas nuevas):
+   cualquier Oreja del Programa puede tomar un lead sin dueño
+   (`claimLeadAction`); una vez tomado, pasa a "Mis leads" y
+   desaparece de la bolsa compartida para las demás Orejas. La
+   "temperatura" (Caliente/Tibio/Frío, `lib/leadTemperature.ts`) es
+   honesta -- un umbral sobre `createdAt` real (<2h/<24h/≥24h), nunca
+   un score inventado.
+2. **Matriz de oferta, un tap** (`quickAssignDoorAction`, nuevo en
+   `app/admin/interviews/actions.ts`) -- un tile por cada puerta real
+   de `ACCESS_DOORS` en `components/MembersPanel.tsx`, que asigna la
+   puerta con su `precioDefault` y su primer `paymentModel` permitido
+   en un solo tap (pensado para cerrar en vivo sin tipear nada con el
+   cliente esperando). Mismo mecanismo de siempre (`assignDoorAction`)
+   por debajo -- el form detallado para precio/forma de pago a medida
+   sigue ahí, sin quitarle nada a nadie.
+3. **Bitácora de sesiones** (`ProgramMembership.sessionLog` Json,
+   `logSessionAction`, `lib/sessionLog.ts`) -- la Oreja registra una
+   sesión con notas libres, numeradas en secuencia. A propósito SIN
+   checklist de ítems fijos ni un número total de sesiones esperado
+   por puerta -- eso es contenido real de metodología que Gunnar
+   todavía no definió; cuando lo haga, se agrega sobre esta misma
+   bitácora.
+
+**Verificado:** `tsc --noEmit`, `pnpm lint` (0 errores), `pnpm
+test:unit:coverage` (100%, 394/394 -- suma `lib/__tests__/
+leadTemperature.test.ts` y `lib/__tests__/sessionLog.test.ts`), `pnpm
+build` limpio, `e2e/oreja-leads-oferta-sesiones.spec.ts` nuevo (3/3:
+el lead aparece en la bolsa y desaparece de la de otra Oreja al
+tomarlo; el tap de "Armar (Express)" asigna doorKey/precio/forma de
+pago/traidoPor reales sin tipear nada; la sesión registrada aparece
+en la bitácora con las notas reales en DB). Un bug real de regresión
+encontrado y corregido en el camino: la primera versión escondía el
+form detallado de puerta dentro de un `<details>` colapsado, lo que
+rompía 3 tests preexistentes (`access-door.spec.ts` x2,
+`empleados.spec.ts`) que esperan el `<select>` siempre visible --
+corregido mostrando siempre ambos (tiles + form), nunca escondiendo
+nada que ya funcionaba. Suite completa de E2E: 104/105, único fallo
+el mismo flake preexistente de `photo-positioner.spec.ts` ya
+documentado arriba.

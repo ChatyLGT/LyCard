@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.93.0";
+export const APP_VERSION = "1.94.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.94.0",
+    date: "2026-10-12",
+    notes:
+      "Gunnar mandó un mockup hecho con Gemini (\"Óculo de la Oreja\") con la idea de un panel de operaciones para vender/cerrar en vivo, y pidió los 3 puntos reales/construibles de ahí -- publicado primero como demo interactiva aparte (sin tocar la base real) para que lo probara, después aprobado para construirse de verdad sobre el Panel de Empleados. (1) Bolsa de Leads: cualquier Oreja del Programa puede tomar un Registration sin dueño todavía -- la \"temperatura\" (Caliente/Tibio/Frío) es honesta, calculada por tiempo transcurrido desde que se registró, nada de un score de IA inventado como el 94% del mockup. (2) Matriz de oferta, un tap: tiles por cada puerta real de ACCESS_DOORS que asignan la puerta con su precio y forma de pago default -- mismo assignDoorAction de siempre, el form detallado sigue ahí al lado para precio/forma de pago a medida. (3) Bitácora de sesiones: la Oreja registra sesión por sesión con notas libres -- a propósito SIN el checklist de 8 ítems que inventaba el mockup (\"firma de bifurcación de Gemelo Digital\" y cosas así no son metodología real de Legacy todavía), ni una cantidad fija de sesiones por puerta. Nuevo componente LeadsPanel.tsx, 3 acciones nuevas en interviews/actions.ts, 2 módulos puros con 100% de tests (lib/leadTemperature.ts, lib/sessionLog.ts).",
+  },
   {
     version: "1.93.0",
     date: "2026-10-12",
