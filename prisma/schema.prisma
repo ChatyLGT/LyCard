@@ -833,6 +833,14 @@ model ProgramMembership {
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 
+  // Viaje del Cliente, Fase 2 (2026-10-12) -- la entrevista 1:1 de Legacy
+  // NO se agenda en la tarjeta pública (ahí solo se agenda la
+  // Masterclass, ver lib/masterclassStatus.ts): la agenda la Oreja a
+  // mano desde su tablero, directo con el Lead ya "verde". Se limpia
+  // sola cuando completeInterviewAction marca la entrevista como hecha
+  // de verdad (lib/activateMembership.ts).
+  nextInterviewAt DateTime?
+
   // PASO 6 del funnel de destinatario (2026-10-02): "3dias" | "1semana" |
   // "15dias" | "1mes" | "3meses" -- lo que eligió en el funnel de
   // "Agendar". Vacío para cualquier membresía creada antes de esto o sin

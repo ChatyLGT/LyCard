@@ -10668,3 +10668,49 @@ inventó el mockup de Gemini) y la carga real de la cadena N0-N3
 (quién refirió a quién entre Einar/Chaty/Warren y sus N2s -- pausado
 a pedido explícito de Gunnar, "no quiero que cargues los datos,
 quiero que entiendas el proceso").
+
+---
+
+## 2026-10-12 (noche) -- Viaje del Cliente, Fase 2: agendar la entrevista 1:1 (v1.96.0)
+
+Segunda de las 5 fases del plan de arriba, construida tal cual se
+propuso: `ProgramMembership.nextInterviewAt` (`DateTime?`, nuevo),
+llenado a mano por la Oreja desde `/empleados` una vez que el Lead ya
+"asistió" a su Masterclass (`lib/masterclassStatus.ts`) -- nunca en la
+tarjeta pública, donde SOLO se puede agendar la Masterclass, aclaración
+explícita de Gunnar. `scheduleInterviewAction` (nueva, en
+`app/admin/interviews/actions.ts`) valida la fecha, guarda la hora que
+tipeó la Oreja (sin integración real con ningún calendario externo), y
+es la misma acción para agendar la primera vez o reagendar. Se limpia
+sola (`nextInterviewAt: null`) dentro de `activateMembershipAndSpawnCards`
+(`lib/activateMembership.ts`, compartida con el alta Freemium
+self-service) en el momento en que `completeInterviewAction` marca que
+la entrevista ya ocurrió de verdad -- un solo lugar donde vive esa
+limpieza, no duplicada en cada acción que la dispara.
+`LeadsPanel.tsx` muestra la fecha agendada (si hay) junto a un input
+`datetime-local` + botón "Agendar entrevista"/"Reagendar", al lado del
+ya existente "Marcar entrevista hecha". Requiere que el Lead ya tenga
+una `ProgramMembership` real debajo (la crea `registerInterviewAction`
+solo si se registró logueado como Member) -- sin eso, el botón
+simplemente no aparece, mismo criterio honesto que ya usaba "Marcar
+entrevista hecha".
+
+**Verificado:** `tsc --noEmit` limpio, `pnpm lint` (0 errores, mismos
+13 warnings preexistentes), `pnpm test:unit:coverage` 100% (396/396 --
+sin lógica pura nueva que amerite unit test, toda la lógica nueva es
+DB+UI, va a E2E), `pnpm build` limpio. `e2e/schedule-interview.spec.ts`
+nuevo (1 test de punta a punta: agenda, reagenda a otra fecha, y al
+marcar la entrevista hecha confirma en DB que la membership queda
+activa Y `nextInterviewAt` vuelve a `null` solo). Un bug real de test
+encontrado y corregido en el camino: el "Reagendar" redirige a la
+MISMA URL (`?interviewScheduled=1`) que el primer agendado, así que
+`page.waitForURL` con ese mismo patrón resuelve de una (ya era cierto
+antes del click) sin esperar la navegación real -- se cambió esa
+espera por el contenido real (la fecha mostrada cambió), que sí fuerza
+a esperar el re-render de verdad. Suite E2E completa: 109/110, único
+fallo el mismo flake preexistente de `photo-positioner.spec.ts` ya
+documentado arriba.
+
+Quedan pendientes, en el orden del plan: Fase 3 (chat interno real
+Oreja↔Lead), Fase 4 (comisiones sobre `traidoPor`), Fase 5 (Oreja
+también es Member, requiere aprobación aparte).

@@ -1,6 +1,25 @@
 import { AccordionSection } from "@/components/Accordion";
-import { claimLeadAction, completeInterviewAction, markMasterclassAttendedAction } from "@/app/admin/interviews/actions";
+import {
+  claimLeadAction,
+  completeInterviewAction,
+  markMasterclassAttendedAction,
+  scheduleInterviewAction,
+} from "@/app/admin/interviews/actions";
 import { masterclassStatus, parseMasterclassLog, MASTERCLASS_STATUS_LABEL, type MasterclassStatus } from "@/lib/masterclassStatus";
+
+// Viaje del Cliente, Fase 2 -- <input type="datetime-local"> necesita
+// "YYYY-MM-DDTHH:mm" en hora local, sin librería nueva.
+function toDatetimeLocalValue(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+const interviewDateFmt = new Intl.DateTimeFormat("es-MX", {
+  day: "2-digit",
+  month: "short",
+  hour: "2-digit",
+  minute: "2-digit",
+});
 
 const PILL = {
   font: "700 10px 'Plus Jakarta Sans',sans-serif",
@@ -41,6 +60,15 @@ const INTERVIEW_BTN = {
   cursor: "pointer",
 };
 
+const DATETIME_INPUT = {
+  background: "#1a1919",
+  border: "1px solid rgba(255,255,255,.1)",
+  borderRadius: 8,
+  padding: "6px 8px",
+  color: "#F5F2EB",
+  font: "400 11px 'Plus Jakarta Sans',sans-serif",
+};
+
 type Lead = {
   id: string;
   name: string;
@@ -51,7 +79,7 @@ type Lead = {
   masterclassLog: unknown;
   interviewSlot: { date: Date } | null;
   claimedByAdminId: string | null;
-  membership: { status: string } | null;
+  membership: { id: string; status: string; nextInterviewAt: Date | null } | null;
 };
 
 // Bolsa de Leads (2026-10-12) -- punto "gettable" del mockup "Óculo de
@@ -68,6 +96,8 @@ export default function LeadsPanel({
   returnTo,
   leadClaimed,
   masterclassAttended,
+  interviewScheduled,
+  interviewError,
 }: {
   programId: string;
   leads: Lead[];
@@ -75,6 +105,8 @@ export default function LeadsPanel({
   returnTo: string;
   leadClaimed?: string;
   masterclassAttended?: string;
+  interviewScheduled?: string;
+  interviewError?: string;
 }) {
   const bolsa = leads.filter((l) => !l.claimedByAdminId);
   const mios = leads.filter((l) => l.claimedByAdminId === myAdminId);
@@ -130,6 +162,33 @@ export default function LeadsPanel({
             </form>
           )}
         </div>
+
+        {/* Viaje del Cliente, Fase 2 -- agendar la entrevista 1:1 de Legacy
+            a mano, directo con el Lead ya asistido. Nunca en la tarjeta
+            pública (ahí solo se agenda la Masterclass). Necesita una
+            Membership real debajo (la crea registerInterviewAction si el
+            Lead se registró logueado como Member). */}
+        {status === "asistio" && l.membership && l.membership.status !== "active" && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 2 }}>
+            {l.membership.nextInterviewAt && (
+              <span style={{ font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#C8A15A" }}>
+                📅 Entrevista: {interviewDateFmt.format(l.membership.nextInterviewAt)}
+              </span>
+            )}
+            <form action={scheduleInterviewAction.bind(null, l.membership.id, programId, returnTo)} style={{ display: "flex", gap: 6 }}>
+              <input
+                type="datetime-local"
+                name="nextInterviewAt"
+                defaultValue={l.membership.nextInterviewAt ? toDatetimeLocalValue(l.membership.nextInterviewAt) : undefined}
+                style={DATETIME_INPUT}
+                required
+              />
+              <button type="submit" style={INTERVIEW_BTN}>
+                {l.membership.nextInterviewAt ? "Reagendar" : "Agendar entrevista"}
+              </button>
+            </form>
+          </div>
+        )}
       </div>
     );
   };
@@ -138,6 +197,8 @@ export default function LeadsPanel({
     <AccordionSection title="Bolsa de Leads" meta={<span style={PILL}>{bolsa.length + mios.length}</span>} defaultOpen>
       {leadClaimed && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Lead tomado -- ya es tuyo.</p>}
       {masterclassAttended && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Asistencia marcada.</p>}
+      {interviewScheduled && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Entrevista agendada.</p>}
+      {interviewError && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>Elegí una fecha y hora válidas.</p>}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#5A5A5A" }}>

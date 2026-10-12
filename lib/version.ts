@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.95.0";
+export const APP_VERSION = "1.96.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.96.0",
+    date: "2026-10-12",
+    notes:
+      "Viaje del Cliente, Fase 2: la Oreja ya puede agendar la entrevista 1:1 de Legacy a mano desde su tablero (/empleados), con el Lead ya \"asistió\" a su Masterclass -- Gunnar aclaró que en la tarjeta pública SOLO se agenda la Masterclass, nunca esta entrevista. ProgramMembership.nextInterviewAt (nuevo) guarda la fecha/hora elegida; scheduleInterviewAction la llena o reemplaza (reagendar es la misma acción); se limpia sola cuando completeInterviewAction marca la entrevista como hecha de verdad (lib/activateMembership.ts, también usado por el alta Freemium self-service). LeadsPanel.tsx muestra la fecha agendada con un botón \"Agendar entrevista\"/\"Reagendar\" junto al ya existente \"Marcar entrevista hecha\". Sigue sin haber integración real con un calendario externo -- la fecha es la que la Oreja tipea, nada más. Fases 3-5 (chat interno Oreja↔Lead, comisiones sobre `traidoPor`, Oreja=Member) siguen pendientes en PLAN.md.",
+  },
   {
     version: "1.95.0",
     date: "2026-10-12",

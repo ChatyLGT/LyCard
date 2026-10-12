@@ -96,7 +96,12 @@ export async function activateMembershipAndSpawnCards(
   await prisma.$transaction([
     prisma.programMembership.update({
       where: { id: membership.id },
-      data: options.markInterviewed ? { status: "active", interviewedAt: new Date() } : { status: "active" },
+      // nextInterviewAt (Fase 2, 2026-10-12) se limpia siempre al activar --
+      // si la hubo, ya ocurrió (esta es justo la entrevista que se agendó);
+      // si no la hubo (alta Freemium self-service), ya era null.
+      data: options.markInterviewed
+        ? { status: "active", interviewedAt: new Date(), nextInterviewAt: null }
+        : { status: "active", nextInterviewAt: null },
     }),
     ...(cardsToCreate.length ? [prisma.card.createMany({ data: cardsToCreate })] : []),
     ...(referrerMember

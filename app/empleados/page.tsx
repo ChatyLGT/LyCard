@@ -25,9 +25,22 @@ export default async function EmployeePanelPage({
     sessionError?: string;
     leadClaimed?: string;
     masterclassAttended?: string;
+    interviewScheduled?: string;
+    interviewError?: string;
   }>;
 }) {
-  const { memberAdded, memberError, doorAssigned, doorError, sessionLogged, sessionError, leadClaimed, masterclassAttended } = await searchParams;
+  const {
+    memberAdded,
+    memberError,
+    doorAssigned,
+    doorError,
+    sessionLogged,
+    sessionError,
+    leadClaimed,
+    masterclassAttended,
+    interviewScheduled,
+    interviewError,
+  } = await searchParams;
 
   const scope = await currentEmployeeScope();
   if (!scope) redirect("/empleados/login");
@@ -51,7 +64,7 @@ export default async function EmployeePanelPage({
   const registrations = await prisma.registration.findMany({
     where: { card: { programId: program.id } },
     orderBy: { createdAt: "asc" },
-    include: { membership: { select: { status: true } }, interviewSlot: { select: { date: true } } },
+    include: { membership: { select: { id: true, status: true, nextInterviewAt: true } }, interviewSlot: { select: { date: true } } },
   });
   const leads = registrations.filter((r) => r.membership?.status !== "active");
 
@@ -95,6 +108,8 @@ export default async function EmployeePanelPage({
           returnTo={returnTo}
           leadClaimed={leadClaimed}
           masterclassAttended={masterclassAttended}
+          interviewScheduled={interviewScheduled}
+          interviewError={interviewError}
         />
         <MembersPanel
           programId={program.id}

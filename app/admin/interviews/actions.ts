@@ -138,6 +138,33 @@ export async function markMasterclassAttendedAction(registrationId: string, prog
   redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}masterclassAttended=1`);
 }
 
+// Viaje del Cliente, Fase 2 (2026-10-12) -- la Oreja agenda a mano la
+// entrevista 1:1 de Legacy, directo desde su tablero (/empleados), con el
+// Lead ya "asistió" a su Masterclass. En la tarjeta pública SOLO se agenda
+// la Masterclass -- esto nunca pasa por el selector de slots público. Se
+// puede llamar más de una vez (reagendar), y queda limpio sola cuando
+// completeInterviewAction marca la entrevista como hecha de verdad (ver
+// lib/activateMembership.ts).
+export async function scheduleInterviewAction(membershipId: string, programId: string, returnTo: string, formData: FormData) {
+  const scope = await resolveActingScope();
+  if (!scope) redirect("/admin/login");
+  if (!canAccessProgram(scope, programId)) redirect(returnTo);
+
+  const raw = String(formData.get("nextInterviewAt") || "");
+  const date = raw ? new Date(raw) : null;
+  if (!date || Number.isNaN(date.getTime())) {
+    redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}interviewError=date`);
+  }
+
+  const membership = await prisma.programMembership.findUnique({ where: { id: membershipId } });
+  if (!membership || membership.programId !== programId) redirect(returnTo);
+
+  await prisma.programMembership.update({ where: { id: membershipId }, data: { nextInterviewAt: date } });
+
+  revalidatePath(returnTo);
+  redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}interviewScheduled=1`);
+}
+
 // Bolsa de Leads (2026-10-12) -- cualquier Oreja del Programa puede
 // tomar un Registration sin dueño todavía; una vez tomado, desaparece
 // de la bolsa compartida y pasa a "Mis Leads" de quien lo tomó. Mismo
