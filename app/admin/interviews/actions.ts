@@ -117,6 +117,27 @@ export async function quickAssignDoorAction(membershipId: string, programId: str
   redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}doorAssigned=1`);
 }
 
+// Pool General de Leads -- marcar que de verdad asistió a su
+// Masterclass (2026-10-12). Sin integración real con Zoom/Meet que
+// reporte asistencia, esto es una marca humana, mismo criterio
+// honesto que "Marcar entrevista hecha".
+export async function markMasterclassAttendedAction(registrationId: string, programId: string, returnTo: string) {
+  const scope = await resolveActingScope();
+  if (!scope) redirect("/admin/login");
+  if (!canAccessProgram(scope, programId)) redirect(returnTo);
+
+  const registration = await prisma.registration.findUnique({
+    where: { id: registrationId },
+    include: { card: { select: { programId: true } } },
+  });
+  if (!registration || registration.card.programId !== programId) redirect(returnTo);
+
+  await prisma.registration.update({ where: { id: registrationId }, data: { attendedAt: new Date() } });
+
+  revalidatePath(returnTo);
+  redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}masterclassAttended=1`);
+}
+
 // Bolsa de Leads (2026-10-12) -- cualquier Oreja del Programa puede
 // tomar un Registration sin dueño todavía; una vez tomado, desaparece
 // de la bolsa compartida y pasa a "Mis Leads" de quien lo tomó. Mismo

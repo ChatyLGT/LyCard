@@ -24,9 +24,10 @@ export default async function EmployeePanelPage({
     sessionLogged?: string;
     sessionError?: string;
     leadClaimed?: string;
+    masterclassAttended?: string;
   }>;
 }) {
-  const { memberAdded, memberError, doorAssigned, doorError, sessionLogged, sessionError, leadClaimed } = await searchParams;
+  const { memberAdded, memberError, doorAssigned, doorError, sessionLogged, sessionError, leadClaimed, masterclassAttended } = await searchParams;
 
   const scope = await currentEmployeeScope();
   if (!scope) redirect("/empleados/login");
@@ -50,7 +51,7 @@ export default async function EmployeePanelPage({
   const registrations = await prisma.registration.findMany({
     where: { card: { programId: program.id } },
     orderBy: { createdAt: "asc" },
-    include: { membership: { select: { status: true } } },
+    include: { membership: { select: { status: true } }, interviewSlot: { select: { date: true } } },
   });
   const leads = registrations.filter((r) => r.membership?.status !== "active");
 
@@ -87,7 +88,14 @@ export default async function EmployeePanelPage({
       </div>
 
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
-        <LeadsPanel programId={program.id} leads={leads} myAdminId={scope.id} returnTo={returnTo} leadClaimed={leadClaimed} />
+        <LeadsPanel
+          programId={program.id}
+          leads={leads}
+          myAdminId={scope.id}
+          returnTo={returnTo}
+          leadClaimed={leadClaimed}
+          masterclassAttended={masterclassAttended}
+        />
         <MembersPanel
           programId={program.id}
           memberships={program.memberships}

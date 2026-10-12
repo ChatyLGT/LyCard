@@ -10583,3 +10583,88 @@ corregido mostrando siempre ambos (tiles + form), nunca escondiendo
 nada que ya funcionaba. Suite completa de E2E: 104/105, único fallo
 el mismo flake preexistente de `photo-positioner.spec.ts` ya
 documentado arriba.
+
+---
+
+## 2026-10-12 -- Viaje del Cliente: el plan completo, y Fase 1 construida (v1.95.0)
+
+Gunnar fue armando en vivo, a lo largo de varios mensajes, el funnel
+real que sigue después de la Masterclass -- partiendo de la demo de
+"Óculo de la Oreja" (ya publicada aparte, sin tocar nada real) y
+corrigiendo cada pieza que esa demo inventaba. Pidió el plan completo
+y que lo empezara a implementar. Quedó en 5 fases:
+
+**Fase 1 -- Pool General de Leads con color real (ESTA ENTREGA,
+completa).** Ver CHANGELOG v1.95.0 arriba para el detalle técnico.
+Resumen: `Registration.attendedAt` + `Registration.masterclassLog`
+(bitácora de reagendados, mismo patrón que `sessionLog`),
+`lib/masterclassStatus.ts` (puro, 100% tests) calcula verde/amarillo/
+rojo/asistió de verdad, el reagendado se detecta en la acción real
+`registerInterviewAction` (no en una fórmula aislada), y
+`markMasterclassAttendedAction` nuevo para marcar asistencia a mano
+(sin integración real con Zoom/Meet). `LeadsPanel.tsx` muestra el
+color real en vez de la "temperatura" por tiempo de la entrega
+anterior (borrada -- ya no tenía sentido frente a esta señal real).
+
+**Fase 2 -- Agendar la entrevista 1:1 desde el tablero de la Oreja
+(pendiente).** Gunnar aclaró que en la tarjeta pública SOLO se puede
+agendar la Masterclass -- las entrevistas 1:1 de Legacy las agenda la
+Oreja directo con el Lead ya verde, desde `/empleados`, sin pasar por
+el selector público. Hoy no existe ningún campo para esto
+(`completeInterviewAction` solo marca "ya hecha", nunca hubo un paso
+de "agendada para tal fecha"). Diseño propuesto:
+`ProgramMembership.nextInterviewAt` (DateTime?), llenado a mano por la
+Oreja, limpiado cuando se marca hecha.
+
+**Fase 3 -- Chat interno real Oreja↔Lead (pendiente).** El chat
+interno real (`Message`/`MessageDelivery`, canal `"lycard"`) hoy solo
+funciona Member↔Member -- un Admin/Oreja no puede mandar ni recibir
+nada por este canal (`MessageDelivery` solo tiene
+`recipientMemberId`, nunca se usó `senderAdminId` aunque el campo ya
+existe). Hace falta: `recipientAdminId` nuevo en `MessageDelivery`,
+una acción para que la Oreja mande mensajes de verdad, extender la
+acción del Member para que pueda contestarle a su Oreja asignada, y
+una vista de hilo real (hoy es una bandeja de inbox, no una
+conversación en vivo). Precondición: el Lead necesita ser un Member
+real con fila de `ProgramMembership` en Legacy (aunque sea
+"invitado") para poder usar este canal -- a confirmar con Gunnar si
+todo Lead que llega a la Masterclass ya pasó por el registro de
+Vividor.
+
+**Fase 4 -- Comisiones sobre `traidoPor` (pendiente).** Gunnar dio
+los montos reales: $15 USD por sesión de 45min si la Oreja fue
+asignada, $35 si ella trajo al Lead; $5 o $12 USD mensuales (según
+corresponda) por la vida de la suscripción de $100/mes, a cambio de
+dar seguimiento a los "indicadores de estrés" del cliente con 15min
+mensuales de revisión. `ProgramMembership.traidoPor`
+(`"empresa"|"oreja"`) ya existe desde hace semanas con un comentario
+que literalmente decía "define el costo humano real" -- nadie lo
+había cableado todavía. Diseño propuesto: guardar el monto calculado
+como snapshot (no recalculado después) en la bitácora de sesión
+(`sessionLog`) y en la membership -- con la etiqueta honesta de
+siempre, esto es cálculo, no hay pasarela de pago real.
+
+**Fase 5 -- Oreja también es Member (pendiente, requiere aprobación
+aparte).** Gunnar: "un oreja tendría que ser un miembro también... de
+hecho es lo que quiero incentivar" -- la estrategia real es reclutar
+psicólogos/estudiantes de psicología como Oreja, que se inscriban
+como Members con su propia Card/Oficina/Gemelo Digital para conseguir
+sus propios clientes (el "impuesto a la soledad" del emprendedor,
+aprendizaje real de los proyectos de misocio/Andrea). Hoy Admin
+(Oreja) y Member son dos sistemas de identidad separados a propósito
+(cookies distintas, tablas distintas) -- fusionarlos es la dirección
+correcta a largo plazo, pero es un cambio de arquitectura grande como
+para decidirlo de pasada. El permiso de mensajería "Oreja y para
+arriba" que pidió Gunnar se implementa por ahora sobre el sistema de
+Admin que ya existe (empleado/N0 de Programa/MasterN0); el hogar
+correcto a futuro es el rango dentro de la red de Members, una vez
+que esta fase se apruebe y construya.
+
+**Explícitamente fuera de estas 5 fases, pendiente de que Gunnar lo
+defina:** el menú estandarizado de puertas de acceso (hoy hay 3
+esquemas de precios distintos flotando -- el real de
+`lib/accessDoors.ts`, el que Gunnar recordaba de memoria, y el que
+inventó el mockup de Gemini) y la carga real de la cadena N0-N3
+(quién refirió a quién entre Einar/Chaty/Warren y sus N2s -- pausado
+a pedido explícito de Gunnar, "no quiero que cargues los datos,
+quiero que entiendas el proceso").

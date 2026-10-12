@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.94.0";
+export const APP_VERSION = "1.95.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.95.0",
+    date: "2026-10-12",
+    notes:
+      "Viaje del Cliente, Fase 1: el Pool General de Leads ya tiene color real. Gunnar describió el funnel completo después de la Masterclass (verde/amarillo/rojo según asistencia real, agendado 1:1 desde el tablero de la Oreja, chat interno, comisiones) y pidió el plan completo + implementarlo -- esta es la primera fase, de punta a punta. Registration suma attendedAt (marcado a mano, sin integración real con Zoom/Meet) y masterclassLog (bitácora de reagendados, mismo patrón que sessionLog). El color sale solo: 0 reagendados = verde, 1 = amarillo, 2+ (o la fecha del slot ya venció sin que haya vuelto a agendar) = rojo -- nunca un score inventado como el 94% del mockup de referencia. El reagendado se detecta en la MISMA acción real (registerInterviewAction) que ya existía para \"Agendar tu Entrevista\" -- re-registrarse con el mismo WhatsApp sobre un InterviewSlot real ya vencido cuenta como \"faltó y volvió a agendar\". Reemplaza la \"temperatura\" por tiempo (lib/leadTemperature.ts, de la entrega anterior) que ya no tenía sentido frente a esta señal real. Las fases 2-5 (agendado 1:1 desde el tablero, chat interno Oreja↔Lead, comisiones sobre `traidoPor`, y la fusión Oreja=Member) quedan documentadas en PLAN.md para construirse en el orden acordado.",
+  },
   {
     version: "1.94.0",
     date: "2026-10-12",

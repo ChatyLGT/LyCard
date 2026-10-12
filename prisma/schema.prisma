@@ -938,10 +938,18 @@ model Registration {
   networkMembership   CardNetworkMembership? @relation(fields: [networkMembershipId], references: [id], onDelete: SetNull)
 
   // Bolsa de Leads (2026-10-12) -- qué Oreja tomó este lead para
-  // trabajarlo, ver lib/leadTemperature.ts. null = todavía en la bolsa,
-  // cualquier Oreja del Programa lo puede reclamar.
+  // trabajarlo. null = todavía en la bolsa, cualquier Oreja del
+  // Programa lo puede reclamar.
   claimedByAdminId String?
   claimedAt        DateTime?
+
+  // Estado real de Masterclass (2026-10-12, Viaje del Cliente) -- ver
+  // lib/masterclassStatus.ts. attendedAt lo marca una Oreja a mano (no
+  // hay integración real con Zoom/Meet que reporte asistencia).
+  // masterclassLog guarda cada reagendado DESPUÉS de faltar a un slot
+  // ya vencido -- de ahí sale verde/amarillo/rojo, nunca inventado.
+  attendedAt     DateTime?
+  masterclassLog Json      @default("[]")
 
   @@index([cardId])
   @@index([membershipId])
