@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { slotById, isSlotUpcoming } from "@/lib/interviewSlots";
 import { currentMemberId } from "@/lib/memberAuth";
 import { upsertLead } from "@/lib/leadsUpsert";
+import { parseMasterclassLog } from "@/lib/masterclassStatus";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -112,10 +113,28 @@ export async function registerInterviewAction(input: {
     networkMembershipId = membership.id;
   }
 
+  // Pool General de Leads -- estado real de Masterclass (2026-10-12).
+  // Si ya tenía un slot real agendado, no asistió todavía, y ese slot
+  // ya venció, reagendar ahora cuenta como "faltó y volvió a agendar"
+  // -- de ahí sale el color amarillo/rojo, ver lib/masterclassStatus.ts.
+  // Solo se puede confirmar con un InterviewSlot real (con fecha
+  // persistida); el fallback legacy de lib/interviewSlots.ts siempre
+  // genera fechas a futuro relativas a "ahora", así que no hay nada
+  // real contra qué comparar ahí.
+  let masterclassLog = parseMasterclassLog(existing?.masterclassLog);
+  if (existing && !existing.attendedAt && existing.interviewSlotId) {
+    const oldSlot = await prisma.interviewSlot.findUnique({ where: { id: existing.interviewSlotId } });
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (oldSlot && oldSlot.date < today) {
+      masterclassLog = [...masterclassLog, { type: "no_show_rescheduled" as const, previousDate: oldSlot.date.toISOString(), loggedAt: new Date().toISOString() }];
+    }
+  }
+
   const registration = existing
     ? await prisma.registration.update({
         where: { id: existing.id },
-        data: { slotId, slotLabel, interviewSlotId, name, email, membershipId, networkMembershipId },
+        data: { slotId, slotLabel, interviewSlotId, name, email, membershipId, networkMembershipId, masterclassLog },
       })
     : await prisma.registration.create({
         data: {

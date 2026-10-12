@@ -90,7 +90,10 @@ test.describe("Panel de Empleados -- Bolsa de Leads, Oferta rápida, Sesiones", 
 
     await page.goto(`${BASE_URL}/empleados`, { waitUntil: "networkidle" });
     await expect(page.getByText(`E2E Lead ${suffix}`)).toBeVisible();
-    await expect(page.getByText("Caliente")).toBeVisible(); // recién creado, < 2h
+    // Pool General de Leads reemplazó la "temperatura" por tiempo por el
+    // estado real de Masterclass (2026-10-12) -- sin InterviewSlot real
+    // detrás de este Registration de prueba, cae honesto a "Verde".
+    await expect(page.getByText("Verde")).toBeVisible();
 
     await page.getByRole("button", { name: "Tomar lead" }).click();
     await page.waitForURL(/leadClaimed=1/);
