@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { currentEmployeeScope } from "@/lib/auth";
 import { employeeLogoutAction } from "@/app/empleados/actions";
 import MembersPanel from "@/components/MembersPanel";
+import LeadsPanel from "@/components/LeadsPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +21,12 @@ export default async function EmployeePanelPage({
     memberError?: string;
     doorAssigned?: string;
     doorError?: string;
+    sessionLogged?: string;
+    sessionError?: string;
+    leadClaimed?: string;
   }>;
 }) {
-  const { memberAdded, memberError, doorAssigned, doorError } = await searchParams;
+  const { memberAdded, memberError, doorAssigned, doorError, sessionLogged, sessionError, leadClaimed } = await searchParams;
 
   const scope = await currentEmployeeScope();
   if (!scope) redirect("/empleados/login");
@@ -39,6 +43,16 @@ export default async function EmployeePanelPage({
     },
   });
   if (!program) redirect("/empleados/login");
+
+  // Bolsa de Leads (2026-10-12) -- Registrations de este Programa que
+  // todavía no se convirtieron en Miembro activo (los que ya activaron
+  // viven en MembersPanel, no acá).
+  const registrations = await prisma.registration.findMany({
+    where: { card: { programId: program.id } },
+    orderBy: { createdAt: "asc" },
+    include: { membership: { select: { status: true } } },
+  });
+  const leads = registrations.filter((r) => r.membership?.status !== "active");
 
   const returnTo = "/empleados";
 
@@ -73,6 +87,7 @@ export default async function EmployeePanelPage({
       </div>
 
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+        <LeadsPanel programId={program.id} leads={leads} myAdminId={scope.id} returnTo={returnTo} leadClaimed={leadClaimed} />
         <MembersPanel
           programId={program.id}
           memberships={program.memberships}
@@ -83,6 +98,8 @@ export default async function EmployeePanelPage({
           memberError={memberError}
           doorAssigned={doorAssigned}
           doorError={doorError}
+          sessionLogged={sessionLogged}
+          sessionError={sessionError}
         />
       </div>
     </div>

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { resolveActingScope, canAccessProgram } from "@/lib/auth";
 import { activateMembershipAndSpawnCards } from "@/lib/activateMembership";
 import { findAccessDoor, isValidPaymentModel } from "@/lib/accessDoors";
+import { parseSessionLog, nextSessionNumber } from "@/lib/sessionLog";
 
 // PLAN.md Fase 4: the interview is the gate. MasterN0 (or later, a Program's
 // own N0) marks it done here after the real conversation happens outside
@@ -78,4 +79,95 @@ export async function assignDoorAction(membershipId: string, programId: string, 
 
   revalidatePath(returnTo);
   redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}doorAssigned=1`);
+}
+
+// Matriz de oferta de cierre, un solo tap (2026-10-12) -- misma acción
+// de negocio que assignDoorAction, mismo guard, mismos campos reales
+// de ACCESS_DOORS -- solo que en vez de tipear precio/forma de
+// pago/quién lo trajo a mano, usa los defaults reales de la puerta
+// elegida (su paymentModels[0] y su precioDefault). Pensada para
+// cerrar en vivo durante una llamada, sin que la Oreja tenga que
+// completar un formulario con el cliente esperando. El form detallado
+// de assignDoorAction sigue existiendo al lado para precio/forma de
+// pago distintos al default.
+export async function quickAssignDoorAction(membershipId: string, programId: string, returnTo: string, doorKey: string) {
+  const scope = await resolveActingScope();
+  if (!scope) redirect("/admin/login");
+  if (!canAccessProgram(scope, programId)) redirect(returnTo);
+
+  const door = findAccessDoor(doorKey);
+  if (!door) redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}doorError=doorKey`);
+
+  const membership = await prisma.programMembership.findUnique({ where: { id: membershipId } });
+  if (!membership || membership.programId !== programId) redirect(returnTo);
+
+  await prisma.programMembership.update({
+    where: { id: membershipId },
+    data: {
+      doorKey: door.key,
+      priceAgreedUsd: door.precioDefault,
+      paymentModel: door.paymentModels[0],
+      traidoPor: "oreja",
+      doorAssignedAt: new Date(),
+      soldByAdminId: scope.id,
+    },
+  });
+
+  revalidatePath(returnTo);
+  redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}doorAssigned=1`);
+}
+
+// Bolsa de Leads (2026-10-12) -- cualquier Oreja del Programa puede
+// tomar un Registration sin dueño todavía; una vez tomado, desaparece
+// de la bolsa compartida y pasa a "Mis Leads" de quien lo tomó. Mismo
+// guard de siempre -- nunca se puede reclamar un lead de otro Programa.
+export async function claimLeadAction(registrationId: string, programId: string, returnTo: string) {
+  const scope = await resolveActingScope();
+  if (!scope) redirect("/admin/login");
+  if (!canAccessProgram(scope, programId)) redirect(returnTo);
+
+  const registration = await prisma.registration.findUnique({
+    where: { id: registrationId },
+    include: { card: { select: { programId: true } } },
+  });
+  if (!registration || registration.card.programId !== programId) redirect(returnTo);
+  if (registration.claimedByAdminId) redirect(returnTo); // ya tomado -- no-op idempotente
+
+  await prisma.registration.update({
+    where: { id: registrationId },
+    data: { claimedByAdminId: scope.id, claimedAt: new Date() },
+  });
+
+  revalidatePath(returnTo);
+  redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}leadClaimed=1`);
+}
+
+// Bitácora de sesiones (2026-10-12) -- ver lib/sessionLog.ts para el
+// porqué de no inventar un checklist ni un número total de sesiones.
+export async function logSessionAction(membershipId: string, programId: string, returnTo: string, formData: FormData) {
+  const scope = await resolveActingScope();
+  if (!scope) redirect("/admin/login");
+  if (!canAccessProgram(scope, programId)) redirect(returnTo);
+
+  const notes = String(formData.get("notes") || "").trim();
+  if (!notes) redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}sessionError=notesEmpty`);
+
+  const membership = await prisma.programMembership.findUnique({ where: { id: membershipId } });
+  if (!membership || membership.programId !== programId) redirect(returnTo);
+
+  const log = parseSessionLog(membership.sessionLog);
+  log.push({
+    sessionNumber: nextSessionNumber(log),
+    notes,
+    loggedAt: new Date().toISOString(),
+    loggedByAdminId: scope.id,
+  });
+
+  await prisma.programMembership.update({
+    where: { id: membershipId },
+    data: { sessionLog: log },
+  });
+
+  revalidatePath(returnTo);
+  redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}sessionLogged=1`);
 }

@@ -855,6 +855,12 @@ model ProgramMembership {
 
   registrations Registration[]
 
+  // Bitácora de sesiones (2026-10-12) -- registro honesto de "la Oreja
+  // completó una sesión con este Miembro", sin inventar un número fijo
+  // de sesiones ni un checklist de contenido que no es real todavía
+  // (ver lib/sessionLog.ts). Array de SessionLogEntry serializado.
+  sessionLog Json @default("[]")
+
   @@unique([memberId, programId])
 }
 
@@ -930,6 +936,12 @@ model Registration {
   // card.kind === "company" and the visitor is a logged-in Member.
   networkMembershipId String?
   networkMembership   CardNetworkMembership? @relation(fields: [networkMembershipId], references: [id], onDelete: SetNull)
+
+  // Bolsa de Leads (2026-10-12) -- qué Oreja tomó este lead para
+  // trabajarlo, ver lib/leadTemperature.ts. null = todavía en la bolsa,
+  // cualquier Oreja del Programa lo puede reclamar.
+  claimedByAdminId String?
+  claimedAt        DateTime?
 
   @@index([cardId])
   @@index([membershipId])
