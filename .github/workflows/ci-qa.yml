@@ -18,6 +18,18 @@ jobs:
   lint-and-unit:
     name: Lint + Unit tests (cobertura)
     runs-on: ubuntu-latest
+    env:
+      # Dummy, nunca conecta de verdad -- `prisma generate` (postinstall)
+      # exige que DATABASE_URL resuelva (prisma.config.ts), pero no abre
+      # conexión real; lint y los unit tests tampoco tocan DB (ningún
+      # test en lib/__tests__ importa Prisma). Por eso este job no
+      # levanta el servicio postgres que sí usa `e2e` más abajo --
+      # confirmado reproduciendo el fallo real y el fix en local antes
+      # de este cambio (2026-10-12, mismo síntoma que rompió el deploy
+      # de Vercel la semana pasada: DATABASE_URL faltante en el paso que
+      # corre `prisma generate`).
+      DATABASE_URL: "postgresql://lycard:lycard@localhost:5432/lycard?schema=public"
+      SESSION_SECRET: "ci-only-dummy-secret-nunca-usar-en-produccion"
     steps:
       - uses: actions/checkout@v4
 
