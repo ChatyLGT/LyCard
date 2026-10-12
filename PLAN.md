@@ -10345,3 +10345,92 @@ completa: 99/99 verde. Captura real de S1 con el botón visible junto a
 
 Sigue sin mergear a main. Nada de Paso 4 todavía -- esperando la
 confirmación de Neon y la prueba de Gunnar desde el celular.
+
+## 2026-10-12 -- Backlog (IDEA, nada construido): WowApp "menuDigital" + funnel de certificación de la Oreja
+
+Dos ideas que Gunnar compartió para dejar anotadas, explícitamente
+pospuestas ("eso lo tenemos que dejar luego") -- **cero código, cero
+fila en DB, cero WowApp creada**. Solo bitácora para no perderlas.
+
+**WowApp "menuDigital" -- motor de matching tipo CAINCO/HeroSuite**
+
+Gunnar compartió un video (demo de CAINCO, cámara empresarial de
+Bolivia, corriendo sobre tecnología de HeroSuite -- "Rene" la armó) y
+la idea de ofrecerlo como parte del paquete base de LyCard, para
+**todos los Members, desde freemium hasta la puerta más completa**,
+no solo para una puerta de pago. El demo (visto en video, sin poder
+escuchar el audio -- el host de descarga del modelo de Whisper,
+`openaipublic.azureedge.net`, está bloqueado por la política de red
+del sandbox, así que la lectura es 100% visual):
+
+1. El visitante carga perfil empresarial (web + documentos:
+   certificaciones, catálogo, presentación).
+2. Una IA extrae capacidades reales de esos documentos.
+3. Matching contra oportunidades de negocio reales, rankeadas por %
+   de compatibilidad + potencial en USD.
+4. Desglose de por qué ese % (capacidad operativa, experiencia,
+   cobertura, certificación, financiamiento) y qué acción concreta lo
+   sube, cada una ligada a un tipo de socio real (certificadora,
+   partner regional, entidad financiera) que puede ayudar a cerrar la
+   brecha.
+5. Inteligencia territorial: mapa por región con oportunidades
+   identificadas, demanda potencial en USD, y qué capacidades le
+   faltan a esa región.
+
+La propuesta de encaje: un `WowApp` nuevo (mismo modelo que ya existe,
+`prisma/schema.prisma` -- `key`, `nombre`, `descripcion`, `appType`,
+`industryTags`/`painPointTags`, `status: "proximamente"` hasta que haya
+algo real) con key tentativa `menuDigital`, visible en la Oficina
+Virtual de cualquier Card, sin importar la puerta de acceso con la que
+entró el Member.
+
+**Bloqueado en 3 preguntas reales, sin inventar nada** (mismo criterio
+honesto de siempre -- ver REGLA PERMANENTE al inicio de este
+documento):
+1. ¿El motor de matching de Rene es una API real hoy, o es un demo de
+   Gemini sin backend, como el mockup de la Oreja (ver abajo)?
+2. ¿Qué expone HeroSuite como ERP -- API propia, acceso a su base,
+   webhooks, nada todavía?
+3. ¿Quién dispara a quién -- el Member arma su perfil en LyCard y eso
+   llama a HeroSuite, o HeroSuite empuja oportunidades hacia LyCard?
+
+Sin esas 3 respuestas no hay plan de integración real que escribir --
+solo quedaría la cáscara (`status: "proximamente"`) hasta tenerlas.
+
+**Escalas y precios de acceso (`lib/accessDoors.ts`) -- a revisar,
+pospuesto a propósito.** Gunnar mencionó de memoria un precio
+("$100 + $25/mes") que no coincide con ninguna puerta real del
+catálogo hoy (la más cercana a "hacer tu programa Legacy en serio" es
+Arquitecto, $500 único) -- confirmado que es trabajo pendiente
+aparte, sin tocar todavía.
+
+**Funnel de certificación de la "Oreja" -- quién puede serlo**
+
+Sobre el mockup de la Oreja compartido antes (`ÓCULO DE LA OREJA //
+LEGACY BY EINAROS`, HTML armado con Gemini, sin integrar): la idea de
+Gunnar es que **cualquiera pueda llegar a ser Oreja de EinarOs**,
+siguiendo un funnel de certificación, no por asignación directa:
+
+1. Hacer su propio Programa Legacy (al menos la puerta de entrada que
+   se defina -- ver nota de precios arriba, todavía sin cerrar cuál).
+2. Hacer su "capacitación" -- contenido/curso que **no existe
+   todavía**, queda por construir dentro de la futura oficina de la
+   Oreja.
+3. Entrenarse con una Oreja ya en funciones ("ser la oreja de la
+   oreja"): primero de oyente en sesiones reales.
+4. Después, llevar sesiones asistido (acompañado).
+5. Se le da libertad -- corre sesiones solo.
+6. Después, rangos -- progresión dentro del rol.
+
+Lo único que ya existe hoy y sirve de base real para el final del
+funnel: `RANKS` (`lib/data.ts`) y el modelo `Puesto`
+(`prisma/schema.prisma`) -- ya es un sistema de rangos/progresión
+administrable por un N0. Todo el medio del funnel (capacitación,
+shadowing, sesiones asistidas, desbloqueo de "libertad") es
+construcción nueva, sin ningún punto de apoyo en el código actual.
+
+**Nada de esto se construye hasta que Gunnar lo apruebe con un pedido
+concreto** -- queda anotado para retomarlo cuando defina precios de
+acceso, confirme si el matching de Rene es real, y decida el diseño
+del rol Oreja como ciudadano de primera clase (no solo un valor de
+`traidoPor`).
