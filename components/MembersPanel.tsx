@@ -79,7 +79,7 @@ type Membership = {
     name: string;
     whatsapp: string | null;
     email: string;
-    cards: { kind: string; slug: string }[];
+    cards: { id: string; kind: string; slug: string }[];
   };
 };
 
@@ -151,6 +151,7 @@ export default function MembersPanel({
       {memberships.length === 0 && <p style={{ margin: 0, color: "#5A5A5A", font: "400 12.5px 'Plus Jakarta Sans',sans-serif" }}>Todavía no hay miembros.</p>}
       {memberships.map((m) => {
         const projectCard = m.member.cards.find((c) => c.kind === "project");
+        const personalCard = m.member.cards.find((c) => c.kind === "personal");
         return (
           <AccordionRow
             key={m.id}
@@ -188,6 +189,25 @@ export default function MembersPanel({
             {projectCard && (
               <Link href={`/c/${projectCard.slug}`} style={{ font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#C8A15A" }}>
                 /c/{projectCard.slug}
+              </Link>
+            )}
+
+            {personalCard && (
+              <Link
+                href={`/empleados/biztocard/${personalCard.id}`}
+                style={{
+                  width: "fit-content",
+                  background: "linear-gradient(90deg,#E5C378,#C8A15A 50%,#99732B)",
+                  borderRadius: 999,
+                  padding: "6px 12px",
+                  color: "#0D0D0D",
+                  font: "700 10px 'Plus Jakarta Sans',sans-serif",
+                  letterSpacing: ".06em",
+                  textTransform: "uppercase",
+                  textDecoration: "none",
+                }}
+              >
+                BizToCard: tarjeta personal →
               </Link>
             )}
 

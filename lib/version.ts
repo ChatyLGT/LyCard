@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.92.0";
+export const APP_VERSION = "1.93.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.93.0",
+    date: "2026-10-12",
+    notes:
+      "Nace BizToCard: el protocolo agéntico de preguntas progresivas que pidió Gunnar para construir tarjetas en vivo junto al Miembro (\"un protocolo de preguntas tipo protocolo de excelencia... escalonado, progresivo y humano\"). Primera entrega, a propósito acotada: solo la Pista Personal, Niveles 1 y 2 (identidad básica -- nombre/título/frase/WhatsApp -- y el camino personal, en una frase y en una historia completa). Desde el Panel de Empleados, cada Miembro con tarjeta personal ya tiene un link \"BizToCard: tarjeta personal →\" que abre una pantalla de una pregunta por vez, con barra de progreso, opción de \"Prefiero no responder ahora\", y edición de lo ya guardado -- cada respuesta se escribe directo en la Card (nunca un borrador aparte: la Oreja está en vivo con el Miembro, no hace falta publicar después). Guarda real de Programa: nunca se puede abrir la tarjeta personal de un Miembro de otro Programa. Pista Negocio, Pista Programa y Nivel 3 (preguntas de esencia, con Oreja) quedan afuera a propósito, para cuando Gunnar las apruebe.",
+  },
   {
     version: "1.92.0",
     date: "2026-10-08",
