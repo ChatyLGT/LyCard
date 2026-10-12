@@ -21,11 +21,19 @@ async function main() {
   });
   console.log(`Seeded admin: ${admin.email} (change the password from /admin/account)`);
 
+  // Slug fijo real desde v1.68 (ver CHANGELOG) -- "gunnar" quedó obsoleto
+  // cuando se renombró la Card origen a "mastern0" en producción, pero
+  // este seed nunca se actualizó para reflejarlo (confirmado con `git log`
+  // sobre este archivo: sin tocar desde el MVP original, 2026-09-15).
+  // Eso dejaba cualquier DB sembrada desde cero (como el contenedor de
+  // Postgres fresco de CI) sin la Card que la mitad del código asume que
+  // existe por diseño (isOrigin=true, slug="mastern0").
   const card = await prisma.card.upsert({
-    where: { slug: "gunnar" },
+    where: { slug: "mastern0" },
     update: {},
     create: {
-      slug: "gunnar",
+      slug: "mastern0",
+      isOrigin: true,
       name: "Gunnar Pareja Ballivian",
       title: "Founding Partner & Strategic Investor",
       quote: "«La experiencia se convierte en legado.»",

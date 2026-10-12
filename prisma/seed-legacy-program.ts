@@ -15,9 +15,11 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const gunnarCard = await prisma.card.findUnique({ where: { slug: "gunnar" } });
+  // "mastern0" es el slug fijo real desde v1.68 (ver CHANGELOG) --
+  // prisma/seed.ts ya lo sembra con ese nombre, no "gunnar".
+  const gunnarCard = await prisma.card.findUnique({ where: { slug: "mastern0" } });
   if (!gunnarCard) {
-    throw new Error("No card with slug 'gunnar' found — run the regular seed first.");
+    throw new Error("No card with slug 'mastern0' found — run the regular seed first.");
   }
 
   const program = await prisma.program.upsert({
