@@ -2,6 +2,8 @@
 // approach as the rest of this project's auth. Needs GOOGLE_CLIENT_ID /
 // GOOGLE_CLIENT_SECRET set to actually work; see .env.example.
 
+import { GOOGLE_CONNECT_SCOPE_LIST } from "@/lib/googlePermissions";
+
 export const GOOGLE_STATE_COOKIE = "lycard_google_state";
 export const GOOGLE_CONNECT_COOKIE = "lycard_google_connect";
 export const ADMIN_GOOGLE_STATE_COOKIE = "lycard_admin_google_state";
@@ -16,14 +18,18 @@ const USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo";
 // esta app crea, así que nunca dispara la revisión de apps sensibles de
 // Google; a cambio, la carpeta Bridge la crea la app (Gunnar la reubica
 // una vez dentro de su 99_RAW real si quiere).
-export const GOOGLE_CONNECT_SCOPES = [
-  "openid",
-  "email",
-  "profile",
-  "https://www.googleapis.com/auth/calendar.events",
-  "https://www.googleapis.com/auth/tasks",
-  "https://www.googleapis.com/auth/drive.file",
-].join(" ");
+export const GOOGLE_CONNECT_SCOPES = GOOGLE_CONNECT_SCOPE_LIST.join(" ");
+
+// Revoca el permiso en Google (no solo lo borra de LyCard). Best-effort: si
+// Google no responde, el llamador igual borra el token local.
+export async function revokeGoogleToken(token: string) {
+  await fetch("https://oauth2.googleapis.com/revoke", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ token }),
+    signal: AbortSignal.timeout(5000),
+  });
+}
 
 function redirectUri() {
   const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";

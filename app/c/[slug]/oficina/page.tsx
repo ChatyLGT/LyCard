@@ -990,7 +990,7 @@ export default async function OficinaPage({ params }: { params: Promise<{ slug: 
   // Drive real), la Agenda lo dice y el botón de conectar desaparece.
   const ownerMember = isHost && card.memberId ? await prisma.member.findUnique({ where: { id: card.memberId } }) : null;
   const googleConnected = Boolean(ownerMember?.googleRefreshToken);
-  const connectUrl = `/m/auth/google/connect-start?cardId=${card.id}&returnTo=${encodeURIComponent(`/c/${slug}/oficina`)}`;
+  const connectUrl = `/m/google/conectar?cardId=${card.id}`;
 
   // Alimenta el fallback simulado de la Agenda (Superpoder, abajo) cuando
   // no hay Google conectado. El bloque "Calendario" suelto de Fase E4 se

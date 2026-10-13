@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.99.0";
+export const APP_VERSION = "1.100.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.100.0",
+    date: "2026-10-13",
+    notes:
+      "Conectar mi Google: nueva pantalla /m/google/conectar que explica cada permiso (para qué y cuándo se usa) antes de mandar a la persona a Google, muestra si la cuenta está conectada y permite desconectarla (revoca en Google y borra el token). Cada persona autoriza solo su propia cuenta. Entradas: tile Agenda de la Oficina y el dashboard del Member. Mapa de permisos en lib/googlePermissions.ts y PLAN.md.",
+  },
   {
     version: "1.99.0",
     date: "2026-10-13",

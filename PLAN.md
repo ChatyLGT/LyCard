@@ -99,6 +99,26 @@ listo para salir".
 
 ---
 
+## Mapa de permisos de Google (v1.100.0)
+
+Fuente única en `lib/googlePermissions.ts`; la pantalla `/m/google/conectar`
+lista cada permiso (para qué y cuándo) ANTES de mandar a la persona a Google.
+Cada persona autoriza su propia cuenta; el token queda ligado a su Member.
+Se puede desconectar en cualquier momento (revoca en Google y borra el token).
+
+| Función | Scopes | Cuándo se usa |
+|---|---|---|
+| Identidad | openid, email, profile | Siempre que se conecta |
+| Calendario / Meet | calendar.events | Agenda de la Oficina, capacitaciones |
+| Tareas | tasks | Tareas de la Oficina |
+| Drive (Bridge) | drive.file | Solo con Bridge activo |
+| Notas de voz | ninguno del usuario | AssemblyAI, clave de servidor |
+
+Pendiente: Gmail (`gmail.send`, sensible), Fathom (OAuth por usuario, ver
+developers.fathom.ai) y Keep (solo cuentas Workspace). Se agregan aquí cuando
+se decidan. Hoy los scopes se piden juntos al conectar; separarlos por función
+(pedido incremental) queda como mejora.
+
 ## Editor de tarjeta: ítems pendientes
 
 - Rediseñar el editor: hoy es una lista plana de inputs.
