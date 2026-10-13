@@ -2,15 +2,22 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentMember } from "@/lib/memberAuth";
 import { prisma } from "@/lib/prisma";
-import { sendDirectMessageAction, markMessageReadAction } from "../messages-actions";
+import { sendDirectMessageAction, markMessageReadAction, sendMessageToAdminAction } from "../messages-actions";
 
 export const dynamic = "force-dynamic";
 
 // Mensajería Interna (2026-09-24) -- bandeja + directo 1:1 member-facing.
 // Simplificación honesta de M1 (documentada en PLAN.md): se opera sobre
-// la PRIMERA membresía activa del Member, no sobre todas -- la mayoría
-// hoy solo tiene una (Legacy, salvo que haya sido referido a más de un
-// Programa). Multi-Programa queda para una fase aparte si hace falta.
+// la PRIMERA membresía del Member, no sobre todas -- la mayoría hoy solo
+// tiene una (Legacy, salvo que haya sido referido a más de un Programa).
+// Multi-Programa queda para una fase aparte si hace falta.
+//
+// Viaje del Cliente, Fase 3 (2026-10-13): antes exigía status "active"
+// para entrar -- pero el chat real con la Oreja (ver LeadsPanel.tsx)
+// pasa justo ANTES de activarse, mientras el Lead sigue "invited". Si
+// tiene más de una membresía, prioriza la activa (si la tiene) por
+// orden alfabético real de sus 3 valores -- "active" < "interviewed" <
+// "invited" -- sin inventar un campo nuevo para esto.
 export default async function MessagesPage({
   searchParams,
 }: {
@@ -22,7 +29,8 @@ export default async function MessagesPage({
   const { sent, directError } = await searchParams;
 
   const membership = await prisma.programMembership.findFirst({
-    where: { memberId: member.id, status: "active" },
+    where: { memberId: member.id },
+    orderBy: [{ status: "asc" }, { createdAt: "asc" }],
     include: { program: true },
   });
   if (!membership) redirect("/m/dashboard");
@@ -65,11 +73,14 @@ export default async function MessagesPage({
             <p style={{ margin: 0, font: "400 12.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>Sin mensajes todavía.</p>
           )}
           {deliveries.map((d) => {
-            const senderName = d.message.senderMember?.name || (d.message.senderAdmin ? "N0" : "Alguien");
+            const senderAdmin = d.message.senderAdmin;
+            // Viaje del Cliente, Fase 3 -- distinguir a la Oreja (role
+            // "empleado") de un N0 clásico, en vez del "N0" genérico de
+            // siempre -- es a ella a quien le vas a contestar.
+            const senderName = d.message.senderMember?.name || (senderAdmin ? (senderAdmin.role === "empleado" ? "Tu Oreja" : "N0") : "Alguien");
             return (
-              <form
+              <div
                 key={d.id}
-                action={d.readAt ? undefined : markMessageReadAction.bind(null, d.id)}
                 style={{
                   background: d.readAt ? "#201f1f" : "#26201a",
                   border: d.readAt ? "1px solid transparent" : "1px solid rgba(200,161,90,.35)",
@@ -80,7 +91,7 @@ export default async function MessagesPage({
                   gap: 4,
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                <form action={d.readAt ? undefined : markMessageReadAction.bind(null, d.id)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                   <span style={{ font: "700 11px 'Plus Jakarta Sans',sans-serif", color: "#C8A15A" }}>
                     {senderName} {d.message.scope === "masivo" && "· masivo"}
                   </span>
@@ -92,12 +103,25 @@ export default async function MessagesPage({
                       Marcar leído
                     </button>
                   )}
-                </div>
+                </form>
                 <p style={{ margin: 0, font: "400 12.5px/1.6 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5", whiteSpace: "pre-wrap" }}>{d.message.body}</p>
                 <span style={{ font: "400 9.5px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>
                   {new Date(d.createdAt).toLocaleString("es-MX", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                 </span>
-              </form>
+                {senderAdmin && d.message.scope === "directo" && (
+                  <form action={sendMessageToAdminAction.bind(null, membership.programId, senderAdmin.id)} style={{ display: "flex", gap: 6, marginTop: 4 }}>
+                    <textarea
+                      name="body"
+                      placeholder={`Contestarle a ${senderName}...`}
+                      rows={1}
+                      style={{ flex: 1, background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "7px 10px", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none", resize: "vertical" }}
+                    />
+                    <button type="submit" style={{ alignSelf: "flex-start", padding: "7px 12px", border: "none", borderRadius: 8, background: "#353534", color: "#F5F2EB", font: "700 10px 'Plus Jakarta Sans',sans-serif", cursor: "pointer" }}>
+                      Enviar
+                    </button>
+                  </form>
+                )}
+              </div>
             );
           })}
         </section>

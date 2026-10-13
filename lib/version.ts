@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.96.0";
+export const APP_VERSION = "1.97.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.97.0",
+    date: "2026-10-13",
+    notes:
+      "Viaje del Cliente, Fase 3: chat interno real entre la Oreja y su Lead, mismo canal \"lycard\" que ya conectaba a Member↔Member -- un Admin ya puede ser destinatario real de un mensaje directo (MessageDelivery.recipientAdminId, nuevo; Message.senderAdminId ya existía en el schema pero nadie lo usaba todavía). La Oreja le escribe desde /empleados (sendOrejaMessageAction) y el Lead le contesta desde su bandeja (/m/dashboard/messages, sendMessageToAdminAction) -- lib/chatThreads.ts agrupa los mensajes sueltos en un hilo por Lead, puro y 100% testeado. Encontrado y corregido en el camino: la bandeja de mensajes del Member exigía membership \"active\" para poder abrirla -- pero este chat tiene que funcionar justo ANTES de activarse, con el Lead todavía \"invited\" (es la conversación que lo convierte). Ahora prioriza la membership activa si la tiene, pero nunca bloquea la bandeja por eso. Fases 4-5 (comisiones sobre `traidoPor`, Oreja=Member) siguen pendientes en PLAN.md.",
+  },
   {
     version: "1.96.0",
     date: "2026-10-12",

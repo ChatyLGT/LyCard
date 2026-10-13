@@ -10714,3 +10714,61 @@ documentado arriba.
 Quedan pendientes, en el orden del plan: Fase 3 (chat interno real
 Oreja↔Lead), Fase 4 (comisiones sobre `traidoPor`), Fase 5 (Oreja
 también es Member, requiere aprobación aparte).
+
+---
+
+## 2026-10-13 -- Viaje del Cliente, Fase 3: chat interno real Oreja↔Lead (v1.97.0)
+
+Tercera de las 5 fases. El chat interno real (`Message`/`MessageDelivery`,
+canal `"lycard"`) ya conectaba Member↔Member desde 2026-09-24, pero un
+Admin nunca podía ser destinatario -- `MessageDelivery.recipientMemberId`
+era obligatorio, y `Message.senderAdminId` existía en el schema desde el
+día uno pero ninguna action lo usaba todavía. Resolución:
+
+1. **Schema**: `MessageDelivery.recipientMemberId` pasa a opcional,
+   suma `recipientAdminId` (opcional) -- exactamente uno de los dos
+   seteado, mismo patrón ya usado por `Message.senderMemberId`/
+   `senderAdminId`. Migración manual de siempre (`ALTER COLUMN ... DROP
+   NOT NULL` + `ADD COLUMN` + FK + índice).
+2. **La Oreja manda** (`sendOrejaMessageAction`, nueva, en
+   `app/admin/interviews/actions.ts`): mismo guard de
+   `resolveActingScope`/`canAccessProgram` que el resto de LeadsPanel.
+   Requiere que el Lead ya tenga una `ProgramMembership` real debajo --
+   mismo gate honesto que `scheduleInterviewAction`/
+   `completeInterviewAction`.
+3. **El Lead contesta** (`sendMessageToAdminAction`, nueva, en
+   `app/m/dashboard/messages-actions.ts`): valida que el Admin
+   destinatario sea del mismo Programa (o MasterN0).
+4. **`lib/chatThreads.ts`** (nuevo, puro, 100% tests): agrupa los
+   `MessageDelivery` sueltos de esta Oreja en un hilo por Member --
+   `LeadsPanel.tsx` necesita "la conversación con ESTE Lead", no una
+   bandeja plana.
+5. **Bug real encontrado y corregido en el camino**: `/m/dashboard/
+   messages` exigía `status: "active"` en la membresía del Member para
+   poder abrirla -- pero esta conversación tiene que pasar justo ANTES
+   de activarse (es la que lo convierte), con el Lead todavía
+   `"invited"`. Se sacó ese filtro; si tiene más de una membresía
+   prioriza la activa (orden alfabético real de los 3 valores del
+   campo: `"active" < "interviewed" < "invited"`), pero nunca bloquea
+   la bandeja por el estado.
+6. `app/m/dashboard/messages/page.tsx`: cada mensaje de un Admin ahora
+   trae su propia caja de respuesta (`sendMessageToAdminAction`), y el
+   remitente se etiqueta "Tu Oreja" en vez del "N0" genérico cuando
+   `role === "empleado"`.
+
+**Verificado:** `tsc --noEmit` limpio, `pnpm lint` (0 errores, mismos
+13 warnings preexistentes), `pnpm test:unit:coverage` 100% (401/401 --
+suma `lib/__tests__/chatThreads.test.ts`, 5 tests), `pnpm build`
+limpio. `e2e/chat-oreja-lead.spec.ts` nuevo (1 test de punta a punta:
+la Oreja le escribe a un Lead todavía `"invited"`, el Lead lo ve en su
+bandeja y contesta, la Oreja ve el hilo completo de vuelta -- los 3
+pasos confirmados en DB, no solo en la UI). Primera corrida de la
+suite completa mostró 2 fallos nuevos (`assistant-s0.spec.ts`,
+`assistant-s1-s5.spec.ts`) que no tocan ningún archivo de esta entrega;
+confirmados como contaminación de estado en la DB local por las
+muchas corridas parciales de la sesión (pasan limpios en aislado, y
+una segunda corrida completa dio 110/111 -- único fallo el mismo flake
+preexistente de `photo-positioner.spec.ts` ya documentado arriba).
+
+Quedan pendientes: Fase 4 (comisiones sobre `traidoPor`), Fase 5
+(Oreja también es Member, requiere aprobación aparte).

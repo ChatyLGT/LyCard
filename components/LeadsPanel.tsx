@@ -4,8 +4,10 @@ import {
   completeInterviewAction,
   markMasterclassAttendedAction,
   scheduleInterviewAction,
+  sendOrejaMessageAction,
 } from "@/app/admin/interviews/actions";
 import { masterclassStatus, parseMasterclassLog, MASTERCLASS_STATUS_LABEL, type MasterclassStatus } from "@/lib/masterclassStatus";
+import type { ChatThreadMessage } from "@/lib/chatThreads";
 
 // Viaje del Cliente, Fase 2 -- <input type="datetime-local"> necesita
 // "YYYY-MM-DDTHH:mm" en hora local, sin librería nueva.
@@ -69,6 +71,19 @@ const DATETIME_INPUT = {
   font: "400 11px 'Plus Jakarta Sans',sans-serif",
 };
 
+const CHAT_TEXTAREA = {
+  background: "#0D0D0D",
+  border: "1px solid rgba(200,161,90,.25)",
+  borderRadius: 8,
+  padding: "8px 11px",
+  color: "#F5F2EB",
+  font: "400 12px 'Plus Jakarta Sans',sans-serif",
+  outline: "none",
+  resize: "vertical" as const,
+};
+
+const chatMsgFmt = new Intl.DateTimeFormat("es-MX", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+
 type Lead = {
   id: string;
   name: string;
@@ -79,7 +94,7 @@ type Lead = {
   masterclassLog: unknown;
   interviewSlot: { date: Date } | null;
   claimedByAdminId: string | null;
-  membership: { id: string; status: string; nextInterviewAt: Date | null } | null;
+  membership: { id: string; memberId: string; status: string; nextInterviewAt: Date | null } | null;
 };
 
 // Bolsa de Leads (2026-10-12) -- punto "gettable" del mockup "Óculo de
@@ -98,6 +113,9 @@ export default function LeadsPanel({
   masterclassAttended,
   interviewScheduled,
   interviewError,
+  chatThreadsByMemberId,
+  chatSent,
+  chatError,
 }: {
   programId: string;
   leads: Lead[];
@@ -107,6 +125,9 @@ export default function LeadsPanel({
   masterclassAttended?: string;
   interviewScheduled?: string;
   interviewError?: string;
+  chatThreadsByMemberId: Map<string, ChatThreadMessage[]>;
+  chatSent?: string;
+  chatError?: string;
 }) {
   const bolsa = leads.filter((l) => !l.claimedByAdminId);
   const mios = leads.filter((l) => l.claimedByAdminId === myAdminId);
@@ -189,6 +210,43 @@ export default function LeadsPanel({
             </form>
           </div>
         )}
+
+        {/* Viaje del Cliente, Fase 3 -- chat interno real, directo con
+            ESTE Lead (canal "lycard", el mismo que ya existía para
+            Member↔Member). Mismo gate que el resto de esta tarjeta --
+            necesita la Membership real que crea registerInterviewAction
+            cuando el Lead se registra logueado. */}
+        {l.membership && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 4, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,.06)" }}>
+            <span style={{ font: "700 9.5px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#5A5A5A" }}>
+              Chat con {l.name}
+            </span>
+            {(chatThreadsByMemberId.get(l.membership.memberId) ?? []).map((m) => (
+              <div key={m.id} style={{ display: "flex", flexDirection: "column", alignItems: m.fromAdmin ? "flex-end" : "flex-start" }}>
+                <div
+                  style={{
+                    maxWidth: "80%",
+                    background: m.fromAdmin ? "rgba(200,161,90,.14)" : "#201f1f",
+                    borderRadius: 10,
+                    padding: "6px 10px",
+                    font: "400 12px/1.4 'Plus Jakarta Sans',sans-serif",
+                    color: "#F5F2EB",
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
+                  {m.body}
+                </div>
+                <span style={{ font: "400 9px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>{chatMsgFmt.format(m.createdAt)}</span>
+              </div>
+            ))}
+            <form action={sendOrejaMessageAction.bind(null, l.membership.id, programId, returnTo)} style={{ display: "flex", gap: 6 }}>
+              <textarea name="body" placeholder="Escribile al Lead..." rows={1} style={{ ...CHAT_TEXTAREA, flex: 1 }} />
+              <button type="submit" style={INTERVIEW_BTN}>
+                Enviar
+              </button>
+            </form>
+          </div>
+        )}
       </div>
     );
   };
@@ -199,6 +257,8 @@ export default function LeadsPanel({
       {masterclassAttended && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Asistencia marcada.</p>}
       {interviewScheduled && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Entrevista agendada.</p>}
       {interviewError && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>Elegí una fecha y hora válidas.</p>}
+      {chatSent && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Mensaje enviado.</p>}
+      {chatError && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>Escribí algo antes de mandar.</p>}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#5A5A5A" }}>

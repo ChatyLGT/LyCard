@@ -48,3 +48,32 @@ export async function markMessageReadAction(deliveryId: string) {
 
   revalidatePath("/m/dashboard/messages");
 }
+
+// Viaje del Cliente, Fase 3 (2026-10-13) -- contestarle a la Oreja (o a
+// cualquier N0) que te escribió, mismo canal "lycard" de siempre. El
+// destinatario tiene que ser un Admin real del MISMO Programa que tu
+// membresía (o MasterN0, programId null) -- nunca de otro Programa.
+export async function sendMessageToAdminAction(programId: string, recipientAdminId: string, formData: FormData) {
+  const memberId = await currentMemberId();
+  if (!memberId) redirect("/m/login");
+
+  const body = String(formData.get("body") || "").trim();
+  if (!body) redirect(`/m/dashboard/messages?directError=empty`);
+
+  const [senderMembership, recipientAdmin] = await Promise.all([
+    prisma.programMembership.findUnique({ where: { memberId_programId: { memberId, programId } } }),
+    prisma.admin.findUnique({ where: { id: recipientAdminId } }),
+  ]);
+  if (!senderMembership || !recipientAdmin) redirect("/m/dashboard/messages");
+  if (recipientAdmin.programId !== null && recipientAdmin.programId !== programId) redirect("/m/dashboard/messages");
+
+  const message = await prisma.message.create({
+    data: { programId, scope: "directo", body, senderMemberId: memberId },
+  });
+  await prisma.messageDelivery.create({
+    data: { messageId: message.id, recipientAdminId, channel: "lycard", status: "enviado" },
+  });
+
+  revalidatePath("/m/dashboard/messages");
+  redirect(`/m/dashboard/messages?sent=1`);
+}
