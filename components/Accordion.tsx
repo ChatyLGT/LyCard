@@ -104,6 +104,7 @@ export function AccordionRow({
   defaultOpen = false,
   open: openProp,
   onToggle: onToggleProp,
+  testId,
   children,
 }: {
   title: ReactNode;
@@ -117,13 +118,21 @@ export function AccordionRow({
   // at a time). Always pass the pair together, never just one.
   open?: boolean;
   onToggle?: () => void;
+  // Opcional -- un `data-testid` para que un E2E pueda escopar una fila
+  // puntual cuando hay varias con forms idénticos en la misma página al
+  // mismo tiempo (ej. varios Miembros "active", cada uno con su propia
+  // bitácora de sesión). El contenido cerrado nunca se desmonta (se
+  // colapsa con grid-template-rows:0fr, más abajo), así que ":visible"
+  // NO alcanza para distinguir filas -- un textarea colapsado conserva
+  // su propio bounding box.
+  testId?: string;
   children: ReactNode;
 }) {
   const [internalOpen, setInternalOpen] = useState(defaultOpen);
   const open = openProp ?? internalOpen;
   const onToggle = onToggleProp ?? (() => setInternalOpen((o) => !o));
   return (
-    <div style={{ background: "#151414", borderRadius: 12, overflow: "hidden" }}>
+    <div data-testid={testId} style={{ background: "#151414", borderRadius: 12, overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 12px" }}>
         {leading}
         <button

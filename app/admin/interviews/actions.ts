@@ -7,6 +7,7 @@ import { resolveActingScope, canAccessProgram } from "@/lib/auth";
 import { activateMembershipAndSpawnCards } from "@/lib/activateMembership";
 import { findAccessDoor, isValidPaymentModel } from "@/lib/accessDoors";
 import { parseSessionLog, nextSessionNumber } from "@/lib/sessionLog";
+import { calculateCommissionUsd } from "@/lib/commissions";
 
 // PLAN.md Fase 4: the interview is the gate. MasterN0 (or later, a Program's
 // own N0) marks it done here after the real conversation happens outside
@@ -192,6 +193,17 @@ export async function claimLeadAction(registrationId: string, programId: string,
 
 // Bitácora de sesiones (2026-10-12) -- ver lib/sessionLog.ts para el
 // porqué de no inventar un checklist ni un número total de sesiones.
+//
+// Viaje del Cliente, Fase 4 (2026-10-13): cada sesión logueada acá
+// calcula y snapshotea su comisión real (lib/commissions.ts, montos
+// que dio Gunnar de memoria) sobre traidoPor/paymentModel de la
+// Membership EN ESTE MOMENTO -- si esos campos cambian después, las
+// sesiones ya logueadas no se recalculan. Se guarda dos veces, a
+// propósito: el monto va en la entrada del log (auditoría histórica,
+// nunca se reescribe) y se SUMA al acumulado de la Membership
+// (totalCommissionsUsd, para no tener que recorrer todo el array cada
+// vez que alguien quiere ver el total). Sigue siendo cálculo, no hay
+// pasarela de pago real.
 export async function logSessionAction(membershipId: string, programId: string, returnTo: string, formData: FormData) {
   const scope = await resolveActingScope();
   if (!scope) redirect("/admin/login");
@@ -203,17 +215,20 @@ export async function logSessionAction(membershipId: string, programId: string, 
   const membership = await prisma.programMembership.findUnique({ where: { id: membershipId } });
   if (!membership || membership.programId !== programId) redirect(returnTo);
 
+  const commissionUsd = calculateCommissionUsd(membership.traidoPor, membership.paymentModel);
+
   const log = parseSessionLog(membership.sessionLog);
   log.push({
     sessionNumber: nextSessionNumber(log),
     notes,
     loggedAt: new Date().toISOString(),
     loggedByAdminId: scope.id,
+    commissionUsd,
   });
 
   await prisma.programMembership.update({
     where: { id: membershipId },
-    data: { sessionLog: log },
+    data: { sessionLog: log, totalCommissionsUsd: { increment: commissionUsd } },
   });
 
   revalidatePath(returnTo);
