@@ -4,6 +4,7 @@ import { exchangeGoogleCode, GOOGLE_STATE_COOKIE } from "@/lib/googleOAuth";
 import { prisma } from "@/lib/prisma";
 import { createMemberSession } from "@/lib/memberAuth";
 import { ensureLegacyMembershipAndCards } from "@/lib/legacyMembership";
+import { linkLegacyAdminByEmail } from "@/lib/linkLegacyAdmin";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -66,6 +67,7 @@ export async function GET(request: NextRequest) {
   await ensureLegacyMembershipAndCards(member.id, null);
   // Fusión de identidad: el rol decide el destino. Owner (MasterN0 / N0 de
   // Programa) -> /admin; Oreja -> /empleados; el resto -> su dashboard.
+  await linkLegacyAdminByEmail(member.id, profile.email);
   const bridge = await prisma.admin.findUnique({ where: { memberId: member.id }, select: { role: true } });
   const dest = bridge ? (bridge.role === "owner" ? "/admin" : "/empleados") : "/m/dashboard";
   return NextResponse.redirect(new URL(dest, request.url));
