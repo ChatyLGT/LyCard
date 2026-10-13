@@ -24,31 +24,6 @@ function secretKey() {
   return new TextEncoder().encode(secret);
 }
 
-export async function verifyAdminCredentials(email: string, password: string) {
-  const admin = await prisma.admin.findUnique({ where: { email: email.trim().toLowerCase() } });
-  // passwordHash null == una fila de Admin nacida de la promoción
-  // automática Chido→Programa (Admin.memberId) -- nunca tuvo password
-  // propio, nunca puede loguearse por acá. bcrypt.compare no acepta
-  // null, así que se corta antes en vez de dejarlo reventar.
-  if (!admin || !admin.passwordHash) return null;
-  // Panel de Empleados (2026-10-07): un Admin "empleado" nunca entra por
-  // /admin/login, solo por /empleados/login -- separación real en los
-  // dos sentidos, no solo cookies distintas.
-  if (admin.role === "empleado") return null;
-  const ok = await bcrypt.compare(password, admin.passwordHash);
-  return ok ? admin : null;
-}
-
-// Panel de Empleados (2026-10-07) -- mismo patrón que verifyAdminCredentials,
-// espejado: solo deja pasar filas role==="empleado".
-export async function verifyEmployeeCredentials(email: string, password: string) {
-  const admin = await prisma.admin.findUnique({ where: { email: email.trim().toLowerCase() } });
-  if (!admin || !admin.passwordHash) return null;
-  if (admin.role !== "empleado") return null;
-  const ok = await bcrypt.compare(password, admin.passwordHash);
-  return ok ? admin : null;
-}
-
 export async function createAdminSession(adminId: string) {
   const token = await new SignJWT({ sub: adminId })
     .setProtectedHeader({ alg: "HS256" })
@@ -132,8 +107,14 @@ export async function currentEmployeeId(): Promise<string | null> {
 // sobre un Programa concreto, nunca es MasterN0-global.
 export async function currentEmployeeScope(): Promise<{ id: string; programId: string } | null> {
   const id = await currentEmployeeId();
-  if (!id) return null;
-  const admin = await prisma.admin.findUnique({ where: { id }, select: { id: true, programId: true, role: true } });
+  // Fusión de identidad (2026-10-13): sin cookie de empleado, una Oreja
+  // entra con su sesión de Member (login solo Google) vía su fila puente.
+  const memberId = id ? null : await currentMemberId();
+  if (!id && !memberId) return null;
+  const admin = await prisma.admin.findUnique({
+    where: id ? { id } : { memberId: memberId! },
+    select: { id: true, programId: true, role: true },
+  });
   if (!admin || admin.role !== "empleado" || !admin.programId) return null;
   return { id: admin.id, programId: admin.programId };
 }
@@ -172,7 +153,12 @@ export async function currentAdminScope(): Promise<{ id: string; programId: stri
   // capacidades, sin login aparte que recordar.
   const memberId = await currentMemberId();
   if (!memberId) return null;
-  return prisma.admin.findUnique({ where: { memberId }, select: { id: true, programId: true } });
+  // Fusión de identidad (2026-10-13): el puente solo abre /admin a los
+  // owners (MasterN0 o N0 de Programa); una Oreja (role "empleado") entra
+  // únicamente por currentEmployeeScope.
+  const bridged = await prisma.admin.findUnique({ where: { memberId }, select: { id: true, programId: true, role: true } });
+  if (!bridged || bridged.role !== "owner") return null;
+  return { id: bridged.id, programId: bridged.programId };
 }
 
 export const ADMIN_COOKIE_NAME = COOKIE_NAME;

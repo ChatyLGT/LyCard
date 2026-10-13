@@ -8,7 +8,6 @@ import { completeInterviewAction } from "@/app/admin/interviews/actions";
 import {
   updateProgramAction,
   setProgramOriginAction,
-  createProgramAdminAction,
   updateCardLabelsAction,
   updateEscalaAction,
   createProgramSkinAction,
@@ -42,6 +41,7 @@ import ProgramSkinInfo from "@/components/ProgramSkinInfo";
 import PodiumSlotEditor from "@/components/PodiumSlotEditor";
 import ModalBlocksEditor from "@/components/ModalBlocksEditor";
 import { AccordionSection, AccordionRow, AccordionAddRow } from "@/components/Accordion";
+import { grantMembershipRoleAction, revokeMembershipRoleAction } from "@/app/admin/programs/roles-actions";
 import type { SkinColors } from "@/lib/designMd";
 
 export const dynamic = "force-dynamic";
@@ -196,9 +196,9 @@ export default async function AdminProgramDetailPage({
     empty: "Subí un archivo design.md.",
   };
   const ADMIN_ERROR_COPY: Record<string, string> = {
-    email: "Ingresá un email válido.",
-    password: "La contraseña debe tener al menos 8 caracteres.",
-    exists: "Ese email ya es una cuenta de Admin — si es el tuyo, no hace falta agregarlo: ya administrás este Programa como MasterN0. Para delegarlo, usá el email de otra persona.",
+    role: "Ese rol no se puede otorgar.",
+    member: "Ese Miembro no pertenece a este Programa.",
+    forbidden: "Solo el MasterN0 puede otorgar o quitar el rol de N0 de Programa.",
   };
   const PUESTO_ERROR_COPY: Record<string, string> = {
     required: "Sigla y denominación son obligatorias.",
@@ -213,13 +213,12 @@ export default async function AdminProgramDetailPage({
   const program = await prisma.program.findUnique({
     where: { id },
     include: {
-      admins: { orderBy: { createdAt: "asc" }, include: { member: true } },
       puestos: { orderBy: { order: "asc" } },
       interviewSlots: { orderBy: { date: "asc" } },
       skins: { orderBy: { createdAt: "asc" } },
       memberships: {
         orderBy: { createdAt: "desc" },
-        include: { member: { include: { cards: true } }, referredBy: { include: { member: true } } },
+        include: { member: { include: { cards: true } }, referredBy: { include: { member: true } }, roles: true },
       },
       originProgram: { select: { id: true, name: true } },
     },
@@ -1043,61 +1042,59 @@ export default async function AdminProgramDetailPage({
           <PhraseListEditor initialPhrases={motivationalPhrases} action={updateMotivationalPhrasesAction.bind(null, program.id)} />
         </AccordionSection>
 
-        {/* N0 admins — MasterN0 only, per PLAN.md Fase 6 */}
-        {isMasterN0 && (
-          <AccordionSection
-            title="N0 de este Programa"
-            meta={<span style={PILL}>{program.admins.length}</span>}
-            defaultOpen={Boolean(adminCreated || adminError || focus === "admins")}
-          >
-            {adminCreated && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ N0 creado.</p>}
-            {adminError && (
-              <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>
-                {ADMIN_ERROR_COPY[adminError] || "No se pudo crear el N0."}
-              </p>
-            )}
-            {program.admins.length === 0 && (
-              <p style={{ margin: 0, font: "400 12px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>Todavía no tiene N0 asignado — sos vos (MasterN0) quien lo administra.</p>
-            )}
-            {program.admins.map((a) => (
-              <div key={a.id} style={{ font: "400 12.5px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
-                {a.email ?? (
-                  // Sin email == promovido automático (Admin.memberId,
-                  // 2026-09-24) -- nunca tuvo login propio, opera con su
-                  // sesión de Member de siempre.
-                  <>
-                    {a.member?.name || a.member?.whatsapp || "N0 promovido"}{" "}
-                    <span style={{ color: "#5A5A5A" }}>(vía su cuenta, sin password propio)</span>
-                  </>
-                )}
-                {a.email && a.role === "empleado" && (
-                  <span style={{ marginLeft: 8, font: "700 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#C8A15A", background: "rgba(200,161,90,.12)", borderRadius: 6, padding: "2px 6px" }}>
-                    Empleado -- /empleados/login
-                  </span>
-                )}
+        {/* Roles del equipo -- fusión de identidad (2026-10-13): se otorgan
+            a Members ya inscriptos en el Programa; nada de cuentas con
+            password (todos entran con Google). El MasterN0 otorga N0 y
+            Oreja; el N0 del Programa solo Oreja. */}
+        <AccordionSection
+          title="Roles del equipo"
+          meta={<span style={PILL}>{program.memberships.reduce((n, m) => n + m.roles.length, 0)}</span>}
+          defaultOpen={Boolean(adminCreated || adminError || focus === "admins")}
+        >
+          {adminCreated && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Roles actualizados.</p>}
+          {adminError && (
+            <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>
+              {ADMIN_ERROR_COPY[adminError] || "No se pudo actualizar el rol."}
+            </p>
+          )}
+          {program.memberships.every((m) => m.roles.length === 0) && (
+            <p style={{ margin: 0, font: "400 12px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>Todavía no hay Orejas ni N0 en este Programa.</p>
+          )}
+          {program.memberships
+            .filter((m) => m.roles.length > 0)
+            .map((m) => (
+              <div key={m.id} data-testid={`roles-row-${m.id}`} style={{ display: "flex", flexDirection: "column", gap: 4, font: "400 12.5px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
+                <span>{m.member.name || m.member.email || m.member.whatsapp || "Miembro"}</span>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {m.roles.map((r) => (
+                    <form key={r.id} action={revokeMembershipRoleAction.bind(null, program.id, r.id)}>
+                      <button type="submit" style={{ font: "700 9px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#C8A15A", background: "rgba(200,161,90,.12)", border: "none", borderRadius: 6, padding: "4px 8px", cursor: "pointer" }}>
+                        {r.role === "n0_programa" ? "N0 de Programa" : "Oreja"} ✕
+                      </button>
+                    </form>
+                  ))}
+                </div>
               </div>
             ))}
-            {/* Panel de Empleados (2026-10-07) -- mismo form, un select
-                más: "Empleado" da de alta una cuenta que solo entra por
-                /empleados/login (acceso independiente, nunca ve este
-                dashboard). Default Owner, cero cambio para quien no lo
-                toca. */}
-            <AccordionAddRow label="Agregar N0 delegado o Empleado" defaultOpen={Boolean(adminError)}>
-              <form action={createProgramAdminAction} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <input type="hidden" name="programId" value={program.id} />
-                <input name="email" type="email" placeholder="Email" required style={{ flex: "1 1 160px", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "9px 12px", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
-                <input name="password" type="password" placeholder="Contraseña (8+ caracteres)" required style={{ flex: "1 1 160px", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "9px 12px", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
-                <select name="role" defaultValue="owner" style={{ flex: "1 1 140px", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "9px 12px", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none" }}>
-                  <option value="owner">N0 (dashboard completo)</option>
-                  <option value="empleado">Empleado (/empleados, acceso mínimo)</option>
-                </select>
-                <button type="submit" style={SAVE_BTN}>
-                  Crear cuenta
-                </button>
-              </form>
-            </AccordionAddRow>
-          </AccordionSection>
-        )}
+          <AccordionAddRow label="Otorgar un rol" defaultOpen={Boolean(adminError) || focus === "admins"}>
+            <form action={grantMembershipRoleAction.bind(null, program.id)} data-testid="grant-role-form" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <select name="membershipId" required style={{ flex: "1 1 180px", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "9px 12px", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none" }}>
+                {program.memberships.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.member.name || m.member.email || m.member.whatsapp || m.id}
+                  </option>
+                ))}
+              </select>
+              <select name="role" defaultValue="oreja" style={{ flex: "1 1 140px", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "9px 12px", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none" }}>
+                <option value="oreja">Oreja (/empleados)</option>
+                {isMasterN0 && <option value="n0_programa">N0 de Programa (dashboard completo)</option>}
+              </select>
+              <button type="submit" style={SAVE_BTN}>
+                Otorgar
+              </button>
+            </form>
+          </AccordionAddRow>
+        </AccordionSection>
 
         {/* Embudo de Conversión */}
         <AccordionSection title="Embudo de Conversión" meta={<span style={PILL}>{funnelStages[0].count}</span>} defaultOpen={Boolean(memberPaidToggled)}>

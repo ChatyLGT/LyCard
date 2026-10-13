@@ -64,5 +64,9 @@ export async function GET(request: NextRequest) {
   // (app/m/actions.ts#verifyOtpAction) -- sin referido acá todavía (el
   // link ?ref= no viaja por el round-trip de OAuth en esta ronda).
   await ensureLegacyMembershipAndCards(member.id, null);
-  return NextResponse.redirect(new URL("/m/dashboard", request.url));
+  // Fusión de identidad: el rol decide el destino. Owner (MasterN0 / N0 de
+  // Programa) -> /admin; Oreja -> /empleados; el resto -> su dashboard.
+  const bridge = await prisma.admin.findUnique({ where: { memberId: member.id }, select: { role: true } });
+  const dest = bridge ? (bridge.role === "owner" ? "/admin" : "/empleados") : "/m/dashboard";
+  return NextResponse.redirect(new URL(dest, request.url));
 }

@@ -2,7 +2,6 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { currentAdminScope, isMasterN0Scope, canAccessProgram } from "@/lib/auth";
 import { slugify, uniqueSlug } from "@/lib/slug";
@@ -53,36 +52,6 @@ export async function createProgramAction(formData: FormData) {
 
   revalidatePath("/admin/programs");
   redirect(`/admin/programs/${program.id}`);
-}
-
-export async function createProgramAdminAction(formData: FormData) {
-  await requireMasterN0();
-
-  const programId = String(formData.get("programId") || "");
-  const email = String(formData.get("email") || "").trim().toLowerCase();
-  const password = String(formData.get("password") || "");
-  // Panel de Empleados (2026-10-07): el mismo form de "crear Admin" ahora
-  // también da de alta cuentas role="empleado" -- default "owner" si el
-  // select no viene (compatibilidad con cualquier llamada vieja).
-  const roleRaw = String(formData.get("role") || "owner");
-  const role = roleRaw === "empleado" ? "empleado" : "owner";
-  const errBase = `/admin/programs/${programId}`;
-
-  if (!programId) redirect("/admin/programs");
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) redirect(`${errBase}?adminError=email`);
-  if (password.length < 8) redirect(`${errBase}?adminError=password`);
-
-  const program = await prisma.program.findUnique({ where: { id: programId } });
-  if (!program) redirect("/admin/programs");
-
-  const existing = await prisma.admin.findUnique({ where: { email } });
-  if (existing) redirect(`${errBase}?adminError=exists`);
-
-  const passwordHash = await bcrypt.hash(password, 10);
-  await prisma.admin.create({ data: { email, passwordHash, programId, role } });
-
-  revalidatePath(`/admin/programs/${programId}`);
-  redirect(`/admin/programs/${programId}?adminCreated=1`);
 }
 
 // Linkear (o desligar) retroactivamente el linaje de un Programa ya

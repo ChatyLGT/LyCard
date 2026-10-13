@@ -44,21 +44,27 @@ test.describe("Panel de Empleados -- acceso independiente", () => {
     await e2eDb.end();
   });
 
-  test("login real con credenciales de empleado entra a /empleados, con acceso mínimo", async ({ page }) => {
-    await page.goto(`${BASE_URL}/empleados/login`, { waitUntil: "networkidle" });
-    await page.locator('input[name="email"]').fill(employeeEmail);
-    await page.locator('input[name="password"]').fill(PASSWORD);
-    await page.getByRole("button", { name: "Entrar" }).click();
-    await page.waitForURL(/\/empleados$/);
+  test("las pantallas de login son solo Google (sin email ni password)", async ({ page }) => {
+    for (const path of ["/empleados/login", "/admin/login"]) {
+      await page.goto(`${BASE_URL}${path}`, { waitUntil: "networkidle" });
+      await expect(page.getByRole("link", { name: "Continuar con Google" })).toHaveAttribute("href", "/m/auth/google/start");
+      await expect(page.locator('input[name="password"]')).toHaveCount(0);
+      await expect(page.locator('input[name="email"]')).toHaveCount(0);
+    }
+  });
+
+  test("con cookie de empleado: acceso mínimo, ninguna sección del dashboard completo", async ({ browser }) => {
+    const context = await browser.newContext();
+    await context.addCookies([{ ...(await mintEmployeeCookie(employeeAdminId)), url: BASE_URL }]);
+    const page = await context.newPage();
+    await page.goto(`${BASE_URL}/empleados`, { waitUntil: "networkidle" });
 
     await expect(page.getByRole("heading", { name: "Panel de Empleados" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Agregar Miembro" }).first()).toBeVisible();
-
-    // Acceso mínimo real, no solo de nombre: ninguna de las secciones del
-    // dashboard completo (sistema aparte) existe en esta página.
     await expect(page.getByText("Identidad del Programa")).not.toBeVisible();
-    await expect(page.getByText("N0 de este Programa")).not.toBeVisible();
+    await expect(page.getByText("Roles del equipo")).not.toBeVisible();
     await expect(page.getByText("Mensajería", { exact: true })).not.toBeVisible();
+    await context.close();
   });
 
   test("desde /empleados: agregar Miembro + asignar puerta -- misma acción de negocio que el dashboard completo", async ({ browser }) => {
@@ -116,13 +122,5 @@ test.describe("Panel de Empleados -- acceso independiente", () => {
     await expect(page).toHaveURL(/\/admin\/login/);
 
     await context.close();
-  });
-
-  test("separación de una sola vía: credenciales de empleado rechazadas en /admin/login", async ({ page }) => {
-    await page.goto(`${BASE_URL}/admin/login`, { waitUntil: "networkidle" });
-    await page.locator('input[name="email"]').fill(employeeEmail);
-    await page.locator('input[name="password"]').fill(PASSWORD);
-    await page.getByRole("button", { name: "Entrar" }).click();
-    await page.waitForURL(/\/admin\/login\?error=1/);
   });
 });

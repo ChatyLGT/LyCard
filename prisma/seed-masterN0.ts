@@ -27,6 +27,19 @@ async function main() {
     update: {},
     create: { memberId: member.id, role: "masterN0" },
   });
+
+  // Fila puente de Admin (lo que leen los guards): si Gunnar ya tenía un Admin
+  // con este email, se liga a su Member y se conserva su historial; si no, se
+  // crea una puente sin email ni password. Siempre owner global (programId null).
+  const legacy = await prisma.admin.findUnique({ where: { email } });
+  const bridged = await prisma.admin.findUnique({ where: { memberId: member.id } });
+  if (bridged) {
+    await prisma.admin.update({ where: { id: bridged.id }, data: { programId: null, role: "owner" } });
+  } else if (legacy) {
+    await prisma.admin.update({ where: { id: legacy.id }, data: { memberId: member.id, programId: null, role: "owner" } });
+  } else {
+    await prisma.admin.create({ data: { memberId: member.id, programId: null, role: "owner" } });
+  }
   console.log(`MasterN0 sembrado: ${email}`);
 }
 
