@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.103.1";
+export const APP_VERSION = "1.104.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.104.0",
+    date: "2026-10-13",
+    notes:
+      "Accesos desde el Dashboard, sin pedir direcciones: el Dashboard del Member muestra una sección \"Tus accesos\" según su rol (Panel de Empleados para Orejas, Centro de Mando para el MasterN0, Dashboard del Programa para N0), y el Panel de Empleados tiene un link \"Mi Dashboard\" para volver.",
+  },
   {
     version: "1.103.1",
     date: "2026-10-13",
