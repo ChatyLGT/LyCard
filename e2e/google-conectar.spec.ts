@@ -71,9 +71,14 @@ test.describe("Conectar mi Google -- permisos explicados y solo para el dueño",
     const page = await context.newPage();
 
     await page.goto(`${BASE_URL}/m/google/conectar?cardId=${cardId}`, { waitUntil: "networkidle" });
+    // El botón solo existe si el entorno tiene GOOGLE_CLIENT_ID/SECRET (en CI
+    // no están); sin ellos la pantalla lo dice en vez de ofrecer un botón roto.
     const link = page.getByRole("link", { name: "Autorizar con Google" });
-    await expect(link).toBeVisible();
-    await expect(link).toHaveAttribute("href", new RegExp(`/m/auth/google/connect-start\\?cardId=${cardId}`));
+    if (await link.count()) {
+      await expect(link).toHaveAttribute("href", new RegExp(`/m/auth/google/connect-start\\?cardId=${cardId}`));
+    } else {
+      await expect(page.getByText("todavía no está configurada")).toBeVisible();
+    }
 
     await context.close();
   });

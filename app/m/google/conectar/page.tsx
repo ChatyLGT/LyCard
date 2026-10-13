@@ -107,7 +107,7 @@ export default async function ConectarGooglePage({
         </Link>
       )}
 
-      {configured && isConnected && (
+      {isConnected && (
         <form action={disconnectGoogleAction.bind(null, cardId)}>
           <button
             type="submit"
