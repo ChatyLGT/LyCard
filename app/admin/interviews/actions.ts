@@ -219,3 +219,32 @@ export async function logSessionAction(membershipId: string, programId: string, 
   revalidatePath(returnTo);
   redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}sessionLogged=1`);
 }
+
+// Viaje del Cliente, Fase 3 (2026-10-13) -- chat interno real Oreja↔Lead.
+// Reusa el canal "lycard" que ya existía para Member↔Member
+// (app/m/dashboard/messages-actions.ts) -- Message.senderAdminId ya
+// existía en el schema pero nunca se usaba desde ninguna action; esta es
+// la primera. El Lead necesita una ProgramMembership real debajo (mismo
+// gate honesto que scheduleInterviewAction/completeInterviewAction) --
+// sin eso no hay a quién mandarle el mensaje de verdad.
+export async function sendOrejaMessageAction(membershipId: string, programId: string, returnTo: string, formData: FormData) {
+  const scope = await resolveActingScope();
+  if (!scope) redirect("/admin/login");
+  if (!canAccessProgram(scope, programId)) redirect(returnTo);
+
+  const body = String(formData.get("body") || "").trim();
+  if (!body) redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}chatError=empty`);
+
+  const membership = await prisma.programMembership.findUnique({ where: { id: membershipId } });
+  if (!membership || membership.programId !== programId) redirect(returnTo);
+
+  const message = await prisma.message.create({
+    data: { programId, scope: "directo", body, senderAdminId: scope.id },
+  });
+  await prisma.messageDelivery.create({
+    data: { messageId: message.id, recipientMemberId: membership.memberId, channel: "lycard", status: "enviado" },
+  });
+
+  revalidatePath(returnTo);
+  redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}chatSent=1`);
+}

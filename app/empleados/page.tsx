@@ -4,6 +4,7 @@ import { currentEmployeeScope } from "@/lib/auth";
 import { employeeLogoutAction } from "@/app/empleados/actions";
 import MembersPanel from "@/components/MembersPanel";
 import LeadsPanel from "@/components/LeadsPanel";
+import { groupThreadsByMemberId } from "@/lib/chatThreads";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,8 @@ export default async function EmployeePanelPage({
     masterclassAttended?: string;
     interviewScheduled?: string;
     interviewError?: string;
+    chatSent?: string;
+    chatError?: string;
   }>;
 }) {
   const {
@@ -40,6 +43,8 @@ export default async function EmployeePanelPage({
     masterclassAttended,
     interviewScheduled,
     interviewError,
+    chatSent,
+    chatError,
   } = await searchParams;
 
   const scope = await currentEmployeeScope();
@@ -64,9 +69,25 @@ export default async function EmployeePanelPage({
   const registrations = await prisma.registration.findMany({
     where: { card: { programId: program.id } },
     orderBy: { createdAt: "asc" },
-    include: { membership: { select: { id: true, status: true, nextInterviewAt: true } }, interviewSlot: { select: { date: true } } },
+    include: { membership: { select: { id: true, memberId: true, status: true, nextInterviewAt: true } }, interviewSlot: { select: { date: true } } },
   });
   const leads = registrations.filter((r) => r.membership?.status !== "active");
+
+  // Viaje del Cliente, Fase 3 (2026-10-13) -- chat interno real con cada
+  // Lead, uno por Member. Solo canal "lycard" y scope "directo" (nunca un
+  // masivo que esta misma Oreja haya mandado a todo el Programa).
+  const myMessageDeliveries = await prisma.messageDelivery.findMany({
+    where: {
+      channel: "lycard",
+      message: { scope: "directo" },
+      OR: [{ recipientAdminId: scope.id }, { message: { senderAdminId: scope.id } }],
+    },
+    select: {
+      recipientMemberId: true,
+      message: { select: { id: true, body: true, createdAt: true, senderMemberId: true, senderAdminId: true } },
+    },
+  });
+  const chatThreadsByMemberId = groupThreadsByMemberId(myMessageDeliveries);
 
   const returnTo = "/empleados";
 
@@ -110,6 +131,9 @@ export default async function EmployeePanelPage({
           masterclassAttended={masterclassAttended}
           interviewScheduled={interviewScheduled}
           interviewError={interviewError}
+          chatThreadsByMemberId={chatThreadsByMemberId}
+          chatSent={chatSent}
+          chatError={chatError}
         />
         <MembersPanel
           programId={program.id}
