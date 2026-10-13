@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.101.0";
+export const APP_VERSION = "1.102.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.102.0",
+    date: "2026-10-13",
+    notes:
+      "Fusión de identidad, etapas 1 y 2 (aditivas, sin tocar logins): tablas MembershipRole (roles por Programa, con quién los otorgó y cuándo) y PlatformRole (el único rol global, MasterN0), catálogo puro de roles y permisos (lib/permissions.ts, 100% testeado), función can(memberId, programId, permiso) (lib/can.ts) y script pnpm db:seed:master para sembrar a Gunnar. Ningún guard la usa todavía: la etapa 3 migra los permisos.",
+  },
   {
     version: "1.101.0",
     date: "2026-10-13",

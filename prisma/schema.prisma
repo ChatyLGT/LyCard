@@ -811,6 +811,7 @@ model Member {
   googleBridgeFolderId String?
 
   memberships        ProgramMembership[]
+  platformRole       PlatformRole?
   cards              Card[]
   origin             OriginMemento?
   networkMemberships CardNetworkMembership[]
@@ -854,6 +855,7 @@ model OtpCode {
 // member's own project/company/personal cards (PLAN.md Fase 4).
 model ProgramMembership {
   id                     String   @id @default(cuid())
+  roles                  MembershipRole[]
   memberId               String
   member                 Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
   programId              String
@@ -1444,4 +1446,29 @@ model AssistantDraft {
   updatedAt                   DateTime  @updatedAt
 
   @@unique([sessionId, espacioId])
+}
+
+// Fusión de identidad, etapa 1 (2026-10-13, docs/11-DISENO-FUSION-IDENTIDAD.md).
+// Roles POR PROGRAMA: una fila por (membresía, rol). "miembro" es implícito
+// (toda membresía lo tiene); acá solo viven los roles elevados. Se guarda
+// quién lo otorgó y cuándo para que Sergio y Fabricio puedan auditarlo.
+model MembershipRole {
+  id                 String            @id @default(cuid())
+  membershipId       String
+  membership         ProgramMembership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  role               String // "oreja" | "n0_programa"
+  grantedByMemberId  String?
+  grantedAt          DateTime          @default(now())
+
+  @@unique([membershipId, role])
+}
+
+// El único rol GLOBAL. Una sola fila válida: Gunnar ("masterN0"). Se siembra
+// por script, nunca por formulario.
+model PlatformRole {
+  id        String   @id @default(cuid())
+  memberId  String   @unique
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  role      String // "masterN0"
+  createdAt DateTime @default(now())
 }
