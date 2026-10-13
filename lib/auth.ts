@@ -115,8 +115,17 @@ export async function currentEmployeeScope(): Promise<{ id: string; programId: s
     where: id ? { id } : { memberId: memberId! },
     select: { id: true, programId: true, role: true },
   });
-  if (!admin || admin.role !== "empleado" || !admin.programId) return null;
-  return { id: admin.id, programId: admin.programId };
+  if (!admin) return null;
+  if (admin.role === "empleado") {
+    return admin.programId ? { id: admin.id, programId: admin.programId } : null;
+  }
+  // Con sesión de Member (no con la cookie de empleado), un owner también
+  // puede usar las herramientas de Oreja: el N0 en su Programa, el MasterN0
+  // en el Programa raíz. Antes este caso los devolvía al login en bucle.
+  if (id || admin.role !== "owner") return null;
+  if (admin.programId) return { id: admin.id, programId: admin.programId };
+  const root = await prisma.program.findFirst({ where: { isRoot: true }, select: { id: true } });
+  return root ? { id: admin.id, programId: root.id } : null;
 }
 
 // Las acciones de negocio que el Panel de Empleados reutiliza
