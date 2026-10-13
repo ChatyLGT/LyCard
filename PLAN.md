@@ -97,7 +97,7 @@ listo para salir".
 
 ### Bajo / a futuro (no tocar sin pedido concreto)
 
-11. Fusión de identidad Admin/Member: **diseño aprobado** (`docs/11-DISENO-FUSION-IDENTIDAD.md`, §9): login solo Google, schedule.edit = N0 de Programa o MasterN0, reset de datos. Construcción por etapas, sin empezar.
+11. Fusión de identidad Admin/Member: **diseño aprobado** (`docs/11-DISENO-FUSION-IDENTIDAD.md`, §9): login solo Google, schedule.edit = N0 de Programa o MasterN0, reset de datos. Etapas 1–2 hechas (v1.102.0: tablas de roles, `can()`, seed MasterN0, sin tocar logins). Faltan 3 (migrar guards), 4 (repuntar FKs) y 5 (borrar Admin + reset de producción, con confirmación).
 12. **Escalera N1 (pendiente de Gunnar):** el schema `Node` solo reconoce
     N1.1 y falta N1.2/N1.3; docs/01 y Gunnar difieren sobre el rol de Warren.
     Se anota, no se corrige. Ver `docs/10-ESCALERA-T3-CONTEXTO.md`.
