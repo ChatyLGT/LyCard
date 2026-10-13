@@ -10799,3 +10799,72 @@ funcionalidad.
 **Verificado:** `pnpm lint` limpio, suite E2E completa sin el test
 saltado -- 110/110 (antes 110/111 con el skip contando como "no
 ejecutado", no como "pasado").
+
+---
+
+## 2026-10-13 -- Viaje del Cliente, Fase 4: comisiones sobre `traidoPor` (v1.98.0)
+
+Cuarta de las 5 fases del plan de "Viaje del Cliente". `ProgramMembership.
+traidoPor` (`"empresa"|"oreja"`) existía desde la puerta de acceso
+(2026-10-07) con un comentario que literalmente decía "define el costo
+humano real" -- nadie lo había cableado todavía. Montos reales que dio
+Gunnar de memoria: $35 USD por sesión de 45min si la Oreja trajo al Lead,
+$15 si fue asignada por la empresa; $12 o $5 USD mensuales (misma
+distinción) por la vida de una suscripción de $100/mes, a cambio de las
+15min de revisión mensual de indicadores de estrés.
+
+1. **`lib/commissions.ts`** (nuevo, puro, 100% tests):
+   `calculateCommissionUsd(traidoPor, paymentModel)` -- $35/$15 por
+   sesión, $12/$5 si `paymentModel === "suscripcion"`, $0 si `traidoPor`
+   todavía no está asignado (nada inventado antes de que haya una puerta
+   real). `COMMISSION_RATES_USD` exportado para que la UI no duplique
+   los números.
+2. **Schema**: `ProgramMembership.totalCommissionsUsd` (`Int`, default
+   0) -- acumulado real, se suma en cada sesión logueada.
+   `SessionLogEntry.commissionUsd` (nuevo campo en `lib/sessionLog.ts`)
+   -- snapshot de la comisión de ESA sesión puntual, calculado una sola
+   vez y nunca recalculado después (si `traidoPor`/`paymentModel`
+   cambian más tarde, las sesiones viejas no se reescriben -- es
+   historia). Las sesiones logueadas ANTES de que existiera este campo
+   se leen normalizadas a `commissionUsd: 0` en vez de inventarles una
+   comisión retroactiva (`parseSessionLog` tolera su ausencia).
+3. **`logSessionAction`** (`app/admin/interviews/actions.ts`): calcula
+   el monto con `calculateCommissionUsd` sobre `traidoPor`/
+   `paymentModel` de la Membership EN ESE MOMENTO, lo snapshotea en la
+   nueva entrada del log, y lo suma a `totalCommissionsUsd` con un
+   `increment` atómico de Prisma en la misma escritura.
+4. **`MembersPanel.tsx`**: cada sesión logueada muestra su propio
+   snapshot (`+$35`) junto a la fecha; el header de "Sesiones (N)" suma
+   un pill con el acumulado real (`$X USD acumulados`). Misma etiqueta
+   honesta de siempre: esto es cálculo, no hay pasarela de pago real.
+5. **`components/Accordion.tsx`**: `AccordionRow` suma un `testId?`
+   opcional (`data-testid`) -- hace falta para que un E2E con varios
+   Miembros "active" a la vez (cada uno con su propia bitácora) pueda
+   escopar la fila correcta; el contenido cerrado nunca se desmonta
+   (se colapsa con `grid-template-rows:0fr`), así que ni texto ni
+   `:visible` alcanzan para distinguirlas.
+
+**Verificado:** `tsc --noEmit` limpio, `pnpm lint` 0 errores (mismos 13
+warnings preexistentes + 1 nuevo con el mismo patrón `_var` ya aceptado
+en el resto del código), `pnpm test:unit:coverage` 100% (410/410).
+`pnpm build` limpio. `e2e/comisiones-traido-por.spec.ts` nuevo (3 tests:
+oreja+pago único con 2 sesiones consecutivas que se van sumando al
+acumulado real en DB; empresa+suscripción cobra la tarifa mensual, no la
+de sesión completa; sin puerta asignada todavía la comisión es $0).
+Bug real de test encontrado y corregido en el camino: para loguear una
+SEGUNDA sesión sobre la misma Membership, `waitForURL(/sessionLogged=1/)`
+no sirve -- la acción siempre redirige al mismo query param plano (no es
+por-sesión), así que si la URL actual YA lo tiene por la primera sesión,
+el regex resuelve de una sin esperar el segundo POST real (mismo patrón
+de bug ya documentado para "Reposicionar"/"Reagendar" -- se corrigió
+esperando la respuesta real del submit). Y uno de entorno, no de
+producto: en `next dev` el badge flotante "Open Next.js Dev Tools" queda
+fijo en una esquina y puede tapar el botón de la fila que termina más
+abajo en la lista -- no aparece en el build de producción que corre CI;
+se resolvió disparando el click nativo sobre el botón (`.evaluate(el =>
+el.click())`) en vez de un click de mouse real, así da igual qué lo
+tape. Suite E2E completa: 113/114 (el 1 que falta es el skip ya
+documentado de "Reposicionar", a pedido explícito de Gunnar).
+
+Queda pendiente: Fase 5 (Oreja también es Member, requiere aprobación
+aparte).

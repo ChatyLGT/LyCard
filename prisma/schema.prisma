@@ -881,6 +881,14 @@ model ProgramMembership {
   // (ver lib/sessionLog.ts). Array de SessionLogEntry serializado.
   sessionLog Json @default("[]")
 
+  // Viaje del Cliente, Fase 4 (2026-10-13) -- comisión acumulada real
+  // sobre traidoPor (lib/commissions.ts), suma en vivo de cada
+  // SessionLogEntry.commissionUsd logueado para esta Membership. Vive
+  // acá además de en la bitácora para no tener que recorrer todo
+  // sessionLog cada vez que alguien quiere ver el total -- sigue
+  // siendo cálculo, no hay pasarela de pago real todavía.
+  totalCommissionsUsd Int @default(0)
+
   @@unique([memberId, programId])
 }
 

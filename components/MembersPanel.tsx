@@ -75,6 +75,7 @@ type Membership = {
   paymentModel: string | null;
   traidoPor: string | null;
   sessionLog: unknown;
+  totalCommissionsUsd: number;
   referredBy: { member: { name: string } } | null;
   member: {
     id: string;
@@ -166,6 +167,7 @@ export default function MembersPanel({
         return (
           <AccordionRow
             key={m.id}
+            testId={`membership-${m.id}`}
             title={m.member.name || "(sin nombre)"}
             subtitle={[m.member.whatsapp, m.member.email].filter(Boolean).join(" · ") || undefined}
             leading={
@@ -342,16 +344,25 @@ export default function MembersPanel({
               const sessionLog = parseSessionLog(m.sessionLog);
               return (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 6, borderTop: "1px solid rgba(255,255,255,.06)" }}>
-                  <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#5A5A5A" }}>
-                    Sesiones ({sessionLog.length})
-                  </span>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                    <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", color: "#5A5A5A" }}>
+                      Sesiones ({sessionLog.length})
+                    </span>
+                    {/* Viaje del Cliente, Fase 4 (2026-10-13) -- comisión acumulada
+                        real sobre traidoPor (lib/commissions.ts). Cálculo, no hay
+                        pasarela de pago real todavía -- ver nota en logSessionAction. */}
+                    <span style={{ font: "700 10.5px 'Plus Jakarta Sans',sans-serif", color: "#7BC98E" }}>${m.totalCommissionsUsd} USD acumulados</span>
+                  </div>
                   {sessionLog.length > 0 && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 140, overflowY: "auto" }}>
                       {[...sessionLog].reverse().map((s) => (
                         <div key={s.sessionNumber} style={{ background: "#151414", borderRadius: 8, padding: "6px 10px" }}>
-                          <span style={{ font: "700 10.5px 'Plus Jakarta Sans',sans-serif", color: "#C8A15A" }}>
-                            Sesión {s.sessionNumber} -- {new Date(s.loggedAt).toLocaleDateString("es-MX")}
-                          </span>
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                            <span style={{ font: "700 10.5px 'Plus Jakarta Sans',sans-serif", color: "#C8A15A" }}>
+                              Sesión {s.sessionNumber} -- {new Date(s.loggedAt).toLocaleDateString("es-MX")}
+                            </span>
+                            <span style={{ font: "700 10px 'Plus Jakarta Sans',sans-serif", color: "#7BC98E", flex: "none" }}>+${s.commissionUsd}</span>
+                          </div>
                           <p style={{ margin: "2px 0 0", font: "400 11.5px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{s.notes}</p>
                         </div>
                       ))}

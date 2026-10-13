@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.97.1";
+export const APP_VERSION = "1.98.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.98.0",
+    date: "2026-10-13",
+    notes:
+      "Viaje del Cliente, Fase 4: comisiones reales sobre ProgramMembership.traidoPor (lib/commissions.ts) -- montos que dio Gunnar de memoria: $35 por sesión si la Oreja trajo al Lead, $15 si fue asignada por la empresa; $12 o $5 mensuales si el pago es una suscripción (revisión de indicadores de estrés). Cada \"Registrar sesión\" (logSessionAction) calcula y snapshotea el monto en su propia entrada de la bitácora (SessionLogEntry.commissionUsd, nuevo -- las sesiones viejas sin este campo se leen como $0, nada inventado retroactivo) y lo suma al acumulado real de la Membership (ProgramMembership.totalCommissionsUsd, nuevo). Sin puerta asignada todavía (traidoPor null) la comisión es $0 -- no se inventa nada antes de que haya un traidoPor real. MembersPanel.tsx muestra el snapshot por sesión (\"+$35\") y el acumulado (\"$X USD acumulados\"), con la misma etiqueta honesta de siempre: cálculo, no hay pasarela de pago real. Fase 5 (Oreja también es Member) sigue pendiente, requiere aprobación aparte.",
+  },
   {
     version: "1.97.1",
     date: "2026-10-13",

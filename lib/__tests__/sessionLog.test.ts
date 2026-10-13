@@ -7,6 +7,7 @@ describe("sessionLog", () => {
     notes: "Primera sesión, fue bien.",
     loggedAt: "2026-10-12T12:00:00.000Z",
     loggedByAdminId: "admin-1",
+    commissionUsd: 35,
   };
 
   describe("parseSessionLog", () => {
@@ -28,6 +29,16 @@ describe("sessionLog", () => {
     it("descarta entradas con forma inválida, conserva las válidas", () => {
       const invalida = { sessionNumber: "uno", notes: 123, loggedAt: null, loggedByAdminId: 5 };
       expect(parseSessionLog([validEntry, invalida, null, "basura"])).toEqual([validEntry]);
+    });
+
+    it("normaliza a 0 una sesión vieja, logueada antes de que existiera commissionUsd", () => {
+      const { commissionUsd: _commissionUsd, ...entradaVieja } = validEntry;
+      expect(parseSessionLog([entradaVieja])).toEqual([{ ...entradaVieja, commissionUsd: 0 }]);
+    });
+
+    it("descarta un commissionUsd de tipo inválido en vez de romper la entrada", () => {
+      const entradaConComisionRota = { ...validEntry, commissionUsd: "35 dólares" };
+      expect(parseSessionLog([entradaConComisionRota])).toEqual([{ ...validEntry, commissionUsd: 0 }]);
     });
   });
 
