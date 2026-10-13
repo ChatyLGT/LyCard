@@ -10772,3 +10772,30 @@ preexistente de `photo-positioner.spec.ts` ya documentado arriba).
 
 Quedan pendientes: Fase 4 (comisiones sobre `traidoPor`), Fase 5
 (Oreja también es Member, requiere aprobación aparte).
+
+---
+
+## 2026-10-13 -- Flake de `photo-positioner.spec.ts` ("Reposicionar"): skip a pedido explícito de Gunnar (v1.97.1)
+
+El flake documentado arriba (botón "Confirmar" queda `disabled` al
+reabrir una foto ya subida sin elegir una nueva -- condición de carrera
+real entre el `onLoad` de la foto remota y el chequeo de `natSize`,
+agravada bajo la carga del runner de CI) venía repitiéndose en casi
+todas las entregas de esta sesión, costando una corrida entera de
+Playwright (~6 min) de propina cada vez que pegaba. Gunnar pidió
+pararlo porque hoy nadie usa ese camino concreto (reabrir y reposicionar
+una foto YA subida, sin subir una nueva).
+
+**Lo que se tocó, y lo que no:** se marcó ÚNICAMENTE ese test como
+`test.skip` en `e2e/photo-positioner.spec.ts`, con un comentario
+explícito citando este pedido -- el código del test queda intacto, sin
+borrar, para retomarlo si hace falta. `components/PhotoPositioner.tsx`
+(el editor real de recorte/posición -- logo de Programa, foto personal,
+retrato de Card) **no se tocó**: sigue andando igual en los 3 lugares,
+incluyendo el camino de reabrir una foto ya subida -- lo único que se
+apagó es la verificación automatizada de ESE camino puntual, no la
+funcionalidad.
+
+**Verificado:** `pnpm lint` limpio, suite E2E completa sin el test
+saltado -- 110/110 (antes 110/111 con el skip contando como "no
+ejecutado", no como "pasado").

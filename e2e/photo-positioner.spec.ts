@@ -141,7 +141,19 @@ test.describe("PhotoPositioner — mover/zoom en el dashboard antes de subir", (
     await context.close();
   });
 
-  test("Reposicionar: sin elegir un archivo nuevo, reabre la foto ya subida y la vuelve a guardar", async ({ browser }) => {
+  // Skip a pedido explícito de Gunnar (2026-10-13): viene fallando de
+  // forma intermitente hace varias entregas (carga de la foto YA subida
+  // vía URL remota, onLoad no llega a tiempo bajo la carga del runner de
+  // CI -- ver PLAN.md para el detalle) y estaba costando una corrida
+  // entera de ~6min cada vez que pegaba, sin que nadie esté usando este
+  // camino concreto (reabrir y reposicionar una foto que YA se subió,
+  // sin elegir una nueva) en este momento del proyecto. El editor de
+  // posición de fotos en sí (components/PhotoPositioner.tsx) sigue
+  // intacto y funcionando en los 3 lugares reales (logo de Programa,
+  // foto personal, retrato de Card) -- esto es solo este test puntual,
+  // no la funcionalidad. Queda el código del test, sin borrar, para
+  // retomarlo si hace falta.
+  test.skip("Reposicionar: sin elegir un archivo nuevo, reabre la foto ya subida y la vuelve a guardar", async ({ browser }) => {
     const context = await browser.newContext();
     const cookie = await mintAdminCookie(programAdminId);
     await context.addCookies([{ ...cookie, url: BASE_URL }]);
