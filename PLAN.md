@@ -97,7 +97,7 @@ listo para salir".
 
 ### Bajo / a futuro (no tocar sin pedido concreto)
 
-11. Fusión de identidad Admin/Member.
+11. Fusión de identidad Admin/Member: **diseño aprobado** (`docs/11-DISENO-FUSION-IDENTIDAD.md`, §9): login solo Google, schedule.edit = N0 de Programa o MasterN0, reset de datos. Construcción por etapas, sin empezar.
 12. **Escalera N1 (pendiente de Gunnar):** el schema `Node` solo reconoce
     N1.1 y falta N1.2/N1.3; docs/01 y Gunnar difieren sobre el rol de Warren.
     Se anota, no se corrige. Ver `docs/10-ESCALERA-T3-CONTEXTO.md`.
@@ -109,6 +109,10 @@ listo para salir".
     de Gunnar: primero entender el proceso).
 16. Gemelo Digital con IA real entrenada por persona. Hoy es un chat guiado
     de demostración, no IA entrenada.
+
+---
+
+**Óculo de la Oreja (v1.101.0):** pestaña Comando construida (comisiones, leads, entrevistas, clientes). Con esto el Óculo queda cerrado respecto al mockup original.
 
 ---
 

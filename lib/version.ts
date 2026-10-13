@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.100.0";
+export const APP_VERSION = "1.101.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.101.0",
+    date: "2026-10-13",
+    notes:
+      "Óculo de la Oreja, pestaña Comando: panel de solo lectura en /empleados con comisiones acumuladas, leads libres, mis leads, entrevistas agendadas, clientes cerrados y clientes pagados de esta Oreja (lib/orejaComando.ts). Todo se cuenta de filas reales; las comisiones son un acumulado calculado, no un pago.",
+  },
   {
     version: "1.100.0",
     date: "2026-10-13",

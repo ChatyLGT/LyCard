@@ -4,6 +4,8 @@ import { currentEmployeeScope } from "@/lib/auth";
 import { employeeLogoutAction, createOwnMembershipAction } from "@/app/empleados/actions";
 import MembersPanel from "@/components/MembersPanel";
 import LeadsPanel from "@/components/LeadsPanel";
+import ComandoPanel from "@/components/ComandoPanel";
+import { buildComando } from "@/lib/orejaComando";
 import { groupThreadsByMemberId } from "@/lib/chatThreads";
 import { AccordionSection } from "@/components/Accordion";
 
@@ -113,6 +115,11 @@ export default async function EmployeePanelPage({
   const chatThreadsByMemberId = groupThreadsByMemberId(myMessageDeliveries);
 
   const returnTo = "/empleados";
+  const comando = buildComando(
+    scope.id,
+    registrations,
+    program.memberships
+  );
 
   return (
     <div style={{ minHeight: "100vh", background: "#131313", color: "#e5e2e1", fontFamily: "'Plus Jakarta Sans',sans-serif", padding: "0 0 60px" }}>
@@ -195,6 +202,8 @@ export default async function EmployeePanelPage({
             </form>
           )}
         </AccordionSection>
+
+        <ComandoPanel summary={comando} />
 
         <LeadsPanel
           programId={program.id}
