@@ -2634,18 +2634,19 @@ export default function LyCardView({
                 position: "relative",
                 width: "100%",
                 maxWidth: 406,
-                // La bitácora de versiones (2026-09-19, pedido de Gunnar) es
-                // la única que necesita el modal entero más chico — un 50%
-                // menos de alto (44vh en vez de 88vh) — porque de acá en
-                // más solo su propia lista de versiones scrollea adentro
-                // (overflowY:hidden acá afuera), no todo el modal.
-                maxHeight: modal === "versionInfo" ? "44vh" : "88vh",
+                // La bitácora de versiones scrollea solo su propia lista
+                // adentro (overflowY:hidden acá afuera). 2026-10-13, pedido
+                // de Gunnar: estaba muy chico (44vh) y apretado abajo -- ahora
+                // 78vh de alto fijo, con margen inferior para el borde/notch.
+                maxHeight: modal === "versionInfo" ? "78vh" : "88vh",
+                height: modal === "versionInfo" ? "78vh" : undefined,
                 overflowY: modal === "versionInfo" ? "hidden" : "auto",
                 background: "linear-gradient(180deg,var(--surfHi,#1C1C1C),var(--deepBg,#0D0D0D))",
                 border: "1px solid rgba(var(--accentRgb,200,161,90),.4)",
                 borderBottom: "none",
                 borderRadius: "24px 24px 0 0",
                 padding: "22px 22px 28px",
+                paddingBottom: modal === "versionInfo" ? "calc(env(safe-area-inset-bottom,0px) + 32px)" : undefined,
                 boxShadow: "0 -10px 45px rgba(0,0,0,.95)",
                 display: "flex",
                 flexDirection: "column",
