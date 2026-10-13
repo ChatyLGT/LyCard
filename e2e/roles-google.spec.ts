@@ -107,4 +107,23 @@ test.describe("Roles por Programa -- acceso con sesión de Member", () => {
     await expect(page).toHaveURL(/\/empleados\/login/);
     await ctx.close();
   });
+
+  test("un N0 de Programa con sesión de Member abre las herramientas de Oreja sin volver al login", async ({ browser }) => {
+    const n0 = await e2eDb.query<{ id: string }>(`insert into "Member" (id, name, "updatedAt") values (gen_random_uuid()::text, $1, now()) returning id`, [`E2E N0 ${suffix}`]);
+    const n0MemberId = n0.rows[0].id;
+    await e2eDb.query(`insert into "Admin" (id, "memberId", "programId", role, "updatedAt") values (gen_random_uuid()::text, $1, $2, 'owner', now())`, [n0MemberId, programId]);
+
+    const ctx = await browser.newContext();
+    await ctx.addCookies([{ ...(await mintMemberCookie(n0MemberId)), url: BASE_URL }]);
+    const page = await ctx.newPage();
+    await page.goto(`${BASE_URL}/empleados`, { waitUntil: "networkidle" });
+    await expect(page.getByRole("heading", { name: "Panel de Empleados" })).toBeVisible();
+    // La pantalla de login ya no aparece si hay acceso.
+    await page.goto(`${BASE_URL}/empleados/login`, { waitUntil: "networkidle" });
+    await expect(page).toHaveURL(/\/empleados$/);
+    await ctx.close();
+
+    await e2eDb.query(`delete from "Admin" where "memberId" = $1`, [n0MemberId]);
+    await e2eDb.query(`delete from "Member" where id = $1`, [n0MemberId]);
+  });
 });

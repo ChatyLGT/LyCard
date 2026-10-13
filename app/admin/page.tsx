@@ -317,16 +317,16 @@ export default async function AdminHomePage() {
           </Tile>
 
           <Tile
-            eyebrow="Panel de Empleados"
-            title="Acceso independiente para colaboradores"
-            subtitle="Sistema aparte, login propio (/empleados) -- no toca este dashboard."
+            eyebrow="Herramientas de Oreja"
+            title="Leads, entrevistas, clientes y comisiones"
+            subtitle="Las usa cualquier Member con el rol de Oreja, con su misma cuenta de Google. Vos también las tenés."
           >
-            <Link href="/empleados/login" style={TILE_BTN_GOLD}>
-              Entrar como empleado →
+            <Link href="/empleados" style={TILE_BTN_GOLD}>
+              Abrir herramientas →
             </Link>
             {legacyProgram && (
               <Link href={`/admin/programs/${legacyProgram.id}?focus=admins`} style={TILE_BTN}>
-                Crear cuenta →
+                Dar rol a un Member →
               </Link>
             )}
           </Tile>

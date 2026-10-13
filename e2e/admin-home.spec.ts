@@ -68,8 +68,8 @@ test.describe("Centro de Mando -- Home real de MasterN0", () => {
     await expect(page.getByRole("link", { name: "Abrir Dashboard →" })).toHaveAttribute("href", `/admin/programs/${rootProgramId}`);
 
     // Tile Panel de Empleados -- ambos links presentes.
-    await expect(page.getByRole("link", { name: "Entrar como empleado →" })).toHaveAttribute("href", "/empleados/login");
-    await expect(page.getByRole("link", { name: "Crear cuenta →" })).toHaveAttribute("href", `/admin/programs/${rootProgramId}?focus=admins`);
+    await expect(page.getByRole("link", { name: "Abrir herramientas →" })).toHaveAttribute("href", "/empleados");
+    await expect(page.getByRole("link", { name: "Dar rol a un Member →" })).toHaveAttribute("href", `/admin/programs/${rootProgramId}?focus=admins`);
 
     // Tile Metodología.
     await expect(page.getByRole("link", { name: "Leer →" })).toHaveAttribute("href", "/admin/metodologia");

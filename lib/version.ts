@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.104.0";
+export const APP_VERSION = "1.104.1";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.104.1",
+    date: "2026-10-13",
+    notes:
+      "Arreglo del bucle de acceso: al tocar las herramientas de Oreja desde el Centro de Mando, el MasterN0 volvía al login. Ahora el MasterN0 (en el Programa raíz) y los N0 (en su Programa) abren las herramientas de Oreja con su sesión de Google, y la pantalla de login ya no aparece si hay acceso. Al entrar con Google, las Orejas llegan a su Dashboard (Tus accesos). El tile del Centro de Mando pasa a llamarse Herramientas de Oreja, con el botón Dar rol a un Member.",
+  },
   {
     version: "1.104.0",
     date: "2026-10-13",
