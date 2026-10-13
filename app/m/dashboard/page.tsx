@@ -24,6 +24,14 @@ export default async function MemberDashboardPage() {
     prisma.card.findMany({ where: { memberId: member.id } }),
     findPromotedProgram(member.id),
   ]);
+  // Accesos por rol (2026-10-13, pedido de Gunnar: "la tarjeta debe de tener
+  // acceso a todas las pantallas y sistema", sin pedir URLs): la fila puente de
+  // Admin (lib/staffBridge.ts) dice a qué pantallas de trabajo llega esta persona.
+  const staff = await prisma.admin.findUnique({ where: { memberId: member.id }, select: { role: true, programId: true } });
+  const accesos: { label: string; desc: string; href: string }[] = [];
+  if (staff?.role === "empleado") accesos.push({ label: "Panel de Empleados", desc: "Leads, entrevistas, clientes, sesiones y comisiones.", href: "/empleados" });
+  if (staff?.role === "owner" && staff.programId === null) accesos.push({ label: "Centro de Mando", desc: "Tu tarjeta, Programas, equipo y metodología.", href: "/admin" });
+  if (staff?.role === "owner" && staff.programId && !promotedProgram) accesos.push({ label: "Dashboard del Programa", desc: "Configuración, miembros y roles del equipo.", href: `/admin/programs/${staff.programId}` });
   const byKind = new Map(cards.map((c) => [c.kind, c]));
   const promotionStatus = promotedProgram ? null : await getPromotionStatus(member.id);
 
@@ -48,6 +56,20 @@ export default async function MemberDashboardPage() {
             {member.name ? `Hola, ${member.name}` : "Bienvenido"}
           </h1>
         </div>
+
+        {accesos.length > 0 && (
+          <section data-testid="accesos-rol" style={{ background: "#201f1f", borderRadius: 14, padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+            <span style={{ font: "500 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#9a8f80" }}>
+              Tus accesos
+            </span>
+            {accesos.map((a) => (
+              <Link key={a.href} href={a.href} style={{ display: "flex", flexDirection: "column", gap: 2, padding: "12px 14px", borderRadius: 12, border: "1px solid rgba(200,161,90,.35)", background: "rgba(200,161,90,.06)", textDecoration: "none" }}>
+                <span style={{ font: "700 13px 'Plus Jakarta Sans',sans-serif", color: "#E5C378" }}>{a.label} →</span>
+                <span style={{ font: "400 12px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>{a.desc}</span>
+              </Link>
+            ))}
+          </section>
+        )}
 
         {!member.email && (
           <section style={{ background: "#201f1f", borderRadius: 14, padding: 16 }}>

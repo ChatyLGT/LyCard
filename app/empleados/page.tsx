@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { currentEmployeeScope } from "@/lib/auth";
@@ -141,6 +142,9 @@ export default async function EmployeePanelPage({
           Empleado · {program.name}
         </span>
         <h1 style={{ margin: 0, font: "500 18px 'Playfair Display',serif", color: "#F5F2EB" }}>Panel de Empleados</h1>
+        <Link href="/m/dashboard" style={{ font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#C8A15A", textDecoration: "none" }}>
+          Mi Dashboard
+        </Link>
         <form action={employeeLogoutAction}>
           <button
             type="submit"

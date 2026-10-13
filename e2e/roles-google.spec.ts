@@ -81,6 +81,10 @@ test.describe("Roles por Programa -- acceso con sesión de Member", () => {
     await expect(page.getByRole("heading", { name: "Panel de Empleados" })).toBeVisible();
     await page.goto(`${BASE_URL}/admin/programs/${programId}`, { waitUntil: "networkidle" });
     await expect(page).toHaveURL(/\/admin\/login/);
+
+    // Sin pedir URLs: el Dashboard muestra la tarjeta de acceso según el rol.
+    await page.goto(`${BASE_URL}/m/dashboard`, { waitUntil: "networkidle" });
+    await expect(page.getByTestId("accesos-rol").getByRole("link", { name: /Panel de Empleados/ })).toHaveAttribute("href", "/empleados");
     await ctx.close();
   });
 
