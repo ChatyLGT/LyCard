@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.97.0";
+export const APP_VERSION = "1.97.1";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.97.1",
+    date: "2026-10-13",
+    notes:
+      "El flake de \"Reposicionar\" en e2e/photo-positioner.spec.ts (venía repitiéndose casi todas las entregas, costando una corrida completa de propina cada vez) queda marcado como skip a pedido explícito de Gunnar -- hoy nadie usa ese camino puntual. El editor real de fotos (components/PhotoPositioner.tsx) no se tocó: sigue andando igual en logo de Programa, foto personal y retrato de Card.",
+  },
   {
     version: "1.97.0",
     date: "2026-10-13",
