@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { currentEmployeeScope } from "@/lib/auth";
-import { employeeLogoutAction } from "@/app/empleados/actions";
+import { employeeLogoutAction, createOwnMembershipAction } from "@/app/empleados/actions";
 import MembersPanel from "@/components/MembersPanel";
 import LeadsPanel from "@/components/LeadsPanel";
 import { groupThreadsByMemberId } from "@/lib/chatThreads";
+import { AccordionSection } from "@/components/Accordion";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,8 @@ export default async function EmployeePanelPage({
     interviewError?: string;
     chatSent?: string;
     chatError?: string;
+    ownMemberLinked?: string;
+    ownMemberError?: string;
   }>;
 }) {
   const {
@@ -45,10 +48,30 @@ export default async function EmployeePanelPage({
     interviewError,
     chatSent,
     chatError,
+    ownMemberLinked,
+    ownMemberError,
   } = await searchParams;
 
   const scope = await currentEmployeeScope();
   if (!scope) redirect("/empleados/login");
+
+  // Viaje del Cliente, Fase 5 (2026-10-13) -- la propia Membership de
+  // esta Oreja, si ya se creó (Admin.ownMemberId, puro bookkeeping, ver
+  // app/empleados/actions.ts#createOwnMembershipAction).
+  const ownAdmin = await prisma.admin.findUnique({
+    where: { id: scope.id },
+    select: {
+      ownMember: {
+        select: {
+          name: true,
+          whatsapp: true,
+          email: true,
+          cards: { where: { kind: "project" }, select: { slug: true } },
+        },
+      },
+    },
+  });
+  const ownMember = ownAdmin?.ownMember ?? null;
 
   const program = await prisma.program.findUnique({
     where: { id: scope.programId },
@@ -122,6 +145,57 @@ export default async function EmployeePanelPage({
       </div>
 
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+        {/* Viaje del Cliente, Fase 5 (2026-10-13) -- "un oreja tendría que
+            ser un miembro también... de hecho es lo que quiero
+            incentivar" (Gunnar). Puro link de bookkeeping (Admin.
+            ownMemberId): esto NO loguea a esta Oreja como Member, solo le
+            da de alta su propia Membership real con sus 3 Cards para que
+            consiga sus propios clientes -- para administrarla entra
+            aparte a /m/login con el WhatsApp/email que use acá. */}
+        <AccordionSection title="Tu propia Membresía" defaultOpen={Boolean(ownMemberLinked || ownMemberError || !ownMember)}>
+          {ownMemberLinked && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Tu Membresía quedó creada -- ya tenés tus 3 Cards.</p>}
+          {ownMemberError === "addName" && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#e5928a" }}>El nombre es obligatorio.</p>}
+          {ownMember ? (
+            <div data-testid="own-membership-linked" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <p style={{ margin: 0, font: "400 12.5px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
+                Ya tenés tu propia Membresía como <strong style={{ color: "#F5F2EB" }}>{ownMember.name}</strong> -- conseguí tus propios clientes con tu Oficina Virtual.
+              </p>
+              {ownMember.cards[0] && (
+                <a
+                  href={`/c/${ownMember.cards[0].slug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ font: "700 11px 'Plus Jakarta Sans',sans-serif", color: "#C8A15A", textDecoration: "none" }}
+                >
+                  Ver tu Card →
+                </a>
+              )}
+              <p style={{ margin: 0, font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#8a8378" }}>
+                Para administrarla, entrá a /m/login con el WhatsApp/email que usaste acá -- es un login propio, separado de tu sesión de Oreja.
+              </p>
+            </div>
+          ) : (
+            <form
+              data-testid="own-membership-form"
+              action={createOwnMembershipAction}
+              style={{ display: "flex", flexDirection: "column", gap: 8 }}
+            >
+              <p style={{ margin: 0, font: "400 12px 'Plus Jakarta Sans',sans-serif", color: "#C2BEB5" }}>
+                Date de alta como Miembro real, con tus propias 3 Cards (proyecto/empresa/personal) -- así también podés conseguir tus propios clientes.
+              </p>
+              <input name="name" placeholder="Tu nombre" required style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
+              <input name="whatsapp" placeholder="WhatsApp (opcional)" style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
+              <input name="email" placeholder="Email (opcional)" style={{ background: "#0D0D0D", border: "1px solid rgba(200,161,90,.25)", borderRadius: 8, padding: "8px 11px", color: "#F5F2EB", font: "400 12px 'Plus Jakarta Sans',sans-serif", outline: "none" }} />
+              <button
+                type="submit"
+                style={{ padding: 9, border: "none", borderRadius: 8, background: "#353534", color: "#F5F2EB", font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".06em", textTransform: "uppercase", cursor: "pointer" }}
+              >
+                Crear mi Membresía
+              </button>
+            </form>
+          )}
+        </AccordionSection>
+
         <LeadsPanel
           programId={program.id}
           leads={leads}

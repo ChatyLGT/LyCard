@@ -34,8 +34,27 @@ model Admin {
   // cuenta aparte. lib/auth.ts#currentAdminScope() la resuelve vía la
   // sesión de Member ya activa (lib/memberAuth.ts), sin cookie de Admin
   // propia. Ver PLAN.md, "Modelo de monetización cerrado" (2026-09-24).
+  // Nombrada ("AdminMemberBridge") solo porque Fase 5 agrega una SEGUNDA
+  // relación Admin↔Member más abajo (ownMemberId) -- Prisma exige
+  // nombres cuando hay más de una entre el mismo par de modelos. Cambio
+  // de metadata nomás, no toca la columna ni requiere migración.
   memberId String? @unique
-  member   Member? @relation(fields: [memberId], references: [id])
+  member   Member? @relation("AdminMemberBridge", fields: [memberId], references: [id])
+
+  // Viaje del Cliente, Fase 5 (2026-10-13): un Admin (típicamente una
+  // Oreja) puede tener ADEMÁS su propia Membership real, con su propia
+  // Card/Oficina/Gemelo Digital, para conseguir sus propios clientes --
+  // la estrategia real de reclutamiento ("un oreja tendría que ser un
+  // miembro también... de hecho es lo que quiero incentivar"). A
+  // propósito es un link de puro bookkeeping, DISTINTO del `memberId` de
+  // arriba: ESE resuelve sesión de Admin desde una sesión de Member
+  // activa (currentAdminScope); este nunca participa en ninguna
+  // resolución de auth -- el Admin sigue logueado como Admin, y si quiere
+  // entrar a su propio /m/dashboard se loguea aparte como Member con su
+  // propio WhatsApp/email, los dos sistemas de identidad siguen
+  // separados a propósito.
+  ownMemberId String? @unique
+  ownMember   Member? @relation("AdminOwnMember", fields: [ownMemberId], references: [id])
 
   // Mensajería Interna (2026-09-24) — un N0 "clásico" (email/password,
   // sin Member vinculado) manda como este Admin en vez de como un
@@ -797,7 +816,10 @@ model Member {
   networkMemberships CardNetworkMembership[]
   // No-null cuando este Member fue promovido a N0 de su propio Programa
   // (2026-09-24) -- ver Admin.memberId arriba.
-  promotedAdmin      Admin?
+  promotedAdmin      Admin? @relation("AdminMemberBridge")
+  // No-null cuando este Member ES la Membership propia de un Admin/Oreja
+  // (Fase 5, 2026-10-13) -- ver Admin.ownMemberId arriba.
+  ownerAdmin         Admin? @relation("AdminOwnMember")
 
   // Mensajería Interna (2026-09-24) — este Member como remitente (solo
   // cuando llegó a ser N0 vía la promoción de Fase P1, ver
