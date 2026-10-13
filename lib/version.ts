@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.103.0";
+export const APP_VERSION = "1.103.1";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.103.1",
+    date: "2026-10-13",
+    notes:
+      "El modal del historial de versiones es más alto (78vh en vez de 44vh) y tiene más margen abajo, para que la lista se lea sin quedar apretada.",
+  },
   {
     version: "1.103.0",
     date: "2026-10-13",
