@@ -71,6 +71,14 @@ export default async function MemberDashboardPage() {
           >
             Mensajes →
           </Link>
+          {(byKind.get("personal") ?? cards[0]) && (
+            <Link
+              href={`/m/google/conectar?cardId=${(byKind.get("personal") ?? cards[0]).id}`}
+              style={{ alignSelf: "flex-start", marginTop: 6, font: "700 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#C8A15A" }}
+            >
+              Permisos de Google →
+            </Link>
+          )}
         </section>
 
         {promotedProgram && (

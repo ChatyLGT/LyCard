@@ -4,8 +4,7 @@ import { randomBytes } from "crypto";
 import { buildGoogleConnectUrl, GOOGLE_CONNECT_COOKIE } from "@/lib/googleOAuth";
 import { isGoogleAuthConfigured } from "@/lib/googleOAuth";
 import { prisma } from "@/lib/prisma";
-import { currentAdminScope } from "@/lib/auth";
-import { currentMemberId } from "@/lib/memberAuth";
+import { canManageCardGoogle } from "@/lib/googleCardAccess";
 
 // "Conectar Google" (Fase F) — arranca desde el tile Agenda de una Card
 // específica (?cardId=...), no desde un login: el dueño de esa Card ya
@@ -29,9 +28,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  const [adminScope, memberId] = await Promise.all([currentAdminScope(), currentMemberId()]);
-  const isOwner = adminScope !== null || card.isOrigin || (memberId !== null && memberId === card.memberId);
-  if (!isOwner || !card.memberId) {
+  if (!(await canManageCardGoogle(cardId))) {
     const url = new URL(returnTo, request.url);
     url.searchParams.set("error", "google_connect_forbidden");
     return NextResponse.redirect(url);
