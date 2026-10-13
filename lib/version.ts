@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.98.0";
+export const APP_VERSION = "1.99.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.99.0",
+    date: "2026-10-13",
+    notes:
+      "Viaje del Cliente, Fase 5 (alcance acotado, a pedido explícito de Gunnar: solo vincular Admin↔Member, sin tocar cookies ni autenticación existente): la Oreja ya puede darse de alta a sí misma como Member real desde /empleados, con sus propias 3 Cards (proyecto/empresa/personal), para conseguir sus propios clientes. Admin.ownMemberId (nuevo) es puro bookkeeping -- distinto del Admin.memberId ya existente (el bridge de la promoción Chido→Programa, que resuelve sesión de Admin desde una sesión de Member activa): este nuevo campo nunca participa en ninguna resolución de auth, currentAdminScope() queda intacto. El Admin sigue logueado como Admin; para administrar su propia Membresía se loguea aparte en /m/login, como cualquier Member. Reusa el mismo pipeline de siempre (dedupe por whatsapp + activateMembershipAndSpawnCards) -- cero lógica de negocio duplicada. La fusión completa de identidad (una sola cuenta, rangos dentro de la red de Members reemplazando el rol de Admin) sigue fuera de alcance -- es el cambio de arquitectura grande que PLAN.md marcaba aparte, no decidido de pasada.",
+  },
   {
     version: "1.98.0",
     date: "2026-10-13",

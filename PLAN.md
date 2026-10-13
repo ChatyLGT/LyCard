@@ -10868,3 +10868,77 @@ documentado de "Reposicionar", a pedido explícito de Gunnar).
 
 Queda pendiente: Fase 5 (Oreja también es Member, requiere aprobación
 aparte).
+
+---
+
+## 2026-10-13 -- Viaje del Cliente, Fase 5: la Oreja también es Member (alcance acotado, v1.99.0)
+
+Quinta y última fase del plan de "Viaje del Cliente". Gunnar: "un oreja
+tendría que ser un miembro también... de hecho es lo que quiero
+incentivar" -- la estrategia real de reclutamiento es que psicólogos/
+estudiantes de psicología entren como Oreja y, además, se inscriban como
+Member con su propia Card/Oficina/Gemelo Digital para conseguir sus
+propios clientes (el "impuesto a la soledad" del emprendedor).
+
+Antes de construir nada se le pidió a Gunnar que cerrara el alcance --
+el propio PLAN.md marcaba esta fase como "requiere aprobación aparte"
+por ser "un cambio de arquitectura grande como para decidirlo de
+pasada" (fusionar Admin y Member en un solo sistema de identidad, hoy
+separados a propósito con cookies/tablas distintas). Eligió la opción
+acotada: **solo vincular Admin↔Member, sin tocar cookies ni la
+autenticación existente** -- no la fusión completa.
+
+Diseño real:
+
+1. **`Admin.ownMemberId`** (nuevo, `@unique`) -- puro link de
+   bookkeeping. Deliberadamente DISTINTO del `Admin.memberId` que ya
+   existía desde 2026-09-24 (el bridge de la promoción Chido→Programa):
+   ESE resuelve una sesión de Admin completa desde una sesión de Member
+   activa (`currentAdminScope()`); `ownMemberId` nunca participa en
+   ninguna resolución de auth -- se consultó directo por Prisma, nunca
+   por `lib/auth.ts`. Como ahora hay dos relaciones Admin↔Member,
+   Prisma exige nombrarlas (`@relation("AdminMemberBridge")` /
+   `@relation("AdminOwnMember")`) -- cambio de metadata nomás, la
+   columna/FK de la relación vieja no se tocó, cero riesgo para el
+   bridge existente.
+2. **`createOwnMembershipAction`** (`app/empleados/actions.ts`, nueva)
+   -- mismo pipeline de siempre: dedupe por whatsapp (si ya existe un
+   Member con ese número, lo suma en vez de duplicar, igual que
+   `addMemberToProgramAction`), `upsert` de `ProgramMembership`, y
+   `activateMembershipAndSpawnCards` (el mismo helper que ya usan el
+   alta Freemium self-service y `completeInterviewAction`) para activar
+   y spawnear las 3 Cards reales. Guard de idempotencia: si el Admin ya
+   tiene `ownMemberId`, no-op.
+3. **`/empleados`**: nueva sección "Tu propia Membresía" -- si la Oreja
+   todavía no se vinculó, un form chico (nombre/WhatsApp/email); si ya
+   lo hizo, muestra el nombre + link a su Card pública, con la
+   aclaración honesta de que para administrarla entra APARTE a
+   `/m/login` con esos mismos datos -- nunca un puente de sesión
+   automático.
+4. **`components/Accordion.tsx`**: `AccordionRow` suma un `testId?`
+   opcional (mismo patrón que la Fase 4) -- necesario para que el E2E
+   pueda escopar la fila de "Tu propia Membresía" sin chocar con el
+   form "Agregar Miembro" de `MembersPanel.tsx`, que comparte los
+   mismos `name`/placeholders.
+
+**Explícitamente fuera de esta ronda:** fusionar Admin y Member en un
+solo sistema de identidad, o mover el permiso "Oreja y para arriba" al
+rango dentro de la red de Members -- sigue siendo el cambio de
+arquitectura grande que requiere su propia decisión aparte, no algo que
+se coló de pasada en esta fase acotada.
+
+**Verificado:** `tsc --noEmit` limpio, `pnpm lint` 0 errores (mismos 13
+warnings preexistentes), `pnpm test:unit:coverage` 100% (410/410 --
+nada de lógica pura nueva, el pipeline reusado ya tiene su cobertura en
+E2E, mismo criterio que `addMemberToProgramAction`). `pnpm build`
+limpio. `e2e/own-membership.spec.ts` nuevo: la Oreja se da de alta a sí
+misma, confirma en DB que `Admin.ownMemberId` quedó seteado, la
+`ProgramMembership` activa, y las 3 Cards reales creadas -- y confirma
+explícitamente que la cookie `lycard_empleado` sigue siendo la única en
+el navegador (nunca se mintió `lycard_member` ni `lycard_admin` para
+esta Oreja, a pesar de tener una Membership real detrás). Suite E2E
+completa: 114/115 (el 1 que falta sigue siendo el skip ya documentado de
+"Reposicionar").
+
+Con esto quedan las 5 fases del plan de "Viaje del Cliente" en
+producción.
