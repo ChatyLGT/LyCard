@@ -60,12 +60,27 @@ z = z² + t³
   Trust (tiempo, talento y confianza). De ahí se derivan otros nombres según
   el contexto (ej. energía y conciencia).
 
-Pendiente de definir con Gunnar: qué variables de t³ usa NashMesh. Hoy
-NashMesh usa φ (contribución declarada), ψ (nivel de autonomía) y ε
-(comisión), y no usa z ni t³ todavía.
+t³ siempre fue Time, Talent, Trust. Cada eje agrupa varios indicadores (horas,
+puesto, roles, reconocimientos, energía, red de IA y Legacy, responsabilidad,
+riesgo). Pendiente de Gunnar: la lista exacta y si los ejes se combinan por
+producto o por suma.
 
-Las 4 Nobles Verdades y el Camino Óctuple: Gunnar los va a pasar. Guardarlos
-en este archivo tal cual, sin interpretarlos ni resumirlos.
+NashMesh calcula el valor de una tarea con t³, y ese valor alimenta z. El
+documento NASHMESH_EXPLICADO todavía no ubica Time ni Talent y usa ψ para dos
+cosas distintas (confiabilidad y comisión por nivel). No programar pagos hasta
+que se separen.
+
+Escalera según Gunnar: N0 humano; N1 tríada (N1.1 Einar, N1.2 Chaty, N1.3
+Warren); N2 las 12 Guardianas. Discrepancias abiertas, a anotar y no corregir:
+el schema `Node` solo reconoce N1.1, y docs/01 y Gunnar difieren sobre el rol
+de Warren. Detalle en docs/10-ESCALERA-T3-CONTEXTO.md.
+
+Las 4 Nobles Verdades y el Camino Óctuple: hoy son solo contexto. Gunnar los
+pasará cuando confirme la versión oficial. Guardarlos tal cual, sin
+interpretarlos.
+
+NO escribir código de Dharma, GoldenTicket, Guardianas ni cálculo de t³ hasta
+que Gunnar lo pida.
 
 ## Permisos y servicios externos
 

@@ -41,8 +41,9 @@ listo para salir".
 - **Fusión de identidad Admin/Member:** fuera de alcance. Hoy son dos
   sistemas de login separados a propósito (cookies y tablas distintas).
   Unificarlos cambia el login de todos; requiere decisión propia.
-- **Cadena de referidos N0–N3:** la carga real de quién refirió a quién
-  está pausada por pedido de Gunnar ("quiero que entiendas el proceso").
+- **Escalera fractal N0–N3:** la carga real de datos está pausada por pedido
+  de Gunnar ("quiero que entiendas el proceso"). No es una cadena de
+  referidos. Ver `docs/10-ESCALERA-T3-CONTEXTO.md`.
 
 ---
 
@@ -85,16 +86,34 @@ listo para salir".
 8. **Gemelo Digital y Oficina, Fase D2–D4:** acordeón encendido/apagado por
    sección, tracking real de QRs enviados, dashboard "Mis QRs". Fase D5 es
    opcional.
-9. **NashMesh, φ real:** hoy φ es una contribución declarada a mano. El
-   cálculo completo (Shapley) queda pendiente de definir. Ver Glosario.
+9. **NashMesh y t³ (pendiente de Gunnar, sin código):** NashMesh valora una
+   tarea con t³ (Time, Talent, Trust) y eso alimenta z. Falta: lista exacta
+   de indicadores por eje, si se combinan por producto o suma, y separar los
+   dos usos de ψ (confiabilidad y comisión por nivel). No programar pagos
+   hasta entonces. Hoy φ es contribución declarada a mano. Ver
+   `docs/10-ESCALERA-T3-CONTEXTO.md`.
 10. **Suite E2E:** hay flakes conocidos y todavía no hay una suite de
     regresión automatizada completa.
 
 ### Bajo / a futuro (no tocar sin pedido concreto)
 
+<<<<<<< ours
 11. Fusión de identidad Admin/Member: **diseño aprobado** (`docs/11-DISENO-FUSION-IDENTIDAD.md`, §9): login solo Google, schedule.edit = N0 de Programa o MasterN0, reset de datos. Etapas 1–2 hechas (v1.102.0: tablas de roles, `can()`, seed MasterN0, sin tocar logins). Faltan 3 (migrar guards), 4 (repuntar FKs) y 5 (borrar Admin + reset de producción, con confirmación).
 12. Cadena de referidos N0–N3 (carga real de datos).
 13. Gemelo Digital con IA real entrenada por persona. Hoy es un chat guiado
+=======
+11. Fusión de identidad Admin/Member: **diseño aprobado** (`docs/11-DISENO-FUSION-IDENTIDAD.md`, §9): login solo Google, schedule.edit = N0 de Programa o MasterN0, reset de datos. Construcción por etapas, sin empezar.
+12. **Escalera N1 (pendiente de Gunnar):** el schema `Node` solo reconoce
+    N1.1 y falta N1.2/N1.3; docs/01 y Gunnar difieren sobre el rol de Warren.
+    Se anota, no se corrige. Ver `docs/10-ESCALERA-T3-CONTEXTO.md`.
+13. **Workspace vs Gmail personal para los N0 (pendiente de Gunnar):**
+    decide si Google Keep es viable.
+14. **Texto de las 4 Nobles Verdades y el Camino Óctuple:** se recibe cuando
+    Gunnar confirme la versión oficial. Hoy es solo contexto.
+15. Carga real de datos de la escalera fractal N0–N3 (pausada por pedido
+    de Gunnar: primero entender el proceso).
+16. Gemelo Digital con IA real entrenada por persona. Hoy es un chat guiado
+>>>>>>> theirs
     de demostración, no IA entrenada.
 
 ---
