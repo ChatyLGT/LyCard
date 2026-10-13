@@ -92,7 +92,7 @@ listo para salir".
 
 ### Bajo / a futuro (no tocar sin pedido concreto)
 
-11. Fusión de identidad Admin/Member.
+11. Fusión de identidad Admin/Member: aprobada en principio por Gunnar; diseño en `docs/11-DISENO-FUSION-IDENTIDAD.md`, **pendiente de aprobación antes de construir** (4 preguntas en §8).
 12. Cadena de referidos N0–N3 (carga real de datos).
 13. Gemelo Digital con IA real entrenada por persona. Hoy es un chat guiado
     de demostración, no IA entrenada.
