@@ -108,15 +108,16 @@ test.describe("Centro de Mando -- Home real de MasterN0", () => {
     await e2eDb.query(`delete from "AssistantSession" where "adminId" = $1`, [adminId]);
   });
 
-  test("el link del tile de Empleados abre directo la sección 'N0 de este Programa'", async ({ browser }) => {
+  test("el link del tile de Empleados abre directo la sección 'Roles del equipo'", async ({ browser }) => {
     const context = await browser.newContext();
     await context.addCookies([{ ...(await mintAdminCookie(adminId)), url: BASE_URL }]);
     const page = await context.newPage();
 
     await page.goto(`${BASE_URL}/admin/programs/${rootProgramId}?focus=admins`, { waitUntil: "networkidle" });
-    // defaultOpen por el query param -- sin tocar nada, el form de alta
-    // de N0/Empleado ya debe estar visible (altura > 0, no colapsado).
-    await expect(page.locator('form:has(button:text("Crear cuenta"))').locator('select[name="role"]')).toBeVisible();
+    // defaultOpen por el query param -- sin tocar nada, el form de roles
+    // (fusión de identidad: ya no hay alta con password) debe estar
+    // visible (altura > 0, no colapsado).
+    await expect(page.getByTestId("grant-role-form").locator('select[name="role"]')).toBeVisible();
 
     await context.close();
   });

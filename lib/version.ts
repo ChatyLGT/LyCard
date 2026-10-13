@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.102.0";
+export const APP_VERSION = "1.103.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.103.0",
+    date: "2026-10-13",
+    notes:
+      "Fusión de identidad, etapa 3: el login es solo Google. /admin/login y /empleados/login ahora tienen un único botón (Continuar con Google, sesión de Member) y el rol decide el destino: MasterN0 y N0 de Programa a /admin, Oreja a /empleados, el resto a su dashboard. Los roles se otorgan en la nueva sección \"Roles del equipo\" del Programa (MasterN0 otorga N0 y Oreja; el N0 solo Oreja) y generan una fila puente de Admin sin email ni password (lib/staffBridge.ts), así los guards existentes siguen igual. Se retiraron el login por password, las rutas de Google de admin y la creación de Admin con contraseña. Google Console: alcanza con el redirect /m/auth/google/callback.",
+  },
   {
     version: "1.102.0",
     date: "2026-10-13",
