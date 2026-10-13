@@ -99,6 +99,10 @@ listo para salir".
 
 ---
 
+**Óculo de la Oreja (v1.101.0):** pestaña Comando construida (comisiones, leads, entrevistas, clientes). Con esto el Óculo queda cerrado respecto al mockup original.
+
+---
+
 ## Mapa de permisos de Google (v1.100.0)
 
 Fuente única en `lib/googlePermissions.ts`; la pantalla `/m/google/conectar`
