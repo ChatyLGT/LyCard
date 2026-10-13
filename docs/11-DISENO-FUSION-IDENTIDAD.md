@@ -1,7 +1,6 @@
 # Fusión de identidad: diseño propuesto (sin código)
 
-Fecha: 2026-10-13. Estado: **PROPUESTA, pendiente de aprobación de Gunnar.**
-No se construye nada hasta que se apruebe. Documento para que Sergio y Fabricio
+Fecha: 2026-10-13. Estado: **APROBADO por Gunnar (2026-10-13)** con las decisiones de §9. Documento para que Sergio y Fabricio
 puedan auditar el porqué de cada decisión.
 
 ## 1. Principios (ya aprobados por Gunnar)
@@ -108,3 +107,16 @@ El riesgo está en la etapa 3 (login de todos). Cada etapa se prueba por separad
 2. ¿Quién tiene `schedule.edit`?
 3. ¿Roles altos exigen Google/password?
 4. ¿Reset limpio de datos de prueba (sí/no)?
+
+## 9. Decisiones de Gunnar (2026-10-13)
+
+1. Catálogo de roles y permisos de §3: **aprobado tal cual**.
+2. `schedule.edit` (horarios de Masterclass): **N0 del Programa o MasterN0**.
+3. **Todos se registran solo con Google.** Se descarta email+password y WhatsApp como
+   login: `Member.passwordHash` ya no hace falta y el OTP de WhatsApp deja de ser
+   vía de entrada (queda solo como dato de contacto). Consecuencia: el login es
+   uniforme y los roles altos heredan la seguridad de Google.
+4. **Reset limpio** de los datos de prueba, sin migrar filas. El reset de la base
+   de **producción** se confirma con Gunnar justo antes de la etapa 5 (es irreversible).
+
+Ajuste al plan de migración: la etapa 1 ya no agrega `passwordHash`.
