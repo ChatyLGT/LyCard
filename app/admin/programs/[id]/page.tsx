@@ -1047,7 +1047,7 @@ export default async function AdminProgramDetailPage({
             password (todos entran con Google). El MasterN0 otorga N0 y
             Oreja; el N0 del Programa solo Oreja. */}
         <AccordionSection
-          title="Roles del equipo"
+          title="WowJobs del equipo"
           meta={<span style={PILL}>{program.memberships.reduce((n, m) => n + m.roles.length, 0)}</span>}
           defaultOpen={Boolean(adminCreated || adminError || focus === "admins")}
         >
@@ -1058,7 +1058,7 @@ export default async function AdminProgramDetailPage({
             </p>
           )}
           {program.memberships.every((m) => m.roles.length === 0) && (
-            <p style={{ margin: 0, font: "400 12px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>Todavía no hay Orejas ni N0 en este Programa.</p>
+            <p style={{ margin: 0, font: "400 12px 'Plus Jakarta Sans',sans-serif", color: "#5A5A5A" }}>Todavía no hay WowJobs asignados en este Programa.</p>
           )}
           {program.memberships
             .filter((m) => m.roles.length > 0)
@@ -1076,7 +1076,7 @@ export default async function AdminProgramDetailPage({
                 </div>
               </div>
             ))}
-          <AccordionAddRow label="Otorgar un rol" defaultOpen={Boolean(adminError) || focus === "admins"}>
+          <AccordionAddRow label="Asignar un WowJob" defaultOpen={Boolean(adminError) || focus === "admins"}>
             <form action={grantMembershipRoleAction.bind(null, program.id)} data-testid="grant-role-form" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <select name="membershipId" required style={{ flex: "1 1 180px", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "9px 12px", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none" }}>
                 {program.memberships.map((m) => (
@@ -1086,11 +1086,11 @@ export default async function AdminProgramDetailPage({
                 ))}
               </select>
               <select name="role" defaultValue="oreja" style={{ flex: "1 1 140px", background: "#0D0D0D", border: "1px solid rgba(200,161,90,.3)", borderRadius: 10, padding: "9px 12px", color: "#F5F2EB", font: "400 12.5px 'Plus Jakarta Sans',sans-serif", outline: "none" }}>
-                <option value="oreja">Oreja (/empleados)</option>
+                <option value="oreja">WowJob: Oreja</option>
                 {isMasterN0 && <option value="n0_programa">N0 de Programa (dashboard completo)</option>}
               </select>
               <button type="submit" style={SAVE_BTN}>
-                Otorgar
+                Asignar
               </button>
             </form>
           </AccordionAddRow>

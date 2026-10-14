@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.104.1";
+export const APP_VERSION = "1.105.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.105.0",
+    date: "2026-10-14",
+    notes:
+      "WowJobs: nueva sección en la Oficina Virtual con los puestos que ejercés dentro del Programa (una WowApp es una herramienta, un WowHead es un agente que trabaja para vos, un WowJob es un puesto que ejercés para el Programa). El primero es Oreja: sus herramientas (Comando, Bolsa de Leads, Miembros) se abren desde WowJobs. El MasterN0 y el N0 asignan WowJobs desde \"WowJobs del equipo\" en el Programa. El Dashboard del Member muestra Mis WowJobs a quien tenga un puesto, y el panel pasa a titularse WowJob · Oreja.",
+  },
   {
     version: "1.104.1",
     date: "2026-10-13",
