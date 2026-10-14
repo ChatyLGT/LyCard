@@ -91,6 +91,14 @@ Códice. Todo se paga del **setup de $500** del N0.
 | Total pagado | $300 | $180 |
 | Margen de LyCard sobre $500 | 40% | 64% |
 
+### Nomenclatura interna (puede cambiar si se vuelve comercial)
+- **Oreja:** acompaña al N0 en la etapa 1 (entendimiento, psicólogo).
+- **Hayuko:** la contraparte de la Oreja en la etapa 2 (Oficina Virtual y equipo).
+  Nombre inventado por Gunnar el 2026-10-14, interno.
+- **Padawan, Mutant, Superhuman, Sherpa** (y Seeker, Ancient): niveles de la escalera de
+  Sabiduría (`RANKS` en `lib/data.ts`, hoy con nombres Curioso, Aprendiz, Practicante,
+  Maestro, Sherpa, Ancient). "Sherpa para arriba" significa nivel Sherpa o Ancient.
+
 ### Escaneo de redes (carbono)
 - Etapa personal: lo hace la **Oreja**.
 - Etapa de negocio: lo hace el **"Hayuko"** (pendiente de aclarar qué es).
