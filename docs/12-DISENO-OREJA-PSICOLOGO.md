@@ -75,7 +75,7 @@ Códice. Todo se paga del **setup de $500** del N0.
 - **Oreja:** $15 por cada sesión de onboarding efectivamente hecha, trajera o no al lead.
 - **Bono de captación:** $120, una sola vez, si la Oreja trajo al lead. Se libera cuando
   el N0 **paga sus $500**.
-- **Sherpa:** el doble que la Oreja por sesión: $30 por la Masterclass y $30 por la
+- **Sherpa:** cobra **por cada N0 registrado gracias a su Masterclass**. El doble que la Oreja por sesión: $30 por la Masterclass y $30 por la
   verificación del Códice ($60 por N0). Monto sujeto a ajuste cuando Gunnar defina el real.
 - **Mensualidad** (suscripción de $100): $12 si la Oreja trajo al lead, $5 si lo asignó
   la empresa. Sin cambios.
@@ -90,6 +90,14 @@ Códice. Todo se paga del **setup de $500** del N0.
 | Sherpa (2 × $30) | $60 | $60 |
 | Total pagado | $300 | $180 |
 | Margen de LyCard sobre $500 | 40% | 64% |
+
+### Escaneo de redes (carbono)
+- Etapa personal: lo hace la **Oreja**.
+- Etapa de negocio: lo hace el **"Hayuko"** (pendiente de aclarar qué es).
+- Pendiente: consentimiento expreso del N0 antes de escanear.
+
+### Qué hace la Oreja durante el setup
+Solo se define que **acompaña**. El detalle se define al discutir la etapa 2.
 
 ### Cómo circula el dinero
 Todo movimiento es interno, en tokens propios del ecosistema que luego se convierten en
@@ -106,9 +114,8 @@ regulada y la definen Sergio, Fabricio y asesoría legal.
 ### Pendiente de definir
 - Etapas 2 y 3: de dónde sale la tarifa de los consultores (si está dentro de los $500 o
   es aparte) y cómo cobran. Se discute aparte.
-- Si la Masterclass paga al Sherpa por cada N0 o por Masterclass dictada.
-- Escaneo de redes (carbono): quién lo hace y consentimiento expreso del N0.
-- Qué debe hacer la Oreja en el setup para cobrar su mensualidad, y cómo se registra.
+- Escaneo de redes: qué es el "Hayuko" y el consentimiento expreso del N0.
+- Qué es "acompañar" en el setup y cómo se registra para cobrar la mensualidad (etapa 2).
 - Servicios que la Oreja recomienda (expertos de Legacy o propios) y cómo se pagan.
 
 ## 5. Riesgos que no se pueden saltear
