@@ -95,6 +95,8 @@ listo para salir".
 10. **Suite E2E:** hay flakes conocidos y todavía no hay una suite de
     regresión automatizada completa.
 
+**Oreja como psicólogo (2026-10-14):** propuesta en `docs/12-DISENO-OREJA-PSICOLOGO.md` (consulta propia, acuerdo mensual prepago negociado con cada N0, horas del mes, WowHeads de apoyo). Pendiente de aprobación; incluye riesgos de datos de salud y habilitación profesional.
+
 ### Bajo / a futuro (no tocar sin pedido concreto)
 
 11. Fusión de identidad Admin/Member: **diseño aprobado** (`docs/11-DISENO-FUSION-IDENTIDAD.md`, §9): login solo Google, schedule.edit = N0 de Programa o MasterN0, reset de datos. Etapas 1–3 hechas (v1.103.0: roles por Programa, `can()`, seed MasterN0, login solo Google con fila puente de Admin). Faltan 4 (repuntar FKs `*AdminId` a Member) y 5 (borrar tabla Admin + reset de producción, con confirmación expresa). Antes de usarlo en un entorno real: correr `MASTER_N0_EMAIL=<email de Google> pnpm db:seed:master`.
