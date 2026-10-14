@@ -99,6 +99,18 @@ que Gunnar lo pida.
   hayan estado en chats o en archivos de prueba, y avisar a Sergio y Fabricio
   que las carguen en Vercel como variables de entorno.
 
+## Protocolo de excelencia (pedido de Gunnar, 2026-10-14, siempre activo)
+
+Antes de crear nada (código, diseño, documento largo): primero aclarar dudas,
+profundizar y guiar con preguntas. Orden fijo:
+1. Revisar lo ya acordado (PLAN.md, docs/PLAN-HISTORIAL.md, código) y citarlo. No
+   volver a preguntar lo que Gunnar ya definió, sobre todo dinero y precios.
+2. Repetir lo entendido en pocas líneas y marcar discrepancias con lo registrado.
+3. Preguntar de a pocas cosas, ordenadas, empezando por lo que bloquea.
+4. Recién con las respuestas, proponer y construir.
+Los montos de comisión de la Oreja están en `lib/commissions.ts`; si Gunnar los
+recuerda distinto, se confirman con él antes de tocarlos.
+
 ## Trabajo y costos
 
 - Las tareas chicas de interfaz pueden hacerse con Haiku. Igual se verifican
