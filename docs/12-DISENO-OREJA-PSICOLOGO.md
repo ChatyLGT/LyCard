@@ -57,6 +57,14 @@ la idea anterior de "concierge". No se construye nada hasta aprobar.
    equipo de trabajo. Si la empresa es grande o el proyecto complejo, sube la tarifa.
 3. **Pruebas, ajustes y modificaciones.**
 
+### Quién hace cada etapa y cuándo se paga (aclaración del 2026-10-14)
+- Las etapas 2 y 3 **no las hace la Oreja**: las hacen consultores de negocio y de TI
+  (junior y senior), también en sesiones. La metodología de la etapa 2 todavía no está
+  planeada y se va a discutir aparte con el protocolo de excelencia.
+- La Oreja **participa en el setup y está pendiente** de él, como parte de su pago mensual.
+- El N0 paga **$500 el mes 1** (setup) y **$100 por mes desde el mes 2**. Por eso la
+  mensualidad de la Oreja ($12 o $5) **empieza en el mes 2**.
+
 ### Sesiones de la etapa 1 (10 en total)
 Masterclass (grupal, la da un Sherpa) + 8 sesiones de onboarding 1 a 1 con la Oreja +
 entrega del Códice (la hace un Sherpa, que además verifica y da el visto bueno).
@@ -96,10 +104,11 @@ regulada y la definen Sergio, Fabricio y asesoría legal.
 - No existe el concepto de Sherpa en las comisiones.
 
 ### Pendiente de definir
-- Etapas 2 y 3: quién las hace y si la Oreja cobra algo ahí.
+- Etapas 2 y 3: de dónde sale la tarifa de los consultores (si está dentro de los $500 o
+  es aparte) y cómo cobran. Se discute aparte.
 - Si la Masterclass paga al Sherpa por cada N0 o por Masterclass dictada.
 - Escaneo de redes (carbono): quién lo hace y consentimiento expreso del N0.
-- Cuándo empieza la mensualidad de $5 o $12.
+- Qué debe hacer la Oreja en el setup para cobrar su mensualidad, y cómo se registra.
 - Servicios que la Oreja recomienda (expertos de Legacy o propios) y cómo se pagan.
 
 ## 5. Riesgos que no se pueden saltear
