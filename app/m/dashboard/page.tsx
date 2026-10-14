@@ -27,12 +27,12 @@ export default async function MemberDashboardPage() {
   // Accesos por rol (2026-10-13, pedido de Gunnar: "la tarjeta debe de tener
   // acceso a todas las pantallas y sistema", sin pedir URLs): la fila puente de
   // Admin (lib/staffBridge.ts) dice a qué pantallas de trabajo llega esta persona.
+  const byKind = new Map(cards.map((c) => [c.kind, c]));
   const staff = await prisma.admin.findUnique({ where: { memberId: member.id }, select: { role: true, programId: true } });
   const accesos: { label: string; desc: string; href: string }[] = [];
-  if (staff?.role === "empleado") accesos.push({ label: "Panel de Empleados", desc: "Leads, entrevistas, clientes, sesiones y comisiones.", href: "/empleados" });
+  if (staff?.role === "empleado") accesos.push({ label: "Mis WowJobs", desc: "Tus puestos en el Programa: Oreja y los que te asignen.", href: `/m/wowjobs?cardId=${(byKind.get("personal") ?? cards[0])?.id ?? ""}` });
   if (staff?.role === "owner" && staff.programId === null) accesos.push({ label: "Centro de Mando", desc: "Tu tarjeta, Programas, equipo y metodología.", href: "/admin" });
   if (staff?.role === "owner" && staff.programId && !promotedProgram) accesos.push({ label: "Dashboard del Programa", desc: "Configuración, miembros y roles del equipo.", href: `/admin/programs/${staff.programId}` });
-  const byKind = new Map(cards.map((c) => [c.kind, c]));
   const promotionStatus = promotedProgram ? null : await getPromotionStatus(member.id);
 
   return (

@@ -65,7 +65,7 @@ test.describe("Roles por Programa -- acceso con sesión de Member", () => {
     const form = masterPage.getByTestId("grant-role-form");
     await form.locator('select[name="membershipId"]').selectOption(orejaMembershipId);
     await form.locator('select[name="role"]').selectOption("oreja");
-    await Promise.all([masterPage.waitForResponse((r) => r.url().includes(`/admin/programs/${programId}`) && r.request().method() === "POST"), form.getByRole("button", { name: "Otorgar" }).click()]);
+    await Promise.all([masterPage.waitForResponse((r) => r.url().includes(`/admin/programs/${programId}`) && r.request().method() === "POST"), form.getByRole("button", { name: "Asignar" }).click()]);
     await masterPage.waitForURL(/adminCreated=1/);
 
     const role = await e2eDb.query(`select role from "MembershipRole" where "membershipId" = $1`, [orejaMembershipId]);
@@ -78,13 +78,13 @@ test.describe("Roles por Programa -- acceso con sesión de Member", () => {
     await ctx.addCookies([{ ...(await mintMemberCookie(orejaMemberId)), url: BASE_URL }]);
     const page = await ctx.newPage();
     await page.goto(`${BASE_URL}/empleados`, { waitUntil: "networkidle" });
-    await expect(page.getByRole("heading", { name: "Panel de Empleados" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "WowJob · Oreja" })).toBeVisible();
     await page.goto(`${BASE_URL}/admin/programs/${programId}`, { waitUntil: "networkidle" });
     await expect(page).toHaveURL(/\/admin\/login/);
 
     // Sin pedir URLs: el Dashboard muestra la tarjeta de acceso según el rol.
     await page.goto(`${BASE_URL}/m/dashboard`, { waitUntil: "networkidle" });
-    await expect(page.getByTestId("accesos-rol").getByRole("link", { name: /Panel de Empleados/ })).toHaveAttribute("href", "/empleados");
+    await expect(page.getByTestId("accesos-rol").getByRole("link", { name: /Mis WowJobs/ })).toHaveAttribute("href", /^\/m\/wowjobs\?cardId=/);
     await ctx.close();
   });
 
@@ -117,7 +117,7 @@ test.describe("Roles por Programa -- acceso con sesión de Member", () => {
     await ctx.addCookies([{ ...(await mintMemberCookie(n0MemberId)), url: BASE_URL }]);
     const page = await ctx.newPage();
     await page.goto(`${BASE_URL}/empleados`, { waitUntil: "networkidle" });
-    await expect(page.getByRole("heading", { name: "Panel de Empleados" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "WowJob · Oreja" })).toBeVisible();
     // La pantalla de login ya no aparece si hay acceso.
     await page.goto(`${BASE_URL}/empleados/login`, { waitUntil: "networkidle" });
     await expect(page).toHaveURL(/\/empleados$/);
@@ -126,4 +126,38 @@ test.describe("Roles por Programa -- acceso con sesión de Member", () => {
     await e2eDb.query(`delete from "Admin" where "memberId" = $1`, [n0MemberId]);
     await e2eDb.query(`delete from "Member" where id = $1`, [n0MemberId]);
   });
+
+  test("WowJobs: sin puesto se ve el vacío explicado; con rol de Oreja aparece el WowJob Oreja y el tile está en la Oficina", async ({ browser }) => {
+    const m = await e2eDb.query<{ id: string }>(`insert into "Member" (id, name, "updatedAt") values (gen_random_uuid()::text, $1, now()) returning id`, [`E2E WowJobs ${suffix}`]);
+    const memberId = m.rows[0].id;
+    const card = await e2e_card(memberId);
+
+    const ctx = await browser.newContext();
+    await ctx.addCookies([{ ...(await mintMemberCookie(memberId)), url: BASE_URL }]);
+    const page = await ctx.newPage();
+
+    await page.goto(`${BASE_URL}/m/wowjobs?cardId=${card}`, { waitUntil: "networkidle" });
+    await expect(page.getByTestId("wowjobs-vacio")).toBeVisible();
+
+    await e2eDb.query(`insert into "Admin" (id, "memberId", "programId", role, "updatedAt") values (gen_random_uuid()::text, $1, $2, 'empleado', now())`, [memberId, programId]);
+    await page.goto(`${BASE_URL}/m/wowjobs?cardId=${card}`, { waitUntil: "networkidle" });
+    await expect(page.getByTestId("wowjob-oreja")).toHaveAttribute("href", "/empleados");
+
+    // El tile de WowJobs vive en la Oficina Virtual del dueño.
+    await page.goto(`${BASE_URL}/c/e2e-wowjobs-${suffix}/oficina`, { waitUntil: "networkidle" });
+    await expect(page.getByTestId("tile-wowjobs")).toHaveAttribute("href", `/m/wowjobs?cardId=${card}`);
+
+    await e2eDb.query(`delete from "Admin" where "memberId" = $1`, [memberId]);
+    await e2eDb.query(`delete from "Card" where "memberId" = $1`, [memberId]);
+    await e2eDb.query(`delete from "Member" where id = $1`, [memberId]);
+    await ctx.close();
+  });
+
+  async function e2e_card(memberId: string): Promise<string> {
+    const r = await e2eDb.query<{ id: string }>(
+      `insert into "Card" (id, slug, "updatedAt", name, title, quote, kind, "memberId") values (gen_random_uuid()::text, $1, now(), 'E2E WowJobs', '', '', 'personal', $2) returning id`,
+      [`e2e-wowjobs-${suffix}`, memberId]
+    );
+    return r.rows[0].id;
+  }
 });

@@ -139,9 +139,9 @@ export default async function EmployeePanelPage({
         }}
       >
         <span style={{ color: "#C8A15A", font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".18em", textTransform: "uppercase" }}>
-          Empleado · {program.name}
+          WowJob · {program.name}
         </span>
-        <h1 style={{ margin: 0, font: "500 18px 'Playfair Display',serif", color: "#F5F2EB" }}>Panel de Empleados</h1>
+        <h1 style={{ margin: 0, font: "500 18px 'Playfair Display',serif", color: "#F5F2EB" }}>WowJob · Oreja</h1>
         <Link href="/m/dashboard" style={{ font: "600 10px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".1em", textTransform: "uppercase", color: "#C8A15A", textDecoration: "none" }}>
           Mi Dashboard
         </Link>

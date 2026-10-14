@@ -59,10 +59,10 @@ test.describe("Panel de Empleados -- acceso independiente", () => {
     const page = await context.newPage();
     await page.goto(`${BASE_URL}/empleados`, { waitUntil: "networkidle" });
 
-    await expect(page.getByRole("heading", { name: "Panel de Empleados" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "WowJob · Oreja" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Agregar Miembro" }).first()).toBeVisible();
     await expect(page.getByText("Identidad del Programa")).not.toBeVisible();
-    await expect(page.getByText("Roles del equipo")).not.toBeVisible();
+    await expect(page.getByText("WowJobs del equipo")).not.toBeVisible();
     await expect(page.getByText("Mensajería", { exact: true })).not.toBeVisible();
     await context.close();
   });

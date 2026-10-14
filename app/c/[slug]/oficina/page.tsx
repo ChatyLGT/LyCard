@@ -308,6 +308,24 @@ function TripleAccessRow({ data }: { data: OficinaData }) {
   );
 }
 
+// WowJobs: los puestos que ejercés dentro del Programa (primero: Oreja).
+function WowJobsTile({ data }: { data: OficinaData }) {
+  const { card, accent } = data;
+  return (
+    <Link
+      href={`/m/wowjobs?cardId=${card.id}`}
+      data-testid="tile-wowjobs"
+      style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 16, textDecoration: "none", background: "rgba(255,255,255,.03)", border: "1px solid rgba(200,161,90,.22)" }}
+    >
+      <span className="material-symbols-outlined" style={{ fontSize: 26, color: accent }}>work</span>
+      <span style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        <span style={{ font: "700 12px 'Plus Jakarta Sans',sans-serif", color: "#F3F0E9" }}>WowJobs</span>
+        <span style={{ font: "400 11px 'Plus Jakarta Sans',sans-serif", color: "#A79E8E" }}>Tus puestos dentro del Programa</span>
+      </span>
+    </Link>
+  );
+}
+
 function IdentityBlock({ data }: { data: OficinaData }) {
   const { card, program, puesto, accent } = data;
   const roleLabel = puesto?.denominacion || card.title;
@@ -740,6 +758,7 @@ function OwnerOficina({ data }: { data: OficinaData }) {
         <div style={hr} />
 
         <TripleAccessRow data={data} />
+        <WowJobsTile data={data} />
         {(data.expertoPerfil || card.kind === "company") && (
           <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: -4 }}>
             {data.expertoPerfil && (

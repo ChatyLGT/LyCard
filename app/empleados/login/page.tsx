@@ -13,5 +13,5 @@ export default async function EmployeeLoginPage({
   const { error } = await searchParams;
   // Si ya hay una sesión con acceso a las herramientas, no se vuelve a pedir login.
   if (await currentEmployeeScope()) redirect("/empleados");
-  return <GoogleOnlyLogin eyebrow="Empleado" title="Panel de Empleados" error={error} />;
+  return <GoogleOnlyLogin eyebrow="Oficina Virtual" title="WowJobs" error={error} />;
 }
