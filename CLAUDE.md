@@ -149,7 +149,12 @@ con Gunnar, aún no existe), 3 pruebas y ajustes.
   compara con las capacidades del candidato para hallar a los naturalmente compatibles;
   "cuatro veces más asertivo", en línea; protalent.com.mx). En el Drive aparece como
   "HPT (Aldape)" y "Diagnóstico de Talentos (ProTalent)" (Universidad Abundancia 360).
-  Cada job debe definir el perfil de talento que pide.
+  Cada job debe definir el perfil de talento que pide. Protalent se usa como **fuente y
+  validez del método**, no como herramienta a integrar. Idea central: **no se contrata
+  por estudios académicos sino por talentos naturales**, que se identifican con el **RFI**
+  (Request for Information) y los **pilares**.
+- **Sherpa es un nivel transversal a los talentos:** se puede ser Sherpa en psicólogos, en
+  negocios, en construcción, etc. Es un rango que se gana con experiencia y calificaciones.
 - Los "Talento #1 a #16" de las carpetas TALENTOS del Drive son **skills** de Einar (usar
   siempre la palabra "skills" para eso, "talentos" es solo para talentos naturales).
 - **Códice Extendido** (plan técnico del 9-oct dirigido a Chaty, Drive): Coordenadas del
