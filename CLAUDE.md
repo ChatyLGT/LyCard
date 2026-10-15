@@ -133,6 +133,33 @@ N0/N1/N2, herramientas de carbono, WLM), 2 setup de Oficina Virtual y equipo (co
 de negocio y TI, diagnóstico con **RFI = Request for Information**, metodología a diseñar
 con Gunnar, aún no existe), 3 pruebas y ajustes.
 
+## Legacy como programa modelo, etapas, jobs y talentos (acuerdos de Gunnar, 2026-10-15)
+
+- **Legacy es el programa modelo.** Toda esta lógica y su nomenclatura (Oreja, Hayuko,
+  niveles) aplican **solo a Legacy**. Se define aquí el funcionamiento y los demás
+  programas se adaptan a la lógica con su propia narrativa.
+- **3 etapas de Legacy:** 1 Códice, 2 OV&AT (Oficina Virtual y Agentic Team), 3 Tests y
+  PoP (Proof of Performance).
+- **WowJobs, primer menú:** el job 1 es **Oreja** y el job 2 es **Hayuko**. Son la forma
+  de contratar a la Oreja y al Hayuko. La estructura es fractal y funciona como Proof of
+  Performance: cada nivel de experto valida el trabajo del nivel inferior (la Oreja la
+  valida el Sherpa al verificar el Códice).
+- **Talentos naturales:** la teoría se desarrolló con **Miguel Aldape** y es lo que vende
+  **Protalent** (Protalent Detector: define las habilidades que pide un puesto y las
+  compara con las capacidades del candidato para hallar a los naturalmente compatibles;
+  "cuatro veces más asertivo", en línea; protalent.com.mx). En el Drive aparece como
+  "HPT (Aldape)" y "Diagnóstico de Talentos (ProTalent)" (Universidad Abundancia 360).
+  Cada job debe definir el perfil de talento que pide.
+- Los "Talento #1 a #16" de las carpetas TALENTOS del Drive son **skills** de Einar (usar
+  siempre la palabra "skills" para eso, "talentos" es solo para talentos naturales).
+- **Códice Extendido** (plan técnico del 9-oct dirigido a Chaty, Drive): Coordenadas del
+  Ser (IPR/RPI) + 6 Esferas de Poder (1 a 9: Espiritual, Mental, Emocional, Financiero,
+  Relacional, Físico) + Llave de acceso (Etapa D/E/A/O/M, Membresía, ID de 9 dígitos).
+  Sin implementar en el código. Barra superior: botón izquierdo al Dashboard, badge de
+  nivel a la derecha abre el modal del Códice.
+- Talento Natural, gamificación (niveles, etapas, poderes, talentos) y Proof of
+  Performance son parte de LGT: ver la sección LGT.
+
 ## Roles, niveles y pagos del Programa Legacy (acuerdos de Gunnar, 2026-10-14)
 
 - **Puestos** (WowJobs): **Oreja** (psicólogo, acompaña al N0 en la etapa 1) y **Hayuko**
