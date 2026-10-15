@@ -99,6 +99,59 @@ que Gunnar lo pida.
   hayan estado en chats o en archivos de prueba, y avisar a Sergio y Fabricio
   que las carguen en Vercel como variables de entorno.
 
+## Protocolo de excelencia (pedido de Gunnar, 2026-10-14, siempre activo)
+
+Antes de crear nada (código, diseño, documento largo): primero aclarar dudas,
+profundizar y guiar con preguntas. Orden fijo:
+1. Revisar lo ya acordado (PLAN.md, docs/PLAN-HISTORIAL.md, código, Drive) y citarlo.
+   No volver a preguntar lo que Gunnar ya definió, sobre todo dinero y precios.
+2. Repetir lo entendido en pocas líneas y marcar discrepancias con lo registrado.
+3. Preguntar de a pocas cosas, ordenadas, empezando por lo que bloquea.
+4. Recién con las respuestas, proponer y construir.
+
+## LGT: origen de EinarOS (Drive de Gunnar, carpeta "LGT"; leído 2026-10-15)
+
+**LGT = Life Gamification Theory** (Gunnar Pareja Ballivián, PhD). Documentos:
+"LGT_MASTER" (manual completo) y la tesis doctoral "Life Gamification Theory (LGT)".
+Es "un sistema de gobernanza algorítmica que usa blockchain para crear entornos de
+información perfecta donde el Equilibrio de Nash Colaborativo es la única estrategia
+dominante". Fórmula: **LGT = Nash (cooperación) + Flow (biología) + Blockchain (certeza)**.
+Tres pilares: teoría de juegos (cambiar la matriz de pagos para que cooperar rinda más),
+neuropsicología del Flow (roles por **Talento Natural**, ingeniería narrativa: de KPI a
+"Misión Épica") y blockchain (**Proof of Performance**: el aporte real se valida antes
+de recompensar). Las comisiones salen solo de valor real, nunca de reclutar (Malla de
+Valor, 7 niveles). Para jobs y recompensas de WowJobs, este es el marco: roles por
+talento, tareas como misiones, recompensa atada a Proof of Performance.
+
+## Metodología del Códice: Estándar del Arquitecto (Drive: "Masterplan Metodologia Codice y Escalera Fractal EinarOS")
+
+Ciclo de 3 meses. Mes 1: diagnóstico, Perfil360 y Cerebro N0 (Sesión 1 de arranque,
+BirdBrain, 8 sesiones de 45 min con la Oreja, 2 por semana, grabadas con Meet y Fathom).
+Mes 2: enjambre y ejecución asistida. Mes 3: calibración, auditoría y sello.
+Gunnar lo describe como tres etapas: 1 entendimiento (Códice, pilar 360, escalera
+N0/N1/N2, herramientas de carbono, WLM), 2 setup de Oficina Virtual y equipo (consultores
+de negocio y TI, diagnóstico con **RFI = Request for Information**, metodología a diseñar
+con Gunnar, aún no existe), 3 pruebas y ajustes.
+
+## Roles, niveles y pagos del Programa Legacy (acuerdos de Gunnar, 2026-10-14)
+
+- **Puestos** (WowJobs): **Oreja** (psicólogo, acompaña al N0 en la etapa 1) y **Hayuko**
+  (consultor junior, misma mecánica de acceso y pago que la Oreja; su trabajo es el
+  diagnóstico de la etapa 2). Nombres internos, pueden cambiar.
+- **Niveles** de Sabiduría (`RANKS` en `lib/data.ts`): Seeker/Curioso, Padawan, Mutant,
+  Superhuman, Sherpa, Ancient. "Sherpa para arriba" = nivel Sherpa o Ancient.
+- **Sherpa:** psicólogo senior. Da la Masterclass (grupal) y verifica el Códice.
+- N0 paga $500 el mes 1 (setup) y $100 por mes desde el mes 2.
+- Oreja: $15 por sesión de onboarding hecha. Bono de captación $120 si trajo al lead, al
+  pagar el N0 sus $500. Sherpa: $30 por N0 registrado por su Masterclass y $30 por
+  verificar el Códice. Mensualidad de la Oreja: $12 si trajo al lead, $5 si lo asignó la
+  empresa, desde el mes 2. Margen de LyCard: 40% (Oreja trajo al lead) o 64% (empresa).
+- Se paga por hora efectivamente hecha. Todo es cálculo simulado en dólares: el dinero
+  real circula en tokens internos con on/off-ramp y fideicomiso, que definen Sergio,
+  Fabricio y asesoría legal. Detalle en docs/12-DISENO-OREJA-PSICOLOGO.md.
+- Menú de jobs que publica el N0 (qué necesita, objetivo, tareas, perfiles, recompensa):
+  idea de Gunnar, a definir con el protocolo de excelencia. Aún no se construye.
+
 ## Trabajo y costos
 
 - Las tareas chicas de interfaz pueden hacerse con Haiku. Igual se verifican
