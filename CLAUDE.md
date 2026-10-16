@@ -166,12 +166,15 @@ con Gunnar, aún no existe), 3 pruebas y ajustes.
   credenciales: académicas, peritajes, certificaciones y premios, todo con la lógica de
   **medallas** que ya existe en LyCard.
 - **Rangos de Legacy** (solo Legacy, sirven de ejemplo para otros programas): Padawan,
-  Mutant, Superhuman, Sherpa, Ancient. Una persona puede tener **varios rangos** (uno por
-  línea de talento): una Oreja puede ser Padawan en psicología y Mutant en otra línea.
-  El **Hayuko** es una Oreja de la línea de negocios, también con varios rangos.
+  Mutant, Superhuman, Sherpa, Ancient. **Una persona tiene UN solo rango**, en su línea de
+  talento (no puede ser Sherpa en leyes y además otro rango). Entre sus talentos puede
+  figurar la capacitación o experiencia de lo que hace una Oreja: eso **no la hace Oreja**;
+  puede haberlo sido. Oreja y Hayuko son puestos (jobs), no rangos.
+- **Hayuko:** el equivalente de la Oreja en la línea de negocios. **Nunca es Sherpa: a lo
+  sumo Mutant.**
 - **Validación superior:** el trabajo del Hayuko lo valida el Sherpa de negocios o alguien
-  **al menos dos niveles por encima** (puede ser un Superhuman). Regla a afinar con la
-  metodología, pero siempre debe haber validación superior.
+  **al menos dos niveles por encima** (Hayuko Padawan: Superhuman o Sherpa; Hayuko Mutant:
+  Sherpa). Regla a afinar con la metodología, pero siempre debe haber validación superior.
 - Talento Natural, gamificación (niveles, etapas, poderes, talentos) y Proof of
   Performance son parte de LGT: ver la sección LGT.
 
