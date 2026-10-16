@@ -162,6 +162,16 @@ con Gunnar, aún no existe), 3 pruebas y ajustes.
   Relacional, Físico) + Llave de acceso (Etapa D/E/A/O/M, Membresía, ID de 9 dígitos).
   Sin implementar en el código. Barra superior: botón izquierdo al Dashboard, badge de
   nivel a la derecha abre el modal del Códice.
+- **El Códice de la persona** incluye el RFI (el RFI es parte del Códice) y además sus
+  credenciales: académicas, peritajes, certificaciones y premios, todo con la lógica de
+  **medallas** que ya existe en LyCard.
+- **Rangos de Legacy** (solo Legacy, sirven de ejemplo para otros programas): Padawan,
+  Mutant, Superhuman, Sherpa, Ancient. Una persona puede tener **varios rangos** (uno por
+  línea de talento): una Oreja puede ser Padawan en psicología y Mutant en otra línea.
+  El **Hayuko** es una Oreja de la línea de negocios, también con varios rangos.
+- **Validación superior:** el trabajo del Hayuko lo valida el Sherpa de negocios o alguien
+  **al menos dos niveles por encima** (puede ser un Superhuman). Regla a afinar con la
+  metodología, pero siempre debe haber validación superior.
 - Talento Natural, gamificación (niveles, etapas, poderes, talentos) y Proof of
   Performance son parte de LGT: ver la sección LGT.
 
