@@ -5,11 +5,17 @@
 // compatibilidad, MINOR para funcionalidad nueva, PATCH para fixes —
 // y agrega una entrada corta a CHANGELOG, la bitácora visual que se ve
 // al tocar la islita de versión en la tarjeta.
-export const APP_VERSION = "1.105.0";
+export const APP_VERSION = "1.106.0";
 
 export type ChangelogEntry = { version: string; date: string; notes: string };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.106.0",
+    date: "2026-11-06",
+    notes:
+      "Importar un Programa completo con un solo archivo .json: en /admin/programs subís (o pegás) el JSON y se arman el Programa, sus puestos y todas sus tarjetas. Primero Validar (te muestra qué se crea o cambia y qué se descartó, sin guardar nada) y después Importar (todo o nada, cada importación queda como versión nueva). Se puede exportar cualquier Programa a .json desde su pantalla. Las tarjetas con email de dueño pasan a ser de esa persona cuando entra por primera vez con Google. Un puesto por sigla en cada Programa.",
+  },
   {
     version: "1.105.0",
     date: "2026-10-14",

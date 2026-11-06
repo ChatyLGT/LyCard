@@ -178,6 +178,18 @@ se decidan. Hoy los scopes se piden juntos al conectar; separarlos por función
 
 ---
 
+## Importador de Programa por JSON (v1.106.0, 2026-11-06)
+
+Pedido de Gunnar: cargar un `.json` completo y que se llenen el Programa y todas
+sus tarjetas. Esquema `lycard.program/1` (guía en `docs/13-JSON-DE-PROGRAMA.md`,
+ejemplo en `docs/ejemplos/legacy.program.json`). Reglas: clave ausente = no tocar,
+clave presente = reemplaza ese campo; Validar no escribe; Importar es todo o nada y
+guarda una versión nueva (`ProgramImport`, con el bloque `meta` y el estado previo);
+solo MasterN0 importa, el N0 de Programa exporta y valida el suyo. Tarjetas con
+`ownerEmail` quedan con dueño pendiente hasta el primer login con Google
+(`lib/claimPendingCards.ts`). Fuera de v1: imágenes subidas (solo links https),
+skins, membresías, roles, restaurar una versión anterior desde la pantalla.
+
 ## Estado de verificación
 
 Último ciclo completo: Viaje del Cliente Fase 5 (PR #12, v1.99.0).

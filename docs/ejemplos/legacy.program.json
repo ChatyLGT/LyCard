@@ -1,0 +1,38 @@
+{
+  "schema": "lycard.program/1",
+  "meta": {
+    "fuente": "ejemplo de Chaty a partir del M2M de MAMEN (2026-11-06)",
+    "nota": "Textos de los rangos en borrador. Los datos son de prueba."
+  },
+  "program": {
+    "name": "Legacy",
+    "slug": "legacy",
+    "origin": null,
+    "cardAppName": "Legacy Card",
+    "primaryColor": "#C8A15A",
+    "vaultTitle": "Bóveda Legacy",
+    "rankScale": [
+      { "key": "curioso", "nombre": "Curioso", "subtitulo": "Ingreso", "icono": "explore", "color": "#8C7A55", "descripcion": "Entra al programa y empieza a conocerse. Todavía no tiene un rango en una línea de talento." },
+      { "key": "padawan", "nombre": "Padawan", "subtitulo": "Formación", "icono": "school", "color": "#A88B4A", "descripcion": "En formación dentro de su línea de talento. Su trabajo lo valida un nivel superior." },
+      { "key": "mutant", "nombre": "Mutant", "subtitulo": "Ejecución", "icono": "trending_up", "color": "#C8A15A", "descripcion": "Ejecuta con autonomía creciente. Su trabajo lo valida un Sherpa." },
+      { "key": "superhuman", "nombre": "Superhuman", "subtitulo": "Dominio", "icono": "workspace_premium", "color": "#D9B66A", "descripcion": "Domina su línea de talento y puede validar el trabajo de los niveles inferiores." },
+      { "key": "sherpa", "nombre": "Sherpa", "subtitulo": "Guía", "icono": "terrain", "color": "#E8CB85", "descripcion": "Guía senior de su línea de talento. Se gana con experiencia y calificaciones, y valida el trabajo de los niveles inferiores." },
+      { "key": "ancient", "nombre": "Ancient", "subtitulo": "Consejo", "icono": "all_inclusive", "color": "#F4E3B0", "descripcion": "Parte del consejo del programa." }
+    ]
+  },
+  "puestos": [
+    { "siglas": "O.D.", "denominacion": "Order of Distinction", "descripcion": "Miembro de la Orden.", "icono": "diamond", "order": 0 }
+  ],
+  "cards": [
+    {
+      "slug": "gunnar",
+      "name": "Gunnar Pareja",
+      "title": "Fundador",
+      "quote": "Ejemplo de tarjeta. Cambiá estos datos.",
+      "kind": "personal",
+      "rank": "ancient",
+      "puesto": "O.D.",
+      "ownerEmail": "gunnarpareja@gmail.com"
+    }
+  ]
+}

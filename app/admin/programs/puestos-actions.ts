@@ -32,6 +32,10 @@ export async function createPuestoAction(programId: string, formData: FormData) 
 
   if (!siglas || !denominacion) redirect(`/admin/programs/${programId}?puestoError=required`);
 
+  // Un Puesto por sigla dentro del Programa (índice único, lo usa el importador de JSON).
+  if (await prisma.puesto.findUnique({ where: { programId_siglas: { programId, siglas } }, select: { id: true } })) {
+    redirect(`/admin/programs/${programId}?puestoError=duplicate`);
+  }
   await prisma.puesto.create({ data: { programId, siglas, denominacion, descripcion, order, icono } });
 
   revalidatePath(`/admin/programs/${programId}`);
@@ -50,6 +54,8 @@ export async function updatePuestoAction(puestoId: string, programId: string, fo
 
   if (!siglas || !denominacion) redirect(`/admin/programs/${programId}?puestoError=required`);
 
+  const clash = await prisma.puesto.findUnique({ where: { programId_siglas: { programId, siglas } }, select: { id: true } });
+  if (clash && clash.id !== puestoId) redirect(`/admin/programs/${programId}?puestoError=duplicate`);
   await prisma.puesto.update({ where: { id: puestoId }, data: { siglas, denominacion, descripcion, order, icono } });
 
   revalidatePath(`/admin/programs/${programId}`);
@@ -69,7 +75,8 @@ export async function applyPuestoTemplateAction(programId: string, templateId: s
   const template = await prisma.slotTemplate.findUnique({ where: { id: templateId } });
   if (!template || template.slotType !== "puesto") redirect(`/admin/programs/${programId}?puestoError=templateNotFound`);
 
-  const items = parsePuestoTemplatePayload(template.payload);
+  // Sin siglas repetidas: un Puesto por sigla dentro del Programa (se queda con la primera).
+  const items = parsePuestoTemplatePayload(template.payload).filter((it, i, arr) => arr.findIndex((o) => o.siglas === it.siglas) === i);
   if (items.length === 0) redirect(`/admin/programs/${programId}?puestoError=templateEmpty`);
 
   await prisma.$transaction([

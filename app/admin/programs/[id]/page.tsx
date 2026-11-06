@@ -35,6 +35,7 @@ import { wouldCreateCycle } from "@/lib/programLineage";
 import { toCatalogEntry as toSlotTemplateCatalogEntry, matchSlotTemplates } from "@/lib/slotTemplates";
 import { MODAL_EDITOR_ENTRIES, parseModalIcons, parseTierIntros } from "@/lib/modalEditor";
 import EscalaEditor from "@/components/EscalaEditor";
+import ProgramJsonPanel from "@/components/ProgramJsonPanel";
 import OfficeSkillsEditor from "@/components/OfficeSkillsEditor";
 import PhraseListEditor from "@/components/PhraseListEditor";
 import ProgramSkinInfo from "@/components/ProgramSkinInfo";
@@ -202,6 +203,7 @@ export default async function AdminProgramDetailPage({
   };
   const PUESTO_ERROR_COPY: Record<string, string> = {
     required: "Sigla y denominación son obligatorias.",
+    duplicate: "Ya hay un puesto con esa sigla en este Programa.",
     templateNotFound: "Ese template ya no existe.",
     templateEmpty: "Ese template no tiene niveles válidos (sigla + denominación por fila).",
   };
@@ -515,6 +517,10 @@ export default async function AdminProgramDetailPage({
             solo MasterN0 puede ver/cambiar de dónde "cuelga" este Programa.
             No es parte de "Identidad" porque es un dato de plataforma, no
             de marca -- un N0 scoped no debería ni verlo. */}
+        <AccordionSection title="Importar / exportar Programa (.json)" subtitle="Armar el Programa y sus tarjetas desde un archivo">
+          <ProgramJsonPanel canImport={isMasterN0} exportHref={`/admin/programs/${program.id}/export`} />
+        </AccordionSection>
+
         {isMasterN0 && (
           <AccordionSection title="Linaje" meta={program.originProgram ? <span style={PILL}>desde {program.originProgram.name}</span> : program.isRoot ? <span style={PILL}>raíz</span> : undefined}>
             {originSaved && <p style={{ margin: 0, font: "600 11px 'Plus Jakarta Sans',sans-serif", color: "#8fd19e" }}>✓ Guardado.</p>}
