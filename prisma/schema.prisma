@@ -225,6 +225,11 @@ model Card {
   puestoId String?
   puesto   Puesto? @relation(fields: [puestoId], references: [id], onDelete: SetNull)
 
+  // Email de Google del dueño futuro, cargado por el importador de JSON
+  // cuando esa persona todavía no entró. Al primer login con Google, la
+  // Card pasa a ser suya (lib/claimPendingCards.ts) y este campo se limpia.
+  pendingOwnerEmail String?
+
   // Label shown in the top "island" (2026-09-16) — company/personal only,
   // editable, default "My Business Card"/"My Personal Card" in LyCardView
   // when empty. A project card's island label is computed from its
@@ -286,6 +291,8 @@ model Card {
   // Asistente "Configura tu LyCard" v2 (2026-10-08) -- sesiones del
   // asistente abiertas sobre esta Card.
   assistantSessions AssistantSession[]
+
+  @@index([pendingOwnerEmail])
 }
 
 // Tarjeta personalizada por destinatario (2026-10-02, pedido de Gunnar:
@@ -637,6 +644,28 @@ model Program {
   skins       ProgramSkin[]
   interviewSlots InterviewSlot[]
   messages    Message[]
+  imports     ProgramImport[]
+}
+
+// Cada importación de un JSON de Programa queda guardada como una versión
+// nueva (2026-11-06, pedido de MAMEN): nunca se pisa la anterior. `payload`
+// es el JSON ya normalizado que se aplicó, `meta` el bloque libre `meta` del
+// archivo, `previous` el estado exportable del Programa justo antes de
+// aplicar (null si el Programa se creó con esta importación) y `summary` el
+// reporte de cambios legible.
+model ProgramImport {
+  id                String   @id @default(cuid())
+  programId         String
+  program           Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  version           Int
+  createdAt         DateTime @default(now())
+  createdByMemberId String?
+  payload           Json
+  meta              Json     @default("{}")
+  previous          Json?
+  summary           Json     @default("{}")
+
+  @@unique([programId, version])
 }
 
 // Mensajería Interna (2026-09-24) -- ver PLAN.md "Mensajería Interna".
@@ -782,6 +811,9 @@ model Puesto {
 
   cards Card[]
 
+  // Un Puesto por siglas dentro de cada Programa: el importador de JSON
+  // (lib/programJson.ts) hace upsert por (programId, siglas).
+  @@unique([programId, siglas])
   @@index([programId])
 }
 

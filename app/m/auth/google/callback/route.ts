@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { createMemberSession } from "@/lib/memberAuth";
 import { ensureLegacyMembershipAndCards } from "@/lib/legacyMembership";
 import { linkLegacyAdminByEmail } from "@/lib/linkLegacyAdmin";
+import { claimPendingCards } from "@/lib/claimPendingCards";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -61,6 +62,8 @@ export async function GET(request: NextRequest) {
   }
 
   await createMemberSession(member.id);
+  // Tarjetas que Gunnar cargó por JSON con el email de esta persona.
+  await claimPendingCards(member.id, profile.email);
   // Mismo alta Freemium self-service que el login por WhatsApp OTP
   // (app/m/actions.ts#verifyOtpAction) -- sin referido acá todavía (el
   // link ?ref= no viaja por el round-trip de OAuth en esta ronda).

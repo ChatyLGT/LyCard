@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { currentAdminScope } from "@/lib/auth";
 import { createProgramAction, toggleProgramActiveAction, deleteProgramAction } from "./actions";
+import ProgramJsonPanel from "@/components/ProgramJsonPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -115,6 +116,13 @@ export default async function AdminProgramsPage({
               Crear
             </button>
           </form>
+        </section>
+
+        <section data-testid="program-json-section" style={{ background: "#201f1f", borderRadius: 14, padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
+          <h2 style={{ margin: 0, font: "600 14px 'Plus Jakarta Sans',sans-serif", letterSpacing: ".08em", textTransform: "uppercase", color: "#F5F2EB" }}>
+            Subir Programa completo (.json)
+          </h2>
+          <ProgramJsonPanel canImport />
         </section>
 
         <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
