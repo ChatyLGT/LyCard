@@ -1,0 +1,28 @@
+{
+  "schema": "lycard.program/1",
+  "meta": {
+    "proposito": "Alta de la LyCard de Billy Springall (tarjeta personal) en el Programa Legacy. Solo agrega su tarjeta: toda clave ausente no se toca, el resto del Programa queda intacto.",
+    "preparado": "Einy (Carbono), a pedido de Gunnar (MasterN0), 2026-11-20",
+    "fuente": "Arquetipo Billy Springall v1 — capa pública verificada (prensa: ArchDaily/Podio/Mítikah; su Instagram @billyspringall; exports procesados por la Aduana)"
+  },
+  "program": {
+    "slug": "legacy"
+  },
+  "cards": [
+    {
+      "slug": "billy-springall",
+      "name": "Billy Springall",
+      "title": "Arquitecto · Director de Springall+MK",
+      "quote": "«Antropogénicamente positivo»",
+      "kind": "personal",
+      "storyQuote": "«La paz-ciencia: construir los espacios donde la vida sucede.»",
+      "storyBody": "Arquitecto (CDMX, 1962). En 1988 cofundó Springall+Lira con Miguel Ángel Lira. Su obra incluye el Call Center Santander de Querétaro —el icónico OVNI—, las fachadas de Liverpool y la arquitectura interior de Mítikah; en 2019 recibió el Premio Interceramic de Arquitectura Comercial por el CAT Liverpool de Morelia. Hoy dirige Springall+MK, es docente universitario y es el autor y director de Mayan City, la comunidad antropogénicamente positiva de la Ruta de los Cenotes, concebida junto a Gunnar Pareja.",
+      "ig": "@billyspringall",
+      "web": "https://springall-mk.com",
+      "email": "elsy@springall-mk.com",
+      "location": "Ciudad de México",
+      "defaultTheme": "dark",
+      "defaultLang": "es"
+    }
+  ]
+}
